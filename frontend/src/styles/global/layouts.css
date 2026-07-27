@@ -1,0 +1,13 @@
+.page-container {
+  width: min(
+    calc(
+      100% - var(--page-inline-space) - var(--page-inline-space)
+    ),
+    var(--content-max-width)
+  );
+  margin-inline: auto;
+}
+
+.page-section {
+  padding-block: var(--section-block-space);
+}

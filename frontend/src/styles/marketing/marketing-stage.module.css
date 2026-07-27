@@ -1,0 +1,175 @@
+.background {
+  background:
+    radial-gradient(
+      circle at 50% 8%,
+      var(--background) 0%,
+      transparent 38%
+    ),
+    linear-gradient(
+      180deg,
+      var(--brand-navy-soft) 0%,
+      var(--brand-orange-soft) 48%,
+      var(--background) 100%
+    );
+}
+
+.blob {
+  position: absolute;
+  display: block;
+  aspect-ratio: 1;
+  border-radius: 42% 58% 65% 35% / 45% 38% 62% 55%;
+  filter: blur(72px) saturate(140%);
+  transform: translate3d(0, 0, 0);
+  will-change: transform;
+}
+
+.navyBlob {
+  top: -14rem;
+  left: -10rem;
+  width: clamp(30rem, 62vw, 58rem);
+  background: var(--brand-navy);
+  opacity: 0.28;
+  animation: navy-cloud 24s ease-in-out infinite;
+}
+
+.orangeBlob {
+  top: 4%;
+  right: -12rem;
+  width: clamp(27rem, 54vw, 50rem);
+  background: var(--brand-orange);
+  opacity: 0.3;
+  animation: orange-cloud 28s ease-in-out infinite;
+}
+
+.bridgeBlob {
+  top: 18%;
+  left: 26%;
+  width: clamp(22rem, 40vw, 40rem);
+  background: linear-gradient(
+    135deg,
+    var(--brand-navy),
+    var(--brand-orange)
+  );
+  opacity: 0.14;
+  filter: blur(90px) saturate(135%);
+  animation: bridge-cloud 32s ease-in-out infinite;
+}
+
+.lowerBlob {
+  bottom: -18rem;
+  left: 16%;
+  width: clamp(28rem, 56vw, 54rem);
+  background: var(--brand-navy);
+  opacity: 0.17;
+  animation: lower-cloud 30s ease-in-out infinite;
+}
+
+@keyframes navy-cloud {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  30% {
+    transform: translate3d(18vw, 8vh, 0) scale(1.12);
+  }
+
+  62% {
+    transform: translate3d(32vw, 22vh, 0) scale(0.96);
+  }
+
+  82% {
+    transform: translate3d(12vw, 30vh, 0) scale(1.08);
+  }
+}
+
+@keyframes orange-cloud {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  28% {
+    transform: translate3d(-18vw, 14vh, 0) scale(1.08);
+  }
+
+  58% {
+    transform: translate3d(-34vw, 28vh, 0) scale(1.15);
+  }
+
+  80% {
+    transform: translate3d(-12vw, 38vh, 0) scale(0.98);
+  }
+}
+
+@keyframes bridge-cloud {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  35% {
+    transform: translate3d(-12vw, 16vh, 0) scale(1.18);
+  }
+
+  68% {
+    transform: translate3d(16vw, 32vh, 0) scale(0.92);
+  }
+}
+
+@keyframes lower-cloud {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  38% {
+    transform: translate3d(22vw, -24vh, 0) scale(1.1);
+  }
+
+  72% {
+    transform: translate3d(-10vw, -38vh, 0) scale(0.96);
+  }
+}
+
+@media (max-width: 48rem) {
+  .blob {
+    filter: blur(54px) saturate(130%);
+  }
+
+  .navyBlob {
+    top: -10rem;
+    left: -18rem;
+    width: 34rem;
+    opacity: 0.24;
+  }
+
+  .orangeBlob {
+    top: 24%;
+    right: -17rem;
+    width: 32rem;
+    opacity: 0.27;
+  }
+
+  .bridgeBlob {
+    top: 34%;
+    left: 4%;
+    width: 27rem;
+    opacity: 0.12;
+    filter: blur(66px) saturate(125%);
+  }
+
+  .lowerBlob {
+    bottom: -14rem;
+    left: -14rem;
+    width: 33rem;
+    opacity: 0.14;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .blob {
+    animation: none;
+    will-change: auto;
+  }
+}

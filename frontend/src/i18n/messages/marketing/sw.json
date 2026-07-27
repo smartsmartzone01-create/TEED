@@ -1,0 +1,97 @@
+{
+  "MarketingHeader": {
+    "features": "Vipengele",
+    "howItWorks": "Jinsi inavyofanya kazi",
+    "solutions": "Suluhisho",
+    "pricing": "Bei",
+    "logIn": "Ingia",
+    "getStarted": "Anza sasa",
+    "openNavigation": "Fungua menyu ya urambazaji",
+    "closeNavigation": "Funga menyu ya urambazaji",
+    "primaryNavigation": "Urambazaji mkuu",
+    "mobileNavigation": "Urambazaji wa simu",
+    "navigationDescription": "Tumia kurasa za TEED na vitendo vya akaunti.",
+    "openMenu": "Fungua menyu ya {menu}",
+    "closeMenu": "Funga menyu ya {menu}",
+    "featuresMenu": {
+      "businessOperations": {
+        "title": "Shughuli za biashara",
+        "salesRecords": "Mauzo na kumbukumbu za biashara",
+        "inventory": "Usimamizi wa bidhaa",
+        "customers": "Usimamizi wa wateja",
+        "workspaces": "Nafasi za kazi"
+      },
+      "marketing": {
+        "title": "Masoko",
+        "advertising": "Utangazaji",
+        "socialMedia": "Usimamizi wa mitandao ya kijamii",
+        "contentCampaigns": "Maudhui na kampeni",
+        "customerEngagement": "Mahusiano na wateja"
+      },
+      "insightsAi": {
+        "title": "Uchanganuzi na AI",
+        "businessAnalytics": "Uchanganuzi wa biashara",
+        "socialPerformance": "Utendaji wa mitandao ya kijamii",
+        "advertisingAnalytics": "Uchanganuzi wa matangazo",
+        "aiGuidance": "Mwongozo wa AI"
+      },
+      "digitalGrowth": {
+        "title": "Ukuaji wa kidijitali",
+        "websites": "Tovuti za biashara",
+        "websiteTemplates": "Violezo vya tovuti",
+        "education": "Elimu ya biashara",
+        "payments": "Malipo"
+      }
+    },
+    "solutionsMenu": {
+      "manage": "Simamia",
+      "market": "Tangaza",
+      "analyze": "Changanua",
+      "learn": "Jifunze",
+      "build": "Jenga"
+    },
+    "howItWorksMenu": {
+      "gettingStarted": "Hatua za kuanza",
+      "connectPlatforms": "Unganisha majukwaa yako",
+      "understandInsights": "Elewa taarifa zako"
+    }
+  },
+  "Home": {
+    "eyebrow": "Simamia. Tangaza. Changanua. Jifunze. Jenga.",
+    "title": "Kuza biashara yako kwa zana zilizo wazi na msaada wa AI.",
+    "description": "Simamia shughuli, elewa utendaji, fikia wateja zaidi, na pata mwongozo unaotumia AI kuhusu hatua inayofuata.",
+    "primaryAction": "Anza kukua",
+    "secondaryAction": "Chunguza TEED"
+  },
+  "TeedOverview": {
+    "eyebrow": "Kila kitu kinafanya kazi pamoja",
+    "title": "Njia tano ambazo TEED inasaidia biashara yako kukua.",
+    "description": "Kuanzia shughuli za kila siku hadi kufikia wateja zaidi, TEED inaunganisha sehemu muhimu za ukuaji wa biashara katika mfumo mmoja ulio wazi.",
+    "manage": {
+      "title": "Simamia",
+      "description": "Fuatilia mauzo, bidhaa, wateja, na kumbukumbu muhimu za biashara."
+    },
+    "market": {
+      "title": "Tangaza",
+      "description": "Panga kampeni, tengeneza maudhui, tangaza biashara, na uimarishe mahusiano na wateja."
+    },
+    "analyze": {
+      "title": "Changanua",
+      "description": "Elewa utendaji wa biashara na wa kidijitali kupitia taarifa zilizo wazi na zilizounganishwa."
+    },
+    "learn": {
+      "title": "Jifunze",
+      "description": "Jenga ujuzi wa masoko, maudhui, mahusiano na wateja, na ukuaji wa biashara."
+    },
+    "build": {
+      "title": "Jenga",
+      "description": "Jenga uwepo wa kitaalamu mtandaoni kwa kutumia zana na violezo vya tovuti."
+    }
+  },
+  "PlatformConnections": {
+    "eyebrow": "Imejengwa kwa jinsi biashara yako inavyounganika",
+    "title": "Kua kupitia majukwaa.",
+    "description": "TEED imeundwa kuleta shughuli zako za kidijitali katika mtazamo mmoja ulio wazi, ili kukusaidia kuelewa utendaji na kufanya maamuzi bora ya biashara.",
+    "platformsLabel": "Majukwaa ya kidijitali ambayo TEED imeundwa kuunganishwa nayo"
+  }
+}

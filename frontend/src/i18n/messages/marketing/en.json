@@ -1,0 +1,97 @@
+{
+  "MarketingHeader": {
+    "features": "Features",
+    "howItWorks": "How it works",
+    "solutions": "Solutions",
+    "pricing": "Pricing",
+    "logIn": "Log in",
+    "getStarted": "Get started",
+    "openNavigation": "Open navigation",
+    "closeNavigation": "Close navigation",
+    "primaryNavigation": "Primary navigation",
+    "mobileNavigation": "Mobile navigation",
+    "navigationDescription": "Navigate TEED marketing pages and account actions.",
+    "openMenu": "Open {menu} menu",
+    "closeMenu": "Close {menu} menu",
+    "featuresMenu": {
+      "businessOperations": {
+        "title": "Business operations",
+        "salesRecords": "Sales and business records",
+        "inventory": "Inventory management",
+        "customers": "Customer management",
+        "workspaces": "Workspaces"
+      },
+      "marketing": {
+        "title": "Marketing",
+        "advertising": "Advertising",
+        "socialMedia": "Social media management",
+        "contentCampaigns": "Content and campaigns",
+        "customerEngagement": "Customer engagement"
+      },
+      "insightsAi": {
+        "title": "Insights and AI",
+        "businessAnalytics": "Business analytics",
+        "socialPerformance": "Social performance",
+        "advertisingAnalytics": "Advertising analytics",
+        "aiGuidance": "AI guidance"
+      },
+      "digitalGrowth": {
+        "title": "Digital growth",
+        "websites": "Business websites",
+        "websiteTemplates": "Website templates",
+        "education": "Business education",
+        "payments": "Payments"
+      }
+    },
+    "solutionsMenu": {
+      "manage": "Manage",
+      "market": "Market",
+      "analyze": "Analyze",
+      "learn": "Learn",
+      "build": "Build"
+    },
+    "howItWorksMenu": {
+      "gettingStarted": "Getting started",
+      "connectPlatforms": "Connect your platforms",
+      "understandInsights": "Understand your insights"
+    }
+  },
+  "Home": {
+    "eyebrow": "Manage. Market. Analyze. Learn. Build.",
+    "title": "Grow your business with clearer tools and practical AI.",
+    "description": "Manage operations, understand performance, reach more customers, and get intelligent guidance for what to do next.",
+    "primaryAction": "Start growing",
+    "secondaryAction": "Explore TEED"
+  },
+  "TeedOverview": {
+    "eyebrow": "Everything works together",
+    "title": "Five ways TEED helps your business grow.",
+    "description": "From daily operations to reaching more customers, TEED brings the essential parts of business growth into one clear experience.",
+    "manage": {
+      "title": "Manage",
+      "description": "Keep track of sales, inventory, customers, and essential business records."
+    },
+    "market": {
+      "title": "Market",
+      "description": "Plan campaigns, create content, advertise, and build stronger customer relationships."
+    },
+    "analyze": {
+      "title": "Analyze",
+      "description": "Understand business and digital performance through clear, connected insights."
+    },
+    "learn": {
+      "title": "Learn",
+      "description": "Build practical skills in marketing, content, customer engagement, and business growth."
+    },
+    "build": {
+      "title": "Build",
+      "description": "Create a professional digital presence using practical website tools and templates."
+    }
+  },
+  "PlatformConnections": {
+    "eyebrow": "Built for the way your business connects",
+    "title": "Grow across platforms.",
+    "description": "TEED is designed to bring your digital activity into one clearer view, helping you understand performance and make better business decisions.",
+    "platformsLabel": "Digital platforms TEED is designed to connect with"
+  }
+}

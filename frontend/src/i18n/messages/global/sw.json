@@ -1,0 +1,13 @@
+{
+  "Language": {
+    "label": "Badilisha lugha",
+    "english": "English",
+    "swahili": "Kiswahili"
+  },
+  "Theme": {
+    "label": "Badilisha mwonekano",
+    "light": "Angavu",
+    "dark": "Giza",
+    "system": "Mfumo"
+  }
+}

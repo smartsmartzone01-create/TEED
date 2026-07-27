@@ -1,0 +1,13 @@
+{
+  "Language": {
+    "label": "Change language",
+    "english": "English",
+    "swahili": "Kiswahili"
+  },
+  "Theme": {
+    "label": "Change appearance",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  }
+}
