@@ -2,12 +2,13 @@ from common.exceptions.modules.identity import (
     EmailVerificationRequired,
     InvalidCredentials,
 )
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from django.urls import reverse
 from django.utils import timezone
 from rest_framework import status
-from rest_framework.test import APITestCase
+from rest_framework.test import APIClient, APITestCase
 from rest_framework_simplejwt.token_blacklist.models import (
     OutstandingToken,
 )
@@ -66,9 +67,19 @@ class EmailLoginAPITests(APITestCase):
             "access",
             response.data["data"]["tokens"],
         )
-        self.assertIn(
+        self.assertNotIn(
             "refresh",
             response.data["data"]["tokens"],
+        )
+        self.assertIn(
+            settings.REFRESH_TOKEN_COOKIE_NAME,
+            response.cookies,
+        )
+        refresh_cookie = response.cookies[settings.REFRESH_TOKEN_COOKIE_NAME]
+        self.assertTrue(refresh_cookie["httponly"])
+        self.assertEqual(
+            refresh_cookie["samesite"],
+            "Lax",
         )
         self.assertNotIn(
             "password",
@@ -214,4 +225,30 @@ class EmailLoginAPITests(APITestCase):
         self.assertIn(
             "password",
             response.data["errors"],
+        )
+
+    def test_login_requires_csrf_before_issuing_browser_session(self):
+        csrf_client = APIClient(enforce_csrf_checks=True)
+
+        response = csrf_client.post(
+            self.url,
+            {
+                "email": self.user.email,
+                "password": self.password,
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+        self.assertEqual(
+            response.json()["errors"]["code"],
+            "csrf_failed",
+        )
+        self.assertFalse(
+            OutstandingToken.objects.filter(
+                user=self.user,
+            ).exists()
         )

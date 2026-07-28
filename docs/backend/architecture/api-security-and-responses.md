@@ -71,9 +71,19 @@ and must not expose stack traces or sensitive internals.
 
 ## Authentication
 
-JWT bearer authentication is currently used for protected APIs. Access tokens
-authenticate requests; refresh tokens must be rotated and tracked through the
-blacklist application.
+Protected APIs use short-lived JWT bearer access tokens. Every access token is
+bound to a server-side `UserSession`; authentication rejects a revoked, expired,
+missing, or inactive-user session. This makes logout and security revocation
+effective immediately instead of waiting for the access token to expire.
+
+Browser refresh tokens are never returned in JSON. They use a host-only,
+HttpOnly cookie scoped to `/api/v1/identity/session/`, with `SameSite=Lax` and
+`Secure` enabled in production. Refresh rotation replaces the cookie, blacklists
+the consumed token, and preserves an absolute session expiry. Reuse of an older
+refresh token revokes the entire session family.
+
+The frontend keeps the access token in memory only. Neither access nor refresh
+tokens belong in `localStorage` or `sessionStorage`.
 
 Authentication answers who the requester is. Authorization separately decides
 what that identity may do.
@@ -138,12 +148,15 @@ Required production hardening:
 ## CORS and CSRF
 
 CORS controls which browser origins may call the API; it is not authentication.
-Allowed origins must be explicit in production.
+Allowed origins must be explicit in production. Credentialed CORS is enabled so
+approved frontend origins can send the refresh cookie; wildcard origins are not
+permitted.
 
-The final refresh-token transport determines CSRF requirements. If refresh
-credentials use secure cookies, state-changing endpoints require appropriate
-CSRF defenses. If tokens are sent in authorization payloads, storage and XSS
-risks must be addressed explicitly.
+The browser first calls `GET /api/v1/identity/session/csrf/`, then sends the
+returned CSRF token in `X-CSRFToken`. CSRF is required for login, email
+verification, refresh, logout, and logout-all because these operations create,
+rotate, or destroy cookie-backed browser sessions. The CSRF cookie remains
+JavaScript-readable by design; the refresh cookie does not.
 
 ## API documentation
 

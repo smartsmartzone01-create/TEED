@@ -2,6 +2,8 @@ from common.exceptions.modules.identity import (
     EmailVerificationChallengeNotFound,
 )
 from common.responses import SuccessResponse
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_protect
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
 
@@ -15,8 +17,14 @@ from ..services import (
     issue_token_pair,
     verify_email_verification_code,
 )
+from .session_cookies import (
+    access_token_response,
+    get_request_session_metadata,
+    set_refresh_cookie,
+)
 
 
+@method_decorator(csrf_protect, name="dispatch")
 class EmailVerificationAPIView(APIView):
     serializer_class = EmailVerificationSerializer
     permission_classes = [AllowAny]
@@ -47,18 +55,25 @@ class EmailVerificationAPIView(APIView):
 
         tokens = issue_token_pair(
             user=user,
+            **get_request_session_metadata(request),
         )
 
-        return SuccessResponse(
+        response = SuccessResponse(
             message="Email verified successfully.",
             data={
                 "user_id": str(user.id),
                 "email": user.email,
                 "is_email_verified": True,
                 "next_step": "complete_onboarding",
-                "tokens": tokens,
+                "tokens": access_token_response(tokens),
             },
         )
+        set_refresh_cookie(
+            response,
+            refresh_token=tokens["refresh"],
+            expires_at=tokens["refresh_expires_at"],
+        )
+        return response
 
 
 class EmailVerificationResendAPIView(APIView):

@@ -97,16 +97,21 @@ control, not authorization.
 
 ## Credential transport decision
 
-The final refresh-token design is not yet decided in code. Before identity UI:
+The browser session contract is finalized:
 
-1. choose secure cookie or another explicit transport;
-2. document CSRF and XSS implications;
-3. define refresh rotation and logout;
-4. define multi-tab coordination;
-5. define server-component access;
-6. test expiration and recovery.
+- the refresh token is a host-only, HttpOnly cookie and is never readable by
+  frontend JavaScript;
+- the access token is held in memory only;
+- neither token is stored in `localStorage` or `sessionStorage`;
+- credentialed API requests use `credentials: "include"`;
+- the client bootstraps CSRF protection and sends `X-CSRFToken` on
+  session-creating or session-mutating requests;
+- refresh rotation is coordinated so only one refresh request is active;
+- failed refresh settles queued requests and clears authenticated state;
+- logout clears memory state after the backend revokes the session.
 
-Avoid persisting long-lived credentials in general-purpose browser storage.
+Multi-tab logout coordination and server-rendered access remain frontend
+implementation decisions, but they may not weaken this storage contract.
 
 ## Error model
 

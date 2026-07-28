@@ -13,12 +13,15 @@ All current identity endpoints accept and return JSON.
 | Method | Path | Authentication | Purpose |
 | --- | --- | --- | --- |
 | `POST` | `/api/v1/identity/registration/email/` | Public | Register with email and password |
-| `POST` | `/api/v1/identity/email-verification/` | Public | Verify a registration email code |
+| `POST` | `/api/v1/identity/email-verification/` | Public + CSRF | Verify a registration email code |
 | `POST` | `/api/v1/identity/email-verification/resend/` | Public | Replace and resend a verification challenge |
 | `POST` | `/api/v1/identity/onboarding/` | Bearer access token | Complete required identity fields |
-| `POST` | `/api/v1/identity/login/email/` | Public | Sign in with email and password |
-
-There are currently no implemented identity `GET` endpoints.
+| `POST` | `/api/v1/identity/login/email/` | Public + CSRF | Sign in with email and password |
+| `GET` | `/api/v1/identity/session/csrf/` | Public | Bootstrap browser CSRF protection |
+| `POST` | `/api/v1/identity/session/refresh/` | Refresh cookie + CSRF | Rotate the session and return a new access token |
+| `POST` | `/api/v1/identity/session/logout/` | Refresh cookie + CSRF | Revoke the current browser session |
+| `POST` | `/api/v1/identity/session/logout-all/` | Bearer access token + CSRF | Revoke every session for the user |
+| `GET` | `/api/v1/identity/session/me/` | Bearer access token | Read the current user and session identifier |
 
 ## Register with email
 
@@ -92,12 +95,15 @@ Success: `200 OK`
     "next_step": "complete_onboarding",
     "tokens": {
       "access": "access-token",
-      "refresh": "refresh-token",
-      "token_type": "Bearer"
+      "token_type": "Bearer",
+      "expires_in": 300
     }
   }
 }
 ```
+
+The refresh token is set as an HttpOnly cookie and is never included in JSON.
+Bootstrap CSRF protection before calling this endpoint from a browser.
 
 Important failures:
 
@@ -211,12 +217,15 @@ Success: `200 OK`
     "next_step": "complete_onboarding",
     "tokens": {
       "access": "access-token",
-      "refresh": "refresh-token",
-      "token_type": "Bearer"
+      "token_type": "Bearer",
+      "expires_in": 300
     }
   }
 }
 ```
+
+The refresh token is set as an HttpOnly cookie and is never included in JSON.
+Bootstrap CSRF protection before calling this endpoint from a browser.
 
 For a completed user, `is_onboarding_complete` is `true`, `username` contains the saved username, and `next_step` is `dashboard`.
 
@@ -226,6 +235,61 @@ Important failures:
 - `403 email_verification_required`;
 - `429` per-network or per-account login throttle;
 - `400` field validation errors.
+
+## Browser session lifecycle
+
+Call the CSRF bootstrap endpoint before login, email verification, refresh, or
+logout:
+
+```http
+GET /api/v1/identity/session/csrf/
+```
+
+Send the returned token as `X-CSRFToken` and include browser credentials on
+subsequent requests. The refresh token cookie is HttpOnly, host-only, scoped to
+`/api/v1/identity/session/`, `SameSite=Lax`, and `Secure` in production.
+
+Refresh:
+
+```http
+POST /api/v1/identity/session/refresh/
+X-CSRFToken: {csrf_token}
+```
+
+Success returns the current user and a new memory-only access token. It also
+rotates the refresh cookie. Reuse of an older token returns
+`401 refresh_token_reuse_detected` and revokes that session family.
+
+Current session:
+
+```http
+GET /api/v1/identity/session/me/
+Authorization: Bearer {access_token}
+```
+
+Success returns the safe current-user summary and `session_id`.
+
+Current-device logout:
+
+```http
+POST /api/v1/identity/session/logout/
+X-CSRFToken: {csrf_token}
+```
+
+The operation is idempotent, revokes the cookie-bound session when present, and
+clears the refresh cookie.
+
+All-device logout:
+
+```http
+POST /api/v1/identity/session/logout-all/
+Authorization: Bearer {access_token}
+X-CSRFToken: {csrf_token}
+```
+
+Success returns the number of revoked sessions and clears the current refresh
+cookie. Because access authentication checks the server-side session record,
+revoked access tokens fail immediately.
 
 ## Standard error shape
 

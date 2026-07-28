@@ -70,11 +70,11 @@ Implemented tests currently cover:
 - registration serializer, service, and API;
 - email verification model, serializer, service, and API;
 - token service;
+- session model, service, authentication, rotation, reuse, and API behavior;
 - onboarding serializer, service, and API;
 - email authentication serializer, service, API, and throttles.
 
-Refresh, logout, current-session, and password-recovery tests will accompany
-those future contracts.
+Password-recovery tests will accompany that future contract.
 
 ## External effects
 
