@@ -17,6 +17,9 @@ All current identity endpoints accept and return JSON.
 | `POST` | `/api/v1/identity/email-verification/resend/` | Public | Replace and resend a verification challenge |
 | `POST` | `/api/v1/identity/onboarding/` | Bearer access token | Complete required identity fields |
 | `POST` | `/api/v1/identity/login/email/` | Public + CSRF | Sign in with email and password |
+| `POST` | `/api/v1/identity/password-reset/request/` | Public | Request an email reset code; response is always generic |
+| `POST` | `/api/v1/identity/password-reset/verify/` | Public + CSRF | Verify the code and set a short-lived reset grant cookie |
+| `POST` | `/api/v1/identity/password-reset/confirm/` | Reset grant cookie + CSRF | Set a validated password and revoke all existing sessions |
 | `GET` | `/api/v1/identity/session/csrf/` | Public | Bootstrap browser CSRF protection |
 | `POST` | `/api/v1/identity/session/refresh/` | Refresh cookie + CSRF | Rotate the session and return a new access token |
 | `POST` | `/api/v1/identity/session/logout/` | Refresh cookie + CSRF | Revoke the current browser session |
@@ -153,6 +156,20 @@ Resend behavior:
 
 Repeated callers may receive `429` from the transport throttle regardless of
 whether the submitted email belongs to an account.
+
+## Password reset
+
+The UI uses three internal steps:
+
+1. request with `{"email": "user@example.com"}`;
+2. verify with `{"email": "user@example.com", "code": "123456"}`;
+3. confirm with matching `new_password` and `new_password_confirm`.
+
+The request route always returns the same success message. A successful code
+verification sets a short-lived, single-use HttpOnly cookie scoped only to the
+password-reset routes. The confirm route never returns or accepts that grant in
+JSON. Success changes the password, consumes the grant, revokes every existing
+session, sends a change notification, and directs the user to sign in again.
 
 ## Complete onboarding
 

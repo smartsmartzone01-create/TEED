@@ -9,12 +9,14 @@ def create_user_session(
     user: User,
     expires_at,
     ip_address=None,
+    device_id=None,
     user_agent_hash="",
 ) -> UserSession:
     return UserSession.objects.create(
         user=user,
         expires_at=expires_at,
         ip_address=ip_address,
+        device_id=device_id,
         user_agent_hash=user_agent_hash,
     )
 

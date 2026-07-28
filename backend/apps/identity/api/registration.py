@@ -8,7 +8,7 @@ from ..serializers import (
 )
 from ..services import register_email_user
 from ..throttles import EmailRegistrationIPThrottle
-from .session_cookies import get_request_session_metadata
+from .session_cookies import get_request_session_metadata, set_device_cookie
 
 
 class EmailRegistrationAPIView(APIView):
@@ -30,7 +30,7 @@ class EmailRegistrationAPIView(APIView):
             **get_request_session_metadata(request),
         )
 
-        return SuccessResponse(
+        response = SuccessResponse(
             message=("Registration successful. Verify your email to continue."),
             data={
                 "user_id": str(user.id),
@@ -39,3 +39,5 @@ class EmailRegistrationAPIView(APIView):
             },
             status_code=status.HTTP_201_CREATED,
         )
+        set_device_cookie(response, request)
+        return response

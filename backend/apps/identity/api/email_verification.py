@@ -26,6 +26,7 @@ from ..throttles import (
 from .session_cookies import (
     access_token_response,
     get_request_session_metadata,
+    set_device_cookie,
     set_refresh_cookie,
 )
 
@@ -80,6 +81,7 @@ class EmailVerificationAPIView(APIView):
             refresh_token=tokens["refresh"],
             expires_at=tokens["refresh_expires_at"],
         )
+        set_device_cookie(response, request)
         return response
 
 
@@ -119,7 +121,7 @@ class EmailVerificationResendAPIView(APIView):
             ):
                 pass
 
-        return SuccessResponse(
+        response = SuccessResponse(
             message=(
                 "If an unverified account exists for "
                 "that email, a new verification code "
@@ -127,3 +129,5 @@ class EmailVerificationResendAPIView(APIView):
             ),
             data=None,
         )
+        set_device_cookie(response, request)
+        return response

@@ -53,6 +53,7 @@ def _record_verification_event(
     challenge=None,
     ip_address=None,
     user_agent="",
+    device_id=None,
     reason=None,
 ):
     metadata = {}
@@ -68,6 +69,7 @@ def _record_verification_event(
         challenge_id=(challenge.id if challenge is not None else None),
         ip_address=ip_address,
         user_agent=user_agent,
+        device_id=device_id,
         metadata=metadata,
     )
 
@@ -79,12 +81,20 @@ def _deliver_verification_email(
     code,
     ip_address=None,
     user_agent="",
+    device_id=None,
 ):
+    is_password_reset = (
+        challenge.purpose == EmailVerificationChallenge.Purpose.PASSWORD_RESET
+    )
+    subject = (
+        "Reset your TEED password" if is_password_reset else "Verify your TEED email"
+    )
+    purpose_label = "password reset" if is_password_reset else "verification"
     try:
         send_mail(
-            subject="Verify your TEED email",
+            subject=subject,
             message=(
-                f"Your TEED verification code is {code}.\n\n"
+                f"Your TEED {purpose_label} code is {code}.\n\n"
                 "This code expires in "
                 f"{settings.EMAIL_VERIFICATION_TTL_MINUTES} minutes."
             ),
@@ -101,6 +111,7 @@ def _deliver_verification_email(
                 challenge=challenge,
                 ip_address=ip_address,
                 user_agent=user_agent,
+                device_id=device_id,
                 reason="provider_error",
             )
         except Exception:
@@ -124,6 +135,7 @@ def _deliver_verification_email(
                 challenge=challenge,
                 ip_address=ip_address,
                 user_agent=user_agent,
+                device_id=device_id,
             )
         except Exception:
             logger.exception(
@@ -139,6 +151,7 @@ def issue_email_verification_challenge(
     enforce_resend_limits=False,
     ip_address=None,
     user_agent="",
+    device_id=None,
 ) -> EmailVerificationChallenge:
     """Persist a challenge atomically and deliver it only after commit."""
 
@@ -175,6 +188,7 @@ def issue_email_verification_challenge(
                     challenge=latest,
                     ip_address=ip_address,
                     user_agent=user_agent,
+                    device_id=device_id,
                     reason="cooldown",
                 )
                 pending_exception = EmailVerificationResendCooldown()
@@ -186,6 +200,7 @@ def issue_email_verification_challenge(
                     challenge=latest,
                     ip_address=ip_address,
                     user_agent=user_agent,
+                    device_id=device_id,
                     reason="daily_limit",
                 )
                 pending_exception = EmailVerificationDailyLimitReached()
@@ -215,6 +230,7 @@ def issue_email_verification_challenge(
                 challenge=challenge,
                 ip_address=ip_address,
                 user_agent=user_agent,
+                device_id=device_id,
             )
             transaction.on_commit(
                 lambda: _deliver_verification_email(
@@ -223,6 +239,7 @@ def issue_email_verification_challenge(
                     code=code,
                     ip_address=ip_address,
                     user_agent=user_agent,
+                    device_id=device_id,
                 )
             )
 
@@ -238,6 +255,7 @@ def verify_email_verification_code(
     purpose: str = (EmailVerificationChallenge.Purpose.REGISTRATION),
     ip_address=None,
     user_agent="",
+    device_id=None,
 ) -> User:
     """Lock, validate, and consume exactly one challenge atomically."""
 
@@ -257,6 +275,7 @@ def verify_email_verification_code(
                 outcome=IdentitySecurityEvent.Outcome.FAILURE,
                 ip_address=ip_address,
                 user_agent=user_agent,
+                device_id=device_id,
                 reason="challenge_not_found",
             )
             pending_exception = EmailVerificationChallengeNotFound()
@@ -268,6 +287,7 @@ def verify_email_verification_code(
                 challenge=challenge,
                 ip_address=ip_address,
                 user_agent=user_agent,
+                device_id=device_id,
                 reason="expired",
             )
             pending_exception = EmailVerificationCodeExpired()
@@ -279,6 +299,7 @@ def verify_email_verification_code(
                 challenge=challenge,
                 ip_address=ip_address,
                 user_agent=user_agent,
+                device_id=device_id,
                 reason="attempt_limit",
             )
             pending_exception = EmailVerificationAttemptLimitReached()
@@ -298,6 +319,7 @@ def verify_email_verification_code(
                 challenge=challenge,
                 ip_address=ip_address,
                 user_agent=user_agent,
+                device_id=device_id,
                 reason=("attempt_limit" if limit_reached else "invalid_code"),
             )
             pending_exception = (
@@ -321,6 +343,7 @@ def verify_email_verification_code(
                 challenge=challenge,
                 ip_address=ip_address,
                 user_agent=user_agent,
+                device_id=device_id,
             )
 
     if pending_exception is not None:

@@ -105,9 +105,8 @@ permission policy.
 ## Identity privacy
 
 Login returns the same invalid-credentials outcome for an unknown email and an
-incorrect password. Resend returns a generic success whether or not the
-account exists. Similar anti-enumeration behavior should apply to password
-recovery.
+incorrect password. Resend and password-reset request return a generic success
+whether or not the account exists.
 
 Login applies two independent throttles:
 
@@ -151,7 +150,22 @@ Changing that behavior requires a deliberate privacy/product decision.
   tokens, or raw user agents.
 
 Future production work includes background delivery workers, provider-specific
-retry/dead-letter handling, alerting, and retention policy enforcement.
+retry/dead-letter handling, and alerting.
+
+Security audit events are server-side, append-oriented records containing event
+time, outcome, IP, opaque device ID, hashed user agent, and a hashed submitted
+identity when the account may be unknown. Passwords, codes, reset grants, JWTs,
+cookies, authorization headers, and raw email addresses are forbidden. Device
+correlation may inform risk but never proves identity. Retention is configured
+with `IDENTITY_SECURITY_EVENT_RETENTION_DAYS` and enforced by the
+`purge_expired_security_events` operation.
+
+Password reset uses one email verification interaction. Internal assurance
+labels the request as known-device, familiar-network, or standard and applies
+rate limits without demanding a second code. Successful verification produces
+a short-lived, device-bound, single-use HttpOnly grant. Confirmation validates
+the new password, revokes all sessions, sends a notification, and requires a
+fresh sign-in.
 
 ## CORS and CSRF
 

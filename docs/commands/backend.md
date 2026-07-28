@@ -159,6 +159,17 @@ python manage.py test --keepdb
 
 Verbose output:
 
+## Security-event retention
+
+Delete audit rows whose configured retention date has passed:
+
+```powershell
+python manage.py purge_expired_security_events
+```
+
+Schedule this command in production. Do not remove security events manually
+during normal development.
+
 ```powershell
 python manage.py test --verbosity 2
 ```

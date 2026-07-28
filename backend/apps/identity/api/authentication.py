@@ -10,6 +10,7 @@ from ..throttles import LoginEmailThrottle, LoginIPThrottle
 from .session_cookies import (
     access_token_response,
     get_request_session_metadata,
+    set_device_cookie,
     set_refresh_cookie,
 )
 
@@ -56,4 +57,5 @@ class EmailLoginAPIView(APIView):
             refresh_token=result["tokens"]["refresh"],
             expires_at=result["tokens"]["refresh_expires_at"],
         )
+        set_device_cookie(response, request)
         return response
