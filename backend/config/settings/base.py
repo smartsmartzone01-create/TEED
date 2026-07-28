@@ -220,6 +220,18 @@ REST_FRAMEWORK = {
             "LOGIN_EMAIL_THROTTLE_RATE",
             default="5/minute",
         ),
+        "email_verification_resend_ip": config(
+            "EMAIL_VERIFICATION_RESEND_IP_THROTTLE_RATE",
+            default="20/hour",
+        ),
+        "email_registration_ip": config(
+            "EMAIL_REGISTRATION_IP_THROTTLE_RATE",
+            default="10/hour",
+        ),
+        "email_verification_resend_account": config(
+            "EMAIL_VERIFICATION_RESEND_ACCOUNT_THROTTLE_RATE",
+            default="5/hour",
+        ),
     },
 }
 
@@ -279,6 +291,18 @@ EMAIL_VERIFICATION_TTL_MINUTES = config(
 
 EMAIL_VERIFICATION_MAX_ATTEMPTS = config(
     "EMAIL_VERIFICATION_MAX_ATTEMPTS",
+    default=5,
+    cast=int,
+)
+
+EMAIL_VERIFICATION_RESEND_COOLDOWN_SECONDS = config(
+    "EMAIL_VERIFICATION_RESEND_COOLDOWN_SECONDS",
+    default=60,
+    cast=int,
+)
+
+EMAIL_VERIFICATION_DAILY_LIMIT = config(
+    "EMAIL_VERIFICATION_DAILY_LIMIT",
     default=5,
     cast=int,
 )

@@ -24,10 +24,12 @@ identity/
 ├── migrations/
 ├── models/
 │   ├── email_verification.py
+│   ├── security_event.py
 │   ├── session.py
 │   └── user.py
 ├── repositories/
 │   ├── email_verification.py
+│   ├── security_event.py
 │   ├── session.py
 │   └── user.py
 ├── selectors/
@@ -45,8 +47,12 @@ identity/
 │   ├── email_verification.py
 │   ├── onboarding.py
 │   ├── registration.py
+│   ├── security_event.py
 │   ├── session.py
 │   └── token.py
+├── throttles/
+│   ├── authentication.py
+│   └── email_verification.py
 ├── tests/
 ├── admin.py
 ├── apps.py
@@ -83,8 +89,8 @@ Flow:
 1. serializer normalizes email and validates the password;
 2. service checks for an existing active account;
 3. repository creates the user;
-4. verification service creates and sends a challenge;
-5. the transaction rolls back if the current synchronous delivery fails;
+4. verification service creates the challenge transactionally;
+5. delivery runs after commit and records success or provider failure;
 6. API returns `201` and `next_step: verify_email`.
 
 Password and verification code are never returned.
@@ -102,14 +108,21 @@ Verification:
 
 1. normalize email and validate the numeric code shape;
 2. locate the user and latest active challenge;
-3. reject missing, expired, or attempt-limited challenges;
+3. lock and reject missing, expired, or attempt-limited challenges;
 4. compare the submitted code with the stored hash;
-5. atomically consume the challenge and mark the email verified;
+5. atomically account for failures or consume the challenge and mark the email
+   verified;
 6. create a server-side session and issue an access token plus refresh cookie;
 7. return `next_step: complete_onboarding`.
 
 Resend returns a generic success and only issues a challenge for an existing
-unverified user.
+unverified user. It applies a cooldown, rolling daily limit, per-network
+throttle, and hashed-email throttle. Persisted blocks keep the generic response
+so they cannot be used for account discovery.
+
+`IdentitySecurityEvent` records challenge issuance, delivery outcomes,
+verification outcomes, and blocked resends. It stores no plaintext code, token,
+email address, or raw user agent.
 
 ## Onboarding
 
@@ -180,6 +193,8 @@ Current stable identity errors include:
 - `email_verification_code_invalid`;
 - `email_verification_code_expired`;
 - `email_verification_attempt_limit_reached`;
+- `email_verification_resend_cooldown` (internal/generic at the resend API);
+- `email_verification_daily_limit_reached` (internal/generic at the resend API);
 - `identity_verification_required`;
 - `username_already_taken`;
 - `phone_number_already_registered`;
@@ -201,10 +216,10 @@ and throttle behavior have tests.
 
 Before extending identity further:
 
-- add resend throttling and atomic verification transitions;
-- move delivery out of open database transactions;
 - implement password recovery;
-- add auditable security-event recording.
+- implement verified-phone ownership;
+- add background provider retry/dead-letter handling and broader audit
+  retention policy.
 
 These remaining items describe pending work; they are not implemented
 behavior.

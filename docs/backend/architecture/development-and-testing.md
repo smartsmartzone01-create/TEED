@@ -69,6 +69,8 @@ Implemented tests currently cover:
 - user manager and selectors;
 - registration serializer, service, and API;
 - email verification model, serializer, service, and API;
+- verification locking, resend limits, delivery callbacks, security events, and
+  resend throttles;
 - token service;
 - session model, service, authentication, rotation, reuse, and API behavior;
 - onboarding serializer, service, and API;

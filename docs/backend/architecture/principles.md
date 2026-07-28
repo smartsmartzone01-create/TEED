@@ -172,6 +172,8 @@ controls.
   email login layers;
 - server-side session families, rotating HttpOnly refresh cookies, reuse
   detection, current-session lookup, logout, and logout-all;
+- concurrency-safe email verification, resend abuse controls, post-commit
+  delivery, and identity security-event records;
 - authenticated-by-default API permissions and per-network/per-account login
   throttling;
 - versioned identity routes and OpenAPI tooling.
@@ -179,11 +181,11 @@ controls.
 ### Required next
 
 - add password-recovery contracts;
-- harden verification delivery, concurrency, and resend throttling.
+- add verified-phone ownership and delivery contracts.
 
 ### Planned
 
-- audit actor tracking;
+- broader audit actor tracking and retention policy;
 - background workers for external delivery;
 - workspace and tenant isolation;
 - additional business modules and external integrations.

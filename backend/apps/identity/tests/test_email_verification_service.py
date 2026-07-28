@@ -6,6 +6,8 @@ from common.exceptions.modules.identity import (
     EmailVerificationChallengeNotFound,
     EmailVerificationCodeExpired,
     EmailVerificationCodeInvalid,
+    EmailVerificationDailyLimitReached,
+    EmailVerificationResendCooldown,
 )
 from django.contrib.auth import get_user_model
 from django.contrib.auth.hashers import (
@@ -16,7 +18,7 @@ from django.core import mail
 from django.test import TestCase, override_settings
 from django.utils import timezone
 
-from ..models import EmailVerificationChallenge
+from ..models import EmailVerificationChallenge, IdentitySecurityEvent
 from ..services import (
     issue_email_verification_challenge,
     verify_email_verification_code,
@@ -30,6 +32,8 @@ User = get_user_model()
     EMAIL_VERIFICATION_CODE_LENGTH=6,
     EMAIL_VERIFICATION_TTL_MINUTES=10,
     EMAIL_VERIFICATION_MAX_ATTEMPTS=5,
+    EMAIL_VERIFICATION_RESEND_COOLDOWN_SECONDS=60,
+    EMAIL_VERIFICATION_DAILY_LIMIT=5,
     DEFAULT_FROM_EMAIL="TEED <no-reply@teed.local>",
 )
 class EmailVerificationServiceTests(TestCase):
@@ -47,9 +51,10 @@ class EmailVerificationServiceTests(TestCase):
         self,
         generate_code,
     ):
-        challenge = issue_email_verification_challenge(
-            user=self.user,
-        )
+        with self.captureOnCommitCallbacks(execute=True):
+            challenge = issue_email_verification_challenge(
+                user=self.user,
+            )
 
         generate_code.assert_called_once_with()
 
@@ -86,13 +91,14 @@ class EmailVerificationServiceTests(TestCase):
         self,
         generate_code,
     ):
-        first_challenge = issue_email_verification_challenge(
-            user=self.user,
-        )
-
-        second_challenge = issue_email_verification_challenge(
-            user=self.user,
-        )
+        with self.captureOnCommitCallbacks(execute=True):
+            first_challenge = issue_email_verification_challenge(
+                user=self.user,
+            )
+        with self.captureOnCommitCallbacks(execute=True):
+            second_challenge = issue_email_verification_challenge(
+                user=self.user,
+            )
 
         first_challenge.refresh_from_db()
 
@@ -209,3 +215,117 @@ class EmailVerificationServiceTests(TestCase):
                 user=self.user,
                 code="123456",
             )
+
+    @patch(
+        "apps.identity.services.email_verification._generate_verification_code",
+        return_value="123456",
+    )
+    def test_delivery_runs_only_after_commit(self, generate_code):
+        with self.captureOnCommitCallbacks(execute=False) as callbacks:
+            challenge = issue_email_verification_challenge(
+                user=self.user,
+            )
+            self.assertEqual(len(mail.outbox), 0)
+
+        self.assertEqual(len(callbacks), 1)
+        callbacks[0]()
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertTrue(
+            IdentitySecurityEvent.objects.filter(
+                user=self.user,
+                challenge_id=challenge.id,
+                event_type=(IdentitySecurityEvent.EventType.EMAIL_DELIVERY_SUCCEEDED),
+            ).exists()
+        )
+
+    @override_settings(EMAIL_VERIFICATION_RESEND_COOLDOWN_SECONDS=60)
+    def test_resend_cooldown_is_persisted_and_audited(self):
+        challenge = issue_email_verification_challenge(
+            user=self.user,
+        )
+
+        with self.assertRaises(EmailVerificationResendCooldown):
+            issue_email_verification_challenge(
+                user=self.user,
+                enforce_resend_limits=True,
+                ip_address="192.0.2.40",
+                user_agent="TEED Test",
+            )
+
+        self.assertEqual(
+            EmailVerificationChallenge.all_objects.filter(
+                user=self.user,
+            ).count(),
+            1,
+        )
+        event = IdentitySecurityEvent.objects.get(
+            event_type=(IdentitySecurityEvent.EventType.EMAIL_RESEND_BLOCKED),
+        )
+        self.assertEqual(event.challenge_id, challenge.id)
+        self.assertEqual(event.metadata["reason"], "cooldown")
+        self.assertEqual(event.ip_address, "192.0.2.40")
+        self.assertTrue(event.user_agent_hash)
+
+    @override_settings(
+        EMAIL_VERIFICATION_RESEND_COOLDOWN_SECONDS=0,
+        EMAIL_VERIFICATION_DAILY_LIMIT=2,
+    )
+    def test_daily_limit_counts_invalidated_challenges(self):
+        issue_email_verification_challenge(user=self.user)
+        issue_email_verification_challenge(
+            user=self.user,
+            enforce_resend_limits=True,
+        )
+
+        with self.assertRaises(EmailVerificationDailyLimitReached):
+            issue_email_verification_challenge(
+                user=self.user,
+                enforce_resend_limits=True,
+            )
+
+        self.assertEqual(
+            EmailVerificationChallenge.all_objects.filter(
+                user=self.user,
+            ).count(),
+            2,
+        )
+        self.assertTrue(
+            IdentitySecurityEvent.objects.filter(
+                event_type=(IdentitySecurityEvent.EventType.EMAIL_RESEND_BLOCKED),
+                metadata__reason="daily_limit",
+            ).exists()
+        )
+
+    def test_verification_outcomes_create_security_events(self):
+        challenge = EmailVerificationChallenge.objects.create(
+            user=self.user,
+            code_digest=make_password("123456"),
+            expires_at=(timezone.now() + timedelta(minutes=10)),
+        )
+
+        with self.assertRaises(EmailVerificationCodeInvalid):
+            verify_email_verification_code(
+                user=self.user,
+                code="000000",
+            )
+
+        verify_email_verification_code(
+            user=self.user,
+            code="123456",
+        )
+
+        self.assertTrue(
+            IdentitySecurityEvent.objects.filter(
+                challenge_id=challenge.id,
+                event_type=(IdentitySecurityEvent.EventType.EMAIL_VERIFICATION_FAILED),
+                metadata__reason="invalid_code",
+            ).exists()
+        )
+        self.assertTrue(
+            IdentitySecurityEvent.objects.filter(
+                challenge_id=challenge.id,
+                event_type=(
+                    IdentitySecurityEvent.EventType.EMAIL_VERIFICATION_SUCCEEDED
+                ),
+            ).exists()
+        )

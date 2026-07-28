@@ -4,6 +4,7 @@ from common.exceptions.modules.identity import (
     EmailAlreadyRegistered,
 )
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -13,6 +14,7 @@ User = get_user_model()
 
 class EmailRegistrationAPITests(APITestCase):
     def setUp(self):
+        cache.clear()
         self.url = reverse("identity:email-registration")
 
     @patch(

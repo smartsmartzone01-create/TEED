@@ -74,15 +74,17 @@ An email verification challenge stores:
 Plain codes must never be stored. A database check constraint prevents
 `attempt_count` from exceeding `max_attempts`.
 
-The final hardened workflow must prevent concurrent requests from:
+The hardened workflow uses user and challenge row locks to prevent concurrent
+requests from:
 
 - consuming one challenge more than once;
 - incrementing attempts beyond the limit;
 - issuing tokens multiple times from one code;
 - leaving multiple active challenges for one user and purpose.
 
-Row locking or an equivalent atomic database strategy should protect those
-transitions.
+Identity security events record challenge and delivery outcomes using
+non-sensitive reason metadata. Plaintext codes, tokens, email addresses, and
+raw user agents are excluded from event records.
 
 ## Constraints
 

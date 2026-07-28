@@ -72,6 +72,51 @@ def increment_email_verification_attempt(
     return challenge
 
 
+def get_email_verification_challenge_for_update(
+    *,
+    user: User,
+    purpose: str = (EmailVerificationChallenge.Purpose.REGISTRATION),
+) -> EmailVerificationChallenge | None:
+    return (
+        EmailVerificationChallenge.objects.select_for_update()
+        .filter(
+            user=user,
+            purpose=purpose,
+            consumed_at__isnull=True,
+        )
+        .order_by("-created_at")
+        .first()
+    )
+
+
+def get_latest_email_challenge_including_invalidated(
+    *,
+    user: User,
+    purpose: str,
+) -> EmailVerificationChallenge | None:
+    return (
+        EmailVerificationChallenge.all_objects.filter(
+            user=user,
+            purpose=purpose,
+        )
+        .order_by("-created_at")
+        .first()
+    )
+
+
+def count_email_challenges_since(
+    *,
+    user: User,
+    purpose: str,
+    since,
+) -> int:
+    return EmailVerificationChallenge.all_objects.filter(
+        user=user,
+        purpose=purpose,
+        created_at__gte=since,
+    ).count()
+
+
 def consume_email_verification_challenge(
     *,
     challenge: EmailVerificationChallenge,

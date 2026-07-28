@@ -5,6 +5,10 @@ from .email_verification import (
 )
 from .onboarding import complete_onboarding
 from .registration import register_email_user
+from .security_event import (
+    hash_user_agent,
+    record_identity_security_event,
+)
 from .session import (
     issue_token_pair,
     revoke_all_user_sessions,
@@ -21,5 +25,7 @@ __all__ = [
     "login_email_user",
     "revoke_all_user_sessions",
     "revoke_refresh_session",
+    "hash_user_agent",
+    "record_identity_security_event",
     "rotate_refresh_token",
 ]

@@ -176,6 +176,15 @@ Development and tests may use console or in-memory backends. Production must
 use a configured provider and should eventually deliver through a background
 job after the relevant database transaction commits.
 
+Challenge creation schedules the current synchronous provider call with
+`transaction.on_commit`, so delivery cannot occur against rolled-back state.
+`EMAIL_VERIFICATION_RESEND_COOLDOWN_SECONDS` and
+`EMAIL_VERIFICATION_DAILY_LIMIT` control persisted user limits. The
+`EMAIL_VERIFICATION_RESEND_IP_THROTTLE_RATE` and
+`EMAIL_VERIFICATION_RESEND_ACCOUNT_THROTTLE_RATE` settings control shared-cache
+transport throttles. `EMAIL_REGISTRATION_IP_THROTTLE_RATE` limits initial
+verification-email creation per network.
+
 ## Logging
 
 Logging configuration belongs in settings, while reusable formatters and

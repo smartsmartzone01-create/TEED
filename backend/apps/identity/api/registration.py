@@ -7,12 +7,15 @@ from ..serializers import (
     EmailRegistrationSerializer,
 )
 from ..services import register_email_user
+from ..throttles import EmailRegistrationIPThrottle
+from .session_cookies import get_request_session_metadata
 
 
 class EmailRegistrationAPIView(APIView):
     serializer_class = EmailRegistrationSerializer
     permission_classes = [AllowAny]
     authentication_classes = []
+    throttle_classes = [EmailRegistrationIPThrottle]
 
     def post(self, request):
         serializer = EmailRegistrationSerializer(
@@ -24,6 +27,7 @@ class EmailRegistrationAPIView(APIView):
 
         user = register_email_user(
             **serializer.validated_data,
+            **get_request_session_metadata(request),
         )
 
         return SuccessResponse(

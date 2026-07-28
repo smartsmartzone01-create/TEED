@@ -15,6 +15,8 @@ def register_email_user(
     *,
     email: str,
     password: str,
+    ip_address=None,
+    user_agent="",
 ) -> User:
     """
     Register a user with email and password, then issue
@@ -37,6 +39,8 @@ def register_email_user(
 
             issue_email_verification_challenge(
                 user=user,
+                ip_address=ip_address,
+                user_agent=user_agent,
             )
 
     except IntegrityError as exc:

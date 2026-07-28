@@ -7,7 +7,7 @@ from django.contrib.auth import get_user_model
 from django.core import mail
 from django.test import TestCase, override_settings
 
-from ..models import EmailVerificationChallenge
+from ..models import EmailVerificationChallenge, IdentitySecurityEvent
 from ..services import register_email_user
 
 User = get_user_model()
@@ -18,6 +18,8 @@ User = get_user_model()
     EMAIL_VERIFICATION_CODE_LENGTH=6,
     EMAIL_VERIFICATION_TTL_MINUTES=10,
     EMAIL_VERIFICATION_MAX_ATTEMPTS=5,
+    EMAIL_VERIFICATION_RESEND_COOLDOWN_SECONDS=60,
+    EMAIL_VERIFICATION_DAILY_LIMIT=5,
     DEFAULT_FROM_EMAIL="TEED <no-reply@teed.local>",
 )
 class EmailRegistrationServiceTests(TestCase):
@@ -29,10 +31,11 @@ class EmailRegistrationServiceTests(TestCase):
         self,
         generate_code,
     ):
-        user = register_email_user(
-            email="NEW@Example.COM",
-            password="StrongTestPassword123!",
-        )
+        with self.captureOnCommitCallbacks(execute=True):
+            user = register_email_user(
+                email="NEW@Example.COM",
+                password="StrongTestPassword123!",
+            )
 
         self.assertEqual(
             user.email,
@@ -78,19 +81,25 @@ class EmailRegistrationServiceTests(TestCase):
         "apps.identity.services.email_verification.send_mail",
         side_effect=RuntimeError("Email delivery failed."),
     )
-    def test_registration_rolls_back_when_email_fails(
+    def test_delivery_failure_does_not_roll_back_registration(
         self,
         send_email,
     ):
-        with self.assertRaises(RuntimeError):
-            register_email_user(
+        with self.captureOnCommitCallbacks(execute=True):
+            user = register_email_user(
                 email="rollback@example.com",
                 password="StrongTestPassword123!",
             )
 
-        self.assertFalse(
+        self.assertTrue(
             User.objects.filter(
                 email="rollback@example.com",
             ).exists()
         )
-        self.assertFalse(EmailVerificationChallenge.objects.exists())
+        self.assertTrue(EmailVerificationChallenge.objects.filter(user=user).exists())
+        self.assertTrue(
+            IdentitySecurityEvent.objects.filter(
+                user=user,
+                event_type=(IdentitySecurityEvent.EventType.EMAIL_DELIVERY_FAILED),
+            ).exists()
+        )
