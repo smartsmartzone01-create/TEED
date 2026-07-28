@@ -179,10 +179,9 @@ session, queues a password-change notification, and returns
 
 Important failures:
 
-- `400 password_reset_challenge_invalid`;
-- `400 password_reset_challenge_expired`;
+- `400 password_reset_challenge_invalid` (invalid, missing, or expired code);
 - `429 password_reset_attempt_limit_reached`;
-- `400 password_reset_grant_invalid`;
+- `401 password_reset_grant_invalid`;
 - `429` request throttling;
 - `400` field validation errors.
 
