@@ -12,9 +12,7 @@ def issue_token_pair(
     """
 
     if not user.is_active:
-        raise ValueError(
-            "Inactive users cannot receive tokens."
-        )
+        raise ValueError("Inactive users cannot receive tokens.")
 
     refresh = RefreshToken.for_user(user)
 

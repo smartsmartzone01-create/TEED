@@ -1,24 +1,20 @@
+from common.exceptions.modules.identity import (
+    IdentityVerificationRequired,
+    UsernameAlreadyTaken,
+)
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from common.exceptions.modules.identity import (
-    IdentityVerificationRequired,
-    UsernameAlreadyTaken,
-)
-
 from ..services import issue_token_pair
-
 
 User = get_user_model()
 
 
 class OnboardingAPITests(APITestCase):
     def setUp(self):
-        self.url = reverse(
-            "identity:onboarding"
-        )
+        self.url = reverse("identity:onboarding")
         self.user = User.objects.create_user(
             email="onboarding@example.com",
             password="StrongTestPassword123!",
@@ -29,11 +25,7 @@ class OnboardingAPITests(APITestCase):
         )
 
     def authenticate(self):
-        self.client.credentials(
-            HTTP_AUTHORIZATION=(
-                f"Bearer {self.tokens['access']}"
-            )
-        )
+        self.client.credentials(HTTP_AUTHORIZATION=(f"Bearer {self.tokens['access']}"))
 
     def test_complete_onboarding(self):
         self.authenticate()
@@ -72,9 +64,7 @@ class OnboardingAPITests(APITestCase):
 
         self.user.refresh_from_db()
 
-        self.assertTrue(
-            self.user.is_onboarding_complete
-        )
+        self.assertTrue(self.user.is_onboarding_complete)
 
     def test_authentication_is_required(self):
         response = self.client.post(

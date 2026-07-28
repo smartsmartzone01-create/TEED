@@ -1,16 +1,20 @@
 from datetime import timedelta
 from unittest.mock import patch
 
+from common.exceptions.modules.identity import (
+    EmailVerificationAttemptLimitReached,
+    EmailVerificationChallengeNotFound,
+    EmailVerificationCodeExpired,
+    EmailVerificationCodeInvalid,
+)
 from django.contrib.auth import get_user_model
-
-from django.core import mail
-from django.test import TestCase, override_settings
-from django.utils import timezone
-
 from django.contrib.auth.hashers import (
     check_password,
     make_password,
 )
+from django.core import mail
+from django.test import TestCase, override_settings
+from django.utils import timezone
 
 from ..models import EmailVerificationChallenge
 from ..services import (
@@ -18,20 +22,11 @@ from ..services import (
     verify_email_verification_code,
 )
 
-from common.exceptions.modules.identity import (
-    EmailVerificationAttemptLimitReached,
-    EmailVerificationChallengeNotFound,
-    EmailVerificationCodeExpired,
-    EmailVerificationCodeInvalid,
-)
-
 User = get_user_model()
 
 
 @override_settings(
-    EMAIL_BACKEND=(
-        "django.core.mail.backends.locmem.EmailBackend"
-    ),
+    EMAIL_BACKEND=("django.core.mail.backends.locmem.EmailBackend"),
     EMAIL_VERIFICATION_CODE_LENGTH=6,
     EMAIL_VERIFICATION_TTL_MINUTES=10,
     EMAIL_VERIFICATION_MAX_ATTEMPTS=5,
@@ -45,18 +40,15 @@ class EmailVerificationServiceTests(TestCase):
         )
 
     @patch(
-        "apps.identity.services.email_verification."
-        "_generate_verification_code",
+        "apps.identity.services.email_verification._generate_verification_code",
         return_value="123456",
     )
     def test_issue_challenge_hashes_and_emails_code(
         self,
         generate_code,
     ):
-        challenge = (
-            issue_email_verification_challenge(
-                user=self.user,
-            )
+        challenge = issue_email_verification_challenge(
+            user=self.user,
         )
 
         generate_code.assert_called_once_with()
@@ -87,24 +79,19 @@ class EmailVerificationServiceTests(TestCase):
         )
 
     @patch(
-        "apps.identity.services.email_verification."
-        "_generate_verification_code",
+        "apps.identity.services.email_verification._generate_verification_code",
         side_effect=["111111", "222222"],
     )
     def test_new_challenge_invalidates_previous_one(
         self,
         generate_code,
     ):
-        first_challenge = (
-            issue_email_verification_challenge(
-                user=self.user,
-            )
+        first_challenge = issue_email_verification_challenge(
+            user=self.user,
         )
 
-        second_challenge = (
-            issue_email_verification_challenge(
-                user=self.user,
-            )
+        second_challenge = issue_email_verification_challenge(
+            user=self.user,
         )
 
         first_challenge.refresh_from_db()
@@ -123,10 +110,7 @@ class EmailVerificationServiceTests(TestCase):
 
         with self.assertRaisesMessage(
             ValueError,
-            (
-                "An email address is required for "
-                "email verification."
-            ),
+            ("An email address is required for email verification."),
         ):
             issue_email_verification_challenge(
                 user=phone_user,
@@ -140,18 +124,15 @@ class EmailVerificationServiceTests(TestCase):
         )
 
     @patch(
-        "apps.identity.services.email_verification."
-        "_generate_verification_code",
+        "apps.identity.services.email_verification._generate_verification_code",
         return_value="123456",
     )
     def test_valid_code_verifies_user(
         self,
         generate_code,
     ):
-        challenge = (
-            issue_email_verification_challenge(
-                user=self.user,
-            )
+        challenge = issue_email_verification_challenge(
+            user=self.user,
         )
 
         verified_user = verify_email_verification_code(
@@ -162,29 +143,22 @@ class EmailVerificationServiceTests(TestCase):
         challenge.refresh_from_db()
         verified_user.refresh_from_db()
 
-        self.assertTrue(
-            verified_user.is_email_verified
-        )
+        self.assertTrue(verified_user.is_email_verified)
         self.assertTrue(challenge.is_consumed)
 
     @patch(
-        "apps.identity.services.email_verification."
-        "_generate_verification_code",
+        "apps.identity.services.email_verification._generate_verification_code",
         return_value="123456",
     )
     def test_invalid_code_increments_attempt_count(
         self,
         generate_code,
     ):
-        challenge = (
-            issue_email_verification_challenge(
-                user=self.user,
-            )
+        challenge = issue_email_verification_challenge(
+            user=self.user,
         )
 
-        with self.assertRaises(
-            EmailVerificationCodeInvalid
-        ):
+        with self.assertRaises(EmailVerificationCodeInvalid):
             verify_email_verification_code(
                 user=self.user,
                 code="654321",
@@ -197,32 +171,23 @@ class EmailVerificationServiceTests(TestCase):
             1,
         )
         self.user.refresh_from_db()
-        self.assertFalse(
-            self.user.is_email_verified
-        )
+        self.assertFalse(self.user.is_email_verified)
 
     def test_expired_code_is_rejected(self):
         EmailVerificationChallenge.objects.create(
             user=self.user,
             code_digest=make_password("123456"),
-            expires_at=(
-                timezone.now()
-                - timedelta(seconds=1)
-            ),
+            expires_at=(timezone.now() - timedelta(seconds=1)),
         )
 
-        with self.assertRaises(
-            EmailVerificationCodeExpired
-        ):
+        with self.assertRaises(EmailVerificationCodeExpired):
             verify_email_verification_code(
                 user=self.user,
                 code="123456",
             )
 
     def test_missing_challenge_is_rejected(self):
-        with self.assertRaises(
-            EmailVerificationChallengeNotFound
-        ):
+        with self.assertRaises(EmailVerificationChallengeNotFound):
             verify_email_verification_code(
                 user=self.user,
                 code="123456",
@@ -234,18 +199,13 @@ class EmailVerificationServiceTests(TestCase):
         EmailVerificationChallenge.objects.create(
             user=self.user,
             code_digest=make_password("123456"),
-            expires_at=(
-                timezone.now()
-                + timedelta(minutes=10)
-            ),
+            expires_at=(timezone.now() + timedelta(minutes=10)),
             attempt_count=5,
             max_attempts=5,
         )
 
-        with self.assertRaises(
-            EmailVerificationAttemptLimitReached
-        ):
+        with self.assertRaises(EmailVerificationAttemptLimitReached):
             verify_email_verification_code(
                 user=self.user,
                 code="123456",
-            )        
+            )

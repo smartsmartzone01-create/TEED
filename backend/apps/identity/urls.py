@@ -1,14 +1,12 @@
 from django.urls import path
 
-from backend.apps.identity.api.authentication import EmailLoginAPIView
-
 from .api import (
+    EmailLoginAPIView,
     EmailRegistrationAPIView,
     EmailVerificationAPIView,
     EmailVerificationResendAPIView,
-    OnboardingAPIView,  
+    OnboardingAPIView,
 )
-
 
 app_name = "identity"
 
@@ -28,16 +26,6 @@ urlpatterns = [
         EmailVerificationResendAPIView.as_view(),
         name="email-verification-resend",
     ),
-
-    path(
-    "onboarding/",
-    OnboardingAPIView.as_view(),
-    name="onboarding",
-    ),
-
-    path(
-    "login/email/",
-    EmailLoginAPIView.as_view(),
-    name="email-login",
-    ),
+    path("onboarding/", OnboardingAPIView.as_view(), name="onboarding"),
+    path("login/email/", EmailLoginAPIView.as_view(), name="email-login"),
 ]

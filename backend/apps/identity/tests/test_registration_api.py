@@ -1,27 +1,22 @@
 from unittest.mock import patch
 
+from common.exceptions.modules.identity import (
+    EmailAlreadyRegistered,
+)
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
-
-from common.exceptions.modules.identity import (
-    EmailAlreadyRegistered,
-)
-
 
 User = get_user_model()
 
 
 class EmailRegistrationAPITests(APITestCase):
     def setUp(self):
-        self.url = reverse(
-            "identity:email-registration"
-        )
+        self.url = reverse("identity:email-registration")
 
     @patch(
-        "apps.identity.services.email_verification."
-        "_generate_verification_code",
+        "apps.identity.services.email_verification._generate_verification_code",
         return_value="123456",
     )
     def test_register_email_user(self, generate_code):
@@ -29,9 +24,7 @@ class EmailRegistrationAPITests(APITestCase):
             self.url,
             {
                 "email": "USER@Example.COM",
-                "password": (
-                    "StrongTestPassword123!"
-                ),
+                "password": ("StrongTestPassword123!"),
             },
             format="json",
         )
@@ -99,9 +92,7 @@ class EmailRegistrationAPITests(APITestCase):
             self.url,
             {
                 "email": "MEMBER@EXAMPLE.COM",
-                "password": (
-                    "AnotherStrongPassword123!"
-                ),
+                "password": ("AnotherStrongPassword123!"),
             },
             format="json",
         )

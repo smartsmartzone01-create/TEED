@@ -1,11 +1,10 @@
-from django.db import IntegrityError, transaction
-
 from common.exceptions.modules.identity import (
     IdentityVerificationRequired,
     OnboardingAlreadyCompleted,
     PhoneNumberAlreadyRegistered,
     UsernameAlreadyTaken,
 )
+from django.db import IntegrityError, transaction
 
 from ..models import User
 from ..repositories import complete_user_onboarding
@@ -31,10 +30,7 @@ def complete_onboarding(
     if user.is_onboarding_complete:
         raise OnboardingAlreadyCompleted()
 
-    if not (
-        user.is_email_verified
-        or user.is_phone_verified
-    ):
+    if not (user.is_email_verified or user.is_phone_verified):
         raise IdentityVerificationRequired()
 
     if get_user_by_username(
@@ -65,8 +61,6 @@ def complete_onboarding(
         if get_user_by_phone_number(
             phone_number=phone_number,
         ):
-            raise (
-                PhoneNumberAlreadyRegistered()
-            ) from exc
+            raise (PhoneNumberAlreadyRegistered()) from exc
 
         raise

@@ -1,9 +1,8 @@
-from django.contrib.auth import authenticate
-
 from common.exceptions.modules.identity import (
     EmailVerificationRequired,
     InvalidCredentials,
 )
+from django.contrib.auth import authenticate
 
 from .token import issue_token_pair
 
@@ -34,11 +33,7 @@ def login_email_user(
         user=user,
     )
 
-    next_step = (
-        "dashboard"
-        if user.is_onboarding_complete
-        else "complete_onboarding"
-    )
+    next_step = "dashboard" if user.is_onboarding_complete else "complete_onboarding"
 
     return {
         "user": user,

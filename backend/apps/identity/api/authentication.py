@@ -1,7 +1,6 @@
+from common.responses import SuccessResponse
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
-
-from common.responses import SuccessResponse
 
 from ..serializers import EmailLoginSerializer
 from ..services import login_email_user
@@ -30,9 +29,7 @@ class EmailLoginAPIView(APIView):
                 "user_id": str(user.id),
                 "email": user.email,
                 "username": user.username,
-                "is_onboarding_complete": (
-                    user.is_onboarding_complete
-                ),
+                "is_onboarding_complete": (user.is_onboarding_complete),
                 "next_step": result["next_step"],
                 "tokens": result["tokens"],
             },

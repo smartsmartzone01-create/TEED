@@ -8,8 +8,8 @@ from ..selectors import (
     get_user_by_username,
 )
 
-
 User = get_user_model()
+
 
 class UserSelectorTests(TestCase):
     def setUp(self):

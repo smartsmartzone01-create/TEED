@@ -1,6 +1,6 @@
-from ..models import User
-
 from django.utils import timezone
+
+from ..models import User
 
 
 def create_user(
@@ -24,6 +24,7 @@ def create_user(
         **extra_fields,
     )
 
+
 def mark_user_email_verified(
     *,
     user: User,
@@ -41,6 +42,7 @@ def mark_user_email_verified(
     )
 
     return user
+
 
 def complete_user_onboarding(
     *,

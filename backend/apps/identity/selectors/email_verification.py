@@ -7,9 +7,7 @@ from ..models import (
 def get_latest_email_verification_challenge(
     *,
     user: User,
-    purpose: str = (
-        EmailVerificationChallenge.Purpose.REGISTRATION
-    ),
+    purpose: str = (EmailVerificationChallenge.Purpose.REGISTRATION),
 ):
     """
     Return the latest unconsumed verification challenge.

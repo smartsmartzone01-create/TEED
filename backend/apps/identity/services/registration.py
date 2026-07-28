@@ -1,8 +1,7 @@
-from django.db import IntegrityError, transaction
-
 from common.exceptions.modules.identity import (
     EmailAlreadyRegistered,
 )
+from django.db import IntegrityError, transaction
 
 from ..models import User
 from ..repositories import create_user

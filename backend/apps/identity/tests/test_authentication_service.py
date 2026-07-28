@@ -1,3 +1,7 @@
+from common.exceptions.modules.identity import (
+    EmailVerificationRequired,
+    InvalidCredentials,
+)
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.utils import timezone
@@ -5,13 +9,7 @@ from rest_framework_simplejwt.token_blacklist.models import (
     OutstandingToken,
 )
 
-from common.exceptions.modules.identity import (
-    EmailVerificationRequired,
-    InvalidCredentials,
-)
-
 from ..services import login_email_user
-
 
 User = get_user_model()
 
@@ -51,9 +49,7 @@ class EmailAuthenticationServiceTests(TestCase):
         self.user.username = "teedmember"
         self.user.phone_number = "+255712345678"
         self.user.country_code = "TZ"
-        self.user.onboarding_completed_at = (
-            timezone.now()
-        )
+        self.user.onboarding_completed_at = timezone.now()
         self.user.save(
             update_fields=[
                 "username",
@@ -75,9 +71,7 @@ class EmailAuthenticationServiceTests(TestCase):
         )
 
     def test_wrong_password_is_rejected(self):
-        with self.assertRaises(
-            InvalidCredentials
-        ):
+        with self.assertRaises(InvalidCredentials):
             login_email_user(
                 email=self.user.email,
                 password="WrongPassword123!",
@@ -90,9 +84,7 @@ class EmailAuthenticationServiceTests(TestCase):
         )
 
     def test_unknown_email_is_rejected(self):
-        with self.assertRaises(
-            InvalidCredentials
-        ):
+        with self.assertRaises(InvalidCredentials):
             login_email_user(
                 email="unknown@example.com",
                 password="StrongTestPassword123!",
@@ -107,9 +99,7 @@ class EmailAuthenticationServiceTests(TestCase):
             ]
         )
 
-        with self.assertRaises(
-            EmailVerificationRequired
-        ):
+        with self.assertRaises(EmailVerificationRequired):
             login_email_user(
                 email=self.user.email,
                 password="StrongTestPassword123!",

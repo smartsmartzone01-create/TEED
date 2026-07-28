@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from django.db.models import F
 from django.utils import timezone
 
 from ..models import (
@@ -7,16 +8,13 @@ from ..models import (
     User,
 )
 
-from django.db.models import F
 
 def create_email_verification_challenge(
     *,
     user: User,
     code_digest: str,
     expires_at: datetime,
-    purpose: str = (
-        EmailVerificationChallenge.Purpose.REGISTRATION
-    ),
+    purpose: str = (EmailVerificationChallenge.Purpose.REGISTRATION),
     max_attempts: int = 5,
 ) -> EmailVerificationChallenge:
     """
@@ -35,9 +33,7 @@ def create_email_verification_challenge(
 def invalidate_outstanding_email_verification_challenges(
     *,
     user: User,
-    purpose: str = (
-        EmailVerificationChallenge.Purpose.REGISTRATION
-    ),
+    purpose: str = (EmailVerificationChallenge.Purpose.REGISTRATION),
 ) -> int:
     """
     Soft-delete outstanding challenges for this user

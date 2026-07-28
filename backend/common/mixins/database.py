@@ -1,8 +1,7 @@
 from django.db import models
+from django.utils import timezone
 
 from common.database.uuid import generate_uuid
-
-from django.utils import timezone
 
 
 class UUIDMixin(models.Model):
@@ -18,6 +17,7 @@ class UUIDMixin(models.Model):
 
     class Meta:
         abstract = True
+
 
 class TimestampMixin(models.Model):
     """
@@ -35,8 +35,6 @@ class TimestampMixin(models.Model):
 
     class Meta:
         abstract = True
-
-
 
 
 class SoftDeleteMixin(models.Model):
@@ -73,6 +71,7 @@ class SoftDeleteMixin(models.Model):
         self.deleted_at = None
         self.save(update_fields=["is_deleted", "deleted_at"])
 
+
 class AuditMixin(models.Model):
     """
     Provides audit fields for tracking user actions.
@@ -103,5 +102,4 @@ class AuditMixin(models.Model):
     )
 
     class Meta:
-        abstract = True        
-        
+        abstract = True

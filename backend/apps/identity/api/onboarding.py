@@ -1,7 +1,6 @@
+from common.responses import SuccessResponse
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
-
-from common.responses import SuccessResponse
 
 from ..serializers import OnboardingSerializer
 from ..services import complete_onboarding

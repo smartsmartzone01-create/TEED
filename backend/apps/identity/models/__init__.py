@@ -3,7 +3,6 @@ from .email_verification import (
 )
 from .user import User
 
-
 __all__ = [
     "User",
     "EmailVerificationChallenge",

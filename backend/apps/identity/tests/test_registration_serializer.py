@@ -5,16 +5,12 @@ from ..serializers import (
 )
 
 
-class EmailRegistrationSerializerTests(
-    SimpleTestCase
-):
+class EmailRegistrationSerializerTests(SimpleTestCase):
     def test_valid_registration_data(self):
         serializer = EmailRegistrationSerializer(
             data={
                 "email": "USER@Example.COM",
-                "password": (
-                    "StrongTestPassword123!"
-                ),
+                "password": ("StrongTestPassword123!"),
             }
         )
 
@@ -35,9 +31,7 @@ class EmailRegistrationSerializerTests(
         serializer = EmailRegistrationSerializer(
             data={
                 "email": "not-an-email",
-                "password": (
-                    "StrongTestPassword123!"
-                ),
+                "password": ("StrongTestPassword123!"),
             }
         )
 

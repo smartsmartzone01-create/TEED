@@ -1,7 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 
-
 User = get_user_model()
 
 
@@ -54,4 +53,3 @@ class UserManagerTests(TestCase):
         self.assertTrue(user.is_superuser)
         self.assertTrue(user.is_active)
         self.assertTrue(user.is_email_verified)
-

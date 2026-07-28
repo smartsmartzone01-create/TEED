@@ -2,12 +2,15 @@ from .base import *
 
 DEBUG = False
 
+CORS_ALLOWED_ORIGINS = config(
+    "CORS_ALLOWED_ORIGINS",
+    default="",
+    cast=parse_csv,
+)
 
 EMAIL_BACKEND = config(
     "EMAIL_BACKEND",
-    default=(
-        "django.core.mail.backends.smtp.EmailBackend"
-    ),
+    default=("django.core.mail.backends.smtp.EmailBackend"),
 )
 
 EMAIL_HOST = config(

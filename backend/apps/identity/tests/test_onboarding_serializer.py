@@ -28,9 +28,7 @@ class OnboardingSerializerTests(SimpleTestCase):
                     serializer.errors,
                 )
                 self.assertEqual(
-                    serializer.validated_data[
-                        "phone_number"
-                    ],
+                    serializer.validated_data["phone_number"],
                     expected,
                 )
 
@@ -44,9 +42,7 @@ class OnboardingSerializerTests(SimpleTestCase):
         ]
 
         for phone_number in numbers:
-            with self.subTest(
-                phone_number=phone_number
-            ):
+            with self.subTest(phone_number=phone_number):
                 serializer = OnboardingSerializer(
                     data={
                         "username": "teedmember",
@@ -60,9 +56,7 @@ class OnboardingSerializerTests(SimpleTestCase):
                     serializer.errors,
                 )
                 self.assertEqual(
-                    serializer.validated_data[
-                        "phone_number"
-                    ],
+                    serializer.validated_data["phone_number"],
                     "+255712345678",
                 )
 

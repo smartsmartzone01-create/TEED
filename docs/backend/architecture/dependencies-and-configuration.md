@@ -31,6 +31,7 @@ backend/requirements/
 `base.txt` contains runtime dependencies. Environment-specific files should
 include or extend the base set and contain only environment-specific packages.
 Requirement files must be UTF-8 text so standard Python tooling can read them.
+`development.txt` also owns development-only tools such as Ruff.
 
 ## Dependency rules
 
@@ -106,6 +107,21 @@ cross-origin browser access is enabled and placed according to the package's
 documented ordering requirements. Middleware must not be added without a
 specific responsibility.
 
+Development allows only the known local frontend origins. Production reads its
+origin allowlist from `CORS_ALLOWED_ORIGINS`. Credentialed cross-origin requests
+remain disabled while authentication uses bearer tokens rather than cookies.
+
+## Formatting and linting
+
+Ruff is the backend formatter and linter. Its configuration lives in the
+repository-level `pyproject.toml`. Migrations are excluded to keep generated
+history stable, while application and configuration code must pass both:
+
+```powershell
+python -m ruff format backend --check
+python -m ruff check backend
+```
+
 ## REST Framework
 
 The shared DRF configuration owns:
@@ -153,6 +169,8 @@ handlers and levels, not the semantic meaning of log events.
 Before a backend change is accepted:
 
 ```powershell
+python -m ruff format backend --check
+python -m ruff check backend
 python manage.py check
 python manage.py makemigrations --check
 python manage.py test

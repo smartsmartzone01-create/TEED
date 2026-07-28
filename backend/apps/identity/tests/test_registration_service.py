@@ -1,24 +1,20 @@
 from unittest.mock import patch
 
+from common.exceptions.modules.identity import (
+    EmailAlreadyRegistered,
+)
 from django.contrib.auth import get_user_model
 from django.core import mail
 from django.test import TestCase, override_settings
 
-from common.exceptions.modules.identity import (
-    EmailAlreadyRegistered,
-)
-
 from ..models import EmailVerificationChallenge
 from ..services import register_email_user
-
 
 User = get_user_model()
 
 
 @override_settings(
-    EMAIL_BACKEND=(
-        "django.core.mail.backends.locmem.EmailBackend"
-    ),
+    EMAIL_BACKEND=("django.core.mail.backends.locmem.EmailBackend"),
     EMAIL_VERIFICATION_CODE_LENGTH=6,
     EMAIL_VERIFICATION_TTL_MINUTES=10,
     EMAIL_VERIFICATION_MAX_ATTEMPTS=5,
@@ -26,8 +22,7 @@ User = get_user_model()
 )
 class EmailRegistrationServiceTests(TestCase):
     @patch(
-        "apps.identity.services.email_verification."
-        "_generate_verification_code",
+        "apps.identity.services.email_verification._generate_verification_code",
         return_value="123456",
     )
     def test_register_email_user(
@@ -48,9 +43,7 @@ class EmailRegistrationServiceTests(TestCase):
                 "StrongTestPassword123!",
             )
         )
-        self.assertFalse(
-            user.is_email_verified
-        )
+        self.assertFalse(user.is_email_verified)
         self.assertTrue(
             EmailVerificationChallenge.objects.filter(
                 user=user,
@@ -68,9 +61,7 @@ class EmailRegistrationServiceTests(TestCase):
             password="StrongTestPassword123!",
         )
 
-        with self.assertRaises(
-            EmailAlreadyRegistered
-        ):
+        with self.assertRaises(EmailAlreadyRegistered):
             register_email_user(
                 email="MEMBER@EXAMPLE.COM",
                 password="AnotherStrongPassword123!",
@@ -84,11 +75,8 @@ class EmailRegistrationServiceTests(TestCase):
         )
 
     @patch(
-        "apps.identity.services.email_verification."
-        "send_mail",
-        side_effect=RuntimeError(
-            "Email delivery failed."
-        ),
+        "apps.identity.services.email_verification.send_mail",
+        side_effect=RuntimeError("Email delivery failed."),
     )
     def test_registration_rolls_back_when_email_fails(
         self,
@@ -105,6 +93,4 @@ class EmailRegistrationServiceTests(TestCase):
                 email="rollback@example.com",
             ).exists()
         )
-        self.assertFalse(
-            EmailVerificationChallenge.objects.exists()
-        )
+        self.assertFalse(EmailVerificationChallenge.objects.exists())

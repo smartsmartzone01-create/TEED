@@ -1,6 +1,10 @@
 from datetime import timedelta
 from unittest.mock import patch
 
+from common.exceptions.modules.identity import (
+    EmailVerificationChallengeNotFound,
+    EmailVerificationCodeInvalid,
+)
 from django.contrib.auth import get_user_model
 from django.contrib.auth.hashers import make_password
 from django.core import mail
@@ -13,21 +17,13 @@ from rest_framework_simplejwt.token_blacklist.models import (
     OutstandingToken,
 )
 
-from common.exceptions.modules.identity import (
-    EmailVerificationChallengeNotFound,
-    EmailVerificationCodeInvalid,
-)
-
 from ..models import EmailVerificationChallenge
-
 
 User = get_user_model()
 
 
 @override_settings(
-    EMAIL_BACKEND=(
-        "django.core.mail.backends.locmem.EmailBackend"
-    ),
+    EMAIL_BACKEND=("django.core.mail.backends.locmem.EmailBackend"),
     EMAIL_VERIFICATION_CODE_LENGTH=6,
     EMAIL_VERIFICATION_TTL_MINUTES=10,
     EMAIL_VERIFICATION_MAX_ATTEMPTS=5,
@@ -35,12 +31,8 @@ User = get_user_model()
 )
 class EmailVerificationAPITests(APITestCase):
     def setUp(self):
-        self.verify_url = reverse(
-            "identity:email-verification"
-        )
-        self.resend_url = reverse(
-            "identity:email-verification-resend"
-        )
+        self.verify_url = reverse("identity:email-verification")
+        self.resend_url = reverse("identity:email-verification-resend")
         self.user = User.objects.create_user(
             email="verification@example.com",
             password="StrongTestPassword123!",
@@ -51,15 +43,10 @@ class EmailVerificationAPITests(APITestCase):
         *,
         code="123456",
     ):
-        return (
-            EmailVerificationChallenge.objects.create(
-                user=self.user,
-                code_digest=make_password(code),
-                expires_at=(
-                    timezone.now()
-                    + timedelta(minutes=10)
-                ),
-            )
+        return EmailVerificationChallenge.objects.create(
+            user=self.user,
+            code_digest=make_password(code),
+            expires_at=(timezone.now() + timedelta(minutes=10)),
         )
 
     def test_verify_email(self):
@@ -92,18 +79,14 @@ class EmailVerificationAPITests(APITestCase):
             response.data["data"]["tokens"],
         )
         self.assertEqual(
-            response.data["data"]["tokens"][
-                "token_type"
-            ],
+            response.data["data"]["tokens"]["token_type"],
             "Bearer",
         )
 
         self.user.refresh_from_db()
         challenge.refresh_from_db()
 
-        self.assertTrue(
-            self.user.is_email_verified
-        )
+        self.assertTrue(self.user.is_email_verified)
         self.assertTrue(challenge.is_consumed)
 
     def test_invalid_code_uses_teed_error(self):
@@ -150,15 +133,11 @@ class EmailVerificationAPITests(APITestCase):
         )
         self.assertEqual(
             response.data["errors"]["code"],
-            (
-                EmailVerificationChallengeNotFound
-                .default_code
-            ),
+            (EmailVerificationChallengeNotFound.default_code),
         )
 
     @patch(
-        "apps.identity.services.email_verification."
-        "_generate_verification_code",
+        "apps.identity.services.email_verification._generate_verification_code",
         return_value="222222",
     )
     def test_resend_replaces_existing_challenge(
@@ -251,10 +230,7 @@ class EmailVerificationAPITests(APITestCase):
         )
         self.assertEqual(
             second_response.data["errors"]["code"],
-            (
-                EmailVerificationChallengeNotFound
-                .default_code
-            ),
+            (EmailVerificationChallengeNotFound.default_code),
         )
         self.assertEqual(
             OutstandingToken.objects.filter(
