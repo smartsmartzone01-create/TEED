@@ -1,3 +1,4 @@
+from .email_delivery import EmailDelivery
 from .email_verification import (
     EmailVerificationChallenge,
 )
@@ -8,6 +9,7 @@ from .user import User
 
 __all__ = [
     "EmailVerificationChallenge",
+    "EmailDelivery",
     "IdentitySecurityEvent",
     "PasswordResetGrant",
     "User",

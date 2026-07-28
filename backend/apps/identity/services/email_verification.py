@@ -1,4 +1,3 @@
-import logging
 import secrets
 import string
 from datetime import timedelta
@@ -16,11 +15,11 @@ from django.contrib.auth.hashers import (
     check_password,
     make_password,
 )
-from django.core.mail import send_mail
 from django.db import transaction
 from django.utils import timezone
 
 from ..models import (
+    EmailDelivery,
     EmailVerificationChallenge,
     IdentitySecurityEvent,
     User,
@@ -35,9 +34,8 @@ from ..repositories import (
     invalidate_outstanding_email_verification_challenges,
     mark_user_email_verified,
 )
+from .email_delivery import enqueue_email_delivery
 from .security_event import record_identity_security_event
-
-logger = logging.getLogger("teed")
 
 
 def _generate_verification_code() -> str:
@@ -72,76 +70,6 @@ def _record_verification_event(
         device_id=device_id,
         metadata=metadata,
     )
-
-
-def _deliver_verification_email(
-    *,
-    user,
-    challenge,
-    code,
-    ip_address=None,
-    user_agent="",
-    device_id=None,
-):
-    is_password_reset = (
-        challenge.purpose == EmailVerificationChallenge.Purpose.PASSWORD_RESET
-    )
-    subject = (
-        "Reset your TEED password" if is_password_reset else "Verify your TEED email"
-    )
-    purpose_label = "password reset" if is_password_reset else "verification"
-    try:
-        send_mail(
-            subject=subject,
-            message=(
-                f"Your TEED {purpose_label} code is {code}.\n\n"
-                "This code expires in "
-                f"{settings.EMAIL_VERIFICATION_TTL_MINUTES} minutes."
-            ),
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[user.email],
-            fail_silently=False,
-        )
-    except Exception:
-        try:
-            _record_verification_event(
-                user=user,
-                event_type=(IdentitySecurityEvent.EventType.EMAIL_DELIVERY_FAILED),
-                outcome=IdentitySecurityEvent.Outcome.FAILURE,
-                challenge=challenge,
-                ip_address=ip_address,
-                user_agent=user_agent,
-                device_id=device_id,
-                reason="provider_error",
-            )
-        except Exception:
-            logger.exception(
-                "Email delivery failure event could not be recorded.",
-                extra={"challenge_id": str(challenge.id)},
-            )
-        logger.exception(
-            "Email verification delivery failed.",
-            extra={
-                "user_id": str(user.id),
-                "challenge_id": str(challenge.id),
-            },
-        )
-    else:
-        try:
-            _record_verification_event(
-                user=user,
-                event_type=(IdentitySecurityEvent.EventType.EMAIL_DELIVERY_SUCCEEDED),
-                outcome=IdentitySecurityEvent.Outcome.SUCCESS,
-                challenge=challenge,
-                ip_address=ip_address,
-                user_agent=user_agent,
-                device_id=device_id,
-            )
-        except Exception:
-            logger.exception(
-                "Email delivery success event could not be recorded.",
-                extra={"challenge_id": str(challenge.id)},
-            )
 
 
 def issue_email_verification_challenge(
@@ -232,15 +160,17 @@ def issue_email_verification_challenge(
                 user_agent=user_agent,
                 device_id=device_id,
             )
-            transaction.on_commit(
-                lambda: _deliver_verification_email(
-                    user=locked_user,
-                    challenge=challenge,
-                    code=code,
-                    ip_address=ip_address,
-                    user_agent=user_agent,
-                    device_id=device_id,
-                )
+            enqueue_email_delivery(
+                user=locked_user,
+                template=(
+                    EmailDelivery.Template.PASSWORD_RESET
+                    if purpose == EmailVerificationChallenge.Purpose.PASSWORD_RESET
+                    else EmailDelivery.Template.EMAIL_VERIFICATION
+                ),
+                payload={"code": code},
+                idempotency_key=f"challenge:{challenge.id}",
+                challenge_id=challenge.id,
+                expires_at=challenge.expires_at,
             )
 
     if pending_exception is not None:

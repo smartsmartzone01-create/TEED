@@ -159,6 +159,10 @@ python manage.py test --keepdb
 
 Verbose output:
 
+```powershell
+python manage.py test --verbosity 2
+```
+
 ## Security-event retention
 
 Delete audit rows whose configured retention date has passed:
@@ -170,8 +174,21 @@ python manage.py purge_expired_security_events
 Schedule this command in production. Do not remove security events manually
 during normal development.
 
+## Email delivery outbox
+
+Process up to 100 due jobs:
+
 ```powershell
-python manage.py test --verbosity 2
+python manage.py process_email_deliveries --limit 100
+```
+
+In development, jobs also process after the creating transaction commits.
+Production must schedule the command repeatedly until a task worker is added.
+
+Delete sent and dead-letter rows beyond configured retention:
+
+```powershell
+python manage.py purge_email_deliveries
 ```
 
 ## Create an administrator

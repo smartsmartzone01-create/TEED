@@ -7,7 +7,8 @@ from django.contrib.auth import get_user_model
 from django.core import mail
 from django.test import TestCase, override_settings
 
-from ..models import EmailVerificationChallenge, IdentitySecurityEvent
+from ..email import DeliveryProviderError
+from ..models import EmailDelivery, EmailVerificationChallenge
 from ..services import register_email_user
 
 User = get_user_model()
@@ -78,8 +79,8 @@ class EmailRegistrationServiceTests(TestCase):
         )
 
     @patch(
-        "apps.identity.services.email_verification.send_mail",
-        side_effect=RuntimeError("Email delivery failed."),
+        "apps.identity.email.DjangoEmailProvider.send",
+        side_effect=DeliveryProviderError("provider_unavailable"),
     )
     def test_delivery_failure_does_not_roll_back_registration(
         self,
@@ -97,9 +98,6 @@ class EmailRegistrationServiceTests(TestCase):
             ).exists()
         )
         self.assertTrue(EmailVerificationChallenge.objects.filter(user=user).exists())
-        self.assertTrue(
-            IdentitySecurityEvent.objects.filter(
-                user=user,
-                event_type=(IdentitySecurityEvent.EventType.EMAIL_DELIVERY_FAILED),
-            ).exists()
-        )
+        delivery = EmailDelivery.objects.get(user=user)
+        self.assertEqual(delivery.status, EmailDelivery.Status.RETRY)
+        self.assertEqual(delivery.last_error_code, "provider_unavailable")
