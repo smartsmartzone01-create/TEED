@@ -1,12 +1,20 @@
 from common.responses import SuccessResponse
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_protect
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
 
 from ..serializers import EmailLoginSerializer
 from ..services import login_email_user
 from ..throttles import LoginEmailThrottle, LoginIPThrottle
+from .session_cookies import (
+    access_token_response,
+    get_request_session_metadata,
+    set_refresh_cookie,
+)
 
 
+@method_decorator(csrf_protect, name="dispatch")
 class EmailLoginAPIView(APIView):
     serializer_class = EmailLoginSerializer
     permission_classes = [AllowAny]
@@ -26,10 +34,11 @@ class EmailLoginAPIView(APIView):
 
         result = login_email_user(
             **serializer.validated_data,
+            **get_request_session_metadata(request),
         )
         user = result["user"]
 
-        return SuccessResponse(
+        response = SuccessResponse(
             message="Signed in successfully.",
             data={
                 "user_id": str(user.id),
@@ -37,6 +46,14 @@ class EmailLoginAPIView(APIView):
                 "username": user.username,
                 "is_onboarding_complete": (user.is_onboarding_complete),
                 "next_step": result["next_step"],
-                "tokens": result["tokens"],
+                "tokens": access_token_response(
+                    result["tokens"],
+                ),
             },
         )
+        set_refresh_cookie(
+            response,
+            refresh_token=result["tokens"]["refresh"],
+            expires_at=result["tokens"]["refresh_expires_at"],
+        )
+        return response

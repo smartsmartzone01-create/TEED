@@ -7,6 +7,7 @@ from .onboarding import OnboardingSerializer
 from .registration import (
     EmailRegistrationSerializer,
 )
+from .session import CurrentUserSerializer, SessionActionSerializer
 
 __all__ = [
     "EmailLoginSerializer",
@@ -14,4 +15,6 @@ __all__ = [
     "EmailVerificationResendSerializer",
     "EmailVerificationSerializer",
     "OnboardingSerializer",
+    "CurrentUserSerializer",
+    "SessionActionSerializer",
 ]

@@ -4,7 +4,7 @@
 
 `backend/apps/identity/` owns TEED user identity, authentication entry points,
 verification state, onboarding identity fields, credentials, and JWT session
-issuance.
+lifecycle.
 
 ## Current organization
 
@@ -14,29 +14,38 @@ identity/
 │   ├── authentication.py
 │   ├── email_verification.py
 │   ├── onboarding.py
-│   └── registration.py
+│   ├── registration.py
+│   ├── session.py
+│   └── session_cookies.py
+├── authentication/
+│   └── session.py
 ├── managers/
 │   └── user.py
 ├── migrations/
 ├── models/
 │   ├── email_verification.py
+│   ├── session.py
 │   └── user.py
 ├── repositories/
 │   ├── email_verification.py
+│   ├── session.py
 │   └── user.py
 ├── selectors/
 │   ├── email_verification.py
+│   ├── session.py
 │   └── user.py
 ├── serializers/
 │   ├── authentication.py
 │   ├── email_verification.py
 │   ├── onboarding.py
-│   └── registration.py
+│   ├── registration.py
+│   └── session.py
 ├── services/
 │   ├── authentication.py
 │   ├── email_verification.py
 │   ├── onboarding.py
 │   ├── registration.py
+│   ├── session.py
 │   └── token.py
 ├── tests/
 ├── admin.py
@@ -96,7 +105,7 @@ Verification:
 3. reject missing, expired, or attempt-limited challenges;
 4. compare the submitted code with the stored hash;
 5. atomically consume the challenge and mark the email verified;
-6. issue access and refresh tokens;
+6. create a server-side session and issue an access token plus refresh cookie;
 7. return `next_step: complete_onboarding`.
 
 Resend returns a generic success and only issues a challenge for an existing
@@ -132,10 +141,35 @@ POST /api/v1/identity/login/email/
 ```
 
 The service normalizes email, authenticates the password, rejects inactive or
-unverified users, issues a JWT pair, and selects:
+unverified users, creates a server-side session, issues an access token and
+HttpOnly refresh cookie, and selects:
 
 - `complete_onboarding` for an incomplete identity;
 - `dashboard` for a completed identity.
+
+## Session lifecycle
+
+Routes:
+
+```text
+GET  /api/v1/identity/session/csrf/
+POST /api/v1/identity/session/refresh/
+POST /api/v1/identity/session/logout/
+POST /api/v1/identity/session/logout-all/
+GET  /api/v1/identity/session/me/
+```
+
+`UserSession` records the session family, absolute expiry, current refresh JTI,
+revocation state, IP address, and a SHA-256 user-agent fingerprint. Refresh
+tokens rotate under a database row lock. A replayed or stale refresh token
+revokes the family and blacklists its outstanding token. Session-aware JWT
+authentication checks the server-side record on every protected request, so
+logout and security revocation invalidate access immediately.
+
+Browser refresh credentials use a host-only HttpOnly cookie scoped to the
+session routes. The response body contains only the short-lived access token,
+which the frontend must keep in memory. Login, verification, refresh, logout,
+and logout-all require CSRF protection.
 
 ## Error codes
 
@@ -151,12 +185,17 @@ Current stable identity errors include:
 - `phone_number_already_registered`;
 - `onboarding_already_completed`;
 - `invalid_credentials`;
-- `email_verification_required`.
+- `email_verification_required`;
+- `session_invalid`;
+- `session_expired`;
+- `refresh_token_invalid`;
+- `refresh_token_reuse_detected`.
 
 ## Current test boundary
 
-Registration, verification, token, onboarding, user-manager, selector, and
-email-login serializer, service, API, and throttle behavior have tests.
+Registration, verification, token, session lifecycle, onboarding, user-manager,
+selector, email-login serializer, service, API, CSRF, cookie, replay, revocation,
+and throttle behavior have tests.
 
 ## Known stabilization work
 
@@ -164,9 +203,8 @@ Before extending identity further:
 
 - add resend throttling and atomic verification transitions;
 - move delivery out of open database transactions;
-- add refresh, logout, and current-session contracts;
 - implement password recovery;
-- document the final refresh-token transport.
+- add auditable security-event recording.
 
 These remaining items describe pending work; they are not implemented
 behavior.

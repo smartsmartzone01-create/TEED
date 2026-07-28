@@ -67,3 +67,27 @@ class EmailVerificationRequired(TEEDException):
     default_message = "Verify your email address before signing in."
     default_code = "email_verification_required"
     default_status_code = status.HTTP_403_FORBIDDEN
+
+
+class SessionInvalid(TEEDException):
+    default_message = "The session is invalid or no longer active."
+    default_code = "session_invalid"
+    default_status_code = status.HTTP_401_UNAUTHORIZED
+
+
+class SessionExpired(TEEDException):
+    default_message = "The session has expired. Sign in again."
+    default_code = "session_expired"
+    default_status_code = status.HTTP_401_UNAUTHORIZED
+
+
+class RefreshTokenInvalid(TEEDException):
+    default_message = "The refresh credential is invalid."
+    default_code = "refresh_token_invalid"
+    default_status_code = status.HTTP_401_UNAUTHORIZED
+
+
+class RefreshTokenReuseDetected(TEEDException):
+    default_message = "The session was revoked because credential reuse was detected."
+    default_code = "refresh_token_reuse_detected"
+    default_status_code = status.HTTP_401_UNAUTHORIZED

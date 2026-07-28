@@ -1,6 +1,7 @@
 from .email_verification import (
     get_latest_email_verification_challenge,
 )
+from .session import get_active_user_session
 from .user import (
     get_user_by_email,
     get_user_by_id,
@@ -14,4 +15,5 @@ __all__ = [
     "get_user_by_id",
     "get_user_by_phone_number",
     "get_user_by_username",
+    "get_active_user_session",
 ]

@@ -170,13 +170,15 @@ controls.
 - standard responses, exceptions, pagination, and logging foundations;
 - identity registration, email verification, JWT issuing, onboarding, and
   email login layers;
+- server-side session families, rotating HttpOnly refresh cookies, reuse
+  detection, current-session lookup, logout, and logout-all;
 - authenticated-by-default API permissions and per-network/per-account login
   throttling;
 - versioned identity routes and OpenAPI tooling.
 
 ### Required next
 
-- add refresh, logout, current-session, and password-recovery contracts;
+- add password-recovery contracts;
 - harden verification delivery, concurrency, and resend throttling.
 
 ### Planned

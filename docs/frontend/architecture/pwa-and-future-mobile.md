@@ -116,7 +116,7 @@ The backend remains client-agnostic:
 
 Before enabling a service worker:
 
-- identity/session transport is finalized;
+- the finalized identity/session transport is implemented in the frontend;
 - caching policy is reviewed;
 - manifest and icon assets exist;
 - offline and update UX is designed;

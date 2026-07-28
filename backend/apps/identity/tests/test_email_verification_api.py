@@ -5,6 +5,7 @@ from common.exceptions.modules.identity import (
     EmailVerificationChallengeNotFound,
     EmailVerificationCodeInvalid,
 )
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.hashers import make_password
 from django.core import mail
@@ -12,7 +13,7 @@ from django.test import override_settings
 from django.urls import reverse
 from django.utils import timezone
 from rest_framework import status
-from rest_framework.test import APITestCase
+from rest_framework.test import APIClient, APITestCase
 from rest_framework_simplejwt.token_blacklist.models import (
     OutstandingToken,
 )
@@ -74,13 +75,17 @@ class EmailVerificationAPITests(APITestCase):
             "access",
             response.data["data"]["tokens"],
         )
-        self.assertIn(
+        self.assertNotIn(
             "refresh",
             response.data["data"]["tokens"],
         )
         self.assertEqual(
             response.data["data"]["tokens"]["token_type"],
             "Bearer",
+        )
+        self.assertIn(
+            settings.REFRESH_TOKEN_COOKIE_NAME,
+            response.cookies,
         )
 
         self.user.refresh_from_db()
@@ -237,4 +242,31 @@ class EmailVerificationAPITests(APITestCase):
                 user=self.user,
             ).count(),
             1,
+        )
+
+    def test_verification_requires_csrf_before_issuing_browser_session(self):
+        self.create_challenge()
+        csrf_client = APIClient(enforce_csrf_checks=True)
+
+        response = csrf_client.post(
+            self.verify_url,
+            {
+                "email": self.user.email,
+                "code": "123456",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+        self.assertEqual(
+            response.json()["errors"]["code"],
+            "csrf_failed",
+        )
+        self.assertFalse(
+            OutstandingToken.objects.filter(
+                user=self.user,
+            ).exists()
         )

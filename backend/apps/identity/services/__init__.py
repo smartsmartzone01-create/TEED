@@ -5,7 +5,12 @@ from .email_verification import (
 )
 from .onboarding import complete_onboarding
 from .registration import register_email_user
-from .token import issue_token_pair
+from .session import (
+    issue_token_pair,
+    revoke_all_user_sessions,
+    revoke_refresh_session,
+    rotate_refresh_token,
+)
 
 __all__ = [
     "issue_email_verification_challenge",
@@ -14,4 +19,7 @@ __all__ = [
     "verify_email_verification_code",
     "complete_onboarding",
     "login_email_user",
+    "revoke_all_user_sessions",
+    "revoke_refresh_session",
+    "rotate_refresh_token",
 ]

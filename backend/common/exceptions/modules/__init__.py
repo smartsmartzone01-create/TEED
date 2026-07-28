@@ -9,6 +9,10 @@ from .identity import (
     InvalidCredentials,
     OnboardingAlreadyCompleted,
     PhoneNumberAlreadyRegistered,
+    RefreshTokenInvalid,
+    RefreshTokenReuseDetected,
+    SessionExpired,
+    SessionInvalid,
     UsernameAlreadyTaken,
 )
 
@@ -24,4 +28,8 @@ __all__ = [
     "OnboardingAlreadyCompleted",
     "EmailVerificationRequired",
     "InvalidCredentials",
+    "RefreshTokenInvalid",
+    "RefreshTokenReuseDetected",
+    "SessionExpired",
+    "SessionInvalid",
 ]

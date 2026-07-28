@@ -78,6 +78,7 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = "config.urls"
+CSRF_FAILURE_VIEW = "common.exceptions.csrf.csrf_failure"
 
 TEMPLATES = [
     {
@@ -194,7 +195,7 @@ REST_FRAMEWORK = {
     "PAGE_SIZE": 20,
     "EXCEPTION_HANDLER": ("common.exceptions.handlers.teed_exception_handler"),
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        ("rest_framework_simplejwt.authentication.JWTAuthentication"),
+        "apps.identity.authentication.SessionJWTAuthentication",
     ],
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
@@ -245,6 +246,18 @@ SIMPLE_JWT = {
     "USER_ID_FIELD": "id",
     "USER_ID_CLAIM": "user_id",
 }
+
+REFRESH_TOKEN_COOKIE_NAME = config(
+    "REFRESH_TOKEN_COOKIE_NAME",
+    default="teed_refresh",
+)
+REFRESH_TOKEN_COOKIE_PATH = "/api/v1/identity/session/"
+REFRESH_TOKEN_COOKIE_SECURE = False
+REFRESH_TOKEN_COOKIE_SAMESITE = "Lax"
+
+CSRF_COOKIE_HTTPONLY = False
+CSRF_COOKIE_SAMESITE = "Lax"
+
 # Email verification
 
 DEFAULT_FROM_EMAIL = config(

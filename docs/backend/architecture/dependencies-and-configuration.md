@@ -112,7 +112,8 @@ specific responsibility.
 
 Development allows only the known local frontend origins. Production reads its
 origin allowlist from `CORS_ALLOWED_ORIGINS`. Credentialed cross-origin requests
-remain disabled while authentication uses bearer tokens rather than cookies.
+are enabled for the HttpOnly refresh cookie, so wildcard origins must never be
+used. `CSRF_TRUSTED_ORIGINS` must contain only controlled browser origins.
 
 ## Formatting and linting
 
@@ -145,14 +146,17 @@ appropriate.
 Current JWT rules include:
 
 - short-lived access tokens;
-- longer-lived refresh tokens;
-- refresh-token rotation;
+- refresh tokens held only in a path-scoped HttpOnly browser cookie;
+- server-side session-family records with absolute expiry;
+- refresh-token rotation and reuse detection;
 - blacklisting after rotation;
+- immediate access-token invalidation after session revocation;
 - `Bearer` authorization headers;
-- UUID user identifiers in the `user_id` claim.
+- UUID user and session identifiers in token claims.
 
 Production configuration must use secure signing secrets, HTTPS, controlled
-token lifetimes, and tested refresh/logout behavior.
+token lifetimes, and the secure refresh-cookie setting. Browser access tokens
+remain in memory and must not be persisted in web storage.
 
 Production enables HTTPS redirection, secure session and CSRF cookies, a
 one-year HSTS policy with subdomain and preload coverage, a same-origin
