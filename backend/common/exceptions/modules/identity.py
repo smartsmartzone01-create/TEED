@@ -27,6 +27,18 @@ class EmailVerificationAttemptLimitReached(TEEDException):
     default_status_code = status.HTTP_429_TOO_MANY_REQUESTS
 
 
+class EmailVerificationResendCooldown(TEEDException):
+    default_message = "Wait before requesting another verification code."
+    default_code = "email_verification_resend_cooldown"
+    default_status_code = status.HTTP_429_TOO_MANY_REQUESTS
+
+
+class EmailVerificationDailyLimitReached(TEEDException):
+    default_message = "The daily email verification limit has been reached."
+    default_code = "email_verification_daily_limit_reached"
+    default_status_code = status.HTTP_429_TOO_MANY_REQUESTS
+
+
 class EmailAlreadyRegistered(TEEDException):
     default_message = "An account with this email address already exists."
     default_code = "email_already_registered"

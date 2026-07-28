@@ -136,14 +136,22 @@ Changing that behavior requires a deliberate privacy/product decision.
 - Attempts are limited.
 - A successful challenge is consumed.
 - A resend invalidates outstanding challenges.
+- Challenge selection, failed-attempt accounting, consumption, and the verified
+  user transition are serialized under database locks.
+- Resends enforce a user-specific cooldown, rolling daily limit, per-network
+  throttle, and hashed-account throttle.
+- Registration applies a per-network throttle to constrain initial
+  verification-email abuse.
+- Cooldown and daily-limit blocks preserve the generic public success response
+  to prevent account enumeration.
+- Delivery is registered after database commit. Provider failure cannot roll
+  back the user or challenge and is recorded for operational follow-up.
+- Security events store identifiers, outcomes, request metadata, and
+  non-sensitive reason codes without storing email addresses, plaintext codes,
+  tokens, or raw user agents.
 
-Required production hardening:
-
-- resend cooldowns and daily limits;
-- atomic consumption and attempt accounting;
-- delivery after database commit;
-- security event logging without recording the code;
-- abuse monitoring.
+Future production work includes background delivery workers, provider-specific
+retry/dead-letter handling, alerting, and retention policy enforcement.
 
 ## CORS and CSRF
 

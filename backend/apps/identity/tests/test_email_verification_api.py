@@ -9,6 +9,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.hashers import make_password
 from django.core import mail
+from django.core.cache import cache
 from django.test import override_settings
 from django.urls import reverse
 from django.utils import timezone
@@ -28,10 +29,13 @@ User = get_user_model()
     EMAIL_VERIFICATION_CODE_LENGTH=6,
     EMAIL_VERIFICATION_TTL_MINUTES=10,
     EMAIL_VERIFICATION_MAX_ATTEMPTS=5,
+    EMAIL_VERIFICATION_RESEND_COOLDOWN_SECONDS=60,
+    EMAIL_VERIFICATION_DAILY_LIMIT=5,
     DEFAULT_FROM_EMAIL="TEED <no-reply@teed.local>",
 )
 class EmailVerificationAPITests(APITestCase):
     def setUp(self):
+        cache.clear()
         self.verify_url = reverse("identity:email-verification")
         self.resend_url = reverse("identity:email-verification-resend")
         self.user = User.objects.create_user(
@@ -150,14 +154,20 @@ class EmailVerificationAPITests(APITestCase):
         generate_code,
     ):
         old_challenge = self.create_challenge()
-
-        response = self.client.post(
-            self.resend_url,
-            {
-                "email": self.user.email,
-            },
-            format="json",
+        EmailVerificationChallenge.all_objects.filter(
+            id=old_challenge.id,
+        ).update(
+            created_at=(timezone.now() - timedelta(minutes=2)),
         )
+
+        with self.captureOnCommitCallbacks(execute=True):
+            response = self.client.post(
+                self.resend_url,
+                {
+                    "email": self.user.email,
+                },
+                format="json",
+            )
 
         self.assertEqual(
             response.status_code,
@@ -173,6 +183,22 @@ class EmailVerificationAPITests(APITestCase):
             "222222",
             mail.outbox[0].body,
         )
+
+    def test_resend_cooldown_keeps_generic_success(self):
+        self.create_challenge()
+
+        response = self.client.post(
+            self.resend_url,
+            {
+                "email": self.user.email,
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.data["success"])
+        self.assertIsNone(response.data["data"])
+        self.assertEqual(len(mail.outbox), 0)
 
     def test_unknown_resend_uses_generic_success(
         self,

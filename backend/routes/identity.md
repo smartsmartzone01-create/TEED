@@ -62,7 +62,8 @@ Notes:
 
 - email is normalized to lowercase;
 - password is validated and never returned;
-- a verification challenge is issued after user creation.
+- a verification challenge is issued after user creation;
+- per-network registration throttling limits initial verification-email abuse.
 
 ## Verify email
 
@@ -139,6 +140,19 @@ Success: `200 OK`
 ```
 
 The response is intentionally the same when no matching unverified account exists. Frontend code must not use this endpoint to detect whether an account exists.
+
+Resend behavior:
+
+- a user-specific cooldown prevents immediate replacement;
+- a rolling 24-hour limit counts initial and replacement challenges;
+- per-network and hashed-email throttles constrain distributed abuse;
+- cooldown and daily-limit blocks retain the generic `200` response to avoid
+  revealing whether the account exists;
+- a successful resend invalidates the previous challenge;
+- delivery occurs only after the challenge transaction commits.
+
+Repeated callers may receive `429` from the transport throttle regardless of
+whether the submitted email belongs to an account.
 
 ## Complete onboarding
 

@@ -1,5 +1,7 @@
 from common.exceptions.modules.identity import (
     EmailVerificationChallengeNotFound,
+    EmailVerificationDailyLimitReached,
+    EmailVerificationResendCooldown,
 )
 from common.responses import SuccessResponse
 from django.utils.decorators import method_decorator
@@ -16,6 +18,10 @@ from ..services import (
     issue_email_verification_challenge,
     issue_token_pair,
     verify_email_verification_code,
+)
+from ..throttles import (
+    EmailVerificationResendAccountThrottle,
+    EmailVerificationResendIPThrottle,
 )
 from .session_cookies import (
     access_token_response,
@@ -51,6 +57,7 @@ class EmailVerificationAPIView(APIView):
         verify_email_verification_code(
             user=user,
             code=code,
+            **get_request_session_metadata(request),
         )
 
         tokens = issue_token_pair(
@@ -80,6 +87,10 @@ class EmailVerificationResendAPIView(APIView):
     serializer_class = EmailVerificationResendSerializer
     permission_classes = [AllowAny]
     authentication_classes = []
+    throttle_classes = [
+        EmailVerificationResendIPThrottle,
+        EmailVerificationResendAccountThrottle,
+    ]
 
     def post(self, request):
         serializer = EmailVerificationResendSerializer(
@@ -96,9 +107,17 @@ class EmailVerificationResendAPIView(APIView):
         )
 
         if user is not None and not user.is_email_verified:
-            issue_email_verification_challenge(
-                user=user,
-            )
+            try:
+                issue_email_verification_challenge(
+                    user=user,
+                    enforce_resend_limits=True,
+                    **get_request_session_metadata(request),
+                )
+            except (
+                EmailVerificationDailyLimitReached,
+                EmailVerificationResendCooldown,
+            ):
+                pass
 
         return SuccessResponse(
             message=(
