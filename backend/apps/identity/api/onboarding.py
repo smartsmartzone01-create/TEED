@@ -7,6 +7,7 @@ from ..services import complete_onboarding
 
 
 class OnboardingAPIView(APIView):
+    serializer_class = OnboardingSerializer
     permission_classes = [IsAuthenticated]
 
     def post(self, request):

@@ -4,11 +4,17 @@ from rest_framework.views import APIView
 
 from ..serializers import EmailLoginSerializer
 from ..services import login_email_user
+from ..throttles import LoginEmailThrottle, LoginIPThrottle
 
 
 class EmailLoginAPIView(APIView):
+    serializer_class = EmailLoginSerializer
     permission_classes = [AllowAny]
     authentication_classes = []
+    throttle_classes = [
+        LoginIPThrottle,
+        LoginEmailThrottle,
+    ]
 
     def post(self, request):
         serializer = EmailLoginSerializer(

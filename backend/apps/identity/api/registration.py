@@ -10,6 +10,7 @@ from ..services import register_email_user
 
 
 class EmailRegistrationAPIView(APIView):
+    serializer_class = EmailRegistrationSerializer
     permission_classes = [AllowAny]
     authentication_classes = []
 

@@ -9,7 +9,7 @@ TEED Django backend.
 
 The backend currently targets:
 
-- Python 3;
+- Python 3.12 or newer;
 - Django 5.2;
 - Django REST Framework;
 - PostgreSQL through `psycopg2-binary`;
@@ -17,6 +17,7 @@ The backend currently targets:
 - `drf-spectacular` for OpenAPI;
 - `django-filter`;
 - `django-cors-headers`;
+- `django-redis` for the shared production cache;
 - `python-decouple`.
 
 Pinned versions live in:
@@ -87,6 +88,8 @@ Rules:
 - provide safe development defaults only for non-secret values;
 - parse lists, integers, and booleans explicitly;
 - keep production `DEBUG` disabled;
+- require production hosts explicitly instead of silently accepting an empty
+  host list;
 - rotate secrets without changing application code.
 
 ## Django applications
@@ -150,6 +153,17 @@ Current JWT rules include:
 
 Production configuration must use secure signing secrets, HTTPS, controlled
 token lifetimes, and tested refresh/logout behavior.
+
+Production enables HTTPS redirection, secure session and CSRF cookies, a
+one-year HSTS policy with subdomain and preload coverage, a same-origin
+referrer policy, and denial of framing. Do not deploy these production settings
+until every relevant domain and subdomain is permanently HTTPS; HSTS preload
+is deliberately difficult to reverse. Trust `X-Forwarded-Proto` only behind a
+controlled reverse proxy that overwrites the header.
+
+Production requires `REDIS_URL` and uses Redis as Django's shared cache. This
+keeps throttling counters consistent across application workers and instances.
+Development keeps Django's local-memory cache and does not require Redis.
 
 ## Email
 

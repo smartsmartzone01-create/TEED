@@ -205,6 +205,21 @@ REST_FRAMEWORK = {
     "DEFAULT_PARSER_CLASSES": [
         "rest_framework.parsers.JSONParser",
     ],
+    "NUM_PROXIES": config(
+        "THROTTLE_NUM_PROXIES",
+        default=0,
+        cast=int,
+    ),
+    "DEFAULT_THROTTLE_RATES": {
+        "login_ip": config(
+            "LOGIN_IP_THROTTLE_RATE",
+            default="10/minute",
+        ),
+        "login_email": config(
+            "LOGIN_EMAIL_THROTTLE_RATE",
+            default="5/minute",
+        ),
+    },
 }
 
 

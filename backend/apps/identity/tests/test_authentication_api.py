@@ -3,6 +3,7 @@ from common.exceptions.modules.identity import (
     InvalidCredentials,
 )
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
 from django.urls import reverse
 from django.utils import timezone
 from rest_framework import status
@@ -18,6 +19,7 @@ class EmailLoginAPITests(APITestCase):
     password = "StrongTestPassword123!"
 
     def setUp(self):
+        cache.clear()
         self.url = reverse("identity:email-login")
         self.user = User.objects.create_user(
             email="login@example.com",
@@ -121,6 +123,8 @@ class EmailLoginAPITests(APITestCase):
             },
         ]
 
+        observed_errors = []
+
         for payload in requests:
             with self.subTest(email=payload["email"]):
                 response = self.client.post(
@@ -138,6 +142,17 @@ class EmailLoginAPITests(APITestCase):
                     response.data["errors"]["code"],
                     InvalidCredentials.default_code,
                 )
+                observed_errors.append(
+                    {
+                        "message": response.data["message"],
+                        "errors": response.data["errors"],
+                    }
+                )
+
+        self.assertEqual(
+            observed_errors[0],
+            observed_errors[1],
+        )
 
         self.assertFalse(
             OutstandingToken.objects.filter(

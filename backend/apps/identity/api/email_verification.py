@@ -18,6 +18,7 @@ from ..services import (
 
 
 class EmailVerificationAPIView(APIView):
+    serializer_class = EmailVerificationSerializer
     permission_classes = [AllowAny]
     authentication_classes = []
 
@@ -61,6 +62,7 @@ class EmailVerificationAPIView(APIView):
 
 
 class EmailVerificationResendAPIView(APIView):
+    serializer_class = EmailVerificationResendSerializer
     permission_classes = [AllowAny]
     authentication_classes = []
 

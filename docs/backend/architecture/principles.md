@@ -170,14 +170,14 @@ controls.
 - standard responses, exceptions, pagination, and logging foundations;
 - identity registration, email verification, JWT issuing, onboarding, and
   email login layers;
+- authenticated-by-default API permissions and per-network/per-account login
+  throttling;
 - versioned identity routes and OpenAPI tooling.
 
 ### Required next
 
-- stabilize and fully test the identity authentication contract;
-- enforce safer global permissions and configuration;
 - add refresh, logout, current-session, and password-recovery contracts;
-- harden verification delivery, concurrency, and throttling.
+- harden verification delivery, concurrency, and resend throttling.
 
 ### Planned
 
