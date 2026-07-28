@@ -1,16 +1,14 @@
 from django.test import SimpleTestCase
 
-from ..serializers import (
-    EmailRegistrationSerializer,
-)
+from ..serializers import EmailLoginSerializer
 
 
-class EmailRegistrationSerializerTests(SimpleTestCase):
-    def test_valid_registration_data(self):
-        serializer = EmailRegistrationSerializer(
+class EmailLoginSerializerTests(SimpleTestCase):
+    def test_valid_login_data_is_normalized(self):
+        serializer = EmailLoginSerializer(
             data={
-                "email": "USER@Example.COM",
-                "password": ("StrongTestPassword123!"),
+                "email": "  USER@Example.COM  ",
+                "password": "  StrongTestPassword123!  ",
             }
         )
 
@@ -24,14 +22,14 @@ class EmailRegistrationSerializerTests(SimpleTestCase):
         )
         self.assertEqual(
             serializer.validated_data["password"],
-            "StrongTestPassword123!",
+            "  StrongTestPassword123!  ",
         )
 
     def test_invalid_email_is_rejected(self):
-        serializer = EmailRegistrationSerializer(
+        serializer = EmailLoginSerializer(
             data={
                 "email": "not-an-email",
-                "password": ("StrongTestPassword123!"),
+                "password": "StrongTestPassword123!",
             }
         )
 
@@ -41,15 +39,14 @@ class EmailRegistrationSerializerTests(SimpleTestCase):
             serializer.errors,
         )
 
-    def test_weak_password_is_rejected(self):
-        serializer = EmailRegistrationSerializer(
-            data={
-                "email": "user@example.com",
-                "password": "123",
-            }
-        )
+    def test_required_fields_are_enforced(self):
+        serializer = EmailLoginSerializer(data={})
 
         self.assertFalse(serializer.is_valid())
+        self.assertIn(
+            "email",
+            serializer.errors,
+        )
         self.assertIn(
             "password",
             serializer.errors,

@@ -10,7 +10,6 @@ from rest_framework_simplejwt.tokens import (
 
 from ..services import issue_token_pair
 
-
 User = get_user_model()
 
 

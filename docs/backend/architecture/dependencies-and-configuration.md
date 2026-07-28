@@ -9,7 +9,7 @@ TEED Django backend.
 
 The backend currently targets:
 
-- Python 3;
+- Python 3.12 or newer;
 - Django 5.2;
 - Django REST Framework;
 - PostgreSQL through `psycopg2-binary`;
@@ -17,6 +17,7 @@ The backend currently targets:
 - `drf-spectacular` for OpenAPI;
 - `django-filter`;
 - `django-cors-headers`;
+- `django-redis` for the shared production cache;
 - `python-decouple`.
 
 Pinned versions live in:
@@ -31,6 +32,7 @@ backend/requirements/
 `base.txt` contains runtime dependencies. Environment-specific files should
 include or extend the base set and contain only environment-specific packages.
 Requirement files must be UTF-8 text so standard Python tooling can read them.
+`development.txt` also owns development-only tools such as Ruff.
 
 ## Dependency rules
 
@@ -86,6 +88,8 @@ Rules:
 - provide safe development defaults only for non-secret values;
 - parse lists, integers, and booleans explicitly;
 - keep production `DEBUG` disabled;
+- require production hosts explicitly instead of silently accepting an empty
+  host list;
 - rotate secrets without changing application code.
 
 ## Django applications
@@ -105,6 +109,21 @@ Middleware order is security-sensitive. CORS middleware must be installed when
 cross-origin browser access is enabled and placed according to the package's
 documented ordering requirements. Middleware must not be added without a
 specific responsibility.
+
+Development allows only the known local frontend origins. Production reads its
+origin allowlist from `CORS_ALLOWED_ORIGINS`. Credentialed cross-origin requests
+remain disabled while authentication uses bearer tokens rather than cookies.
+
+## Formatting and linting
+
+Ruff is the backend formatter and linter. Its configuration lives in the
+repository-level `pyproject.toml`. Migrations are excluded to keep generated
+history stable, while application and configuration code must pass both:
+
+```powershell
+python -m ruff format backend --check
+python -m ruff check backend
+```
 
 ## REST Framework
 
@@ -135,6 +154,17 @@ Current JWT rules include:
 Production configuration must use secure signing secrets, HTTPS, controlled
 token lifetimes, and tested refresh/logout behavior.
 
+Production enables HTTPS redirection, secure session and CSRF cookies, a
+one-year HSTS policy with subdomain and preload coverage, a same-origin
+referrer policy, and denial of framing. Do not deploy these production settings
+until every relevant domain and subdomain is permanently HTTPS; HSTS preload
+is deliberately difficult to reverse. Trust `X-Forwarded-Proto` only behind a
+controlled reverse proxy that overwrites the header.
+
+Production requires `REDIS_URL` and uses Redis as Django's shared cache. This
+keeps throttling counters consistent across application workers and instances.
+Development keeps Django's local-memory cache and does not require Redis.
+
 ## Email
 
 Verification email currently uses Django's email interface synchronously.
@@ -153,6 +183,8 @@ handlers and levels, not the semantic meaning of log events.
 Before a backend change is accepted:
 
 ```powershell
+python -m ruff format backend --check
+python -m ruff check backend
 python manage.py check
 python manage.py makemigrations --check
 python manage.py test

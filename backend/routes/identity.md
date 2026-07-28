@@ -224,6 +224,7 @@ Important failures:
 
 - `401 invalid_credentials`;
 - `403 email_verification_required`;
+- `429` per-network or per-account login throttle;
 - `400` field validation errors.
 
 ## Standard error shape
@@ -254,6 +255,4 @@ Field validation:
 
 Frontend behavior should branch on HTTP status and stable error codes, then map them to localized English or Swahili messages.
 
-## Known development issue
-
-The intended routes above are present in the identity URL configuration. The current login import in `apps/identity/urls.py` uses an incorrect `backend.apps...` namespace and must be corrected before Django route resolution and the full test suite can run normally.
+The identity URL configuration uses the runtime `apps.identity` namespace.

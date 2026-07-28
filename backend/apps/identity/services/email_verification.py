@@ -2,6 +2,12 @@ import secrets
 import string
 from datetime import timedelta
 
+from common.exceptions.modules.identity import (
+    EmailVerificationAttemptLimitReached,
+    EmailVerificationChallengeNotFound,
+    EmailVerificationCodeExpired,
+    EmailVerificationCodeInvalid,
+)
 from django.conf import settings
 from django.contrib.auth.hashers import (
     check_password,
@@ -10,13 +16,6 @@ from django.contrib.auth.hashers import (
 from django.core.mail import send_mail
 from django.db import transaction
 from django.utils import timezone
-
-from common.exceptions.modules.identity import (
-    EmailVerificationAttemptLimitReached,
-    EmailVerificationChallengeNotFound,
-    EmailVerificationCodeExpired,
-    EmailVerificationCodeInvalid,
-)
 
 from ..models import (
     EmailVerificationChallenge,
@@ -34,29 +33,21 @@ from ..selectors import (
 )
 
 
-
 def _generate_verification_code() -> str:
     """
     Generate a cryptographically secure numeric code.
     """
 
-    code_length = (
-        settings.EMAIL_VERIFICATION_CODE_LENGTH
-    )
+    code_length = settings.EMAIL_VERIFICATION_CODE_LENGTH
 
-    return "".join(
-        secrets.choice(string.digits)
-        for _ in range(code_length)
-    )
+    return "".join(secrets.choice(string.digits) for _ in range(code_length))
 
 
 @transaction.atomic
 def issue_email_verification_challenge(
     *,
     user: User,
-    purpose: str = (
-        EmailVerificationChallenge.Purpose.REGISTRATION
-    ),
+    purpose: str = (EmailVerificationChallenge.Purpose.REGISTRATION),
 ) -> EmailVerificationChallenge:
     """
     Generate, store, and deliver an email-verification
@@ -67,10 +58,7 @@ def issue_email_verification_challenge(
     """
 
     if not user.email:
-        raise ValueError(
-            "An email address is required for "
-            "email verification."
-        )
+        raise ValueError("An email address is required for email verification.")
 
     code = _generate_verification_code()
 
@@ -85,15 +73,9 @@ def issue_email_verification_challenge(
         code_digest=make_password(code),
         expires_at=(
             timezone.now()
-            + timedelta(
-                minutes=(
-                    settings.EMAIL_VERIFICATION_TTL_MINUTES
-                )
-            )
+            + timedelta(minutes=(settings.EMAIL_VERIFICATION_TTL_MINUTES))
         ),
-        max_attempts=(
-            settings.EMAIL_VERIFICATION_MAX_ATTEMPTS
-        ),
+        max_attempts=(settings.EMAIL_VERIFICATION_MAX_ATTEMPTS),
     )
 
     send_mail(
@@ -116,21 +98,16 @@ def verify_email_verification_code(
     *,
     user: User,
     code: str,
-    purpose: str = (
-        EmailVerificationChallenge.Purpose.REGISTRATION
-    ),
+    purpose: str = (EmailVerificationChallenge.Purpose.REGISTRATION),
 ) -> User:
     """
     Verify a submitted code and mark the user's email
     address as verified.
     """
 
-
-    challenge = (
-        get_latest_email_verification_challenge(
-            user=user,
-            purpose=purpose,
-        )
+    challenge = get_latest_email_verification_challenge(
+        user=user,
+        purpose=purpose,
     )
 
     if challenge is None:
@@ -139,29 +116,19 @@ def verify_email_verification_code(
     if challenge.is_expired:
         raise EmailVerificationCodeExpired()
 
-    if (
-        challenge.attempt_count
-        >= challenge.max_attempts
-    ):
+    if challenge.attempt_count >= challenge.max_attempts:
         raise EmailVerificationAttemptLimitReached()
 
     if not check_password(
         code.strip(),
         challenge.code_digest,
     ):
-        challenge = (
-            increment_email_verification_attempt(
-                challenge=challenge,
-            )
+        challenge = increment_email_verification_attempt(
+            challenge=challenge,
         )
 
-        if (
-            challenge.attempt_count
-            >= challenge.max_attempts
-        ):
-            raise (
-                EmailVerificationAttemptLimitReached()
-            )
+        if challenge.attempt_count >= challenge.max_attempts:
+            raise (EmailVerificationAttemptLimitReached())
 
         raise EmailVerificationCodeInvalid()
 

@@ -1,5 +1,3 @@
-from django.db import models
-
 from common.database.managers import AllObjectsManager, BaseManager
 from common.mixins.database import (
     SoftDeleteMixin,

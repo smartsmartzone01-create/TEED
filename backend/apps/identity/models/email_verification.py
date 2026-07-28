@@ -1,8 +1,7 @@
+from common.database.base_model import BaseModel
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
-
-from common.database.base_model import BaseModel
 
 
 class EmailVerificationChallenge(BaseModel):
@@ -50,9 +49,7 @@ class EmailVerificationChallenge(BaseModel):
     )
 
     class Meta:
-        db_table = (
-            "identity_email_verification_challenges"
-        )
+        db_table = "identity_email_verification_challenges"
         ordering = ["-created_at"]
         indexes = [
             models.Index(
@@ -76,11 +73,7 @@ class EmailVerificationChallenge(BaseModel):
         ]
 
     def __str__(self):
-        return (
-            f"{self.user_id}:"
-            f"{self.purpose}:"
-            f"{self.created_at}"
-        )
+        return f"{self.user_id}:{self.purpose}:{self.created_at}"
 
     @property
     def is_expired(self):

@@ -1,13 +1,12 @@
-from django.test import SimpleTestCase
-from rest_framework import status
-from rest_framework.exceptions import ValidationError
-
 from common.exceptions.handlers import (
     teed_exception_handler,
 )
 from common.exceptions.modules.identity import (
     EmailVerificationCodeInvalid,
 )
+from django.test import SimpleTestCase
+from rest_framework import status
+from rest_framework.exceptions import ValidationError
 
 
 class TEEDExceptionHandlerTests(SimpleTestCase):
@@ -27,15 +26,10 @@ class TEEDExceptionHandlerTests(SimpleTestCase):
             response.data,
             {
                 "success": False,
-                "message": (
-                    "The email verification code "
-                    "is invalid."
-                ),
+                "message": ("The email verification code is invalid."),
                 "data": None,
                 "errors": {
-                    "code": (
-                        "email_verification_code_invalid"
-                    ),
+                    "code": ("email_verification_code_invalid"),
                 },
                 "meta": {},
             },
@@ -43,13 +37,7 @@ class TEEDExceptionHandlerTests(SimpleTestCase):
 
     def test_drf_exception_uses_teed_envelope(self):
         response = teed_exception_handler(
-            ValidationError(
-                {
-                    "email": [
-                        "Enter a valid email address."
-                    ]
-                }
-            ),
+            ValidationError({"email": ["Enter a valid email address."]}),
             context={},
         )
 
@@ -57,9 +45,7 @@ class TEEDExceptionHandlerTests(SimpleTestCase):
             response.status_code,
             status.HTTP_400_BAD_REQUEST,
         )
-        self.assertFalse(
-            response.data["success"]
-        )
+        self.assertFalse(response.data["success"])
         self.assertEqual(
             response.data["message"],
             "Request failed.",

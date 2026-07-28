@@ -1,12 +1,11 @@
+from common.database.base_model import BaseModel
+from common.database.managers import AllObjectsManager
 from django.contrib.auth.models import (
     AbstractBaseUser,
     PermissionsMixin,
 )
 from django.db import models
 from django.db.models.functions import Lower
-
-from common.database.base_model import BaseModel
-from common.database.managers import AllObjectsManager
 
 from ..managers import UserManager
 
@@ -109,12 +108,7 @@ class User(
         ]
 
     def __str__(self):
-        return (
-            self.username
-            or self.email
-            or self.phone_number
-            or str(self.id)
-        )
+        return self.username or self.email or self.phone_number or str(self.id)
 
     def get_full_name(self):
         return " ".join(

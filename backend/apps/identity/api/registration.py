@@ -1,8 +1,7 @@
+from common.responses import SuccessResponse
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
-
-from common.responses import SuccessResponse
 
 from ..serializers import (
     EmailRegistrationSerializer,
@@ -11,6 +10,7 @@ from ..services import register_email_user
 
 
 class EmailRegistrationAPIView(APIView):
+    serializer_class = EmailRegistrationSerializer
     permission_classes = [AllowAny]
     authentication_classes = []
 
@@ -27,10 +27,7 @@ class EmailRegistrationAPIView(APIView):
         )
 
         return SuccessResponse(
-            message=(
-                "Registration successful. "
-                "Verify your email to continue."
-            ),
+            message=("Registration successful. Verify your email to continue."),
             data={
                 "user_id": str(user.id),
                 "email": user.email,

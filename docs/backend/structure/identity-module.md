@@ -156,21 +156,17 @@ Current stable identity errors include:
 ## Current test boundary
 
 Registration, verification, token, onboarding, user-manager, selector, and
-authentication-service behavior have tests. Login serializer and API tests are
-the immediate missing layer.
+email-login serializer, service, API, and throttle behavior have tests.
 
 ## Known stabilization work
 
-Before extending identity:
+Before extending identity further:
 
-- correct the login URL import namespace;
-- add login serializer and API tests;
-- run the complete suite;
-- make default permissions safe;
 - add resend throttling and atomic verification transitions;
 - move delivery out of open database transactions;
 - add refresh, logout, and current-session contracts;
 - implement password recovery;
 - document the final refresh-token transport.
 
-These items describe pending work; they are not implemented behavior.
+These remaining items describe pending work; they are not implemented
+behavior.

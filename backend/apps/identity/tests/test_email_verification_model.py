@@ -6,7 +6,6 @@ from django.utils import timezone
 
 from ..models import EmailVerificationChallenge
 
-
 User = get_user_model()
 
 
@@ -21,8 +20,7 @@ class EmailVerificationChallengeTests(TestCase):
         values = {
             "user": self.user,
             "code_digest": "hashed-verification-code",
-            "expires_at": timezone.now()
-            + timedelta(minutes=10),
+            "expires_at": timezone.now() + timedelta(minutes=10),
         }
         values.update(overrides)
 
@@ -39,8 +37,7 @@ class EmailVerificationChallengeTests(TestCase):
 
     def test_expired_challenge_cannot_be_attempted(self):
         challenge = self.create_challenge(
-            expires_at=timezone.now()
-            - timedelta(seconds=1),
+            expires_at=timezone.now() - timedelta(seconds=1),
         )
 
         self.assertTrue(challenge.is_expired)

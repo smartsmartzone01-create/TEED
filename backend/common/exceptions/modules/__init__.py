@@ -1,15 +1,15 @@
 from .identity import (
+    EmailAlreadyRegistered,
     EmailVerificationAttemptLimitReached,
     EmailVerificationChallengeNotFound,
     EmailVerificationCodeExpired,
     EmailVerificationCodeInvalid,
-    EmailAlreadyRegistered,
+    EmailVerificationRequired,
     IdentityVerificationRequired,
+    InvalidCredentials,
+    OnboardingAlreadyCompleted,
     PhoneNumberAlreadyRegistered,
     UsernameAlreadyTaken,
-    OnboardingAlreadyCompleted,
-    InvalidCredentials,
-    EmailVerificationRequired,
 )
 
 __all__ = [
@@ -19,7 +19,7 @@ __all__ = [
     "EmailVerificationCodeInvalid",
     "EmailAlreadyRegistered",
     "IdentityVerificationRequired",
-    "PhoneNumberAlreadyRegistered",     
+    "PhoneNumberAlreadyRegistered",
     "UsernameAlreadyTaken",
     "OnboardingAlreadyCompleted",
     "EmailVerificationRequired",

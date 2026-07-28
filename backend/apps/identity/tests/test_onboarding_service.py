@@ -1,16 +1,14 @@
-from django.contrib.auth import get_user_model
-from django.test import TestCase
-from django.utils import timezone
-
 from common.exceptions.modules.identity import (
     IdentityVerificationRequired,
     OnboardingAlreadyCompleted,
     PhoneNumberAlreadyRegistered,
     UsernameAlreadyTaken,
 )
+from django.contrib.auth import get_user_model
+from django.test import TestCase
+from django.utils import timezone
 
 from ..services import complete_onboarding
-
 
 User = get_user_model()
 
@@ -43,12 +41,8 @@ class OnboardingServiceTests(TestCase):
             user.country_code,
             "TZ",
         )
-        self.assertTrue(
-            user.is_onboarding_complete
-        )
-        self.assertIsNotNone(
-            user.onboarding_completed_at
-        )
+        self.assertTrue(user.is_onboarding_complete)
+        self.assertIsNotNone(user.onboarding_completed_at)
 
     def test_verified_identity_is_required(self):
         self.user.is_email_verified = False
@@ -59,9 +53,7 @@ class OnboardingServiceTests(TestCase):
             ]
         )
 
-        with self.assertRaises(
-            IdentityVerificationRequired
-        ):
+        with self.assertRaises(IdentityVerificationRequired):
             complete_onboarding(
                 user=self.user,
                 username="teedmember",
@@ -76,9 +68,7 @@ class OnboardingServiceTests(TestCase):
             password="StrongTestPassword123!",
         )
 
-        with self.assertRaises(
-            UsernameAlreadyTaken
-        ):
+        with self.assertRaises(UsernameAlreadyTaken):
             complete_onboarding(
                 user=self.user,
                 username="teedmember",
@@ -93,9 +83,7 @@ class OnboardingServiceTests(TestCase):
             password="StrongTestPassword123!",
         )
 
-        with self.assertRaises(
-            PhoneNumberAlreadyRegistered
-        ):
+        with self.assertRaises(PhoneNumberAlreadyRegistered):
             complete_onboarding(
                 user=self.user,
                 username="teedmember",
@@ -109,9 +97,7 @@ class OnboardingServiceTests(TestCase):
         self.user.username = "existingmember"
         self.user.phone_number = "+255712345678"
         self.user.country_code = "TZ"
-        self.user.onboarding_completed_at = (
-            timezone.now()
-        )
+        self.user.onboarding_completed_at = timezone.now()
         self.user.save(
             update_fields=[
                 "username",
@@ -122,9 +108,7 @@ class OnboardingServiceTests(TestCase):
             ]
         )
 
-        with self.assertRaises(
-            OnboardingAlreadyCompleted
-        ):
+        with self.assertRaises(OnboardingAlreadyCompleted):
             complete_onboarding(
                 user=self.user,
                 username="newmember",

@@ -5,9 +5,9 @@ from .email_verification import (
     invalidate_outstanding_email_verification_challenges,
 )
 from .user import (
+    complete_user_onboarding,
     create_user,
     mark_user_email_verified,
-    complete_user_onboarding,
 )
 
 __all__ = [

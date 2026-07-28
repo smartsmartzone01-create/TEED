@@ -2,7 +2,6 @@ import re
 
 from rest_framework import serializers
 
-
 COUNTRY_PHONE_RULES = {
     "TZ": {
         "name": "Tanzania",
@@ -27,8 +26,7 @@ class OnboardingSerializer(serializers.Serializer):
         regex=r"^[A-Za-z0-9_]{3,30}$",
         error_messages={
             "invalid": (
-                "Username must contain 3 to 30 "
-                "letters, numbers, or underscores."
+                "Username must contain 3 to 30 letters, numbers, or underscores."
             ),
         },
     )
@@ -66,26 +64,19 @@ class OnboardingSerializer(serializers.Serializer):
         if phone_number.startswith("+"):
             expected_prefix = f"+{calling_code}"
 
-            if not phone_number.startswith(
-                expected_prefix
-            ):
+            if not phone_number.startswith(expected_prefix):
                 raise serializers.ValidationError(
                     {
                         "phone_number": (
-                            "The phone number does not "
-                            "match the selected country."
+                            "The phone number does not match the selected country."
                         )
                     }
                 )
 
-            national_number = phone_number[
-                len(expected_prefix):
-            ]
+            national_number = phone_number[len(expected_prefix) :]
 
         elif phone_number.startswith(calling_code):
-            national_number = phone_number[
-                len(calling_code):
-            ]
+            national_number = phone_number[len(calling_code) :]
 
         elif phone_number.startswith("0"):
             national_number = phone_number[1:]
@@ -98,16 +89,9 @@ class OnboardingSerializer(serializers.Serializer):
             national_number,
         ):
             raise serializers.ValidationError(
-                {
-                    "phone_number": (
-                        f"Enter a valid phone number "
-                        f"for {rule['name']}."
-                    )
-                }
+                {"phone_number": (f"Enter a valid phone number for {rule['name']}.")}
             )
 
-        attrs["phone_number"] = (
-            f"+{calling_code}{national_number}"
-        )
+        attrs["phone_number"] = f"+{calling_code}{national_number}"
 
         return attrs

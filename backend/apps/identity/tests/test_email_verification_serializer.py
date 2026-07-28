@@ -6,9 +6,7 @@ from ..serializers import (
 )
 
 
-class EmailVerificationSerializerTests(
-    SimpleTestCase
-):
+class EmailVerificationSerializerTests(SimpleTestCase):
     def test_valid_verification_data(self):
         serializer = EmailVerificationSerializer(
             data={
@@ -59,12 +57,10 @@ class EmailVerificationSerializerTests(
         )
 
     def test_resend_email_is_normalized(self):
-        serializer = (
-            EmailVerificationResendSerializer(
-                data={
-                    "email": "USER@Example.COM",
-                }
-            )
+        serializer = EmailVerificationResendSerializer(
+            data={
+                "email": "USER@Example.COM",
+            }
         )
 
         self.assertTrue(

@@ -1,16 +1,15 @@
-from rest_framework.permissions import AllowAny
-from rest_framework.views import APIView
-
 from common.exceptions.modules.identity import (
     EmailVerificationChallengeNotFound,
 )
 from common.responses import SuccessResponse
+from rest_framework.permissions import AllowAny
+from rest_framework.views import APIView
 
+from ..selectors import get_user_by_email
 from ..serializers import (
     EmailVerificationResendSerializer,
     EmailVerificationSerializer,
 )
-from ..selectors import get_user_by_email
 from ..services import (
     issue_email_verification_challenge,
     issue_token_pair,
@@ -19,6 +18,7 @@ from ..services import (
 
 
 class EmailVerificationAPIView(APIView):
+    serializer_class = EmailVerificationSerializer
     permission_classes = [AllowAny]
     authentication_classes = []
 
@@ -62,14 +62,13 @@ class EmailVerificationAPIView(APIView):
 
 
 class EmailVerificationResendAPIView(APIView):
+    serializer_class = EmailVerificationResendSerializer
     permission_classes = [AllowAny]
     authentication_classes = []
 
     def post(self, request):
-        serializer = (
-            EmailVerificationResendSerializer(
-                data=request.data,
-            )
+        serializer = EmailVerificationResendSerializer(
+            data=request.data,
         )
         serializer.is_valid(
             raise_exception=True,
@@ -81,10 +80,7 @@ class EmailVerificationResendAPIView(APIView):
             email=email,
         )
 
-        if (
-            user is not None
-            and not user.is_email_verified
-        ):
+        if user is not None and not user.is_email_verified:
             issue_email_verification_challenge(
                 user=user,
             )

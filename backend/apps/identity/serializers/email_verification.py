@@ -2,9 +2,7 @@ from django.conf import settings
 from rest_framework import serializers
 
 
-class EmailVerificationSerializer(
-    serializers.Serializer
-):
+class EmailVerificationSerializer(serializers.Serializer):
     email = serializers.EmailField(
         max_length=254,
     )
@@ -16,10 +14,7 @@ class EmailVerificationSerializer(
         ),
         trim_whitespace=True,
         error_messages={
-            "invalid": (
-                "Enter a valid numeric verification "
-                "code."
-            ),
+            "invalid": ("Enter a valid numeric verification code."),
         },
     )
 
@@ -27,9 +22,7 @@ class EmailVerificationSerializer(
         return value.strip().lower()
 
 
-class EmailVerificationResendSerializer(
-    serializers.Serializer
-):
+class EmailVerificationResendSerializer(serializers.Serializer):
     email = serializers.EmailField(
         max_length=254,
     )

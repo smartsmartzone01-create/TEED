@@ -1,3 +1,4 @@
+from .authentication import EmailLoginSerializer
 from .email_verification import (
     EmailVerificationResendSerializer,
     EmailVerificationSerializer,
@@ -6,8 +7,6 @@ from .onboarding import OnboardingSerializer
 from .registration import (
     EmailRegistrationSerializer,
 )
-
-from .authentication import EmailLoginSerializer
 
 __all__ = [
     "EmailLoginSerializer",

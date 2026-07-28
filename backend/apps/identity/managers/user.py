@@ -10,8 +10,12 @@ class UserManager(BaseUserManager):
     use_in_migrations = True
 
     def get_queryset(self):
-        return super().get_queryset().filter(
-            is_deleted=False,
+        return (
+            super()
+            .get_queryset()
+            .filter(
+                is_deleted=False,
+            )
         )
 
     def _create_user(
@@ -23,16 +27,10 @@ class UserManager(BaseUserManager):
         **extra_fields,
     ):
         if not email and not phone_number:
-            raise ValueError(
-                "An email address or phone number is required."
-            )
+            raise ValueError("An email address or phone number is required.")
 
         if email:
-            email = (
-                self.normalize_email(email)
-                .strip()
-                .lower()
-            )
+            email = self.normalize_email(email).strip().lower()
 
         if phone_number:
             phone_number = phone_number.strip()
@@ -76,9 +74,7 @@ class UserManager(BaseUserManager):
         **extra_fields,
     ):
         if not email:
-            raise ValueError(
-                "A superuser must have an email address."
-            )
+            raise ValueError("A superuser must have an email address.")
 
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
@@ -89,14 +85,10 @@ class UserManager(BaseUserManager):
         )
 
         if extra_fields.get("is_staff") is not True:
-            raise ValueError(
-                "A superuser must have is_staff=True."
-            )
+            raise ValueError("A superuser must have is_staff=True.")
 
         if extra_fields.get("is_superuser") is not True:
-            raise ValueError(
-                "A superuser must have is_superuser=True."
-            )
+            raise ValueError("A superuser must have is_superuser=True.")
 
         return self._create_user(
             email=email,

@@ -99,6 +99,21 @@ incorrect password. Resend returns a generic success whether or not the
 account exists. Similar anti-enumeration behavior should apply to password
 recovery.
 
+Login applies two independent throttles:
+
+- a per-network limit to reduce concentrated abuse;
+- a per-account limit keyed by a hash of the normalized email address.
+
+The defaults are configured through `LOGIN_IP_THROTTLE_RATE` and
+`LOGIN_EMAIL_THROTTLE_RATE`. Development uses Django's local-memory cache;
+production uses the required shared Redis cache so every application instance
+enforces the same counters.
+
+`THROTTLE_NUM_PROXIES` defaults to `0`, which ignores forwarded client-IP
+headers and uses the direct peer address. Set it to the exact number of trusted
+reverse proxies only when the deployment network guarantees that clients
+cannot bypass those proxies.
+
 Registration may return a conflict for an existing account because the product
 contract currently treats duplicate registration as an explicit conflict.
 Changing that behavior requires a deliberate privacy/product decision.
@@ -114,7 +129,6 @@ Changing that behavior requires a deliberate privacy/product decision.
 
 Required production hardening:
 
-- per-account and per-network throttling;
 - resend cooldowns and daily limits;
 - atomic consumption and attempt accounting;
 - delivery after database commit;

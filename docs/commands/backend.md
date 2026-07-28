@@ -59,6 +59,27 @@ python manage.py check --deploy --settings=config.settings.production
 
 The production command requires valid production-like environment variables.
 
+## Formatting and linting
+
+Run these commands from the repository root:
+
+```powershell
+python -m ruff format backend
+python -m ruff check backend
+```
+
+Apply safe import and lint fixes:
+
+```powershell
+python -m ruff check backend --fix
+```
+
+Verify formatting without changing files:
+
+```powershell
+python -m ruff format backend --check
+```
+
 ## Migrations
 
 Show migration state:
@@ -206,6 +227,10 @@ $env:DJANGO_SETTINGS_MODULE
 ## Standard backend verification
 
 ```powershell
+cd C:\Users\smart\OneDrive\Desktop\TEED
+python -m ruff format backend --check
+python -m ruff check backend
+cd .\backend
 python manage.py check
 python manage.py makemigrations --check --dry-run
 python manage.py test

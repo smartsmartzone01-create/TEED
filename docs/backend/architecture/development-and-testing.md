@@ -12,6 +12,10 @@ Backend work proceeds in small, reviewable bricks:
 6. review the diff and documentation;
 7. commit one intentional unit of work.
 
+Mechanical repository-wide formatting belongs in a dedicated brick and pull
+request. Do not combine it with behavior changes unless the formatter is being
+introduced for the first time and the combined scope is explicitly agreed.
+
 ## Definition of done
 
 A backend change is complete when:
@@ -67,9 +71,8 @@ Implemented tests currently cover:
 - email verification model, serializer, service, and API;
 - token service;
 - onboarding serializer, service, and API;
-- email authentication service.
+- email authentication serializer, service, API, and throttles.
 
-The next missing identity coverage is the login serializer and login API.
 Refresh, logout, current-session, and password-recovery tests will accompany
 those future contracts.
 
@@ -137,4 +140,5 @@ CI must use the same commands developers can run locally.
 - Are errors stable and non-sensitive?
 - Are tests checking observable outcomes?
 - Is unrelated cleanup excluded?
+- Is formatter-only work isolated from behavior changes?
 - Does the documentation still describe reality?
