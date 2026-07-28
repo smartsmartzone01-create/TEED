@@ -100,7 +100,7 @@ Success: `200 OK`
     "tokens": {
       "access": "access-token",
       "token_type": "Bearer",
-      "expires_in": 300
+      "expires_in": 900
     }
   }
 }
@@ -165,11 +165,26 @@ The UI uses three internal steps:
 2. verify with `{"email": "user@example.com", "code": "123456"}`;
 3. confirm with matching `new_password` and `new_password_confirm`.
 
-The request route always returns the same success message. A successful code
-verification sets a short-lived, single-use HttpOnly cookie scoped only to the
-password-reset routes. The confirm route never returns or accepts that grant in
-JSON. Success changes the password, consumes the grant, revokes every existing
-session, sends a change notification, and directs the user to sign in again.
+All three calls use `credentials: "include"`. Bootstrap CSRF before the verify
+and confirm calls. The request route always returns the same success message,
+including for unknown or ineligible accounts, so the UI must always show the
+same next step.
+
+A successful verification sets a short-lived, device-bound, single-use
+HttpOnly cookie scoped only to the password-reset routes. The grant is never
+accepted or returned in JSON. Confirmation validates the password using
+Django's configured validators, consumes the grant, revokes every existing
+session, queues a password-change notification, and returns
+`next_step: sign_in`.
+
+Important failures:
+
+- `400 password_reset_challenge_invalid`;
+- `400 password_reset_challenge_expired`;
+- `429 password_reset_attempt_limit_reached`;
+- `400 password_reset_grant_invalid`;
+- `429` request throttling;
+- `400` field validation errors.
 
 ## Complete onboarding
 
@@ -249,7 +264,7 @@ Success: `200 OK`
     "tokens": {
       "access": "access-token",
       "token_type": "Bearer",
-      "expires_in": 300
+      "expires_in": 900
     }
   }
 }
@@ -350,4 +365,26 @@ Field validation:
 
 Frontend behavior should branch on HTTP status and stable error codes, then map them to localized English or Swahili messages.
 
-The identity URL configuration uses the runtime `apps.identity` namespace.
+## Frontend integration boundary
+
+The completed email identity contract supports:
+
+```text
+register → verify_email → complete_onboarding → dashboard
+login ─────────────────→ complete_onboarding or dashboard
+password_reset → verify_reset_code → choose_new_password → sign_in
+```
+
+The frontend keeps the access token in memory only. It must never persist the
+access token, refresh token, reset grant, verification code, or password in web
+storage. All cookie-aware identity requests use `credentials: "include"`.
+Protected calls send `Authorization: Bearer {access_token}`.
+
+The first dashboard integration may be a minimal authenticated destination.
+Profile editing, picture uploads, phone verification, social identity,
+high-assurance account recovery, and user-facing device management do not yet
+have completed APIs and must not be simulated as implemented.
+
+The global URL configuration owns `/api/v1/identity/`; the identity URL
+configuration owns the relative paths and uses the runtime `apps.identity`
+namespace.
