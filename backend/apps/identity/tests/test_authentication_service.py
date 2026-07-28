@@ -90,6 +90,27 @@ class EmailAuthenticationServiceTests(TestCase):
                 password="StrongTestPassword123!",
             )
 
+    def test_inactive_user_is_rejected_without_tokens(self):
+        self.user.is_active = False
+        self.user.save(
+            update_fields=[
+                "is_active",
+                "updated_at",
+            ]
+        )
+
+        with self.assertRaises(InvalidCredentials):
+            login_email_user(
+                email=self.user.email,
+                password="StrongTestPassword123!",
+            )
+
+        self.assertFalse(
+            OutstandingToken.objects.filter(
+                user=self.user,
+            ).exists()
+        )
+
     def test_unverified_email_is_rejected(self):
         self.user.is_email_verified = False
         self.user.save(
