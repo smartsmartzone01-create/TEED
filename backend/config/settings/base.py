@@ -347,3 +347,45 @@ IDENTITY_SECURITY_EVENT_RETENTION_DAYS = config(
     default=180,
     cast=int,
 )
+
+# Durable email delivery outbox
+EMAIL_DELIVERY_PROVIDER = config(
+    "EMAIL_DELIVERY_PROVIDER",
+    default="apps.identity.email.DjangoEmailProvider",
+)
+EMAIL_DELIVERY_ENCRYPTION_KEY = config(
+    "EMAIL_DELIVERY_ENCRYPTION_KEY",
+    default="",
+)
+EMAIL_DELIVERY_MAX_ATTEMPTS = config(
+    "EMAIL_DELIVERY_MAX_ATTEMPTS",
+    default=5,
+    cast=int,
+)
+EMAIL_DELIVERY_RETRY_BASE_SECONDS = config(
+    "EMAIL_DELIVERY_RETRY_BASE_SECONDS",
+    default=60,
+    cast=int,
+)
+EMAIL_DELIVERY_RETRY_MAX_SECONDS = config(
+    "EMAIL_DELIVERY_RETRY_MAX_SECONDS",
+    default=3600,
+    cast=int,
+)
+EMAIL_DELIVERY_LOCK_TIMEOUT_SECONDS = config(
+    "EMAIL_DELIVERY_LOCK_TIMEOUT_SECONDS",
+    default=300,
+    cast=int,
+)
+EMAIL_DELIVERY_TTL_HOURS = config(
+    "EMAIL_DELIVERY_TTL_HOURS",
+    default=24,
+    cast=int,
+)
+EMAIL_DELIVERY_AUTOPROCESS = False
+EMAIL_DELIVERY_REQUIRE_EXPLICIT_KEY = False
+EMAIL_DELIVERY_RETENTION_DAYS = config(
+    "EMAIL_DELIVERY_RETENTION_DAYS",
+    default=30,
+    cast=int,
+)

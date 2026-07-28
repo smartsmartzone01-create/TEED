@@ -206,3 +206,19 @@ python manage.py test
 Production deployment must additionally validate environment variables,
 database connectivity, migrations, static files, security settings, and
 health checks.
+## Email delivery
+
+`cryptography` provides Fernet authenticated encryption for transient outbox
+payloads. Development may derive a local key from `SECRET_KEY`; production must
+set a separately generated `EMAIL_DELIVERY_ENCRYPTION_KEY`.
+
+Generate a key locally without printing other secrets:
+
+```powershell
+python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+```
+
+The provider is selected with `EMAIL_DELIVERY_PROVIDER`. Keep the default
+`DjangoEmailProvider` until the deployed SendGrid adapter is implemented.
+Celery, Redis task transport, SendGrid credentials, and provider webhooks are
+not part of the current outbox package.

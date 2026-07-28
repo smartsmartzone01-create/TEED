@@ -200,6 +200,29 @@ tokens, cookies, authorization headers, or raw email addresses. The device ID
 supports correlation only; it is not proof of identity. Retention is
 configurable and enforced by `purge_expired_security_events`.
 
+## Email delivery outbox
+
+Identity services no longer call an email provider directly. They create an
+`EmailDelivery` row in the same database transaction as the identity change.
+The outbox supports verification codes, password-reset codes, and
+password-change notifications.
+
+Each job has a unique idempotency key, status, attempt count, retry time,
+provider reference, expiry, and terminal error code. Sensitive template
+payloads are encrypted with Fernet and are erased after delivery or dead-letter
+termination. Recipient addresses are resolved from the user only while sending;
+the outbox stores a recipient hash rather than another plaintext copy.
+
+Development processes jobs after transaction commit with Django's configured
+email backend. Production disables automatic processing and runs
+`process_email_deliveries` through the operations scheduler. Temporary failures
+use bounded exponential retry, permanent failures and expired jobs move to
+dead-letter, stale processing locks are reclaimable, and row locking prevents
+two workers from claiming the same job.
+
+`DjangoEmailProvider` is the local provider. SendGrid will implement the same
+provider contract after deployment; no identity service will need refactoring.
+
 ## Error codes
 
 Current stable identity errors include:

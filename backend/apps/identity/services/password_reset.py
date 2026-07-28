@@ -11,11 +11,11 @@ from common.exceptions.modules.identity import (
 )
 from django.conf import settings
 from django.contrib.auth.hashers import check_password
-from django.core.mail import send_mail
 from django.db import transaction
 from django.utils import timezone
 
 from ..models import (
+    EmailDelivery,
     EmailVerificationChallenge,
     IdentitySecurityEvent,
     User,
@@ -30,6 +30,7 @@ from ..repositories import (
     increment_email_verification_attempt,
 )
 from ..selectors import get_user_by_email
+from .email_delivery import enqueue_email_delivery
 from .email_verification import issue_email_verification_challenge
 from .security_event import hash_identity_identifier, record_identity_security_event
 from .session import revoke_all_user_sessions
@@ -236,7 +237,6 @@ def confirm_password_reset(
     device_id=None,
 ) -> None:
     pending_exception = None
-    notification_user = None
     with transaction.atomic():
         grant = get_password_reset_grant_for_update(
             token_digest=_digest_grant(raw_grant)
@@ -257,7 +257,6 @@ def confirm_password_reset(
                 user=user,
                 reason=UserSession.RevokeReason.PASSWORD_RESET,
             )
-            notification_user = user
             record_identity_security_event(
                 user=user,
                 event_type=(IdentitySecurityEvent.EventType.PASSWORD_RESET_SUCCEEDED),
@@ -267,17 +266,12 @@ def confirm_password_reset(
                 user_agent=user_agent,
                 device_id=device_id,
             )
-            transaction.on_commit(
-                lambda: send_mail(
-                    subject="Your TEED password was changed",
-                    message=(
-                        "Your TEED password was changed. If this was not you, "
-                        "start account recovery and contact support immediately."
-                    ),
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    recipient_list=[notification_user.email],
-                    fail_silently=True,
-                )
+            enqueue_email_delivery(
+                user=user,
+                template=EmailDelivery.Template.PASSWORD_CHANGED,
+                payload={},
+                idempotency_key=f"password-changed:{grant.id}",
+                challenge_id=grant.challenge_id,
             )
 
     if pending_exception:

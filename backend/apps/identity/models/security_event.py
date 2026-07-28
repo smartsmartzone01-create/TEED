@@ -28,6 +28,9 @@ class IdentitySecurityEvent(BaseModel):
             "email_delivery_failed",
             "Email delivery failed",
         )
+        EMAIL_DELIVERY_QUEUED = "email_delivery_queued", "Email delivery queued"
+        EMAIL_DELIVERY_RETRY = "email_delivery_retry", "Email delivery retry"
+        EMAIL_DELIVERY_DEAD = "email_delivery_dead", "Email delivery dead letter"
         EMAIL_VERIFICATION_SUCCEEDED = (
             "email_verification_succeeded",
             "Email verification succeeded",

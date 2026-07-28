@@ -167,6 +167,14 @@ a short-lived, device-bound, single-use HttpOnly grant. Confirmation validates
 the new password, revokes all sessions, sends a notification, and requires a
 fresh sign-in.
 
+Email delivery uses a transactional database outbox. Provider calls never run
+inside the identity transaction. Delivery payloads containing short-lived codes
+are encrypted at rest, decrypted only by the worker, and erased on sent or
+dead-letter status. Production requires an independent Fernet key so rotating
+the Django secret does not make queued deliveries unreadable. Idempotency keys,
+row locks, stale-lock recovery, bounded retries, expiry, and terminal retention
+are mandatory provider-independent behavior.
+
 ## CORS and CSRF
 
 CORS controls which browser origins may call the API; it is not authentication.

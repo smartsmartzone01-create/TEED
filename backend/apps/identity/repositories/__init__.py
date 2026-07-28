@@ -1,3 +1,7 @@
+from .email_delivery import (
+    claim_due_email_delivery,
+    create_email_delivery,
+)
 from .email_verification import (
     consume_email_verification_challenge,
     count_email_challenges_since,
@@ -28,6 +32,8 @@ from .user import (
 
 __all__ = [
     "consume_email_verification_challenge",
+    "claim_due_email_delivery",
+    "create_email_delivery",
     "count_email_challenges_since",
     "create_email_verification_challenge",
     "get_email_verification_challenge_for_update",
