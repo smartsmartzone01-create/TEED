@@ -103,3 +103,21 @@ class RefreshTokenReuseDetected(TEEDException):
     default_message = "The session was revoked because credential reuse was detected."
     default_code = "refresh_token_reuse_detected"
     default_status_code = status.HTTP_401_UNAUTHORIZED
+
+
+class PasswordResetChallengeInvalid(TEEDException):
+    default_message = "The password reset code is invalid or has expired."
+    default_code = "password_reset_challenge_invalid"
+    default_status_code = status.HTTP_400_BAD_REQUEST
+
+
+class PasswordResetAttemptLimitReached(TEEDException):
+    default_message = "The password reset attempt limit has been reached."
+    default_code = "password_reset_attempt_limit_reached"
+    default_status_code = status.HTTP_429_TOO_MANY_REQUESTS
+
+
+class PasswordResetGrantInvalid(TEEDException):
+    default_message = "The password reset authorization is invalid or has expired."
+    default_code = "password_reset_grant_invalid"
+    default_status_code = status.HTTP_401_UNAUTHORIZED

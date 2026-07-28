@@ -7,6 +7,9 @@ from .api import (
     EmailVerificationAPIView,
     EmailVerificationResendAPIView,
     OnboardingAPIView,
+    PasswordResetConfirmAPIView,
+    PasswordResetRequestAPIView,
+    PasswordResetVerifyAPIView,
     SessionCSRFAPIView,
     SessionLogoutAllAPIView,
     SessionLogoutAPIView,
@@ -33,6 +36,21 @@ urlpatterns = [
     ),
     path("onboarding/", OnboardingAPIView.as_view(), name="onboarding"),
     path("login/email/", EmailLoginAPIView.as_view(), name="email-login"),
+    path(
+        "password-reset/request/",
+        PasswordResetRequestAPIView.as_view(),
+        name="password-reset-request",
+    ),
+    path(
+        "password-reset/verify/",
+        PasswordResetVerifyAPIView.as_view(),
+        name="password-reset-verify",
+    ),
+    path(
+        "password-reset/confirm/",
+        PasswordResetConfirmAPIView.as_view(),
+        name="password-reset-confirm",
+    ),
     path(
         "session/csrf/",
         SessionCSRFAPIView.as_view(),

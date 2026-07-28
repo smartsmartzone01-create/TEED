@@ -184,6 +184,22 @@ session routes. The response body contains only the short-lived access token,
 which the frontend must keep in memory. Login, verification, refresh, logout,
 and logout-all require CSRF protection.
 
+## Password reset and security audit
+
+Password reset is an internal three-stage flow: request an email code, verify
+the code, then confirm a new password using a short-lived HttpOnly grant cookie.
+The grant is persisted only as a digest, bound to the requesting device
+identifier, and consumed once. Completion revokes all sessions and requires a
+fresh sign-in.
+
+`IdentitySecurityEvent` records login, registration, email-challenge, and
+password-reset outcomes. It may reference a user, session, challenge, and
+server-issued device ID and stores event time, IP, hashed user agent, hashed
+submitted identity, outcome, and safe reason. It never stores passwords, codes,
+tokens, cookies, authorization headers, or raw email addresses. The device ID
+supports correlation only; it is not proof of identity. Retention is
+configurable and enforced by `purge_expired_security_events`.
+
 ## Error codes
 
 Current stable identity errors include:
@@ -216,8 +232,8 @@ and throttle behavior have tests.
 
 Before extending identity further:
 
-- implement password recovery;
 - implement verified-phone ownership;
+- implement high-assurance account recovery separately from password reset;
 - add background provider retry/dead-letter handling and broader audit
   retention policy.
 

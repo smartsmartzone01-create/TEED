@@ -232,6 +232,14 @@ REST_FRAMEWORK = {
             "EMAIL_VERIFICATION_RESEND_ACCOUNT_THROTTLE_RATE",
             default="5/hour",
         ),
+        "password_reset_ip": config(
+            "PASSWORD_RESET_IP_THROTTLE_RATE",
+            default="10/hour",
+        ),
+        "password_reset_account": config(
+            "PASSWORD_RESET_ACCOUNT_THROTTLE_RATE",
+            default="5/hour",
+        ),
     },
 }
 
@@ -266,6 +274,23 @@ REFRESH_TOKEN_COOKIE_NAME = config(
 REFRESH_TOKEN_COOKIE_PATH = "/api/v1/identity/session/"
 REFRESH_TOKEN_COOKIE_SECURE = False
 REFRESH_TOKEN_COOKIE_SAMESITE = "Lax"
+
+DEVICE_COOKIE_NAME = config("DEVICE_COOKIE_NAME", default="teed_device")
+DEVICE_COOKIE_MAX_AGE_SECONDS = config(
+    "DEVICE_COOKIE_MAX_AGE_SECONDS",
+    default=31536000,
+    cast=int,
+)
+DEVICE_COOKIE_SECURE = False
+DEVICE_COOKIE_SAMESITE = "Lax"
+
+PASSWORD_RESET_COOKIE_NAME = config(
+    "PASSWORD_RESET_COOKIE_NAME",
+    default="teed_password_reset",
+)
+PASSWORD_RESET_COOKIE_PATH = "/api/v1/identity/password-reset/"
+PASSWORD_RESET_COOKIE_SECURE = False
+PASSWORD_RESET_COOKIE_SAMESITE = "Lax"
 
 CSRF_COOKIE_HTTPONLY = False
 CSRF_COOKIE_SAMESITE = "Lax"
@@ -304,5 +329,21 @@ EMAIL_VERIFICATION_RESEND_COOLDOWN_SECONDS = config(
 EMAIL_VERIFICATION_DAILY_LIMIT = config(
     "EMAIL_VERIFICATION_DAILY_LIMIT",
     default=5,
+    cast=int,
+)
+
+PASSWORD_RESET_GRANT_TTL_MINUTES = config(
+    "PASSWORD_RESET_GRANT_TTL_MINUTES",
+    default=10,
+    cast=int,
+)
+PASSWORD_RESET_REQUESTS_PER_HOUR = config(
+    "PASSWORD_RESET_REQUESTS_PER_HOUR",
+    default=3,
+    cast=int,
+)
+IDENTITY_SECURITY_EVENT_RETENTION_DAYS = config(
+    "IDENTITY_SECURITY_EVENT_RETENTION_DAYS",
+    default=180,
     cast=int,
 )

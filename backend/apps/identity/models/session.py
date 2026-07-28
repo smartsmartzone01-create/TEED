@@ -15,6 +15,7 @@ class UserSession(BaseModel):
         USER_INACTIVE = "user_inactive", "User inactive"
         EXPIRED = "expired", "Expired"
         SECURITY_EVENT = "security_event", "Security event"
+        PASSWORD_RESET = "password_reset", "Password reset"
 
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -52,6 +53,7 @@ class UserSession(BaseModel):
         null=True,
         blank=True,
     )
+    device_id = models.UUIDField(null=True, blank=True, db_index=True)
     user_agent_hash = models.CharField(
         max_length=64,
         blank=True,

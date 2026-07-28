@@ -7,6 +7,11 @@ from .email_verification import (
     increment_email_verification_attempt,
     invalidate_outstanding_email_verification_challenges,
 )
+from .password_reset import (
+    consume_password_reset_grant,
+    create_password_reset_grant,
+    get_password_reset_grant_for_update,
+)
 from .security_event import create_identity_security_event
 from .session import (
     create_user_session,
@@ -34,6 +39,9 @@ __all__ = [
     "complete_user_onboarding",
     "create_user_session",
     "create_identity_security_event",
+    "consume_password_reset_grant",
+    "create_password_reset_grant",
+    "get_password_reset_grant_for_update",
     "get_active_user_sessions_for_update",
     "get_user_session_for_update",
     "revoke_session",

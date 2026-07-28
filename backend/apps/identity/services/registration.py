@@ -3,12 +3,13 @@ from common.exceptions.modules.identity import (
 )
 from django.db import IntegrityError, transaction
 
-from ..models import User
+from ..models import IdentitySecurityEvent, User
 from ..repositories import create_user
 from ..selectors import get_user_by_email
 from .email_verification import (
     issue_email_verification_challenge,
 )
+from .security_event import record_identity_security_event
 
 
 def register_email_user(
@@ -17,6 +18,7 @@ def register_email_user(
     password: str,
     ip_address=None,
     user_agent="",
+    device_id=None,
 ) -> User:
     """
     Register a user with email and password, then issue
@@ -28,6 +30,16 @@ def register_email_user(
     if get_user_by_email(
         email=normalized_email,
     ):
+        record_identity_security_event(
+            user=get_user_by_email(email=normalized_email),
+            identifier=normalized_email,
+            event_type=IdentitySecurityEvent.EventType.REGISTRATION_FAILED,
+            outcome=IdentitySecurityEvent.Outcome.BLOCKED,
+            ip_address=ip_address,
+            user_agent=user_agent,
+            device_id=device_id,
+            metadata={"reason": "email_already_registered"},
+        )
         raise EmailAlreadyRegistered()
 
     try:
@@ -41,6 +53,16 @@ def register_email_user(
                 user=user,
                 ip_address=ip_address,
                 user_agent=user_agent,
+                device_id=device_id,
+            )
+            record_identity_security_event(
+                user=user,
+                identifier=normalized_email,
+                event_type=(IdentitySecurityEvent.EventType.REGISTRATION_SUCCEEDED),
+                outcome=IdentitySecurityEvent.Outcome.SUCCESS,
+                ip_address=ip_address,
+                user_agent=user_agent,
+                device_id=device_id,
             )
 
     except IntegrityError as exc:

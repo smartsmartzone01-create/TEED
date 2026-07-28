@@ -40,6 +40,7 @@ def issue_token_pair(
     user: User,
     ip_address=None,
     user_agent="",
+    device_id=None,
 ) -> dict:
     """Create a server-side session and its initial rotating token pair."""
 
@@ -50,6 +51,7 @@ def issue_token_pair(
         user=user,
         expires_at=(timezone.now() + settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"]),
         ip_address=ip_address,
+        device_id=device_id,
         user_agent_hash=_hash_user_agent(user_agent),
     )
     tokens = build_session_token_pair(
@@ -171,7 +173,11 @@ def revoke_refresh_session(
 
 
 @transaction.atomic
-def revoke_all_user_sessions(*, user: User) -> int:
+def revoke_all_user_sessions(
+    *,
+    user: User,
+    reason=UserSession.RevokeReason.LOGOUT_ALL,
+) -> int:
     sessions = list(
         get_active_user_sessions_for_update(
             user=user,
@@ -180,7 +186,7 @@ def revoke_all_user_sessions(*, user: User) -> int:
     for session in sessions:
         revoke_session(
             session=session,
-            reason=UserSession.RevokeReason.LOGOUT_ALL,
+            reason=reason,
         )
         if session.current_refresh_jti is not None:
             blacklist_outstanding_refresh(

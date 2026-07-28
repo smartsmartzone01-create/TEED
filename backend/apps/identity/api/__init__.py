@@ -4,6 +4,11 @@ from .email_verification import (
     EmailVerificationResendAPIView,
 )
 from .onboarding import OnboardingAPIView
+from .password_reset import (
+    PasswordResetConfirmAPIView,
+    PasswordResetRequestAPIView,
+    PasswordResetVerifyAPIView,
+)
 from .registration import EmailRegistrationAPIView
 from .session import (
     CurrentSessionAPIView,
@@ -19,6 +24,9 @@ __all__ = [
     "EmailVerificationAPIView",
     "EmailVerificationResendAPIView",
     "OnboardingAPIView",
+    "PasswordResetConfirmAPIView",
+    "PasswordResetRequestAPIView",
+    "PasswordResetVerifyAPIView",
     "CurrentSessionAPIView",
     "SessionCSRFAPIView",
     "SessionLogoutAllAPIView",
