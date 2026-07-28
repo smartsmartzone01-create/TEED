@@ -12,12 +12,8 @@ lifecycle.
 identity/
 ├── api/
 │   ├── authentication.py
-│   ├── email_delivery.py
-│   ├── email_delivery_crypto.py
-│   ├── email_templates.py
 │   ├── email_verification.py
 │   ├── onboarding.py
-│   ├── password_reset.py
 │   ├── password_reset.py
 │   ├── registration.py
 │   ├── session.py
@@ -60,8 +56,12 @@ identity/
 │   └── session.py
 ├── services/
 │   ├── authentication.py
+│   ├── email_delivery.py
+│   ├── email_delivery_crypto.py
+│   ├── email_templates.py
 │   ├── email_verification.py
 │   ├── onboarding.py
+│   ├── password_reset.py
 │   ├── registration.py
 │   ├── security_event.py
 │   ├── session.py
@@ -261,7 +261,10 @@ Current stable identity errors include:
 - `session_invalid`;
 - `session_expired`;
 - `refresh_token_invalid`;
-- `refresh_token_reuse_detected`.
+- `refresh_token_reuse_detected`;
+- `password_reset_challenge_invalid`;
+- `password_reset_attempt_limit_reached`;
+- `password_reset_grant_invalid`.
 
 ## Current test boundary
 
