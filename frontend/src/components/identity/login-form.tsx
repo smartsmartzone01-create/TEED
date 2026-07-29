@@ -170,13 +170,6 @@ function LoginForm() {
           />
         </FormField>
 
-        <Link
-          className="-mt-2 justify-self-end text-sm font-medium text-foreground underline-offset-4 hover:underline"
-          href="/password-reset"
-        >
-          {t("forgotPassword")}
-        </Link>
-
         <Button
           className="w-full"
           loading={isSubmitting}
