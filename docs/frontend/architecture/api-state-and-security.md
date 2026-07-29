@@ -20,6 +20,14 @@ One shared API client should own:
 
 Components and route files must not each invent their own request behavior.
 
+
+In local desktop development, the frontend and backend must use one canonical
+site host: `http://localhost:3000` and `http://localhost:8000`. Do not mix
+`localhost`, `127.0.0.1`, or a LAN address in one browser flow because
+SameSite cookies are site-bound. LAN testing is a separate configuration and
+must use the same LAN hostname for both servers with explicit Next.js, CORS, and
+CSRF allowlists.
+
 ## Services
 
 Services live under `src/services/{module}/` and expose product-oriented
