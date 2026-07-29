@@ -1,0 +1,105 @@
+.shell {
+  position: relative;
+  isolation: isolate;
+  min-height: 100svh;
+  overflow-x: hidden;
+}
+
+.main {
+  position: relative;
+  z-index: 10;
+  display: grid;
+  width: min(
+    calc(
+      100% - var(--page-inline-space) - var(--page-inline-space)
+    ),
+    72rem
+  );
+  min-height: calc(100svh - 5rem);
+  margin-inline: auto;
+  grid-template-columns: minmax(0, 1fr) minmax(20rem, 28rem);
+  align-items: center;
+  gap: clamp(3rem, 8vw, 8rem);
+  padding-block: 2rem 5rem;
+}
+
+.introduction {
+  max-width: 34rem;
+  color: var(--foreground);
+  text-shadow: 0 1px 24px rgb(255 255 255 / 70%);
+}
+
+:global(.dark) .introduction {
+  text-shadow: 0 1px 24px rgb(0 0 0 / 80%);
+}
+
+.eyebrow {
+  margin: 0 0 1rem;
+  color: var(--brand-orange-accessible);
+  font-size: 0.8125rem;
+  font-weight: 750;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.title {
+  margin: 0;
+  font-size: clamp(2.25rem, 5vw, 4.5rem);
+  font-weight: 720;
+  letter-spacing: -0.045em;
+  line-height: 1.02;
+}
+
+.description {
+  max-width: 31rem;
+  margin: 1.25rem 0 0;
+  color: var(--muted-foreground);
+  font-size: clamp(1rem, 1.5vw, 1.125rem);
+  line-height: 1.75;
+}
+
+.formColumn {
+  width: 100%;
+}
+
+.card {
+  width: 100%;
+}
+
+.footer {
+  margin-top: 1rem;
+  text-align: center;
+  color: var(--muted-foreground);
+  font-size: 0.875rem;
+}
+
+@media (max-width: 50rem) {
+  .main {
+    width: min(
+      calc(
+        100% - var(--page-inline-space) - var(--page-inline-space)
+      ),
+      30rem
+    );
+    min-height: calc(100svh - 4.5rem);
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+    padding-block: 1.5rem 3rem;
+  }
+
+  .introduction {
+    display: none;
+  }
+}
+
+@media (max-width: 30rem) {
+  .main {
+    width: 100%;
+    padding: 0.75rem 1rem 2rem;
+  }
+
+  .card {
+    padding: 1.25rem;
+    border-radius: 1rem;
+  }
+}
