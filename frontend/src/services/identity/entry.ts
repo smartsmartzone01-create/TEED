@@ -7,7 +7,10 @@ import {
   resendResponseSchema,
   verificationResponseSchema,
 } from "@/schemas/identity/entry";
-import { requestApi } from "@/services/global/api-client";
+import {
+  ApiClientError,
+  requestApi,
+} from "@/services/global/api-client";
 
 let csrfToken: string | null = null;
 let csrfRequest: Promise<string> | null = null;
@@ -40,6 +43,27 @@ async function initializeCsrf() {
   return csrfRequest;
 }
 
+async function withCsrfRetry<T>(
+  request: (token: string) => Promise<T>,
+) {
+  let token = await initializeCsrf();
+
+  try {
+    return await request(token);
+  } catch (error) {
+    if (
+      !(error instanceof ApiClientError) ||
+      error.details.code !== "csrf_failed"
+    ) {
+      throw error;
+    }
+
+    csrfToken = null;
+    token = await initializeCsrf();
+    return request(token);
+  }
+}
+
 async function registerWithEmail(input: {
   email: string;
   password: string;
@@ -56,30 +80,30 @@ async function loginWithEmail(input: {
   email: string;
   password: string;
 }) {
-  const token = await initializeCsrf();
-
-  return requestApi({
-    body: input,
-    csrfToken: token,
-    method: "POST",
-    path: "/api/v1/identity/login/email/",
-    schema: loginResponseSchema,
-  });
+  return withCsrfRetry((token) =>
+    requestApi({
+      body: input,
+      csrfToken: token,
+      method: "POST",
+      path: "/api/v1/identity/login/email/",
+      schema: loginResponseSchema,
+    }),
+  );
 }
 
 async function verifyEmail(input: {
   code: string;
   email: string;
 }) {
-  const token = await initializeCsrf();
-
-  return requestApi({
-    body: input,
-    csrfToken: token,
-    method: "POST",
-    path: "/api/v1/identity/email-verification/",
-    schema: verificationResponseSchema,
-  });
+  return withCsrfRetry((token) =>
+    requestApi({
+      body: input,
+      csrfToken: token,
+      method: "POST",
+      path: "/api/v1/identity/email-verification/",
+      schema: verificationResponseSchema,
+    }),
+  );
 }
 
 async function resendEmailVerification(email: string) {
@@ -109,25 +133,25 @@ async function completeOnboarding(
 }
 
 async function restoreSession() {
-  const token = await initializeCsrf();
-
-  return requestApi({
-    csrfToken: token,
-    method: "POST",
-    path: "/api/v1/identity/session/refresh/",
-    schema: refreshResponseSchema,
-  });
+  return withCsrfRetry((token) =>
+    requestApi({
+      csrfToken: token,
+      method: "POST",
+      path: "/api/v1/identity/session/refresh/",
+      schema: refreshResponseSchema,
+    }),
+  );
 }
 
 async function logoutCurrentSession() {
-  const token = await initializeCsrf();
-
-  return requestApi({
-    csrfToken: token,
-    method: "POST",
-    path: "/api/v1/identity/session/logout/",
-    schema: resendResponseSchema,
-  });
+  return withCsrfRetry((token) =>
+    requestApi({
+      csrfToken: token,
+      method: "POST",
+      path: "/api/v1/identity/session/logout/",
+      schema: resendResponseSchema,
+    }),
+  );
 }
 
 export {
