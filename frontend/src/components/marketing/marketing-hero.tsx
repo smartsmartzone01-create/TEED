@@ -1,7 +1,7 @@
 import { getTranslations } from "next-intl/server";
 
 import { Button } from "@/components/global/primitives/button";
-import { BrandMark } from "@/components/marketing/brand-mark";
+import { BrandMark } from "@/components/global/brand/brand-mark";
 import { Link } from "@/i18n/navigation";
 
 async function MarketingHero() {

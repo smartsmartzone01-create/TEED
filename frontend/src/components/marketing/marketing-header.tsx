@@ -4,13 +4,13 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { Menu, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 
+import { BrandMark } from "@/components/global/brand/brand-mark";
 import { LanguageSwitcher } from "@/components/global/controls/language-switcher";
 import { ThemeSwitcher } from "@/components/global/controls/theme-switcher";
 import {
   Button,
   buttonVariants,
 } from "@/components/global/primitives/button";
-import { BrandMark } from "@/components/marketing/brand-mark";
 import { MarketingMegaMenu } from "@/components/marketing/marketing-mega-menu";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/global/class-names";
