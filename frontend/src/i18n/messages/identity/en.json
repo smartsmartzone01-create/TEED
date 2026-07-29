@@ -36,7 +36,8 @@
     "logout_failed": "TEED could not securely end your session. Check your connection and try again.",
     "password_reset_challenge_invalid": "That reset code is incorrect or has expired. Request a new code and try again.",
     "password_reset_attempt_limit_reached": "Too many incorrect reset attempts were made. Request a new code later.",
-    "password_reset_grant_invalid": "Your password-reset authorization expired or is no longer valid. Start again."
+    "password_reset_grant_invalid": "Your password-reset authorization expired or is no longer valid. Start again.",
+    "password_reset_password_unchanged": "Choose a password different from your current password."
   },
   "IdentityFoundationPreview": {
     "eyebrow": "Secure access",

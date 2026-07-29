@@ -186,15 +186,18 @@ same next step.
 A successful verification sets a short-lived, device-bound, single-use
 HttpOnly cookie scoped only to the password-reset routes. The grant is never
 accepted or returned in JSON. Confirmation validates the password using
-Django's configured validators, consumes the grant, revokes every existing
-session, queues a password-change notification, and returns
-`next_step: sign_in`.
+Django's configured validators and rejects the account's current password. An
+unchanged-password rejection leaves the grant usable and sessions active so the
+user can retry within the grant lifetime. Successful confirmation consumes the
+grant, revokes every existing session, queues a password-change notification,
+and returns `next_step: sign_in`.
 
 Important failures:
 
 - `400 password_reset_challenge_invalid` (invalid, missing, or expired code);
 - `429 password_reset_attempt_limit_reached`;
 - `401 password_reset_grant_invalid`;
+- `400 password_reset_password_unchanged`;
 - `429` request throttling;
 - `400` field validation errors.
 

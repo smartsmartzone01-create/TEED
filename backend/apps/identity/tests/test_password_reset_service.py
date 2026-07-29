@@ -5,6 +5,7 @@ from uuid import uuid4
 from common.exceptions.modules.identity import (
     PasswordResetChallengeInvalid,
     PasswordResetGrantInvalid,
+    PasswordResetPasswordUnchanged,
 )
 from django.test import TestCase, override_settings
 from django.utils import timezone
@@ -134,6 +135,48 @@ class PasswordResetServiceTests(TestCase):
             UserSession.RevokeReason.PASSWORD_RESET,
         )
         self.assertIsNotNone(PasswordResetGrant.objects.get().consumed_at)
+
+    def test_confirm_rejects_current_password_without_consuming_grant(self):
+        issue_token_pair(user=self.user, device_id=self.device_id)
+        self._request()
+        raw_grant, _ = verify_password_reset_code(
+            email=self.user.email,
+            code="123456",
+            device_id=self.device_id,
+        )
+
+        with self.assertRaises(PasswordResetPasswordUnchanged):
+            confirm_password_reset(
+                raw_grant=raw_grant,
+                new_password="Old-Password-123!",
+                device_id=self.device_id,
+            )
+
+        self.user.refresh_from_db()
+        grant = PasswordResetGrant.objects.get()
+        session = UserSession.objects.get()
+        self.assertTrue(self.user.check_password("Old-Password-123!"))
+        self.assertIsNone(grant.consumed_at)
+        self.assertIsNone(session.revoked_at)
+        self.assertTrue(
+            IdentitySecurityEvent.objects.filter(
+                event_type=IdentitySecurityEvent.EventType.PASSWORD_RESET_FAILED,
+                outcome=IdentitySecurityEvent.Outcome.FAILURE,
+                metadata__reason="password_unchanged",
+            ).exists()
+        )
+
+        confirm_password_reset(
+            raw_grant=raw_grant,
+            new_password="New-Password-456!",
+            device_id=self.device_id,
+        )
+        self.user.refresh_from_db()
+        grant.refresh_from_db()
+        session.refresh_from_db()
+        self.assertTrue(self.user.check_password("New-Password-456!"))
+        self.assertIsNotNone(grant.consumed_at)
+        self.assertIsNotNone(session.revoked_at)
 
     def test_grant_cannot_be_used_from_another_device(self):
         self._request()
