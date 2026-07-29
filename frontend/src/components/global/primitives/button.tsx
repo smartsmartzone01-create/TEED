@@ -68,14 +68,25 @@ function Button({
   variant,
   ...props
 }: ButtonProps) {
-  const Component = asChild ? Slot : "button";
+  const styles = cn(
+    buttonVariants({ size, variant }),
+    className,
+  );
+
+  if (asChild) {
+    return (
+      <Slot className={styles} {...props}>
+        {children}
+      </Slot>
+    );
+  }
 
   return (
-    <Component
+    <button
       aria-busy={loading || undefined}
-      className={cn(buttonVariants({ size, variant }), className)}
-      disabled={asChild ? undefined : disabled || loading}
-      type={asChild ? undefined : (type ?? "button")}
+      className={styles}
+      disabled={disabled || loading}
+      type={type ?? "button"}
       {...props}
     >
       {loading ? (
@@ -85,7 +96,7 @@ function Button({
         />
       ) : null}
       {loading && loadingLabel ? loadingLabel : children}
-    </Component>
+    </button>
   );
 }
 
