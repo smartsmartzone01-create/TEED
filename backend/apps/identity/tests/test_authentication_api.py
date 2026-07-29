@@ -218,13 +218,20 @@ class EmailLoginAPITests(APITestCase):
             status.HTTP_400_BAD_REQUEST,
         )
         self.assertFalse(response.data["success"])
-        self.assertIn(
-            "email",
-            response.data["errors"],
+        self.assertEqual(
+            response.data["errors"]["code"],
+            "validation_error",
         )
-        self.assertIn(
-            "password",
-            response.data["errors"],
+        fields = response.data["errors"]["fields"]
+        self.assertIn("email", fields)
+        self.assertIn("password", fields)
+        self.assertEqual(
+            fields["email"][0]["code"],
+            "invalid",
+        )
+        self.assertEqual(
+            fields["password"][0]["code"],
+            "required",
         )
 
     def test_login_requires_csrf_before_issuing_browser_session(self):

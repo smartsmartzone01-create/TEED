@@ -73,13 +73,20 @@ class EmailRegistrationAPITests(APITestCase):
             status.HTTP_400_BAD_REQUEST,
         )
         self.assertFalse(response.data["success"])
-        self.assertIn(
-            "email",
-            response.data["errors"],
+        self.assertEqual(
+            response.data["errors"]["code"],
+            "validation_error",
+        )
+        fields = response.data["errors"]["fields"]
+        self.assertIn("email", fields)
+        self.assertIn("password", fields)
+        self.assertEqual(
+            fields["email"][0]["code"],
+            "invalid",
         )
         self.assertIn(
-            "password",
-            response.data["errors"],
+            "password_too_short",
+            {error["code"] for error in fields["password"]},
         )
 
     def test_duplicate_email_uses_teed_error(

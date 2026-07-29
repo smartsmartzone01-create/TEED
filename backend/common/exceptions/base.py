@@ -7,7 +7,7 @@ class TEEDException(Exception):
     """
 
     default_message = "An unexpected error occurred."
-    default_code = "internal_error"
+    default_code = "internal_server_error"
     default_status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
 
     def __init__(

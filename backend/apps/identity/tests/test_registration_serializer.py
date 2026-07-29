@@ -54,3 +54,7 @@ class EmailRegistrationSerializerTests(SimpleTestCase):
             "password",
             serializer.errors,
         )
+        self.assertIn(
+            "password_too_short",
+            {error.code for error in serializer.errors["password"]},
+        )

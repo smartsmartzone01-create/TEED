@@ -51,9 +51,33 @@ Failures use:
 }
 ```
 
-Validation failures may contain field keys. Domain exceptions use stable codes
-from `TEEDException` subclasses. Unexpected exceptions are logged internally
-and must not expose stack traces or sensitive internals.
+Domain exceptions use stable codes from `TEEDException` subclasses.
+Validation failures use `validation_error` and preserve each serializer field
+path as structured `{code, message}` entries:
+
+```json
+{
+  "success": false,
+  "message": "Request validation failed.",
+  "errors": {
+    "code": "validation_error",
+    "fields": {
+      "email": [
+        {
+          "code": "invalid",
+          "message": "Enter a valid email address."
+        }
+      ]
+    }
+  }
+}
+```
+
+Frontend behavior branches on the stable codes and maps them to localized UX
+copy. Backend messages remain useful diagnostics and fallbacks but are not the
+localization contract. Unexpected exceptions are logged with their traceback
+and return only `internal_server_error`; stack traces and sensitive internals
+never enter the response.
 
 ## Status conventions
 
