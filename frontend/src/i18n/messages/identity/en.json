@@ -41,5 +41,15 @@
     "submit": "Preview success message",
     "successTitle": "Foundation ready",
     "successMessage": "The global notification system is working."
+  },
+  "IdentityFieldErrors": {
+    "required": "This information is required.",
+    "blank": "This information cannot be empty.",
+    "invalid": "Enter a valid value.",
+    "invalid_email": "Enter a valid email address.",
+    "password_too_short": "Use a longer password.",
+    "password_too_common": "Choose a less common password.",
+    "password_entirely_numeric": "Include letters or symbols in your password.",
+    "password_too_similar": "Choose a password that is less similar to your personal information."
   }
 }
