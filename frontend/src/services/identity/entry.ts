@@ -14,6 +14,9 @@ import {
 
 let csrfToken: string | null = null;
 let csrfRequest: Promise<string> | null = null;
+let sessionRestoreRequest: ReturnType<
+  typeof performSessionRestore
+> | null = null;
 
 async function initializeCsrf() {
   if (csrfToken) {
@@ -132,15 +135,42 @@ async function completeOnboarding(
   });
 }
 
-async function restoreSession() {
-  return withCsrfRetry((token) =>
-    requestApi({
-      csrfToken: token,
-      method: "POST",
-      path: "/api/v1/identity/session/refresh/",
-      schema: refreshResponseSchema,
-    }),
+async function performSessionRestore() {
+  const request = () =>
+    withCsrfRetry((token) =>
+      requestApi({
+        csrfToken: token,
+        method: "POST",
+        path: "/api/v1/identity/session/refresh/",
+        schema: refreshResponseSchema,
+      }),
+    );
+
+  if (
+    typeof navigator !== "undefined" &&
+    navigator.locks
+  ) {
+    return navigator.locks.request(
+      "teed-session-refresh",
+      request,
+    );
+  }
+
+  return request();
+}
+
+function restoreSession() {
+  if (sessionRestoreRequest) {
+    return sessionRestoreRequest;
+  }
+
+  sessionRestoreRequest = performSessionRestore().finally(
+    () => {
+      sessionRestoreRequest = null;
+    },
   );
+
+  return sessionRestoreRequest;
 }
 
 async function logoutCurrentSession() {

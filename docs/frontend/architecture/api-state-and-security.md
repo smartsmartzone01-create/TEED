@@ -2,8 +2,9 @@
 
 ## Status
 
-The shared authenticated-data stack is planned, not yet implemented. This
-document defines the boundaries it must follow.
+The browser identity session foundation is implemented. This document defines
+its current contract and the boundaries future authenticated modules must
+follow.
 
 ## API client responsibility
 
@@ -126,8 +127,16 @@ The browser session contract is finalized:
 - failed refresh settles queued requests and clears authenticated state;
 - logout clears memory state after the backend revokes the session.
 
-Multi-tab logout coordination and server-rendered access remain frontend
-implementation decisions, but they may not weaken this storage contract.
+The implemented provider coordinates same-tab refreshes through one shared
+promise and uses the browser Web Locks API, when available, to serialize refresh
+rotation across tabs. A `BroadcastChannel` session-ended event clears in-memory
+credentials in other open TEED tabs after logout or local invalidation. No token
+or personal data is written into that channel or browser storage.
+
+Logout only clears the browser's authenticated state after the backend confirms
+that the refresh session was revoked. A network failure leaves the visible
+session active and gives the user a retry action; it must not pretend that an
+HttpOnly server credential was removed.
 
 Password-reset verification creates a separate short-lived, device-bound,
 single-use HttpOnly grant cookie. The frontend never reads or stores that grant.
@@ -163,6 +172,21 @@ The initial authenticated dashboard is only an integration destination.
 Profile editing, image uploads, verified-phone flows, social login,
 high-assurance account recovery, and device-management screens remain outside
 the completed API contract.
+
+## Route access decisions
+
+The shared identity access boundary applies these rules after session
+initialization:
+
+| Route category | Unauthenticated | Incomplete onboarding | Complete onboarding |
+| --- | --- | --- | --- |
+| Guest identity | allow | onboarding | dashboard |
+| Onboarding | login | allow | dashboard |
+| Dashboard | login | onboarding | allow |
+
+Pages render a neutral restoration or redirect state until that decision is
+settled, preventing protected or inappropriate content from flashing. These
+redirects are usability controls; backend permissions remain authoritative.
 
 ## Error model
 

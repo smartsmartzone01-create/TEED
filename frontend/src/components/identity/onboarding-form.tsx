@@ -1,7 +1,6 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { LoaderCircle } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useMemo } from "react";
 import { useForm } from "react-hook-form";
@@ -11,7 +10,7 @@ import { FormField } from "@/components/global/primitives/form-field";
 import { Input } from "@/components/global/primitives/input";
 import { Select } from "@/components/global/primitives/select";
 import { useApiErrorMessages } from "@/hooks/global/use-api-error-messages";
-import { Link, useRouter } from "@/i18n/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { firstFieldIssue } from "@/lib/global/api-errors";
 import { useNotification } from "@/providers/global/notification-provider";
 import { useIdentitySession } from "@/providers/identity/identity-session-provider";
@@ -22,12 +21,17 @@ import type { OnboardingFormValues } from "@/types/identity/entry";
 
 function OnboardingForm() {
   const t = useTranslations("Onboarding");
-  const common = useTranslations("IdentityCommon");
   const signupT = useTranslations("Signup");
   const errorsT = useTranslations("IdentityErrors");
   const router = useRouter();
   const { notify } = useNotification();
-  const { accessToken, status, updateUser, user } =
+  const {
+    accessToken,
+    clearSession,
+    refreshAccessToken,
+    updateUser,
+    user,
+  } =
     useIdentitySession();
   const { getErrorMessage, getFieldMessage } =
     useApiErrorMessages();
@@ -61,16 +65,7 @@ function OnboardingForm() {
   });
 
   const onSubmit = handleSubmit(async (values) => {
-    if (status === "initializing") {
-    return (
-      <div className="flex items-center justify-center gap-2 py-8 text-sm text-muted-foreground">
-        <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />
-        {common("restoringSession")}
-      </div>
-    );
-  }
-
-  if (!accessToken || !user) {
+    if (!accessToken || !user) {
       notify({
         message: t("sessionRequired"),
         tone: "error",
@@ -78,15 +73,36 @@ function OnboardingForm() {
       return;
     }
 
-    try {
-      const response = await completeOnboarding(
+    const submitOnboarding = (token: string) =>
+      completeOnboarding(
         {
           country_code: values.countryCode,
           phone_number: values.phoneNumber,
           username: values.username,
         },
-        accessToken,
+        token,
       );
+
+    try {
+      let response;
+
+      try {
+        response = await submitOnboarding(accessToken);
+      } catch (error) {
+        if (
+          !(error instanceof ApiClientError) ||
+          error.details.kind !== "unauthenticated"
+        ) {
+          throw error;
+        }
+
+        const refreshedAccessToken =
+          await refreshAccessToken();
+        response = await submitOnboarding(
+          refreshedAccessToken,
+        );
+      }
+
       const data = response.data;
 
       if (!data) {
@@ -107,6 +123,16 @@ function OnboardingForm() {
       router.push("/dashboard");
     } catch (error) {
       if (error instanceof ApiClientError) {
+        if (error.details.kind === "unauthenticated") {
+          clearSession();
+          notify({
+            message: getErrorMessage(error.details),
+            tone: "error",
+          });
+          router.replace("/login");
+          return;
+        }
+
         const usernameIssue = firstFieldIssue(
           error.details.fieldErrors,
           "username",
@@ -151,19 +177,6 @@ function OnboardingForm() {
       });
     }
   });
-
-  if (!accessToken || !user) {
-    return (
-      <div className="text-center">
-        <p className="text-sm leading-6 text-muted-foreground">
-          {t("sessionRequired")}
-        </p>
-        <Button asChild className="mt-5" size="large">
-          <Link href="/login">{signupT("login")}</Link>
-        </Button>
-      </div>
-    );
-  }
 
   return (
     <>

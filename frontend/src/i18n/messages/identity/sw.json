@@ -4,7 +4,8 @@
     "hidePassword": "Ficha nenosiri",
     "required": "Inahitajika",
     "tryAgain": "Jaribu tena",
-    "restoringSession": "Kipindi chako salama kinarejeshwa…"
+    "restoringSession": "Kipindi chako salama kinarejeshwa…",
+    "redirecting": "Tunakupeleka sehemu sahihi…"
   },
   "IdentityErrors": {
     "network_error": "Hatukuweza kuunganisha na TEED. Angalia muunganisho wako kisha ujaribu tena.",
@@ -31,7 +32,8 @@
     "csrf_failed": "Muda wa ombi lako salama umeisha. TEED imelisasisha; tafadhali jaribu tena.",
     "email_verification_not_found": "Hakuna nambari ya uthibitishaji inayotumika. Omba nambari mpya.",
     "email_verification_resend_cooldown": "Tafadhali subiri kabla ya kuomba nambari nyingine ya uthibitishaji.",
-    "email_verification_daily_limit_reached": "Umeomba nambari nyingi sana leo. Jaribu tena baadaye."
+    "email_verification_daily_limit_reached": "Umeomba nambari nyingi sana leo. Jaribu tena baadaye.",
+    "logout_failed": "TEED haikuweza kufunga kipindi chako kwa usalama. Angalia muunganisho wako kisha ujaribu tena."
   },
   "IdentityFoundationPreview": {
     "eyebrow": "Ufikiaji salama",

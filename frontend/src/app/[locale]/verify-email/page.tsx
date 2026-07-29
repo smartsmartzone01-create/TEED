@@ -1,6 +1,7 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 
 import { EmailVerificationForm } from "@/components/identity/email-verification-form";
+import { IdentityAccessBoundary } from "@/components/identity/identity-access-boundary";
 import { IdentityLayout } from "@/components/identity/identity-layout";
 
 type VerifyEmailPageProps = {
@@ -30,10 +31,12 @@ export default async function VerifyEmailPage({
       eyebrow={t("eyebrow")}
       title={t("title")}
     >
-      <EmailVerificationForm
-        initialCooldown={sent}
-        initialEmail={email}
-      />
+      <IdentityAccessBoundary access="guest">
+        <EmailVerificationForm
+          initialCooldown={sent}
+          initialEmail={email}
+        />
+      </IdentityAccessBoundary>
     </IdentityLayout>
   );
 }
