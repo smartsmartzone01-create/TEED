@@ -1,0 +1,31 @@
+{
+  "IdentityCommon": {
+    "showPassword": "Onyesha nenosiri",
+    "hidePassword": "Ficha nenosiri",
+    "required": "Inahitajika",
+    "tryAgain": "Jaribu tena"
+  },
+  "IdentityErrors": {
+    "network_error": "Hatukuweza kuunganisha na TEED. Angalia muunganisho wako kisha ujaribu tena.",
+    "request_cancelled": "Ombi limesitishwa.",
+    "invalid_server_response": "TEED imepokea jibu lisilo sahihi kutoka kwa seva. Tafadhali jaribu tena.",
+    "validation_error": "Kagua taarifa zilizoonyeshwa kisha ujaribu tena.",
+    "invalid_credentials": "Barua pepe au nenosiri si sahihi.",
+    "email_already_registered": "Akaunti tayari inatumia barua pepe hii. Ingia au badilisha nenosiri.",
+    "email_verification_required": "Thibitisha barua pepe yako kabla ya kuingia.",
+    "email_verification_code_invalid": "Nambari ya uthibitishaji si sahihi. Ikague kisha ujaribu tena.",
+    "email_verification_code_expired": "Nambari ya uthibitishaji imekwisha muda. Omba nambari mpya.",
+    "email_verification_attempt_limit_reached": "Majaribio mengi yasiyo sahihi yamefanyika. Omba nambari mpya ya uthibitishaji.",
+    "identity_verification_required": "Thibitisha utambulisho wako kabla ya kuendelea.",
+    "username_already_taken": "Jina hilo la mtumiaji tayari linatumika. Chagua jina jingine.",
+    "phone_number_already_registered": "Nambari hiyo ya simu tayari imeunganishwa na akaunti.",
+    "onboarding_already_completed": "Usanidi wa wasifu wako tayari umekamilika.",
+    "not_authenticated": "Kipindi chako kimeisha. Ingia ili kuendelea.",
+    "session_invalid": "Kipindi chako si halali tena. Ingia upya.",
+    "session_expired": "Muda wa kipindi chako umeisha. Ingia upya.",
+    "refresh_token_invalid": "Kipindi chako hakikuweza kurejeshwa. Ingia upya.",
+    "refresh_token_reuse_detected": "TEED imegundua kipindi kisicho salama. Ingia upya ili kulinda akaunti yako.",
+    "internal_server_error": "TEED imepata tatizo lisilotarajiwa. Tafadhali jaribu tena.",
+    "unexpected_error": "Tatizo limetokea. Tafadhali jaribu tena."
+  }
+}
