@@ -100,7 +100,7 @@ Success: `200 OK`
     "tokens": {
       "access": "access-token",
       "token_type": "Bearer",
-      "expires_in": 900
+      "expires_in": 300
     }
   }
 }
@@ -263,7 +263,7 @@ Success: `200 OK`
     "tokens": {
       "access": "access-token",
       "token_type": "Bearer",
-      "expires_in": 900
+      "expires_in": 300
     }
   }
 }
@@ -355,14 +355,42 @@ Field validation:
 ```json
 {
   "success": false,
-  "message": "Request failed.",
+  "message": "Request validation failed.",
   "errors": {
-    "email": ["Field error message."]
+    "code": "validation_error",
+    "fields": {
+      "email": [
+        {
+          "code": "invalid",
+          "message": "Enter a valid email address."
+        }
+      ],
+      "password": [
+        {
+          "code": "password_too_short",
+          "message": "This password is too short."
+        }
+      ]
+    }
   }
 }
 ```
 
-Frontend behavior should branch on HTTP status and stable error codes, then map them to localized English or Swahili messages.
+Unexpected server failure:
+
+```json
+{
+  "success": false,
+  "message": "An unexpected error occurred.",
+  "errors": {
+    "code": "internal_server_error"
+  }
+}
+```
+
+Frontend behavior branches on HTTP status and stable error codes, maps them to
+localized English or Swahili instructions, and uses backend messages only as
+safe fallbacks. Server diagnostics and tracebacks remain in server logs.
 
 ## Frontend integration boundary
 
