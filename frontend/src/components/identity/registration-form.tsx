@@ -72,22 +72,6 @@ function RegistrationForm() {
       );
     } catch (error) {
       if (error instanceof ApiClientError) {
-        if (
-          error.details.code ===
-          "email_verification_required"
-        ) {
-          notify({
-            message: getErrorMessage(error.details),
-            tone: "info",
-          });
-          router.push(
-            `/verify-email?email=${encodeURIComponent(
-              values.email.trim().toLowerCase(),
-            )}`,
-          );
-          return;
-        }
-
         const emailIssue = firstFieldIssue(
           error.details.fieldErrors,
           "email",
