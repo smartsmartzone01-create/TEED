@@ -316,7 +316,7 @@ EMAIL_VERIFICATION_TTL_MINUTES = config(
 
 EMAIL_VERIFICATION_MAX_ATTEMPTS = config(
     "EMAIL_VERIFICATION_MAX_ATTEMPTS",
-    default=5,
+    default=3,
     cast=int,
 )
 

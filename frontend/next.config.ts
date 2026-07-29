@@ -5,6 +5,19 @@ const withNextIntl = createNextIntlPlugin(
   "./src/i18n/request.ts",
 );
 
-const nextConfig: NextConfig = {};
+function parseAllowedDevOrigins(value: string | undefined) {
+  return (
+    value
+      ?.split(",")
+      .map((origin) => origin.trim())
+      .filter(Boolean) ?? []
+  );
+}
+
+const nextConfig: NextConfig = {
+  allowedDevOrigins: parseAllowedDevOrigins(
+    process.env.TEED_ALLOWED_DEV_ORIGINS,
+  ),
+};
 
 export default withNextIntl(nextConfig);

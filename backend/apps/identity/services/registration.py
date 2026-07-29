@@ -27,11 +27,10 @@ def register_email_user(
 
     normalized_email = email.strip().lower()
 
-    if get_user_by_email(
-        email=normalized_email,
-    ):
+    existing_user = get_user_by_email(email=normalized_email)
+    if existing_user:
         record_identity_security_event(
-            user=get_user_by_email(email=normalized_email),
+            user=existing_user,
             identifier=normalized_email,
             event_type=IdentitySecurityEvent.EventType.REGISTRATION_FAILED,
             outcome=IdentitySecurityEvent.Outcome.BLOCKED,

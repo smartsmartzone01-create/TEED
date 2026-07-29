@@ -4,6 +4,7 @@ from unittest.mock import patch
 from common.exceptions.modules.identity import (
     EmailVerificationChallengeNotFound,
     EmailVerificationCodeInvalid,
+    EmailVerificationResendCooldown,
 )
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -184,7 +185,7 @@ class EmailVerificationAPITests(APITestCase):
             mail.outbox[0].body,
         )
 
-    def test_resend_cooldown_keeps_generic_success(self):
+    def test_resend_cooldown_returns_focused_error(self):
         self.create_challenge()
 
         response = self.client.post(
@@ -195,9 +196,15 @@ class EmailVerificationAPITests(APITestCase):
             format="json",
         )
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue(response.data["success"])
-        self.assertIsNone(response.data["data"])
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_429_TOO_MANY_REQUESTS,
+        )
+        self.assertFalse(response.data["success"])
+        self.assertEqual(
+            response.data["errors"]["code"],
+            EmailVerificationResendCooldown.default_code,
+        )
         self.assertEqual(len(mail.outbox), 0)
 
     def test_unknown_resend_uses_generic_success(

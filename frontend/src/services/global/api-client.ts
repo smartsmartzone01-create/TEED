@@ -9,9 +9,14 @@ import type {
   NormalizedApiError,
 } from "@/types/global/api";
 
+const developmentApiBaseUrl =
+  process.env.NODE_ENV === "development"
+    ? "http://localhost:8000"
+    : "";
+
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ??
-  "";
+  developmentApiBaseUrl;
 
 type ApiRequestOptions<T> = {
   accessToken?: string;

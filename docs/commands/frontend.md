@@ -42,10 +42,22 @@ Open the address printed by Next.js, normally:
 http://localhost:3000
 ```
 
+
+Use `localhost` consistently for both applications during desktop development:
+
+```text
+Frontend: http://localhost:3000
+Backend:  http://localhost:8000
+```
+
+Do not mix `localhost`, `127.0.0.1`, and a LAN IP. For intentional LAN
+testing, set `TEED_ALLOWED_DEV_ORIGINS`, configure Django CORS and CSRF trusted
+origins, and use the same LAN hostname for both servers.
+
 Check both locales:
 
 ```text
-http://localhost:3000/
+http://localhost:3000/en
 http://localhost:3000/sw
 ```
 
@@ -63,8 +75,8 @@ The configured command rejects warnings.
 pnpm typecheck
 ```
 
-The current known failure is missing TypeScript declarations for imported SVG
-assets. This should be fixed rather than skipped.
+The typecheck command generates Next.js route and asset declarations before
+running TypeScript, so it also works in a clean clone.
 
 ## Production build
 

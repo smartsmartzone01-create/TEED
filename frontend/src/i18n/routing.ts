@@ -3,7 +3,7 @@ import { defineRouting } from "next-intl/routing";
 export const routing = defineRouting({
   locales: ["en", "sw"],
   defaultLocale: "en",
-  localePrefix: "as-needed",
+  localePrefix: "always",
   localeDetection: true,
   localeCookie: {
     name: "TEED_LOCALE",

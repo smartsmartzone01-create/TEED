@@ -133,10 +133,11 @@ Verification:
 6. create a server-side session and issue an access token plus refresh cookie;
 7. return `next_step: complete_onboarding`.
 
-Resend returns a generic success and only issues a challenge for an existing
-unverified user. It applies a cooldown, rolling daily limit, per-network
-throttle, and hashed-email throttle. Persisted blocks keep the generic response
-so they cannot be used for account discovery.
+Resend returns generic success for unknown or already verified identities and
+only issues a challenge for an existing unverified user. It applies a cooldown,
+rolling daily limit, per-network throttle, and hashed-email throttle. Known
+unverified identities receive stable cooldown and daily-limit errors so the
+frontend can explain when to retry. A new code invalidates every older code.
 
 `IdentitySecurityEvent` records challenge issuance, delivery outcomes,
 verification outcomes, and blocked resends. It stores no plaintext code, token,
@@ -200,7 +201,9 @@ logout and security revocation invalidate access immediately.
 Browser refresh credentials use a host-only HttpOnly cookie scoped to the
 session routes. The response body contains only the short-lived access token,
 which the frontend must keep in memory. Login, verification, refresh, logout,
-and logout-all require CSRF protection.
+and logout-all require CSRF protection. The frontend refreshes the CSRF
+bootstrap once and retries once when a stale browser token produces
+`csrf_failed`.
 
 ## Password reset and security audit
 
@@ -250,8 +253,8 @@ Current stable identity errors include:
 - `email_verification_code_invalid`;
 - `email_verification_code_expired`;
 - `email_verification_attempt_limit_reached`;
-- `email_verification_resend_cooldown` (internal/generic at the resend API);
-- `email_verification_daily_limit_reached` (internal/generic at the resend API);
+- `email_verification_resend_cooldown`;
+- `email_verification_daily_limit_reached`;
 - `identity_verification_required`;
 - `username_already_taken`;
 - `phone_number_already_registered`;

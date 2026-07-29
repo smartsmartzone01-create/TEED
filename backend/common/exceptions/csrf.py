@@ -7,7 +7,9 @@ def csrf_failure(request, reason=""):
     return JsonResponse(
         {
             "success": False,
-            "message": "Request failed.",
+            "message": (
+                "Security validation failed. Refresh the request and try again."
+            ),
             "data": None,
             "errors": {
                 "code": "csrf_failed",
