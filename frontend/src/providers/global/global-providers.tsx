@@ -4,6 +4,7 @@ import { ThemeProvider } from "next-themes";
 import type { ReactNode } from "react";
 
 import { TooltipProvider } from "@/components/global/primitives/tooltip";
+import { NotificationProvider } from "@/providers/global/notification-provider";
 
 type GlobalProvidersProps = {
   children: ReactNode;
@@ -18,7 +19,11 @@ function GlobalProviders({ children }: GlobalProvidersProps) {
       enableSystem
       storageKey="teed-theme"
     >
-      <TooltipProvider>{children}</TooltipProvider>
+      <TooltipProvider>
+        <NotificationProvider>
+          {children}
+        </NotificationProvider>
+      </TooltipProvider>
     </ThemeProvider>
   );
 }
