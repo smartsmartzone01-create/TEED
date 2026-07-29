@@ -1,0 +1,48 @@
+.background {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background: radial-gradient(
+    circle at center,
+    rgb(250 251 255) 0%,
+    rgb(238 241 250) 58%,
+    rgb(224 229 242) 100%
+  );
+  transition: background var(--motion-normal) ease;
+}
+
+.canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  opacity: 0.78;
+  mix-blend-mode: multiply;
+  transition: opacity var(--motion-normal) ease;
+}
+
+:global(.dark) .background {
+  background: radial-gradient(
+    circle at center,
+    rgb(10 12 38) 0%,
+    rgb(3 5 20) 58%,
+    rgb(1 2 10) 100%
+  );
+}
+
+:global(.dark) .canvas {
+  opacity: 1;
+  mix-blend-mode: screen;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .background,
+  .canvas {
+    transition: none;
+  }
+
+  .canvas {
+    opacity: 0.8;
+  }
+}
