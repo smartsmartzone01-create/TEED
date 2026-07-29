@@ -3,10 +3,9 @@ type ApiFieldIssue = {
   message: string;
 };
 
-type ApiFieldErrors = Record<
-  string,
-  ApiFieldIssue[] | ApiFieldErrors
->;
+interface ApiFieldErrors {
+  [field: string]: ApiFieldIssue[] | ApiFieldErrors;
+}
 
 type ApiErrors = {
   code: string;
