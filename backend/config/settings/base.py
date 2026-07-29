@@ -232,13 +232,25 @@ REST_FRAMEWORK = {
             "EMAIL_VERIFICATION_RESEND_ACCOUNT_THROTTLE_RATE",
             default="5/hour",
         ),
-        "password_reset_ip": config(
-            "PASSWORD_RESET_IP_THROTTLE_RATE",
+        "password_reset_request_ip": config(
+            "PASSWORD_RESET_REQUEST_IP_THROTTLE_RATE",
+            default="30/hour",
+        ),
+        "password_reset_request_account": config(
+            "PASSWORD_RESET_REQUEST_ACCOUNT_THROTTLE_RATE",
+            default="5/hour",
+        ),
+        "password_reset_verify_ip": config(
+            "PASSWORD_RESET_VERIFY_IP_THROTTLE_RATE",
+            default="60/hour",
+        ),
+        "password_reset_verify_account": config(
+            "PASSWORD_RESET_VERIFY_ACCOUNT_THROTTLE_RATE",
             default="10/hour",
         ),
-        "password_reset_account": config(
-            "PASSWORD_RESET_ACCOUNT_THROTTLE_RATE",
-            default="5/hour",
+        "password_reset_confirm_ip": config(
+            "PASSWORD_RESET_CONFIRM_IP_THROTTLE_RATE",
+            default="30/hour",
         ),
     },
 }

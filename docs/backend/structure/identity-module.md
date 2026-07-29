@@ -213,6 +213,12 @@ The grant is persisted only as a digest, bound to the requesting device
 identifier, and consumed once. Completion revokes all sessions and requires a
 fresh sign-in.
 
+Password-reset throttles are stage-specific. Request and verification each
+combine an IP scope with a hashed-account scope; confirmation has a separate IP
+scope and requires the valid reset grant. Device metadata supports grant
+binding and audit correlation, but it is not accepted as identity proof or as
+the only abuse-control key.
+
 `IdentitySecurityEvent` records login, registration, email-challenge, and
 password-reset outcomes. It may reference a user, session, challenge, and
 server-issued device ID and stores event time, IP, hashed user agent, hashed

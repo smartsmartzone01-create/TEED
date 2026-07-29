@@ -16,7 +16,13 @@ from ..services import (
     request_password_reset,
     verify_password_reset_code,
 )
-from ..throttles import PasswordResetAccountThrottle, PasswordResetIPThrottle
+from ..throttles import (
+    PasswordResetConfirmIPThrottle,
+    PasswordResetRequestAccountThrottle,
+    PasswordResetRequestIPThrottle,
+    PasswordResetVerifyAccountThrottle,
+    PasswordResetVerifyIPThrottle,
+)
 from .session_cookies import get_request_session_metadata, set_device_cookie
 
 
@@ -44,7 +50,10 @@ class PasswordResetRequestAPIView(APIView):
     serializer_class = PasswordResetRequestSerializer
     permission_classes = [AllowAny]
     authentication_classes = []
-    throttle_classes = [PasswordResetIPThrottle, PasswordResetAccountThrottle]
+    throttle_classes = [
+        PasswordResetRequestIPThrottle,
+        PasswordResetRequestAccountThrottle,
+    ]
 
     def post(self, request):
         serializer = self.serializer_class(data=request.data)
@@ -69,7 +78,10 @@ class PasswordResetVerifyAPIView(APIView):
     serializer_class = PasswordResetVerifySerializer
     permission_classes = [AllowAny]
     authentication_classes = []
-    throttle_classes = [PasswordResetIPThrottle, PasswordResetAccountThrottle]
+    throttle_classes = [
+        PasswordResetVerifyIPThrottle,
+        PasswordResetVerifyAccountThrottle,
+    ]
 
     def post(self, request):
         serializer = self.serializer_class(data=request.data)
@@ -97,7 +109,7 @@ class PasswordResetConfirmAPIView(APIView):
     serializer_class = PasswordResetConfirmSerializer
     permission_classes = [AllowAny]
     authentication_classes = []
-    throttle_classes = [PasswordResetIPThrottle]
+    throttle_classes = [PasswordResetConfirmIPThrottle]
 
     def post(self, request):
         serializer = self.serializer_class(data=request.data)

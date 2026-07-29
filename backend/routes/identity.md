@@ -117,6 +117,19 @@ Important failures:
 - `429 email_verification_attempt_limit_reached`;
 - `400` field validation errors.
 
+Throttle policy is layered rather than treating one network address as one
+identity:
+
+- request uses independent IP and normalized-email-hash budgets;
+- verification uses separate IP and normalized-email-hash budgets plus the
+  persisted challenge attempt limit;
+- confirmation uses its own IP budget while the device-bound, expiring,
+  single-use grant remains the primary authorization control.
+
+The stages do not consume one shared IP counter. Device IDs support assurance,
+grant binding, and audit correlation but are not trusted as a sole throttle key
+because a client can clear a device cookie.
+
 ## Resend verification
 
 ```http
