@@ -9,5 +9,9 @@
     "light": "Light",
     "dark": "Dark",
     "system": "System"
+  },
+  "Notifications": {
+    "regionLabel": "Notifications",
+    "dismiss": "Dismiss notification"
   }
 }
