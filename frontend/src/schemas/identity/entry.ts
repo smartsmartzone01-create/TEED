@@ -140,6 +140,7 @@ export {
   onboardingResponseSchema,
   registrationResponseSchema,
   resendResponseSchema,
+  verificationDataSchema,
   verificationResponseSchema,
 };
 export type { ValidationMessages };
