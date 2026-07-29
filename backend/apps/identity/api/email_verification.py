@@ -1,7 +1,5 @@
 from common.exceptions.modules.identity import (
     EmailVerificationChallengeNotFound,
-    EmailVerificationDailyLimitReached,
-    EmailVerificationResendCooldown,
 )
 from common.responses import SuccessResponse
 from django.utils.decorators import method_decorator
@@ -109,17 +107,11 @@ class EmailVerificationResendAPIView(APIView):
         )
 
         if user is not None and not user.is_email_verified:
-            try:
-                issue_email_verification_challenge(
-                    user=user,
-                    enforce_resend_limits=True,
-                    **get_request_session_metadata(request),
-                )
-            except (
-                EmailVerificationDailyLimitReached,
-                EmailVerificationResendCooldown,
-            ):
-                pass
+            issue_email_verification_challenge(
+                user=user,
+                enforce_resend_limits=True,
+                **get_request_session_metadata(request),
+            )
 
         response = SuccessResponse(
             message=(
