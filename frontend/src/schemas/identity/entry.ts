@@ -41,6 +41,24 @@ const csrfDataSchema = z.object({
   csrf_token: z.string().min(1),
 });
 
+const currentUserSchema = z.object({
+  country_code: z.string().nullable(),
+  email: z.email(),
+  first_name: z.string(),
+  id: z.uuid(),
+  is_email_verified: z.boolean(),
+  is_onboarding_complete: z.boolean(),
+  is_phone_verified: z.boolean(),
+  last_name: z.string(),
+  phone_number: z.string().nullable(),
+  username: z.string().nullable(),
+});
+
+const refreshDataSchema = z.object({
+  tokens: accessTokenSchema,
+  user: currentUserSchema,
+});
+
 const onboardingDataSchema = z.object({
   country_code: z.enum(["KE", "TZ", "UG"]),
   email: z.email(),
@@ -64,6 +82,8 @@ const csrfResponseSchema =
   createApiEnvelopeSchema(csrfDataSchema);
 const onboardingResponseSchema =
   createApiEnvelopeSchema(onboardingDataSchema);
+const refreshResponseSchema =
+  createApiEnvelopeSchema(refreshDataSchema);
 
 type ValidationMessages = {
   code: string;
@@ -138,6 +158,7 @@ export {
   loginResponseSchema,
   nextStepSchema,
   onboardingResponseSchema,
+  refreshResponseSchema,
   registrationResponseSchema,
   resendResponseSchema,
   verificationDataSchema,
