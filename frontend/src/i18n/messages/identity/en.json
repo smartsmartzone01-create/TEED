@@ -3,7 +3,8 @@
     "showPassword": "Show password",
     "hidePassword": "Hide password",
     "required": "Required",
-    "tryAgain": "Try again"
+    "tryAgain": "Try again",
+    "restoringSession": "Restoring your secure session…"
   },
   "IdentityErrors": {
     "network_error": "We could not connect to TEED. Check your connection and try again.",
