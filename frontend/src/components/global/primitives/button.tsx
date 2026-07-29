@@ -1,3 +1,4 @@
+import { LoaderCircle } from "lucide-react";
 import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
 import type { ComponentProps } from "react";
@@ -51,24 +52,51 @@ const buttonVariants = cva(
 type ButtonProps = ComponentProps<"button"> &
   VariantProps<typeof buttonVariants> & {
     asChild?: boolean;
+    loading?: boolean;
+    loadingLabel?: string;
   };
 
 function Button({
   asChild = false,
+  children,
   className,
+  disabled,
+  loading = false,
+  loadingLabel,
   size,
   type,
   variant,
   ...props
 }: ButtonProps) {
-  const Component = asChild ? Slot : "button";
+  const styles = cn(
+    buttonVariants({ size, variant }),
+    className,
+  );
+
+  if (asChild) {
+    return (
+      <Slot className={styles} {...props}>
+        {children}
+      </Slot>
+    );
+  }
 
   return (
-    <Component
-      className={cn(buttonVariants({ size, variant }), className)}
-      type={asChild ? undefined : (type ?? "button")}
+    <button
+      aria-busy={loading || undefined}
+      className={styles}
+      disabled={disabled || loading}
+      type={type ?? "button"}
       {...props}
-    />
+    >
+      {loading ? (
+        <LoaderCircle
+          aria-hidden="true"
+          className="size-4 animate-spin"
+        />
+      ) : null}
+      {loading && loadingLabel ? loadingLabel : children}
+    </button>
   );
 }
 

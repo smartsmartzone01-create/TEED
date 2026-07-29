@@ -9,5 +9,9 @@
     "light": "Angavu",
     "dark": "Giza",
     "system": "Mfumo"
+  },
+  "Notifications": {
+    "regionLabel": "Arifa",
+    "dismiss": "Funga arifa"
   }
 }

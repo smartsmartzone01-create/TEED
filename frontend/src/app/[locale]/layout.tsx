@@ -51,11 +51,9 @@ export default async function LocaleLayout({
       suppressHydrationWarning
     >
       <body className="flex min-h-full flex-col">
-        <GlobalProviders>
-          <NextIntlClientProvider>
-            {children}
-          </NextIntlClientProvider>
-       </GlobalProviders>
+        <NextIntlClientProvider>
+          <GlobalProviders>{children}</GlobalProviders>
+        </NextIntlClientProvider>
       </body>
     </html>
   );

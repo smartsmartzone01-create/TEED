@@ -1,0 +1,55 @@
+{
+  "IdentityCommon": {
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "required": "Required",
+    "tryAgain": "Try again"
+  },
+  "IdentityErrors": {
+    "network_error": "We could not connect to TEED. Check your connection and try again.",
+    "request_cancelled": "The request was cancelled.",
+    "invalid_server_response": "TEED received an invalid server response. Please try again.",
+    "validation_error": "Review the highlighted information and try again.",
+    "invalid_credentials": "The email or password is incorrect.",
+    "email_already_registered": "An account already uses this email. Sign in or reset your password.",
+    "email_verification_required": "Verify your email before signing in.",
+    "email_verification_code_invalid": "That verification code is incorrect. Check the code and try again.",
+    "email_verification_code_expired": "That verification code has expired. Request a new code.",
+    "email_verification_attempt_limit_reached": "Too many incorrect attempts. Request a new verification code.",
+    "identity_verification_required": "Verify your identity before continuing.",
+    "username_already_taken": "That username is already in use. Choose another one.",
+    "phone_number_already_registered": "That phone number is already linked to an account.",
+    "onboarding_already_completed": "Your profile setup is already complete.",
+    "not_authenticated": "Your session has ended. Sign in to continue.",
+    "session_invalid": "Your session is no longer valid. Sign in again.",
+    "session_expired": "Your session expired. Sign in again.",
+    "refresh_token_invalid": "Your session could not be restored. Sign in again.",
+    "refresh_token_reuse_detected": "TEED detected an unsafe session. Sign in again to protect your account.",
+    "internal_server_error": "TEED encountered an unexpected problem. Please try again.",
+    "unexpected_error": "Something went wrong. Please try again."
+  },
+  "IdentityFoundationPreview": {
+    "eyebrow": "Secure access",
+    "title": "Your business, ready when you are.",
+    "description": "Sign in and registration will use this shared identity experience while TEED keeps session credentials protected.",
+    "cardTitle": "Identity foundation preview",
+    "cardDescription": "Test the reusable fields and global notification behavior.",
+    "email": "Email address",
+    "emailPlaceholder": "you@example.com",
+    "password": "Password",
+    "passwordHint": "Use at least eight characters.",
+    "submit": "Preview success message",
+    "successTitle": "Foundation ready",
+    "successMessage": "The global notification system is working."
+  },
+  "IdentityFieldErrors": {
+    "required": "This information is required.",
+    "blank": "This information cannot be empty.",
+    "invalid": "Enter a valid value.",
+    "invalid_email": "Enter a valid email address.",
+    "password_too_short": "Use a longer password.",
+    "password_too_common": "Choose a less common password.",
+    "password_entirely_numeric": "Include letters or symbols in your password.",
+    "password_too_similar": "Choose a password that is less similar to your personal information."
+  }
+}
