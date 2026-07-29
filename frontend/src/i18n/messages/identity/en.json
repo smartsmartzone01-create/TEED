@@ -27,5 +27,19 @@
     "refresh_token_reuse_detected": "TEED detected an unsafe session. Sign in again to protect your account.",
     "internal_server_error": "TEED encountered an unexpected problem. Please try again.",
     "unexpected_error": "Something went wrong. Please try again."
+  },
+  "IdentityFoundationPreview": {
+    "eyebrow": "Secure access",
+    "title": "Your business, ready when you are.",
+    "description": "Sign in and registration will use this shared identity experience while TEED keeps session credentials protected.",
+    "cardTitle": "Identity foundation preview",
+    "cardDescription": "Test the reusable fields and global notification behavior.",
+    "email": "Email address",
+    "emailPlaceholder": "you@example.com",
+    "password": "Password",
+    "passwordHint": "Use at least eight characters.",
+    "submit": "Preview success message",
+    "successTitle": "Foundation ready",
+    "successMessage": "The global notification system is working."
   }
 }
