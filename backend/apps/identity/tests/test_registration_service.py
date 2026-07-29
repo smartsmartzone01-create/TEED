@@ -2,6 +2,7 @@ from unittest.mock import patch
 
 from common.exceptions.modules.identity import (
     EmailAlreadyRegistered,
+    EmailVerificationRequired,
 )
 from django.contrib.auth import get_user_model
 from django.core import mail
@@ -57,6 +58,25 @@ class EmailRegistrationServiceTests(TestCase):
         self.assertIn(
             "123456",
             mail.outbox[0].body,
+        )
+
+    def test_unverified_account_with_matching_password_resumes_verification(self):
+        User.objects.create_user(
+            email="member@example.com",
+            password="StrongTestPassword123!",
+        )
+
+        with self.assertRaises(EmailVerificationRequired):
+            register_email_user(
+                email="MEMBER@EXAMPLE.COM",
+                password="StrongTestPassword123!",
+            )
+
+        self.assertEqual(
+            User.objects.filter(
+                email__iexact="member@example.com",
+            ).count(),
+            1,
         )
 
     def test_duplicate_email_is_rejected(self):
