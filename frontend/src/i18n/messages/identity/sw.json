@@ -27,5 +27,19 @@
     "refresh_token_reuse_detected": "TEED imegundua kipindi kisicho salama. Ingia upya ili kulinda akaunti yako.",
     "internal_server_error": "TEED imepata tatizo lisilotarajiwa. Tafadhali jaribu tena.",
     "unexpected_error": "Tatizo limetokea. Tafadhali jaribu tena."
+  },
+  "IdentityFoundationPreview": {
+    "eyebrow": "Ufikiaji salama",
+    "title": "Biashara yako, tayari wakati wowote.",
+    "description": "Kuingia na kujisajili kutatumia mfumo huu wa utambulisho huku TEED ikilinda taarifa za kipindi.",
+    "cardTitle": "Onyesho la msingi wa utambulisho",
+    "cardDescription": "Jaribu sehemu zinazotumika tena na mfumo wa arifa wa jumla.",
+    "email": "Anwani ya barua pepe",
+    "emailPlaceholder": "wewe@example.com",
+    "password": "Nenosiri",
+    "passwordHint": "Tumia angalau herufi nane.",
+    "submit": "Onyesha ujumbe wa mafanikio",
+    "successTitle": "Msingi uko tayari",
+    "successMessage": "Mfumo wa arifa wa jumla unafanya kazi."
   }
 }
