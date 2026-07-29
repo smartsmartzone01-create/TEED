@@ -60,7 +60,9 @@ class EmailRegistrationServiceTests(TestCase):
             mail.outbox[0].body,
         )
 
-    def test_unverified_account_with_matching_password_resumes_verification(self):
+    def test_unverified_account_with_matching_password_resumes_verification(
+        self,
+    ):
         User.objects.create_user(
             email="member@example.com",
             password="StrongTestPassword123!",
