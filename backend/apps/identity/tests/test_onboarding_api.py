@@ -156,7 +156,13 @@ class OnboardingAPITests(APITestCase):
             response.status_code,
             status.HTTP_400_BAD_REQUEST,
         )
-        self.assertIn(
-            "phone_number",
-            response.data["errors"],
+        self.assertEqual(
+            response.data["errors"]["code"],
+            "validation_error",
+        )
+        fields = response.data["errors"]["fields"]
+        self.assertIn("phone_number", fields)
+        self.assertEqual(
+            fields["phone_number"][0]["code"],
+            "invalid",
         )
