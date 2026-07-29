@@ -1,6 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { LoaderCircle } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useMemo } from "react";
 import { useForm } from "react-hook-form";
@@ -21,11 +22,12 @@ import type { OnboardingFormValues } from "@/types/identity/entry";
 
 function OnboardingForm() {
   const t = useTranslations("Onboarding");
+  const common = useTranslations("IdentityCommon");
   const signupT = useTranslations("Signup");
   const errorsT = useTranslations("IdentityErrors");
   const router = useRouter();
   const { notify } = useNotification();
-  const { accessToken, updateUser, user } =
+  const { accessToken, status, updateUser, user } =
     useIdentitySession();
   const { getErrorMessage, getFieldMessage } =
     useApiErrorMessages();
@@ -59,7 +61,16 @@ function OnboardingForm() {
   });
 
   const onSubmit = handleSubmit(async (values) => {
-    if (!accessToken || !user) {
+    if (status === "initializing") {
+    return (
+      <div className="flex items-center justify-center gap-2 py-8 text-sm text-muted-foreground">
+        <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />
+        {common("restoringSession")}
+      </div>
+    );
+  }
+
+  if (!accessToken || !user) {
       notify({
         message: t("sessionRequired"),
         tone: "error",
