@@ -59,7 +59,7 @@ function Tooltip({
         <TooltipPrimitive.Content
           align={align}
           className={cn(
-            "z-100' max-w-64 rounded-lg bg-brand-navy px-3 py-2",
+            "z-[100] max-w-64 rounded-lg bg-brand-navy px-3 py-2",
             "select-none text-xs font-medium leading-5 text-white",
             "shadow-lg",
             className,
