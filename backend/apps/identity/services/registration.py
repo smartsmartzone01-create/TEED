@@ -1,6 +1,5 @@
 from common.exceptions.modules.identity import (
     EmailAlreadyRegistered,
-    EmailVerificationRequired,
 )
 from django.db import IntegrityError, transaction
 
@@ -30,23 +29,6 @@ def register_email_user(
 
     existing_user = get_user_by_email(email=normalized_email)
     if existing_user:
-        if (
-            existing_user.is_active
-            and not existing_user.is_email_verified
-            and existing_user.check_password(password)
-        ):
-            record_identity_security_event(
-                user=existing_user,
-                identifier=normalized_email,
-                event_type=IdentitySecurityEvent.EventType.REGISTRATION_FAILED,
-                outcome=IdentitySecurityEvent.Outcome.BLOCKED,
-                ip_address=ip_address,
-                user_agent=user_agent,
-                device_id=device_id,
-                metadata={"reason": "email_verification_required"},
-            )
-            raise EmailVerificationRequired()
-
         record_identity_security_event(
             user=existing_user,
             identifier=normalized_email,
