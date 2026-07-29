@@ -5,6 +5,24 @@ from django.core.exceptions import ValidationError
 from rest_framework import serializers
 
 
+def _password_validation_details(exc):
+    details = []
+
+    for error in exc.error_list:
+        message = error.message
+        if error.params:
+            message %= error.params
+
+        details.append(
+            serializers.ErrorDetail(
+                message,
+                code=error.code or "invalid",
+            )
+        )
+
+    return details
+
+
 class EmailRegistrationSerializer(serializers.Serializer):
     email = serializers.EmailField(
         max_length=254,
@@ -24,6 +42,8 @@ class EmailRegistrationSerializer(serializers.Serializer):
         try:
             validate_password(value)
         except ValidationError as exc:
-            raise serializers.ValidationError(list(exc.messages)) from exc
+            raise serializers.ValidationError(
+                _password_validation_details(exc)
+            ) from exc
 
         return value
