@@ -2,6 +2,7 @@ from unittest.mock import patch
 
 from common.exceptions.modules.identity import (
     EmailAlreadyRegistered,
+    EmailVerificationRequired,
 )
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
@@ -87,6 +88,33 @@ class EmailRegistrationAPITests(APITestCase):
         self.assertIn(
             "password_too_short",
             {error["code"] for error in fields["password"]},
+        )
+
+    def test_unverified_account_with_matching_password_requires_verification(
+        self,
+    ):
+        User.objects.create_user(
+            email="member@example.com",
+            password="StrongTestPassword123!",
+        )
+
+        response = self.client.post(
+            self.url,
+            {
+                "email": "MEMBER@EXAMPLE.COM",
+                "password": ("StrongTestPassword123!"),
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+        self.assertFalse(response.data["success"])
+        self.assertEqual(
+            response.data["errors"]["code"],
+            EmailVerificationRequired.default_code,
         )
 
     def test_duplicate_email_uses_teed_error(
