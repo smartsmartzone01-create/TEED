@@ -2,18 +2,23 @@
 
 ## Current routes
 
-The current App Router exposes one localized marketing route:
+The current App Router exposes localized marketing and identity routes:
 
 ```text
 src/app/
 └── [locale]/
     ├── layout.tsx
-    └── page.tsx
+    ├── page.tsx
+    ├── register/
+    ├── verify-email/
+    ├── login/
+    ├── onboarding/
+    └── dashboard/
 ```
 
-`generateStaticParams` produces English and Swahili variants. With
-`localePrefix: "as-needed"`, English uses the default unprefixed path and
-Swahili can use the locale prefix.
+`generateStaticParams` produces English and Swahili variants. The canonical
+policy uses `localePrefix: "always"`, so application routes consistently start
+with `/en` or `/sw`.
 
 ## Locale routing
 
@@ -90,9 +95,7 @@ its matcher must be checked against:
 - locale prefixes;
 - future protected routing.
 
-## Planned route categories
-
-The following are architecture targets, not current files:
+## Route categories
 
 ```text
 Public marketing
@@ -102,18 +105,16 @@ System/error routes
 Future administration
 ```
 
-Likely identity routes include:
+Implemented identity routes include:
 
 ```text
 /{locale}/register
 /{locale}/verify-email
 /{locale}/login
 /{locale}/onboarding
-/{locale}/forgot-password
-/{locale}/reset-password
 ```
 
-Final names should be chosen when implementing each workflow.
+Password-reset routes remain a separate implementation package.
 
 ## Layout targets
 
@@ -133,6 +134,10 @@ pretend to authorize backend operations.
 Protected navigation waits for session initialization. Guest-only pages handle
 already-authenticated users according to backend/session state. Direct access,
 reload, expiration, and multi-tab logout must be tested.
+
+`IdentityAccessBoundary` is the single client-side owner for guest,
+onboarding-only, and dashboard access decisions. Route files declare their
+category and remain thin. Components must not recreate these redirects.
 
 Frontend redirects are usability behavior. Every protected backend endpoint
 still enforces authentication and permissions.

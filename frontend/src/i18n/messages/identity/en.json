@@ -4,7 +4,8 @@
     "hidePassword": "Hide password",
     "required": "Required",
     "tryAgain": "Try again",
-    "restoringSession": "Restoring your secure session…"
+    "restoringSession": "Restoring your secure session…",
+    "redirecting": "Taking you to the right place…"
   },
   "IdentityErrors": {
     "network_error": "We could not connect to TEED. Check your connection and try again.",
@@ -31,7 +32,8 @@
     "csrf_failed": "Your secure request expired. TEED refreshed it; please try again.",
     "email_verification_not_found": "No active verification code was found. Request a new code.",
     "email_verification_resend_cooldown": "Please wait before requesting another verification code.",
-    "email_verification_daily_limit_reached": "You have requested too many codes today. Try again later."
+    "email_verification_daily_limit_reached": "You have requested too many codes today. Try again later.",
+    "logout_failed": "TEED could not securely end your session. Check your connection and try again."
   },
   "IdentityFoundationPreview": {
     "eyebrow": "Secure access",

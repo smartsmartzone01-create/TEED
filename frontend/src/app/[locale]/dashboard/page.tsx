@@ -1,5 +1,6 @@
 import { setRequestLocale } from "next-intl/server";
 
+import { IdentityAccessBoundary } from "@/components/identity/identity-access-boundary";
 import { IdentityBackground } from "@/components/identity/identity-background";
 import { IdentityDashboard } from "@/components/identity/identity-dashboard";
 import { IdentityHeader } from "@/components/identity/identity-header";
@@ -19,7 +20,9 @@ export default async function DashboardPage({
       <IdentityBackground />
       <IdentityHeader />
       <div className="relative z-10">
-        <IdentityDashboard />
+        <IdentityAccessBoundary access="dashboard">
+          <IdentityDashboard />
+        </IdentityAccessBoundary>
       </div>
     </div>
   );

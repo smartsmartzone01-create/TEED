@@ -1,5 +1,6 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 
+import { IdentityAccessBoundary } from "@/components/identity/identity-access-boundary";
 import { IdentityLayout } from "@/components/identity/identity-layout";
 import { RegistrationForm } from "@/components/identity/registration-form";
 
@@ -21,7 +22,9 @@ export default async function RegistrationPage({
       eyebrow={t("eyebrow")}
       title={t("title")}
     >
-      <RegistrationForm />
+      <IdentityAccessBoundary access="guest">
+        <RegistrationForm />
+      </IdentityAccessBoundary>
     </IdentityLayout>
   );
 }

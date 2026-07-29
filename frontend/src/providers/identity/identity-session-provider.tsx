@@ -28,6 +28,7 @@ type IdentitySessionContextValue = {
   accessToken: string | null;
   clearSession: () => void;
   establishSession: (input: EstablishSessionInput) => void;
+  refreshAccessToken: () => Promise<string>;
   status:
     | "authenticated"
     | "initializing"
@@ -38,6 +39,8 @@ type IdentitySessionContextValue = {
 
 const IdentitySessionContext =
   createContext<IdentitySessionContextValue | null>(null);
+
+const SESSION_CHANNEL_NAME = "teed-identity-session";
 
 type IdentitySessionProviderProps = {
   children: ReactNode;
@@ -66,11 +69,23 @@ function IdentitySessionProvider({
     [],
   );
 
-  const clearSession = useCallback(() => {
+  const resetSession = useCallback(() => {
     setAccessToken(null);
     setUser(null);
     setInitializing(false);
   }, []);
+
+  const clearSession = useCallback(() => {
+    resetSession();
+
+    if (typeof BroadcastChannel !== "undefined") {
+      const channel = new BroadcastChannel(
+        SESSION_CHANNEL_NAME,
+      );
+      channel.postMessage({ type: "session-ended" });
+      channel.close();
+    }
+  }, [resetSession]);
 
   const updateUser = useCallback(
     (nextUser: IdentitySessionUser) => {
@@ -78,6 +93,28 @@ function IdentitySessionProvider({
     },
     [],
   );
+
+  const refreshAccessToken = useCallback(async () => {
+    const response = await restoreSession();
+    const data = response.data;
+
+    if (!data) {
+      throw new Error("Session refresh response data missing.");
+    }
+
+    establishSession({
+      accessToken: data.tokens.access,
+      user: {
+        email: data.user.email,
+        isOnboardingComplete:
+          data.user.is_onboarding_complete,
+        userId: data.user.id,
+        username: data.user.username,
+      },
+    });
+
+    return data.tokens.access;
+  }, [establishSession]);
 
   useEffect(() => {
     let active = true;
@@ -116,11 +153,36 @@ function IdentitySessionProvider({
     };
   }, []);
 
+  useEffect(() => {
+    if (typeof BroadcastChannel === "undefined") {
+      return;
+    }
+
+    const channel = new BroadcastChannel(
+      SESSION_CHANNEL_NAME,
+    );
+
+    channel.addEventListener("message", (event) => {
+      if (
+        typeof event.data === "object" &&
+        event.data !== null &&
+        event.data.type === "session-ended"
+      ) {
+        resetSession();
+      }
+    });
+
+    return () => {
+      channel.close();
+    };
+  }, [resetSession]);
+
   const value = useMemo(
     () => ({
       accessToken,
       clearSession,
       establishSession,
+      refreshAccessToken,
       status: initializing
         ? "initializing"
         : user
@@ -134,6 +196,7 @@ function IdentitySessionProvider({
       clearSession,
       establishSession,
       initializing,
+      refreshAccessToken,
       updateUser,
       user,
     ],
