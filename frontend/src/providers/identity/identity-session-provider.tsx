@@ -4,10 +4,13 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
 } from "react";
+
+import { restoreSession } from "@/services/identity/entry";
 
 type IdentitySessionUser = {
   email: string;
@@ -25,7 +28,10 @@ type IdentitySessionContextValue = {
   accessToken: string | null;
   clearSession: () => void;
   establishSession: (input: EstablishSessionInput) => void;
-  status: "authenticated" | "unauthenticated";
+  status:
+    | "authenticated"
+    | "initializing"
+    | "unauthenticated";
   updateUser: (user: IdentitySessionUser) => void;
   user: IdentitySessionUser | null;
 };
@@ -46,6 +52,7 @@ function IdentitySessionProvider({
   const [user, setUser] = useState<
     IdentitySessionUser | null
   >(null);
+  const [initializing, setInitializing] = useState(true);
 
   const establishSession = useCallback(
     ({
@@ -54,6 +61,7 @@ function IdentitySessionProvider({
     }: EstablishSessionInput) => {
       setAccessToken(nextAccessToken);
       setUser(nextUser);
+      setInitializing(false);
     },
     [],
   );
@@ -61,6 +69,7 @@ function IdentitySessionProvider({
   const clearSession = useCallback(() => {
     setAccessToken(null);
     setUser(null);
+    setInitializing(false);
   }, []);
 
   const updateUser = useCallback(
@@ -70,12 +79,53 @@ function IdentitySessionProvider({
     [],
   );
 
+  useEffect(() => {
+    let active = true;
+
+    restoreSession()
+      .then((response) => {
+        const data = response.data;
+
+        if (!active || !data) {
+          return;
+        }
+
+        setAccessToken(data.tokens.access);
+        setUser({
+          email: data.user.email,
+          isOnboardingComplete:
+            data.user.is_onboarding_complete,
+          userId: data.user.id,
+          username: data.user.username,
+        });
+      })
+      .catch(() => {
+        if (active) {
+          setAccessToken(null);
+          setUser(null);
+        }
+      })
+      .finally(() => {
+        if (active) {
+          setInitializing(false);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const value = useMemo(
     () => ({
       accessToken,
       clearSession,
       establishSession,
-      status: user ? "authenticated" : "unauthenticated",
+      status: initializing
+        ? "initializing"
+        : user
+          ? "authenticated"
+          : "unauthenticated",
       updateUser,
       user,
     }) satisfies IdentitySessionContextValue,
@@ -83,6 +133,7 @@ function IdentitySessionProvider({
       accessToken,
       clearSession,
       establishSession,
+      initializing,
       updateUser,
       user,
     ],
