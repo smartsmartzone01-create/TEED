@@ -107,10 +107,22 @@ async function completeOnboarding(
   });
 }
 
+async function logoutCurrentSession() {
+  const token = await initializeCsrf();
+
+  return requestApi({
+    csrfToken: token,
+    method: "POST",
+    path: "/api/v1/identity/session/logout/",
+    schema: resendResponseSchema,
+  });
+}
+
 export {
   completeOnboarding,
   initializeCsrf,
   loginWithEmail,
+  logoutCurrentSession,
   registerWithEmail,
   resendEmailVerification,
   verifyEmail,
