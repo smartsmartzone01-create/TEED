@@ -30,14 +30,10 @@ class TEEDExceptionHandlerTests(SimpleTestCase):
             response.data,
             {
                 "success": False,
-                "message": (
-                    "The email verification code is invalid."
-                ),
+                "message": ("The email verification code is invalid."),
                 "data": None,
                 "errors": {
-                    "code": (
-                        "email_verification_code_invalid"
-                    ),
+                    "code": ("email_verification_code_invalid"),
                 },
                 "meta": {},
             },
@@ -82,18 +78,14 @@ class TEEDExceptionHandlerTests(SimpleTestCase):
                     "email": [
                         {
                             "code": "invalid",
-                            "message": (
-                                "Enter a valid email address."
-                            ),
+                            "message": ("Enter a valid email address."),
                         }
                     ],
                     "profile": {
                         "name": [
                             {
                                 "code": "required",
-                                "message": (
-                                    "This field is required."
-                                ),
+                                "message": ("This field is required."),
                             }
                         ]
                     },
@@ -120,9 +112,7 @@ class TEEDExceptionHandlerTests(SimpleTestCase):
                 "non_field_errors": [
                     {
                         "code": "invalid_combination",
-                        "message": (
-                            "The submitted values conflict."
-                        ),
+                        "message": ("The submitted values conflict."),
                     }
                 ]
             },
