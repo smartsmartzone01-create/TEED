@@ -149,8 +149,8 @@ Resend behavior:
 - a user-specific cooldown prevents immediate replacement;
 - a rolling 24-hour limit counts initial and replacement challenges;
 - per-network and hashed-email throttles constrain distributed abuse;
-- cooldown and daily-limit blocks retain the generic `200` response to avoid
-  revealing whether the account exists;
+- cooldown and daily-limit blocks return stable `429` error codes for focused
+  frontend guidance when the submitted email belongs to an unverified account;
 - a successful resend invalidates the previous challenge;
 - delivery occurs only after the challenge transaction commits.
 
@@ -390,7 +390,8 @@ Unexpected server failure:
 
 Frontend behavior branches on HTTP status and stable error codes, maps them to
 localized English or Swahili instructions, and uses backend messages only as
-safe fallbacks. Server diagnostics and tracebacks remain in server logs.
+safe fallbacks. Cookie-backed requests refresh CSRF once and retry once when
+Django returns `csrf_failed`; a second failure is shown to the user. Server diagnostics and tracebacks remain in server logs.
 
 ## Frontend integration boundary
 
