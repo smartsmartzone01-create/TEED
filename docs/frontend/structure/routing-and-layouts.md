@@ -12,6 +12,10 @@ src/app/
     ├── register/
     ├── verify-email/
     ├── login/
+    ├── forgot-password/
+    ├── password-reset/
+    │   ├── verify/
+    │   └── new/
     ├── onboarding/
     └── dashboard/
 ```
@@ -112,9 +116,15 @@ Implemented identity routes include:
 /{locale}/verify-email
 /{locale}/login
 /{locale}/onboarding
+/{locale}/forgot-password
+/{locale}/password-reset/verify
+/{locale}/password-reset/new
 ```
 
-Password-reset routes remain a separate implementation package.
+Password-reset routes are guest-only and follow the backend's request,
+verification, and confirmation sequence. The verification route accepts the
+email only as UI continuity; the reset authorization itself remains an
+HttpOnly, device-bound backend cookie. Confirmation always returns to login.
 
 ## Layout targets
 

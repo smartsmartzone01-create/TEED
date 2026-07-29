@@ -140,7 +140,10 @@ HttpOnly server credential was removed.
 
 Password-reset verification creates a separate short-lived, device-bound,
 single-use HttpOnly grant cookie. The frontend never reads or stores that grant.
-Successful password confirmation revokes every session, clears the reset grant,
+The implemented three-page flow validates the backend `next_step` contract,
+keeps request responses non-enumerating, and retries CSRF only through the
+shared identity service. Successful password confirmation revokes every
+session, clears the reset grant, clears in-memory identity state across tabs,
 and returns the user to sign-in.
 
 ## Completed identity endpoint contract
@@ -239,6 +242,8 @@ tracking.
 - duplicate-submission prevention;
 - registration/login/verification/onboarding routing;
 - password-reset request, verification, confirmation, and forced sign-in;
+- reset resend cooldown, invalid/expired code, attempt limit, expired grant,
+  backend password-validation fields, and cross-tab forced sign-out;
 - generic anti-enumeration responses;
 - session initialization and expiration;
 - refresh concurrency;

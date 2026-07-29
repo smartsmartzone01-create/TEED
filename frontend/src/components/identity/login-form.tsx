@@ -186,6 +186,15 @@ function LoginForm() {
           />
         </FormField>
 
+        <div className="-mt-2 text-right text-sm">
+          <Link
+            className="font-semibold text-foreground underline-offset-4 hover:underline"
+            href="/forgot-password"
+          >
+            {t("forgotPassword")}
+          </Link>
+        </div>
+
         <Button
           className="w-full"
           loading={isSubmitting}
