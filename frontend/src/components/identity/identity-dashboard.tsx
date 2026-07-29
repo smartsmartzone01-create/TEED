@@ -1,5 +1,6 @@
 "use client";
 
+import { LoaderCircle } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 
@@ -12,10 +13,11 @@ import { logoutCurrentSession } from "@/services/identity/entry";
 function IdentityDashboard() {
   const t = useTranslations("Dashboard");
   const loginT = useTranslations("Login");
+  const common = useTranslations("IdentityCommon");
   const errorsT = useTranslations("IdentityErrors");
   const router = useRouter();
   const { notify } = useNotification();
-  const { clearSession, user } = useIdentitySession();
+  const { clearSession, status, user } = useIdentitySession();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   async function handleLogout() {
@@ -33,6 +35,17 @@ function IdentityDashboard() {
       setIsLoggingOut(false);
       router.push("/login");
     }
+  }
+
+  if (status === "initializing") {
+    return (
+      <main className="page-container flex min-h-[70svh] items-center justify-center py-12">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />
+          {common("restoringSession")}
+        </div>
+      </main>
+    );
   }
 
   if (!user?.isOnboardingComplete) {
