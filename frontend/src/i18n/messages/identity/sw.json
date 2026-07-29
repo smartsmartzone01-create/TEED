@@ -3,7 +3,8 @@
     "showPassword": "Onyesha nenosiri",
     "hidePassword": "Ficha nenosiri",
     "required": "Inahitajika",
-    "tryAgain": "Jaribu tena"
+    "tryAgain": "Jaribu tena",
+    "restoringSession": "Kipindi chako salama kinarejeshwa…"
   },
   "IdentityErrors": {
     "network_error": "Hatukuweza kuunganisha na TEED. Angalia muunganisho wako kisha ujaribu tena.",
