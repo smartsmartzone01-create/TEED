@@ -121,3 +121,9 @@ class PasswordResetGrantInvalid(TEEDException):
     default_message = "The password reset authorization is invalid or has expired."
     default_code = "password_reset_grant_invalid"
     default_status_code = status.HTTP_401_UNAUTHORIZED
+
+
+class PasswordResetPasswordUnchanged(TEEDException):
+    default_message = "Choose a password different from your current password."
+    default_code = "password_reset_password_unchanged"
+    default_status_code = status.HTTP_400_BAD_REQUEST

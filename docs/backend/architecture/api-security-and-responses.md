@@ -191,6 +191,13 @@ a short-lived, device-bound, single-use HttpOnly grant. Confirmation validates
 the new password, revokes all sessions, sends a notification, and requires a
 fresh sign-in.
 
+Request, verification, and confirmation use independent IP throttle scopes so
+one successful flow does not consume three slots from one network-wide bucket.
+Request and verification also use normalized-email-hash scopes. Challenge
+attempt limits, the device-bound grant, security-event auditing, and independent
+network budgets provide layered controls without treating a shared IP address
+as a user identity.
+
 Email delivery uses a transactional database outbox. Provider calls never run
 inside the identity transaction. Delivery payloads containing short-lived codes
 are encrypted at rest, decrypted only by the worker, and erased on sent or

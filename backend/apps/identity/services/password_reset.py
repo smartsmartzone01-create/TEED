@@ -8,6 +8,7 @@ from common.exceptions.modules.identity import (
     PasswordResetAttemptLimitReached,
     PasswordResetChallengeInvalid,
     PasswordResetGrantInvalid,
+    PasswordResetPasswordUnchanged,
 )
 from django.conf import settings
 from django.contrib.auth.hashers import check_password
@@ -250,37 +251,53 @@ def confirm_password_reset(
             pending_exception = PasswordResetGrantInvalid()
         else:
             user = grant.user
-            user.set_password(new_password)
-            user.save(update_fields=["password", "updated_at"])
-            consume_password_reset_grant(grant=grant)
-            revoke_all_user_sessions(
-                user=user,
-                reason=UserSession.RevokeReason.PASSWORD_RESET,
-            )
+            if user.check_password(new_password):
+                pending_exception = PasswordResetPasswordUnchanged()
+                record_identity_security_event(
+                    user=user,
+                    event_type=IdentitySecurityEvent.EventType.PASSWORD_RESET_FAILED,
+                    outcome=IdentitySecurityEvent.Outcome.FAILURE,
+                    challenge_id=grant.challenge_id,
+                    ip_address=ip_address,
+                    user_agent=user_agent,
+                    device_id=device_id,
+                    metadata={"reason": "password_unchanged"},
+                )
+            else:
+                user.set_password(new_password)
+                user.save(update_fields=["password", "updated_at"])
+                consume_password_reset_grant(grant=grant)
+                revoke_all_user_sessions(
+                    user=user,
+                    reason=UserSession.RevokeReason.PASSWORD_RESET,
+                )
+                record_identity_security_event(
+                    user=user,
+                    event_type=(
+                        IdentitySecurityEvent.EventType.PASSWORD_RESET_SUCCEEDED
+                    ),
+                    outcome=IdentitySecurityEvent.Outcome.SUCCESS,
+                    challenge_id=grant.challenge_id,
+                    ip_address=ip_address,
+                    user_agent=user_agent,
+                    device_id=device_id,
+                )
+                enqueue_email_delivery(
+                    user=user,
+                    template=EmailDelivery.Template.PASSWORD_CHANGED,
+                    payload={},
+                    idempotency_key=f"password-changed:{grant.id}",
+                    challenge_id=grant.challenge_id,
+                )
+
+    if pending_exception:
+        if isinstance(pending_exception, PasswordResetGrantInvalid):
             record_identity_security_event(
-                user=user,
-                event_type=(IdentitySecurityEvent.EventType.PASSWORD_RESET_SUCCEEDED),
-                outcome=IdentitySecurityEvent.Outcome.SUCCESS,
-                challenge_id=grant.challenge_id,
+                event_type=IdentitySecurityEvent.EventType.PASSWORD_RESET_FAILED,
+                outcome=IdentitySecurityEvent.Outcome.FAILURE,
                 ip_address=ip_address,
                 user_agent=user_agent,
                 device_id=device_id,
+                metadata={"reason": "invalid_grant"},
             )
-            enqueue_email_delivery(
-                user=user,
-                template=EmailDelivery.Template.PASSWORD_CHANGED,
-                payload={},
-                idempotency_key=f"password-changed:{grant.id}",
-                challenge_id=grant.challenge_id,
-            )
-
-    if pending_exception:
-        record_identity_security_event(
-            event_type=IdentitySecurityEvent.EventType.PASSWORD_RESET_FAILED,
-            outcome=IdentitySecurityEvent.Outcome.FAILURE,
-            ip_address=ip_address,
-            user_agent=user_agent,
-            device_id=device_id,
-            metadata={"reason": "invalid_grant"},
-        )
         raise pending_exception

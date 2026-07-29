@@ -150,6 +150,8 @@ Current messages:
 ```text
 src/i18n/messages/global/en.json
 src/i18n/messages/global/sw.json
+src/i18n/messages/identity/en.json
+src/i18n/messages/identity/sw.json
 src/i18n/messages/marketing/en.json
 src/i18n/messages/marketing/sw.json
 ```
@@ -163,6 +165,23 @@ pnpm build
 ```
 
 Test English and Swahili manually in the browser.
+
+## Password-reset smoke test
+
+With Django and Next.js running on the canonical `localhost` origins:
+
+1. open `/en/login` and select **Forgot your password?**;
+2. submit an eligible email and confirm the generic success message;
+3. enter the latest console-email code on `/en/password-reset/verify`;
+4. choose a valid new password on `/en/password-reset/new`;
+5. confirm the browser returns to login and the new password works;
+6. confirm an older session in another tab no longer restores;
+7. repeat invalid-code, attempt-limit, expired-grant, mismatch, and backend
+   password-validator cases;
+8. repeat the successful path under `/sw`.
+
+Do not inspect, copy, or expose the HttpOnly reset-grant cookie. Its presence
+and validity are backend responsibilities.
 
 ## Inspect scripts
 

@@ -33,7 +33,11 @@
     "email_verification_not_found": "Hakuna nambari ya uthibitishaji inayotumika. Omba nambari mpya.",
     "email_verification_resend_cooldown": "Tafadhali subiri kabla ya kuomba nambari nyingine ya uthibitishaji.",
     "email_verification_daily_limit_reached": "Umeomba nambari nyingi sana leo. Jaribu tena baadaye.",
-    "logout_failed": "TEED haikuweza kufunga kipindi chako kwa usalama. Angalia muunganisho wako kisha ujaribu tena."
+    "logout_failed": "TEED haikuweza kufunga kipindi chako kwa usalama. Angalia muunganisho wako kisha ujaribu tena.",
+    "password_reset_challenge_invalid": "Nambari ya kubadilisha nenosiri si sahihi au muda wake umeisha. Omba nambari mpya kisha ujaribu tena.",
+    "password_reset_attempt_limit_reached": "Majaribio mengi yasiyo sahihi yamefanyika. Omba nambari mpya baadaye.",
+    "password_reset_grant_invalid": "Ruhusa yako ya kubadilisha nenosiri imeisha au si halali tena. Anza upya.",
+    "password_reset_password_unchanged": "Chagua nenosiri tofauti na nenosiri lako la sasa."
   },
   "IdentityFoundationPreview": {
     "eyebrow": "Ufikiaji salama",
@@ -142,6 +146,70 @@
     "submitting": "Inahifadhi…",
     "success": "Wasifu wako wa TEED uko tayari.",
     "sessionRequired": "Kipindi chako salama hakipatikani. Tafadhali ingia tena."
+  },
+  "PasswordResetRequest": {
+    "eyebrow": "Rejesha akaunti yako",
+    "title": "Badilisha nenosiri lako kwa usalama.",
+    "description": "Weka barua pepe yako na TEED itatuma nambari ikiwa akaunti inastahili.",
+    "cardTitle": "Umesahau nenosiri?",
+    "cardDescription": "Kwa faragha, ujumbe unaofuata ni sawa iwe akaunti inayostahili ipo au haipo.",
+    "email": "Anwani ya barua pepe",
+    "emailPlaceholder": "wewe@example.com",
+    "submit": "Tuma nambari",
+    "submitting": "Inatuma nambari…",
+    "success": "Ikiwa akaunti inastahili, nambari ya kubadilisha nenosiri imetumwa.",
+    "backToLogin": "Rudi kwenye kuingia",
+    "validation": {
+      "email": "Weka anwani sahihi ya barua pepe.",
+      "code": "Weka nambari iliyotumwa kwenye barua pepe.",
+      "password": "Weka nenosiri jipya.",
+      "passwordMinimum": "Tumia angalau herufi nane.",
+      "passwordMatch": "Manenosiri hayafanani."
+    }
+  },
+  "PasswordResetVerify": {
+    "eyebrow": "Thibitisha mabadiliko",
+    "title": "Thibitisha kuwa umepokea nambari.",
+    "description": "Weka nambari iliyotumwa kwenye barua pepe. Nambari ina majaribio na muda maalumu kwa ulinzi wako.",
+    "cardTitle": "Thibitisha nambari",
+    "cardDescription": "Tumia barua pepe iliyoomba mabadiliko na nambari yake ya mwisho.",
+    "email": "Anwani ya barua pepe",
+    "code": "Nambari ya uthibitishaji",
+    "codePlaceholder": "123456",
+    "submit": "Thibitisha nambari",
+    "submitting": "Inathibitisha…",
+    "success": "Nambari imethibitishwa. Sasa unaweza kuchagua nenosiri jipya.",
+    "resend": "Tuma nambari nyingine",
+    "resendWait": "Tuma nambari nyingine baada ya sekunde {seconds}",
+    "resendSuccess": "Ikiwa akaunti inastahili, nambari nyingine imetumwa.",
+    "changeEmail": "Tumia barua pepe nyingine",
+    "validation": {
+      "email": "Weka anwani sahihi ya barua pepe.",
+      "code": "Weka nambari ya tarakimu iliyotumwa kwenye barua pepe.",
+      "password": "Weka nenosiri jipya.",
+      "passwordMinimum": "Tumia angalau herufi nane.",
+      "passwordMatch": "Manenosiri hayafanani."
+    }
+  },
+  "PasswordResetConfirm": {
+    "eyebrow": "Chagua nenosiri jipya",
+    "title": "Tengeneza nenosiri unalolijua wewe tu.",
+    "description": "Baada ya mabadiliko, TEED itafunga vipindi vyote na kukuhitaji uingie upya.",
+    "cardTitle": "Weka nenosiri jipya",
+    "cardDescription": "Tumia nenosiri imara ambalo hujawahi kutumia kwenye akaunti hii.",
+    "password": "Nenosiri jipya",
+    "passwordConfirm": "Thibitisha nenosiri jipya",
+    "passwordHint": "Tumia angalau herufi nane zenye mchanganyiko mgumu kukisiwa.",
+    "submit": "Badilisha nenosiri",
+    "submitting": "Inabadilisha nenosiri…",
+    "success": "Nenosiri limebadilishwa. Vipindi vyote vimefungwa; ingia kwa nenosiri jipya.",
+    "validation": {
+      "email": "Weka anwani sahihi ya barua pepe.",
+      "code": "Weka nambari iliyotumwa kwenye barua pepe.",
+      "password": "Weka nenosiri jipya.",
+      "passwordMinimum": "Tumia angalau herufi nane.",
+      "passwordMatch": "Manenosiri hayafanani."
+    }
   },
   "Dashboard": {
     "title": "Karibu TEED",

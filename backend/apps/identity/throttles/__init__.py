@@ -5,8 +5,11 @@ from .email_verification import (
     EmailVerificationResendIPThrottle,
 )
 from .password_reset import (
-    PasswordResetAccountThrottle,
-    PasswordResetIPThrottle,
+    PasswordResetConfirmIPThrottle,
+    PasswordResetRequestAccountThrottle,
+    PasswordResetRequestIPThrottle,
+    PasswordResetVerifyAccountThrottle,
+    PasswordResetVerifyIPThrottle,
 )
 
 __all__ = [
@@ -15,6 +18,9 @@ __all__ = [
     "EmailVerificationResendIPThrottle",
     "LoginEmailThrottle",
     "LoginIPThrottle",
-    "PasswordResetAccountThrottle",
-    "PasswordResetIPThrottle",
+    "PasswordResetConfirmIPThrottle",
+    "PasswordResetRequestAccountThrottle",
+    "PasswordResetRequestIPThrottle",
+    "PasswordResetVerifyAccountThrottle",
+    "PasswordResetVerifyIPThrottle",
 ]

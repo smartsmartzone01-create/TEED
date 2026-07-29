@@ -76,6 +76,55 @@ class PasswordResetAPITests(TestCase):
         self.assertEqual(known.status_code, unknown.status_code)
         self.assertEqual(known.data["message"], unknown.data["message"])
 
+    @patch(
+        "apps.identity.services.email_verification._generate_verification_code",
+        return_value="123456",
+    )
+    def test_current_password_is_rejected_and_grant_can_be_retried(self, _mock_code):
+        self.client.post(
+            reverse("identity:password-reset-request"),
+            {"email": self.user.email},
+            format="json",
+        )
+        verify_response = self.client.post(
+            reverse("identity:password-reset-verify"),
+            {"email": self.user.email, "code": "123456"},
+            format="json",
+        )
+        self.assertEqual(verify_response.status_code, status.HTTP_200_OK)
+
+        unchanged_response = self.client.post(
+            reverse("identity:password-reset-confirm"),
+            {
+                "new_password": "Old-Password-123!",
+                "new_password_confirm": "Old-Password-123!",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            unchanged_response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+        self.assertEqual(
+            unchanged_response.data["errors"]["code"],
+            "password_reset_password_unchanged",
+        )
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password("Old-Password-123!"))
+
+        retry_response = self.client.post(
+            reverse("identity:password-reset-confirm"),
+            {
+                "new_password": "New-Password-456!",
+                "new_password_confirm": "New-Password-456!",
+            },
+            format="json",
+        )
+        self.assertEqual(retry_response.status_code, status.HTTP_200_OK)
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password("New-Password-456!"))
+
     def test_confirm_rejects_mismatched_passwords(self):
         response = self.client.post(
             reverse("identity:password-reset-confirm"),

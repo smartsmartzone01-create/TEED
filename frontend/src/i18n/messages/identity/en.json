@@ -33,7 +33,11 @@
     "email_verification_not_found": "No active verification code was found. Request a new code.",
     "email_verification_resend_cooldown": "Please wait before requesting another verification code.",
     "email_verification_daily_limit_reached": "You have requested too many codes today. Try again later.",
-    "logout_failed": "TEED could not securely end your session. Check your connection and try again."
+    "logout_failed": "TEED could not securely end your session. Check your connection and try again.",
+    "password_reset_challenge_invalid": "That reset code is incorrect or has expired. Request a new code and try again.",
+    "password_reset_attempt_limit_reached": "Too many incorrect reset attempts were made. Request a new code later.",
+    "password_reset_grant_invalid": "Your password-reset authorization expired or is no longer valid. Start again.",
+    "password_reset_password_unchanged": "Choose a password different from your current password."
   },
   "IdentityFoundationPreview": {
     "eyebrow": "Secure access",
@@ -142,6 +146,70 @@
     "submitting": "Saving…",
     "success": "Your TEED profile is ready.",
     "sessionRequired": "Your secure session is unavailable. Please log in again."
+  },
+  "PasswordResetRequest": {
+    "eyebrow": "Recover your account",
+    "title": "Reset your password securely.",
+    "description": "Enter your email and TEED will send a reset code if the account is eligible.",
+    "cardTitle": "Forgot your password?",
+    "cardDescription": "For privacy, the next message is the same whether or not an eligible account exists.",
+    "email": "Email address",
+    "emailPlaceholder": "you@example.com",
+    "submit": "Send reset code",
+    "submitting": "Sending code…",
+    "success": "If the account is eligible, a password reset code has been sent.",
+    "backToLogin": "Back to login",
+    "validation": {
+      "email": "Enter a valid email address.",
+      "code": "Enter the reset code from your email.",
+      "password": "Enter a new password.",
+      "passwordMinimum": "Use at least eight characters.",
+      "passwordMatch": "The passwords do not match."
+    }
+  },
+  "PasswordResetVerify": {
+    "eyebrow": "Verify the reset",
+    "title": "Confirm that you received the code.",
+    "description": "Enter the reset code sent to your email. The code is limited and expires for your protection.",
+    "cardTitle": "Verify reset code",
+    "cardDescription": "Use the email that requested the reset and its latest code.",
+    "email": "Email address",
+    "code": "Reset code",
+    "codePlaceholder": "123456",
+    "submit": "Verify code",
+    "submitting": "Verifying…",
+    "success": "Code verified. You can now choose a new password.",
+    "resend": "Send another code",
+    "resendWait": "Send another code in {seconds}s",
+    "resendSuccess": "If the account is eligible, another reset code has been sent.",
+    "changeEmail": "Use a different email",
+    "validation": {
+      "email": "Enter a valid email address.",
+      "code": "Enter the numeric reset code from your email.",
+      "password": "Enter a new password.",
+      "passwordMinimum": "Use at least eight characters.",
+      "passwordMatch": "The passwords do not match."
+    }
+  },
+  "PasswordResetConfirm": {
+    "eyebrow": "Choose a new password",
+    "title": "Create a password only you know.",
+    "description": "After the change, TEED will revoke every existing session and require a fresh sign-in.",
+    "cardTitle": "Set new password",
+    "cardDescription": "Use a strong password you have not used for this account before.",
+    "password": "New password",
+    "passwordConfirm": "Confirm new password",
+    "passwordHint": "Use at least eight characters with a mix that is difficult to guess.",
+    "submit": "Change password",
+    "submitting": "Changing password…",
+    "success": "Password changed. All existing sessions were ended; sign in with your new password.",
+    "validation": {
+      "email": "Enter a valid email address.",
+      "code": "Enter the reset code from your email.",
+      "password": "Enter a new password.",
+      "passwordMinimum": "Use at least eight characters.",
+      "passwordMatch": "The passwords do not match."
+    }
   },
   "Dashboard": {
     "title": "Welcome to TEED",
