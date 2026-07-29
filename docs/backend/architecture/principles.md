@@ -148,8 +148,8 @@ controls.
 - Secrets belong in environment configuration, never source control.
 - Logs must not contain tokens, passwords, verification codes, or sensitive
   personal data.
-- Security-relevant state changes should become auditable as the audit
-  foundation is implemented.
+- Security-relevant identity events are recorded in append-only audit records
+  with bounded retention and without credentials or raw contact identifiers.
 
 ## Quality rules
 
@@ -172,20 +172,34 @@ controls.
   email login layers;
 - server-side session families, rotating HttpOnly refresh cookies, reuse
   detection, current-session lookup, logout, and logout-all;
-- concurrency-safe email verification, resend abuse controls, post-commit
-  delivery, and identity security-event records;
-- authenticated-by-default API permissions and per-network/per-account login
-  throttling;
+- concurrency-safe email verification, resend abuse controls, and identity
+  security-event records with configurable retention;
+- adaptive three-stage email password reset with a short-lived, device-bound,
+  single-use grant and all-session revocation after completion;
+- transactional email delivery outbox with encrypted payloads, idempotency,
+  row-lock claiming, stale-lock recovery, bounded retries, expiry, dead-letter
+  handling, and retention cleanup;
+- authenticated-by-default API permissions and per-network/per-account
+  throttling for sensitive identity entry points;
 - versioned identity routes and OpenAPI tooling.
 
-### Required next
+### Ready for frontend integration
 
-- add password-recovery contracts;
-- add verified-phone ownership and delivery contracts.
+The completed email identity contract may be integrated by web, PWA, and future
+mobile clients without changing the backend architecture. The first frontend
+scope may include registration, verification and resend, login, onboarding,
+session restoration and rotation, logout, password reset, and a minimal
+protected dashboard entry.
 
-### Planned
+### Deferred identity capabilities
 
-- broader audit actor tracking and retention policy;
-- background workers for external delivery;
+- verified-phone ownership, SMS delivery, and phone authentication;
+- social identity providers;
+- high-assurance account recovery when the normal email identity is unavailable;
+- user-facing trusted-device and session management.
+
+### Planned platform work
+
+- deployed email-provider adapter and continuously scheduled outbox worker;
 - workspace and tenant isolation;
 - additional business modules and external integrations.

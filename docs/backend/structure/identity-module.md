@@ -14,21 +14,32 @@ identity/
 │   ├── authentication.py
 │   ├── email_verification.py
 │   ├── onboarding.py
+│   ├── password_reset.py
 │   ├── registration.py
 │   ├── session.py
 │   └── session_cookies.py
 ├── authentication/
 │   └── session.py
+├── email/
+│   └── providers.py
+├── management/commands/
+│   ├── process_email_deliveries.py
+│   ├── purge_email_deliveries.py
+│   └── purge_expired_security_events.py
 ├── managers/
 │   └── user.py
 ├── migrations/
 ├── models/
+│   ├── email_delivery.py
 │   ├── email_verification.py
+│   ├── password_reset.py
 │   ├── security_event.py
 │   ├── session.py
 │   └── user.py
 ├── repositories/
+│   ├── email_delivery.py
 │   ├── email_verification.py
+│   ├── password_reset.py
 │   ├── security_event.py
 │   ├── session.py
 │   └── user.py
@@ -40,22 +51,29 @@ identity/
 │   ├── authentication.py
 │   ├── email_verification.py
 │   ├── onboarding.py
+│   ├── password_reset.py
 │   ├── registration.py
 │   └── session.py
 ├── services/
 │   ├── authentication.py
+│   ├── email_delivery.py
+│   ├── email_delivery_crypto.py
+│   ├── email_templates.py
 │   ├── email_verification.py
 │   ├── onboarding.py
+│   ├── password_reset.py
 │   ├── registration.py
 │   ├── security_event.py
 │   ├── session.py
 │   └── token.py
 ├── throttles/
 │   ├── authentication.py
-│   └── email_verification.py
+│   ├── email_verification.py
+│   └── password_reset.py
 ├── tests/
 ├── admin.py
 ├── apps.py
+├── checks.py
 └── urls.py
 ```
 
@@ -243,22 +261,33 @@ Current stable identity errors include:
 - `session_invalid`;
 - `session_expired`;
 - `refresh_token_invalid`;
-- `refresh_token_reuse_detected`.
+- `refresh_token_reuse_detected`;
+- `password_reset_challenge_invalid`;
+- `password_reset_attempt_limit_reached`;
+- `password_reset_grant_invalid`.
 
 ## Current test boundary
 
-Registration, verification, token, session lifecycle, onboarding, user-manager,
-selector, email-login serializer, service, API, CSRF, cookie, replay, revocation,
-and throttle behavior have tests.
+The current suite contains 129 tests covering registration, verification,
+password reset, email delivery, token and session lifecycle, onboarding,
+security audit, managers, selectors, serializers, services, APIs, CSRF, cookies,
+refresh replay and revocation, throttling, encryption, retry, dead-letter, and
+retention behavior.
 
-## Known stabilization work
+## Integration readiness and remaining scope
 
-Before extending identity further:
+The email-based identity journey is ready for frontend integration:
+registration, verification and resend, login, onboarding, session restoration,
+refresh, logout, password reset, and entry into a protected dashboard.
 
-- implement verified-phone ownership;
-- implement high-assurance account recovery separately from password reset;
-- add background provider retry/dead-letter handling and broader audit
-  retention policy.
+The following capabilities remain deliberately outside the completed contract:
 
-These remaining items describe pending work; they are not implemented
-behavior.
+- verified-phone ownership, SMS delivery, and phone authentication;
+- social identity providers;
+- high-assurance account recovery when normal email recovery is unavailable;
+- user-facing trusted-device and session management;
+- a deployed provider adapter and continuously scheduled production worker.
+
+These deferred capabilities extend identity through the existing service and
+provider boundaries. They do not require a change to the modular-monolith
+principles or the current frontend session contract.

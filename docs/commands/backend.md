@@ -8,11 +8,11 @@ C:\Users\smart\OneDrive\Desktop\TEED\backend
 
 ## Activate the virtual environment
 
-If the virtual environment is at the repository root:
+If the Python 3.14 virtual environment is at the repository root:
 
 ```powershell
 cd C:\Users\smart\OneDrive\Desktop\TEED
-.\venv\Scripts\Activate.ps1
+.\venv314\Scripts\Activate.ps1
 cd .\backend
 ```
 
@@ -20,10 +20,20 @@ If PowerShell blocks the activation script for the current process:
 
 ```powershell
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-.\venv\Scripts\Activate.ps1
+.\venv314\Scripts\Activate.ps1
 ```
 
 Do not change the machine-wide policy merely to activate one environment.
+The environment folder name is a local convention and must remain ignored by
+Git. Confirm VS Code uses the same interpreter:
+
+```powershell
+python --version
+python -c "import sys; print(sys.executable)"
+```
+
+The expected executable for this workspace ends in
+`TEED\venv314\Scripts\python.exe`.
 
 ## Install dependencies
 
@@ -32,8 +42,17 @@ python -m pip install --upgrade pip
 python -m pip install -r .\requirements\development.txt
 ```
 
-The requirement files must be UTF-8 and `development.txt` must include the base
-runtime dependencies.
+The requirement files stay under `backend/requirements/`.
+`development.txt` includes the shared runtime dependencies from `base.txt`;
+their location does not control interpreter discovery. Always install through
+`python -m pip` so pip targets the active interpreter.
+
+Verify the environment after installation:
+
+```powershell
+python -m pip check
+python -c "import rest_framework; print(rest_framework.__version__)"
+```
 
 ## Environment file
 

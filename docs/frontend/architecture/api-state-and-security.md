@@ -26,13 +26,19 @@ Services live under `src/services/{module}/` and expose product-oriented
 operations:
 
 ```text
+initializeCsrf
 registerWithEmail
 verifyEmail
 resendVerification
 loginWithEmail
 completeOnboarding
+requestPasswordReset
+verifyPasswordResetCode
+confirmPasswordReset
 refreshSession
+getCurrentSession
 logout
+logoutAll
 ```
 
 They call the shared client, validate external responses, normalize DTOs, and
@@ -45,7 +51,8 @@ return typed results. Services do not render UI or navigate.
 - domain/UI types describe normalized frontend data;
 - TypeScript types alone do not validate runtime data.
 
-The schema-library decision will be made before the first identity form.
+The schema library must be selected as the first frontend integration decision.
+Every backend envelope remains untrusted until validated at runtime.
 
 ## State ownership
 
@@ -89,6 +96,7 @@ The current backend contract indicates:
 ```text
 register → verify_email → complete_onboarding → dashboard
 login ─────────────────→ complete_onboarding or dashboard
+password_reset → verify_reset_code → choose_new_password → sign_in
 ```
 
 Frontend navigation follows the backend `next_step` result but validates route
@@ -112,6 +120,41 @@ The browser session contract is finalized:
 
 Multi-tab logout coordination and server-rendered access remain frontend
 implementation decisions, but they may not weaken this storage contract.
+
+Password-reset verification creates a separate short-lived, device-bound,
+single-use HttpOnly grant cookie. The frontend never reads or stores that grant.
+Successful password confirmation revokes every session, clears the reset grant,
+and returns the user to sign-in.
+
+## Completed identity endpoint contract
+
+The first integration uses these backend endpoints:
+
+| Operation | Endpoint | Browser credential rule |
+| --- | --- | --- |
+| Initialize CSRF | `GET /api/v1/identity/session/csrf/` | Include cookies |
+| Register | `POST /api/v1/identity/registration/email/` | Public |
+| Verify email | `POST /api/v1/identity/email-verification/` | Include cookies and CSRF |
+| Resend verification | `POST /api/v1/identity/email-verification/resend/` | Include cookies |
+| Login | `POST /api/v1/identity/login/email/` | Include cookies and CSRF |
+| Complete onboarding | `POST /api/v1/identity/onboarding/` | Bearer access token |
+| Restore access | `POST /api/v1/identity/session/refresh/` | Include cookies and CSRF |
+| Current session | `GET /api/v1/identity/session/me/` | Bearer access token |
+| Logout | `POST /api/v1/identity/session/logout/` | Include cookies and CSRF |
+| Logout all | `POST /api/v1/identity/session/logout-all/` | Bearer, cookies, and CSRF |
+| Request reset | `POST /api/v1/identity/password-reset/request/` | Include cookies |
+| Verify reset | `POST /api/v1/identity/password-reset/verify/` | Include cookies and CSRF |
+| Confirm reset | `POST /api/v1/identity/password-reset/confirm/` | Include cookies and CSRF |
+
+Frontend navigation may use the backend `next_step` values
+`verify_email`, `complete_onboarding`, `dashboard`,
+`verify_reset_code`, `choose_new_password`, and `sign_in`. Unknown values
+must fail safely instead of producing an arbitrary redirect.
+
+The initial authenticated dashboard is only an integration destination.
+Profile editing, image uploads, verified-phone flows, social login,
+high-assurance account recovery, and device-management screens remain outside
+the completed API contract.
 
 ## Error model
 
@@ -163,6 +206,8 @@ tracking.
 - error normalization;
 - duplicate-submission prevention;
 - registration/login/verification/onboarding routing;
+- password-reset request, verification, confirmation, and forced sign-in;
+- generic anti-enumeration responses;
 - session initialization and expiration;
 - refresh concurrency;
 - logout;
