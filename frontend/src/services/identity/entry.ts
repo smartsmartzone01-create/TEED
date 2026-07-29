@@ -2,6 +2,7 @@ import {
   csrfResponseSchema,
   loginResponseSchema,
   onboardingResponseSchema,
+  refreshResponseSchema,
   registrationResponseSchema,
   resendResponseSchema,
   verificationResponseSchema,
@@ -107,6 +108,17 @@ async function completeOnboarding(
   });
 }
 
+async function restoreSession() {
+  const token = await initializeCsrf();
+
+  return requestApi({
+    csrfToken: token,
+    method: "POST",
+    path: "/api/v1/identity/session/refresh/",
+    schema: refreshResponseSchema,
+  });
+}
+
 async function logoutCurrentSession() {
   const token = await initializeCsrf();
 
@@ -125,5 +137,6 @@ export {
   logoutCurrentSession,
   registerWithEmail,
   resendEmailVerification,
+  restoreSession,
   verifyEmail,
 };
