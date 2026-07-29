@@ -86,10 +86,7 @@ class EmailRegistrationAPITests(APITestCase):
         )
         self.assertIn(
             "password_too_short",
-            {
-                error["code"]
-                for error in fields["password"]
-            },
+            {error["code"] for error in fields["password"]},
         )
 
     def test_duplicate_email_uses_teed_error(
