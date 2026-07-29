@@ -16,7 +16,7 @@
     "email_verification_required": "Verify your email before signing in.",
     "email_verification_code_invalid": "That verification code is incorrect. Check the code and try again.",
     "email_verification_code_expired": "That verification code has expired. Request a new code.",
-    "email_verification_attempt_limit_reached": "Too many incorrect attempts. Request a new verification code.",
+    "email_verification_attempt_limit_reached": "That code has reached its attempt limit. Request a new verification code.",
     "identity_verification_required": "Verify your identity before continuing.",
     "username_already_taken": "That username is already in use. Choose another one.",
     "phone_number_already_registered": "That phone number is already linked to an account.",
@@ -27,7 +27,11 @@
     "refresh_token_invalid": "Your session could not be restored. Sign in again.",
     "refresh_token_reuse_detected": "TEED detected an unsafe session. Sign in again to protect your account.",
     "internal_server_error": "TEED encountered an unexpected problem. Please try again.",
-    "unexpected_error": "Something went wrong. Please try again."
+    "unexpected_error": "Something went wrong. Please try again.",
+    "csrf_failed": "Your secure request expired. TEED refreshed it; please try again.",
+    "email_verification_not_found": "No active verification code was found. Request a new code.",
+    "email_verification_resend_cooldown": "Please wait before requesting another verification code.",
+    "email_verification_daily_limit_reached": "You have requested too many codes today. Try again later."
   },
   "IdentityFoundationPreview": {
     "eyebrow": "Secure access",
