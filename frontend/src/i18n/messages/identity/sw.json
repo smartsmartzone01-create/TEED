@@ -41,5 +41,15 @@
     "submit": "Onyesha ujumbe wa mafanikio",
     "successTitle": "Msingi uko tayari",
     "successMessage": "Mfumo wa arifa wa jumla unafanya kazi."
+  },
+  "IdentityFieldErrors": {
+    "required": "Taarifa hii inahitajika.",
+    "blank": "Taarifa hii haiwezi kuwa tupu.",
+    "invalid": "Weka taarifa sahihi.",
+    "invalid_email": "Weka anwani sahihi ya barua pepe.",
+    "password_too_short": "Tumia nenosiri refu zaidi.",
+    "password_too_common": "Chagua nenosiri lisilotumiwa sana.",
+    "password_entirely_numeric": "Jumuisha herufi au alama kwenye nenosiri lako.",
+    "password_too_similar": "Chagua nenosiri lisilofanana sana na taarifa zako binafsi."
   }
 }
