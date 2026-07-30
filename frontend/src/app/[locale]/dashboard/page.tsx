@@ -1,9 +1,6 @@
 import { setRequestLocale } from "next-intl/server";
 
-import { IdentityAccessBoundary } from "@/components/identity/identity-access-boundary";
-import { IdentityBackground } from "@/components/identity/identity-background";
-import { IdentityDashboard } from "@/components/identity/identity-dashboard";
-import { IdentityHeader } from "@/components/identity/identity-header";
+import { DashboardOverview } from "@/components/dashboard/dashboard-overview";
 
 type DashboardPageProps = {
   params: Promise<{ locale: string }>;
@@ -15,15 +12,5 @@ export default async function DashboardPage({
   const { locale } = await params;
   setRequestLocale(locale);
 
-  return (
-    <div className="relative isolate min-h-svh overflow-hidden">
-      <IdentityBackground />
-      <IdentityHeader />
-      <div className="relative z-10">
-        <IdentityAccessBoundary access="dashboard">
-          <IdentityDashboard />
-        </IdentityAccessBoundary>
-      </div>
-    </div>
-  );
+  return <DashboardOverview />;
 }

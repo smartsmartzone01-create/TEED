@@ -14,10 +14,12 @@ export default getRequestConfig(async ({ requestLocale }) => {
     : routing.defaultLocale;
 
   const [
+    dashboardMessages,
     globalMessages,
     identityMessages,
     marketingMessages,
   ] = await Promise.all([
+    import(`@/i18n/messages/dashboard/${locale}.json`),
     import(`@/i18n/messages/global/${locale}.json`),
     import(`@/i18n/messages/identity/${locale}.json`),
     import(`@/i18n/messages/marketing/${locale}.json`),
@@ -26,6 +28,7 @@ export default getRequestConfig(async ({ requestLocale }) => {
   return {
     locale,
     messages: {
+      ...dashboardMessages.default,
       ...globalMessages.default,
       ...identityMessages.default,
       ...marketingMessages.default,
