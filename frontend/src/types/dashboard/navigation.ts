@@ -8,7 +8,9 @@ type DashboardDestination =
   | "/dashboard/preferences"
   | "/dashboard/profile"
   | "/dashboard/security"
-  | "/dashboard/workspaces";
+  | "/dashboard/workspaces"
+  | "/dashboard/workspaces/access"
+  | "/dashboard/workspaces/create";
 
 type DashboardNavigationItem = {
   href: DashboardDestination;

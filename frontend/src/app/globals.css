@@ -4,6 +4,8 @@
 @import "../styles/global/layouts.css";
 @import "../styles/global/animations.css";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

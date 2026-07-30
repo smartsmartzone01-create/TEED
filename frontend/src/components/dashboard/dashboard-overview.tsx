@@ -10,31 +10,66 @@ import {
 import { useTranslations } from "next-intl";
 
 import { DashboardAvatar } from "@/components/dashboard/dashboard-avatar";
-import { Card } from "@/components/global/primitives/card";
 import { Link } from "@/i18n/navigation";
 import { useIdentitySession } from "@/providers/identity/identity-session-provider";
 import type { DashboardDestination } from "@/types/dashboard/navigation";
 
-type OverviewCard = {
+type StatusCard = {
   href: DashboardDestination;
   icon: typeof UserRound;
   key: "notifications" | "profile" | "security" | "workspaces";
+  tone: "blue" | "emerald" | "orange" | "violet";
 };
 
-const overviewCards: OverviewCard[] = [
-  { href: "/dashboard/profile", icon: UserRound, key: "profile" },
-  { href: "/dashboard/security", icon: LockKeyhole, key: "security" },
+const statusCards: StatusCard[] = [
   {
-    href: "/dashboard/notifications",
-    icon: Bell,
-    key: "notifications",
+    href: "/dashboard/profile",
+    icon: UserRound,
+    key: "profile",
+    tone: "blue",
+  },
+  {
+    href: "/dashboard/security",
+    icon: LockKeyhole,
+    key: "security",
+    tone: "emerald",
   },
   {
     href: "/dashboard/workspaces",
     icon: BriefcaseBusiness,
     key: "workspaces",
+    tone: "orange",
+  },
+  {
+    href: "/dashboard/notifications",
+    icon: Bell,
+    key: "notifications",
+    tone: "violet",
   },
 ];
+
+const toneStyles = {
+  blue: {
+    accent: "bg-blue-500",
+    icon: "bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300",
+    ring: "border-blue-200 dark:border-blue-900",
+  },
+  emerald: {
+    accent: "bg-emerald-500",
+    icon: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300",
+    ring: "border-emerald-200 dark:border-emerald-900",
+  },
+  orange: {
+    accent: "bg-orange-500",
+    icon: "bg-orange-50 text-orange-700 dark:bg-orange-950/50 dark:text-orange-300",
+    ring: "border-orange-200 dark:border-orange-900",
+  },
+  violet: {
+    accent: "bg-violet-500",
+    icon: "bg-violet-50 text-violet-700 dark:bg-violet-950/50 dark:text-violet-300",
+    ring: "border-violet-200 dark:border-violet-900",
+  },
+} as const;
 
 function DashboardOverview() {
   const t = useTranslations("DashboardOverview");
@@ -43,107 +78,96 @@ function DashboardOverview() {
 
   return (
     <div className="space-y-6">
-      <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950 sm:p-8">
-        <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-          <div className="max-w-2xl">
-            <p className="text-sm font-medium text-brand-orange-accessible dark:text-brand-orange">
-              {t("eyebrow")}
-            </p>
-            <h2 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">
+      <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950 sm:p-7">
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 items-center gap-4">
+            <DashboardAvatar
+              className="size-14 text-base sm:size-16 sm:text-lg"
+              size="large"
+            />
+            <h2 className="truncate text-2xl font-semibold tracking-tight sm:text-3xl">
               {t("welcome", { name: accountName })}
             </h2>
-            <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-400 sm:text-base">
-              {t("description")}
-            </p>
           </div>
 
-          <DashboardAvatar
-            className="size-16 text-lg sm:size-20 sm:text-xl"
-            size="large"
-          />
+          <div className="flex flex-wrap gap-2">
+            <Link
+              className="inline-flex h-10 items-center justify-center rounded-xl bg-slate-950 px-4 text-sm font-medium text-white transition hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950/30 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
+              href="/dashboard/workspaces/create"
+            >
+              {t("createBusiness")}
+            </Link>
+            <Link
+              className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950/20 dark:border-slate-800 dark:bg-slate-950 dark:hover:bg-slate-900"
+              href="/dashboard/workspaces/access"
+            >
+              {t("requestAccess")}
+            </Link>
+          </div>
         </div>
       </section>
 
-      <section aria-labelledby="overview-sections-title">
-        <div className="mb-4 flex items-end justify-between gap-4">
-          <div>
-            <h2
-              className="text-lg font-semibold"
-              id="overview-sections-title"
-            >
-              {t("sectionsTitle")}
-            </h2>
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-              {t("sectionsDescription")}
-            </p>
-          </div>
+      <section aria-labelledby="account-state-title">
+        <div className="mb-4">
+          <h2 className="text-lg font-semibold" id="account-state-title">
+            {t("stateTitle")}
+          </h2>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            {t("stateDescription")}
+          </p>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {overviewCards.map((item) => {
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {statusCards.map((item) => {
             const Icon = item.icon;
+            const styles = toneStyles[item.tone];
+            const isIdentityReady =
+              item.key === "security" &&
+              Boolean(user?.isOnboardingComplete);
 
             return (
-              <Card
-                className="group relative overflow-hidden border-slate-200 bg-white p-5 shadow-sm backdrop-blur-none transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md dark:border-slate-800 dark:bg-slate-950 dark:hover:border-slate-700 sm:p-5"
+              <article
+                className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-800 dark:bg-slate-950"
                 key={item.key}
               >
-                <div className="flex items-start justify-between gap-4">
-                  <span className="inline-flex size-10 items-center justify-center rounded-xl bg-slate-100 text-slate-700 dark:bg-slate-900 dark:text-slate-200">
+                <div className="flex items-start justify-between gap-3">
+                  <span
+                    className={`inline-flex size-10 items-center justify-center rounded-xl ${styles.icon}`}
+                  >
                     <Icon className="size-4.5" />
                   </span>
-                  <ArrowUpRight className="size-4 text-slate-400 transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-brand-orange" />
+                  <span
+                    className={`relative inline-flex size-10 items-center justify-center rounded-full border-4 ${styles.ring}`}
+                  >
+                    <span
+                      className={`size-2.5 rounded-full ${styles.accent}`}
+                    />
+                  </span>
                 </div>
-                <h3 className="mt-5 font-semibold">
-                  {t(`cards.${item.key}.title`)}
-                </h3>
-                <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
-                  {t(`cards.${item.key}.description`)}
-                </p>
+
+                <div className="mt-4 flex items-end justify-between gap-3">
+                  <div className="min-w-0">
+                    <h3 className="truncate text-sm font-semibold">
+                      {t(`cards.${item.key}.title`)}
+                    </h3>
+                    <p className="mt-1 truncate text-xs text-slate-500 dark:text-slate-400">
+                      {isIdentityReady
+                        ? t("cards.security.ready")
+                        : t(`cards.${item.key}.pending`)}
+                    </p>
+                  </div>
+                  <ArrowUpRight className="size-4 shrink-0 text-slate-400 transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+                </div>
+
                 <Link
                   aria-label={t(`cards.${item.key}.action`)}
                   className="absolute inset-0 rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-navy/40"
                   href={item.href}
                 />
-              </Card>
+              </article>
             );
           })}
         </div>
-      </section>
-
-      <section className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
-        <Card className="border-slate-200 bg-white p-6 shadow-sm backdrop-blur-none dark:border-slate-800 dark:bg-slate-950 sm:p-6">
-          <h2 className="font-semibold">{t("status.title")}</h2>
-          <div className="mt-5 flex items-center gap-3 rounded-2xl bg-emerald-50 p-4 text-emerald-900 dark:bg-emerald-950/35 dark:text-emerald-200">
-            <span className="size-2.5 rounded-full bg-emerald-500" />
-            <div>
-              <p className="text-sm font-semibold">{t("status.active")}</p>
-              <p className="mt-0.5 text-xs opacity-75">
-                {t("status.activeDescription")}
-              </p>
-            </div>
-          </div>
-        </Card>
-
-        <Card className="border-slate-200 bg-white p-6 shadow-sm backdrop-blur-none dark:border-slate-800 dark:bg-slate-950 sm:p-6">
-          <h2 className="font-semibold">{t("quickActions.title")}</h2>
-          <div className="mt-4 space-y-2">
-            <Link
-              className="flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-900"
-              href="/dashboard/security"
-            >
-              {t("quickActions.security")}
-              <ArrowUpRight className="size-4 text-slate-400" />
-            </Link>
-            <Link
-              className="flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-900"
-              href="/dashboard/preferences"
-            >
-              {t("quickActions.preferences")}
-              <ArrowUpRight className="size-4 text-slate-400" />
-            </Link>
-          </div>
-        </Card>
       </section>
     </div>
   );

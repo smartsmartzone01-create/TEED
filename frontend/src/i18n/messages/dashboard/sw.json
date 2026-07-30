@@ -2,6 +2,7 @@
   "DashboardShell": {
     "account": "Akaunti",
     "accountMenu": "Fungua menyu ya akaunti",
+    "mobileMenu": "Fungua menyu ya dashibodi",
     "workspaceLabel": "Dashibodi binafsi",
     "primaryNavigation": "Urambazaji wa dashibodi",
     "openNavigation": "Fungua urambazaji",
@@ -24,42 +25,33 @@
   },
   "DashboardOverview": {
     "accountFallback": "hapo",
-    "eyebrow": "Akaunti yako ya TEED",
     "welcome": "Karibu, {name}",
-    "description": "Akaunti, ufikiaji na shughuli zako za baadaye za biashara zitakutana hapa bila kuchanganya umiliki wake.",
-    "sectionsTitle": "Dashibodi yako",
-    "sectionsDescription": "Fungua sehemu ili kusimamia taarifa zinazomilikiwa na sehemu hiyo ya TEED.",
+    "createBusiness": "Unda biashara",
+    "requestAccess": "Omba ufikiaji",
+    "stateTitle": "Hali ya akaunti",
+    "stateDescription": "Kadi hizi zitasasishwa na API zinazozimiliki kila moduli inapopatikana.",
     "cards": {
       "profile": {
         "title": "Wasifu",
-        "description": "Utambulisho wako wa wazi na muonekano binafsi.",
+        "pending": "API ya wasifu haijaunganishwa",
         "action": "Fungua wasifu"
       },
       "security": {
         "title": "Usalama na ufikiaji",
-        "description": "Nenosiri, mawasiliano yaliyothibitishwa, vipindi na urejeshaji.",
+        "pending": "Hali ya usalama haipatikani",
+        "ready": "Usanidi wa utambulisho umekamilika",
         "action": "Fungua usalama na ufikiaji"
       },
       "notifications": {
         "title": "Arifa",
-        "description": "Kikasha maalumu cha shughuli muhimu za TEED.",
+        "pending": "API ya kikasha haijaunganishwa",
         "action": "Fungua arifa"
       },
       "workspaces": {
         "title": "Nafasi za kazi",
-        "description": "Biashara, majukumu, mialiko na uanachama.",
+        "pending": "API ya nafasi za kazi haijaunganishwa",
         "action": "Fungua nafasi za kazi"
       }
-    },
-    "status": {
-      "title": "Hali ya akaunti",
-      "active": "Umeingia kwa usalama",
-      "activeDescription": "Mwonekano huu unaonyesha kipindi chako cha sasa kilichothibitishwa."
-    },
-    "quickActions": {
-      "title": "Vitendo vya haraka",
-      "security": "Kagua usalama wa akaunti",
-      "preferences": "Fungua mapendeleo"
     }
   },
   "DashboardPlaceholder": {
