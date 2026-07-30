@@ -20,11 +20,14 @@ src/app/
     └── dashboard/
         ├── layout.tsx
         ├── page.tsx
+        ├── ai/
         ├── profile/
         ├── preferences/
         ├── security/
         ├── notifications/
         ├── workspaces/
+        │   ├── create/
+        │   └── access/
         ├── billing/
         └── help/
 ```
@@ -149,19 +152,27 @@ The shell is a frontend composition namespace. It owns no backend model, API,
 permission, or duplicated domain state. Profile, identity, notification,
 workspace, and billing screens will consume APIs owned by those applications.
 
-The overview currently renders authenticated identity information and explicit
-extension states only. Placeholder destinations must not simulate workspace,
-notification, billing, or profile records before their APIs exist.
+The overview currently renders authenticated identity information, four compact
+live-state destinations, and explicit extension states only. On desktop,
+secondary destination cards provide focused explanations; mobile keeps the four
+live-state cards to avoid unnecessary vertical scrolling. Tooltips clarify
+compact controls and destination cards without replacing visible labels.
+Placeholder destinations must not simulate workspace, notification, billing,
+profile, or AI records before their APIs exist. TEED AI is reserved as a
+navigation boundary until its permissions and data contracts are defined.
 
 The dashboard routes are:
 
 ```text
 /{locale}/dashboard
+/{locale}/dashboard/ai
 /{locale}/dashboard/profile
 /{locale}/dashboard/preferences
 /{locale}/dashboard/security
 /{locale}/dashboard/notifications
 /{locale}/dashboard/workspaces
+/{locale}/dashboard/workspaces/create
+/{locale}/dashboard/workspaces/access
 /{locale}/dashboard/billing
 /{locale}/dashboard/help
 ```

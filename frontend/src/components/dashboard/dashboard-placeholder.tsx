@@ -5,6 +5,7 @@ import { Link } from "@/i18n/navigation";
 
 type DashboardPlaceholderProps = {
   section:
+    | "ai"
     | "billing"
     | "help"
     | "notifications"

@@ -2,6 +2,7 @@ import type { LucideIcon } from "lucide-react";
 
 type DashboardDestination =
   | "/dashboard"
+  | "/dashboard/ai"
   | "/dashboard/billing"
   | "/dashboard/help"
   | "/dashboard/notifications"
@@ -18,6 +19,7 @@ type DashboardNavigationItem = {
   key:
     | "billing"
     | "help"
+    | "ai"
     | "notifications"
     | "overview"
     | "preferences"

@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   LockKeyhole,
   Settings2,
+  Sparkles,
   UserRound,
   X,
 } from "lucide-react";
@@ -29,6 +30,7 @@ type DashboardSidebarProps = {
 
 const navigationItems: DashboardNavigationItem[] = [
   { href: "/dashboard", icon: LayoutDashboard, key: "overview" },
+  { href: "/dashboard/ai", icon: Sparkles, key: "ai" },
   { href: "/dashboard/profile", icon: UserRound, key: "profile" },
   {
     href: "/dashboard/preferences",

@@ -4,12 +4,17 @@ import {
   ArrowUpRight,
   Bell,
   BriefcaseBusiness,
+  CircleHelp,
+  CreditCard,
   LockKeyhole,
+  Settings2,
+  Sparkles,
   UserRound,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { DashboardAvatar } from "@/components/dashboard/dashboard-avatar";
+import { Tooltip } from "@/components/global/primitives/tooltip";
 import { Link } from "@/i18n/navigation";
 import { useIdentitySession } from "@/providers/identity/identity-session-provider";
 import type { DashboardDestination } from "@/types/dashboard/navigation";
@@ -47,6 +52,29 @@ const statusCards: StatusCard[] = [
     tone: "violet",
   },
 ];
+
+const destinationCards = [
+  {
+    href: "/dashboard/ai",
+    icon: Sparkles,
+    key: "ai",
+  },
+  {
+    href: "/dashboard/preferences",
+    icon: Settings2,
+    key: "preferences",
+  },
+  {
+    href: "/dashboard/billing",
+    icon: CreditCard,
+    key: "billing",
+  },
+  {
+    href: "/dashboard/help",
+    icon: CircleHelp,
+    key: "help",
+  },
+] as const;
 
 const toneStyles = {
   blue: {
@@ -91,31 +119,39 @@ function DashboardOverview() {
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <Link
-              className="inline-flex h-10 items-center justify-center rounded-xl bg-slate-950 px-4 text-sm font-medium text-white transition hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950/30 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
-              href="/dashboard/workspaces/create"
+            <Tooltip
+              content={t("createBusinessTooltip")}
+              side="bottom"
             >
-              {t("createBusiness")}
-            </Link>
-            <Link
-              className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950/20 dark:border-slate-800 dark:bg-slate-950 dark:hover:bg-slate-900"
-              href="/dashboard/workspaces/access"
+              <Link
+                className="inline-flex h-10 items-center justify-center rounded-xl bg-slate-950 px-4 text-sm font-medium text-white transition hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950/30 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
+                href="/dashboard/workspaces/create"
+              >
+                {t("createBusiness")}
+              </Link>
+            </Tooltip>
+            <Tooltip
+              content={t("requestAccessTooltip")}
+              side="bottom"
             >
-              {t("requestAccess")}
-            </Link>
+              <Link
+                className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950/20 dark:border-slate-800 dark:bg-slate-950 dark:hover:bg-slate-900"
+                href="/dashboard/workspaces/access"
+              >
+                {t("requestAccess")}
+              </Link>
+            </Tooltip>
           </div>
         </div>
       </section>
 
       <section aria-labelledby="account-state-title">
-        <div className="mb-4">
-          <h2 className="text-lg font-semibold" id="account-state-title">
-            {t("stateTitle")}
-          </h2>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            {t("stateDescription")}
-          </p>
-        </div>
+        <h2
+          className="mb-4 text-lg font-semibold"
+          id="account-state-title"
+        >
+          {t("stateTitle")}
+        </h2>
 
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {statusCards.map((item) => {
@@ -126,45 +162,88 @@ function DashboardOverview() {
               Boolean(user?.isOnboardingComplete);
 
             return (
-              <article
-                className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-800 dark:bg-slate-950"
+              <Tooltip
+                content={t(`cards.${item.key}.tooltip`)}
                 key={item.key}
+                side="top"
               >
-                <div className="flex items-start justify-between gap-3">
-                  <span
-                    className={`inline-flex size-10 items-center justify-center rounded-xl ${styles.icon}`}
-                  >
-                    <Icon className="size-4.5" />
-                  </span>
-                  <span
-                    className={`relative inline-flex size-10 items-center justify-center rounded-full border-4 ${styles.ring}`}
-                  >
-                    <span
-                      className={`size-2.5 rounded-full ${styles.accent}`}
-                    />
-                  </span>
-                </div>
-
-                <div className="mt-4 flex items-end justify-between gap-3">
-                  <div className="min-w-0">
-                    <h3 className="truncate text-sm font-semibold">
-                      {t(`cards.${item.key}.title`)}
-                    </h3>
-                    <p className="mt-1 truncate text-xs text-slate-500 dark:text-slate-400">
-                      {isIdentityReady
-                        ? t("cards.security.ready")
-                        : t(`cards.${item.key}.pending`)}
-                    </p>
-                  </div>
-                  <ArrowUpRight className="size-4 shrink-0 text-slate-400 transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
-                </div>
-
                 <Link
                   aria-label={t(`cards.${item.key}.action`)}
-                  className="absolute inset-0 rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-navy/40"
+                  className="group overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-navy/40 dark:border-slate-800 dark:bg-slate-950"
                   href={item.href}
-                />
-              </article>
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <span
+                      className={`inline-flex size-10 items-center justify-center rounded-xl ${styles.icon}`}
+                    >
+                      <Icon className="size-4.5" />
+                    </span>
+                    <span
+                      className={`relative inline-flex size-10 items-center justify-center rounded-full border-4 ${styles.ring}`}
+                    >
+                      <span
+                        className={`size-2.5 rounded-full ${styles.accent}`}
+                      />
+                    </span>
+                  </div>
+
+                  <div className="mt-4 flex items-end justify-between gap-3">
+                    <div className="min-w-0">
+                      <h3 className="truncate text-sm font-semibold">
+                        {t(`cards.${item.key}.title`)}
+                      </h3>
+                      <p className="mt-1 truncate text-xs text-slate-500 dark:text-slate-400">
+                        {isIdentityReady
+                          ? t("cards.security.ready")
+                          : t(`cards.${item.key}.pending`)}
+                      </p>
+                    </div>
+                    <ArrowUpRight className="size-4 shrink-0 text-slate-400 transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+                  </div>
+                </Link>
+              </Tooltip>
+            );
+          })}
+        </div>
+      </section>
+
+      <section
+        aria-labelledby="dashboard-destinations-title"
+        className="hidden lg:block"
+      >
+        <h2
+          className="mb-4 text-lg font-semibold"
+          id="dashboard-destinations-title"
+        >
+          {t("destinationsTitle")}
+        </h2>
+        <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+          {destinationCards.map((item) => {
+            const Icon = item.icon;
+
+            return (
+              <Tooltip
+                content={t(`destinations.${item.key}.tooltip`)}
+                key={item.key}
+                side="top"
+              >
+                <Link
+                  className="group flex min-h-28 items-start gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-slate-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-navy/40 dark:border-slate-800 dark:bg-slate-950 dark:hover:border-slate-700"
+                  href={item.href}
+                >
+                  <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-700 dark:bg-slate-900 dark:text-slate-200">
+                    <Icon className="size-4.5" />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-sm font-semibold">
+                      {t(`destinations.${item.key}.title`)}
+                    </span>
+                    <span className="mt-1 block text-xs leading-5 text-slate-500 dark:text-slate-400">
+                      {t(`destinations.${item.key}.description`)}
+                    </span>
+                  </span>
+                </Link>
+              </Tooltip>
             );
           })}
         </div>
