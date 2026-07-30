@@ -12,6 +12,7 @@ import { Input } from "@/components/global/primitives/input";
 import { Select } from "@/components/global/primitives/select";
 import { ProfilePage } from "@/components/profile/profile-page";
 import { useApiErrorMessages } from "@/hooks/global/use-api-error-messages";
+import { useRouter } from "@/i18n/navigation";
 import { firstFieldIssue } from "@/lib/global/api-errors";
 import { useNotification } from "@/providers/global/notification-provider";
 import { useProfile } from "@/providers/profile/profile-provider";
@@ -22,6 +23,7 @@ import type { ProfileUpdateValues } from "@/types/profile/profile";
 function ProfileEditForm() {
   const t = useTranslations("ProfileEdit");
   const errorsT = useTranslations("IdentityErrors");
+  const router = useRouter();
   const { getErrorMessage, getFieldMessage } = useApiErrorMessages();
   const { notify } = useNotification();
   const { personal, removeImage, save } = useProfile();
@@ -91,6 +93,7 @@ function ProfileEditForm() {
     try {
       await save(values);
       notify({ message: t("success"), tone: "success" });
+      router.push("/dashboard/profile/personal");
     } catch (error) {
       if (error instanceof ApiClientError) {
         const fields = [
