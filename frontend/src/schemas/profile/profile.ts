@@ -14,7 +14,7 @@ const profileOverviewSchema = z.object({
     z.object({
       destination: z.string(),
       key: z.string(),
-      optional: z.boolean(),
+      optional: z.boolean().optional().default(false),
     }),
   ),
   quick_links: z.array(z.string()),
