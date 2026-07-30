@@ -74,6 +74,11 @@ class IdentitySecurityEvent(BaseModel):
             "password_reset_failed",
             "Password reset failed",
         )
+        PROFILE_UPDATED = "profile_updated", "Profile updated"
+        PROFILE_IMAGE_REMOVED = (
+            "profile_image_removed",
+            "Profile image removed",
+        )
 
     class Outcome(models.TextChoices):
         SUCCESS = "success", "Success"

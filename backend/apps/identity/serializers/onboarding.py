@@ -1,24 +1,7 @@
 import re
 
+from common.localization import SUPPORTED_COUNTRIES, SUPPORTED_COUNTRY_CHOICES
 from rest_framework import serializers
-
-COUNTRY_PHONE_RULES = {
-    "TZ": {
-        "name": "Tanzania",
-        "calling_code": "255",
-        "national_pattern": r"^[67]\d{8}$",
-    },
-    "KE": {
-        "name": "Kenya",
-        "calling_code": "254",
-        "national_pattern": r"^[17]\d{8}$",
-    },
-    "UG": {
-        "name": "Uganda",
-        "calling_code": "256",
-        "national_pattern": r"^7\d{8}$",
-    },
-}
 
 
 class OnboardingSerializer(serializers.Serializer):
@@ -32,11 +15,7 @@ class OnboardingSerializer(serializers.Serializer):
     )
 
     country_code = serializers.ChoiceField(
-        choices=[
-            ("TZ", "Tanzania"),
-            ("KE", "Kenya"),
-            ("UG", "Uganda"),
-        ],
+        choices=SUPPORTED_COUNTRY_CHOICES,
     )
 
     phone_number = serializers.CharField(
@@ -51,7 +30,7 @@ class OnboardingSerializer(serializers.Serializer):
 
     def validate(self, attrs):
         country_code = attrs["country_code"]
-        rule = COUNTRY_PHONE_RULES[country_code]
+        rule = SUPPORTED_COUNTRIES[country_code]
 
         phone_number = re.sub(
             r"[\s\-()]",

@@ -14,7 +14,8 @@ backend/
 │       ├── development.py
 │       └── production.py
 ├── apps/
-│   └── identity/
+│   ├── identity/
+│   └── profiles/
 ├── common/
 ├── requirements/
 │   ├── base.txt
@@ -25,8 +26,8 @@ backend/
     └── common/
 ```
 
-The current `routes/` documentation directory is transitional. Durable module
-contracts belong under `docs/backend/structure/`.
+The `routes/` directory is a concise development reference. Durable ownership
+and architecture contracts belong under `docs/backend/structure/`.
 
 ## `config/`
 
@@ -112,6 +113,8 @@ common/
 ├── constants/
 ├── database/
 ├── exceptions/
+├── http/
+├── localization/
 ├── logging/
 ├── mixins/
 ├── pagination/
