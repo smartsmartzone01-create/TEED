@@ -1,0 +1,70 @@
+{
+  "DashboardShell": {
+    "account": "Account",
+    "accountMenu": "Open account menu",
+    "workspaceLabel": "Personal dashboard",
+    "primaryNavigation": "Dashboard navigation",
+    "openNavigation": "Open navigation",
+    "closeNavigation": "Close navigation",
+    "collapseSidebar": "Collapse sidebar",
+    "expandSidebar": "Expand sidebar",
+    "notificationsSoon": "Notification inbox is coming next",
+    "logout": "Log out",
+    "loggingOut": "Logging out…",
+    "navigation": {
+      "overview": "Overview",
+      "profile": "Profile",
+      "preferences": "Preferences",
+      "security": "Security & access",
+      "notifications": "Notifications",
+      "workspaces": "Workspaces",
+      "billing": "Plan & billing",
+      "help": "Help & FAQ"
+    }
+  },
+  "DashboardOverview": {
+    "accountFallback": "there",
+    "eyebrow": "Your TEED account",
+    "welcome": "Welcome, {name}",
+    "description": "Your account, access, and future business activity will come together here without mixing their ownership.",
+    "sectionsTitle": "Your dashboard",
+    "sectionsDescription": "Open a section to manage the information owned by that part of TEED.",
+    "cards": {
+      "profile": {
+        "title": "Profile",
+        "description": "Your public identity and personal presentation.",
+        "action": "Open profile"
+      },
+      "security": {
+        "title": "Security & access",
+        "description": "Credentials, verified contacts, sessions, and recovery.",
+        "action": "Open security and access"
+      },
+      "notifications": {
+        "title": "Notifications",
+        "description": "A focused inbox for important TEED activity.",
+        "action": "Open notifications"
+      },
+      "workspaces": {
+        "title": "Workspaces",
+        "description": "Businesses, roles, invitations, and memberships.",
+        "action": "Open workspaces"
+      }
+    },
+    "status": {
+      "title": "Account status",
+      "active": "Signed in securely",
+      "activeDescription": "This view reflects your current authenticated session."
+    },
+    "quickActions": {
+      "title": "Quick actions",
+      "security": "Review account security",
+      "preferences": "Open preferences"
+    }
+  },
+  "DashboardPlaceholder": {
+    "eyebrow": "Dashboard foundation",
+    "description": "This destination is connected to the dashboard shell. Its owning application and live API will be implemented as a separate package.",
+    "back": "Back to overview"
+  }
+}

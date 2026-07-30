@@ -14,6 +14,27 @@ const DropdownMenu = DropdownMenuPrimitive.Root;
 const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger;
 const DropdownMenuRadioGroup = DropdownMenuPrimitive.RadioGroup;
 
+const DropdownMenuItem = forwardRef<
+  ComponentRef<typeof DropdownMenuPrimitive.Item>,
+  ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Item>
+>(({ className, ...props }, ref) => (
+  <DropdownMenuPrimitive.Item
+    className={cn(
+      "flex cursor-pointer select-none items-center gap-3 rounded-xl",
+      "px-3 py-2.5 text-sm font-medium text-foreground/75",
+      "outline-none transition-colors",
+      "data-highlighted:bg-foreground/5 data-highlighted:text-foreground",
+      "data-disabled:pointer-events-none data-disabled:opacity-50",
+      className,
+    )}
+    ref={ref}
+    {...props}
+  />
+));
+
+DropdownMenuItem.displayName =
+  DropdownMenuPrimitive.Item.displayName;
+
 const DropdownMenuContent = forwardRef<
   ComponentRef<typeof DropdownMenuPrimitive.Content>,
   ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Content>
@@ -21,7 +42,7 @@ const DropdownMenuContent = forwardRef<
   <DropdownMenuPrimitive.Portal>
     <DropdownMenuPrimitive.Content
       className={cn(
-        "z-100' min-w-52 rounded-2xl",
+        "z-[100] min-w-52 rounded-2xl",
         "border border-brand-navy/15 bg-background/95 p-2",
         "text-foreground shadow-xl backdrop-blur-xl",
         "outline-none",
@@ -112,6 +133,7 @@ DropdownMenuSeparator.displayName =
 export {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,

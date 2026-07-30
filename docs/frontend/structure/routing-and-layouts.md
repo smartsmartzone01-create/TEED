@@ -18,6 +18,15 @@ src/app/
     │   └── new/
     ├── onboarding/
     └── dashboard/
+        ├── layout.tsx
+        ├── page.tsx
+        ├── profile/
+        ├── preferences/
+        ├── security/
+        ├── notifications/
+        ├── workspaces/
+        ├── billing/
+        └── help/
 ```
 
 `generateStaticParams` produces English and Swahili variants. The canonical
@@ -50,7 +59,7 @@ locale preservation is required.
 
 1. resolves the requested locale;
 2. falls back to the default;
-3. loads global and marketing message bundles;
+3. loads dashboard, global, identity, and marketing message bundles;
 4. merges them for `next-intl`.
 
 Future module messages should be loaded intentionally. Avoid putting all
@@ -126,15 +135,38 @@ verification, and confirmation sequence. The verification route accepts the
 email only as UI continuity; the reset authorization itself remains an
 HttpOnly, device-bound backend cookie. Confirmation always returns to login.
 
-## Layout targets
+## Protected dashboard shell
 
-Future layouts may include:
+`dashboard/layout.tsx` owns the authenticated application shell:
 
-- marketing layout;
-- identity layout;
-- protected application shell;
-- system/error layout;
-- administration layout.
+- responsive and collapsible sidebar;
+- sidebar navigation and account footer;
+- sticky account header;
+- dashboard content boundary;
+- one shared `IdentityAccessBoundary`.
+
+The shell is a frontend composition namespace. It owns no backend model, API,
+permission, or duplicated domain state. Profile, identity, notification,
+workspace, and billing screens will consume APIs owned by those applications.
+
+The overview currently renders authenticated identity information and explicit
+extension states only. Placeholder destinations must not simulate workspace,
+notification, billing, or profile records before their APIs exist.
+
+The dashboard routes are:
+
+```text
+/{locale}/dashboard
+/{locale}/dashboard/profile
+/{locale}/dashboard/preferences
+/{locale}/dashboard/security
+/{locale}/dashboard/notifications
+/{locale}/dashboard/workspaces
+/{locale}/dashboard/billing
+/{locale}/dashboard/help
+```
+
+Future layouts may include a system/error layout and administration layout.
 
 Layouts own repeated visual structure and provider boundaries. They must not
 pretend to authorize backend operations.

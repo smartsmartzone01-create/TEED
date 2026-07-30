@@ -1,0 +1,70 @@
+{
+  "DashboardShell": {
+    "account": "Akaunti",
+    "accountMenu": "Fungua menyu ya akaunti",
+    "workspaceLabel": "Dashibodi binafsi",
+    "primaryNavigation": "Urambazaji wa dashibodi",
+    "openNavigation": "Fungua urambazaji",
+    "closeNavigation": "Funga urambazaji",
+    "collapseSidebar": "Punguza utepe wa pembeni",
+    "expandSidebar": "Panua utepe wa pembeni",
+    "notificationsSoon": "Kikasha cha arifa kitafuata",
+    "logout": "Toka",
+    "loggingOut": "Inatoka…",
+    "navigation": {
+      "overview": "Muhtasari",
+      "profile": "Wasifu",
+      "preferences": "Mapendeleo",
+      "security": "Usalama na ufikiaji",
+      "notifications": "Arifa",
+      "workspaces": "Nafasi za kazi",
+      "billing": "Mpango na malipo",
+      "help": "Msaada na maswali"
+    }
+  },
+  "DashboardOverview": {
+    "accountFallback": "hapo",
+    "eyebrow": "Akaunti yako ya TEED",
+    "welcome": "Karibu, {name}",
+    "description": "Akaunti, ufikiaji na shughuli zako za baadaye za biashara zitakutana hapa bila kuchanganya umiliki wake.",
+    "sectionsTitle": "Dashibodi yako",
+    "sectionsDescription": "Fungua sehemu ili kusimamia taarifa zinazomilikiwa na sehemu hiyo ya TEED.",
+    "cards": {
+      "profile": {
+        "title": "Wasifu",
+        "description": "Utambulisho wako wa wazi na muonekano binafsi.",
+        "action": "Fungua wasifu"
+      },
+      "security": {
+        "title": "Usalama na ufikiaji",
+        "description": "Nenosiri, mawasiliano yaliyothibitishwa, vipindi na urejeshaji.",
+        "action": "Fungua usalama na ufikiaji"
+      },
+      "notifications": {
+        "title": "Arifa",
+        "description": "Kikasha maalumu cha shughuli muhimu za TEED.",
+        "action": "Fungua arifa"
+      },
+      "workspaces": {
+        "title": "Nafasi za kazi",
+        "description": "Biashara, majukumu, mialiko na uanachama.",
+        "action": "Fungua nafasi za kazi"
+      }
+    },
+    "status": {
+      "title": "Hali ya akaunti",
+      "active": "Umeingia kwa usalama",
+      "activeDescription": "Mwonekano huu unaonyesha kipindi chako cha sasa kilichothibitishwa."
+    },
+    "quickActions": {
+      "title": "Vitendo vya haraka",
+      "security": "Kagua usalama wa akaunti",
+      "preferences": "Fungua mapendeleo"
+    }
+  },
+  "DashboardPlaceholder": {
+    "eyebrow": "Msingi wa dashibodi",
+    "description": "Sehemu hii imeunganishwa na muundo wa dashibodi. Programu inayoimiliki na API yake hai itatekelezwa kama kifurushi tofauti.",
+    "back": "Rudi kwenye muhtasari"
+  }
+}
