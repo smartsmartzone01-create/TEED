@@ -95,6 +95,11 @@ coverage before release.
 Test configuration must be reproducible and must never connect to production
 data.
 
+`config.settings.test` provides an in-memory SQLite database, local-memory
+cache and email backend for fast, isolated development checks. Release and
+database-integrity verification must still run against PostgreSQL because
+SQLite cannot prove PostgreSQL locking, indexing, or constraint behavior.
+
 ## Required commands
 
 From `backend/` with the virtual environment active:
@@ -103,6 +108,12 @@ From `backend/` with the virtual environment active:
 python manage.py check
 python manage.py makemigrations --check
 python manage.py test
+```
+
+To use the isolated fast-test settings:
+
+```powershell
+python manage.py test --settings=config.settings.test
 ```
 
 Run a focused identity module:
