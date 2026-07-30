@@ -1,0 +1,132 @@
+{
+  "ProfileNavigation": {
+    "label": "Profile sections",
+    "toggle": "Show or hide profile sections",
+    "overview": "Overview",
+    "personal": "Personal information",
+    "edit": "Edit profile",
+    "contacts": "Contact information"
+  },
+  "ProfileCommon": {
+    "eyebrow": "Your profile",
+    "loading": "Loading profile",
+    "loadError": "TEED could not load your profile. Check the connection and try again.",
+    "retry": "Try again"
+  },
+  "ProfileOverview": {
+    "title": "Profile overview",
+    "description": "See what is complete, what still needs attention, and where to make each change.",
+    "completion": {
+      "title": "Profile completion",
+      "fields": "{complete} of {total} required details complete",
+      "complete": "All required profile details are complete."
+    },
+    "prompts": {
+      "first_name": "Add your first name.",
+      "last_name": "Add your last name.",
+      "username": "Choose your TEED username.",
+      "country_code": "Select your country.",
+      "phone_number": "Add your primary phone number through Security & access.",
+      "profile_image": "Optional: add a profile image so business members can recognize you."
+    },
+    "contacts": {
+      "title": "Verified contacts",
+      "email": "Primary email",
+      "phone": "Primary phone",
+      "verified": "Verified",
+      "unverified": "Not verified"
+    },
+    "quickLinks": {
+      "personal": {
+        "label": "View personal information",
+        "tooltip": "Review identity details, location, contacts, verification state, and account creation date."
+      },
+      "edit": {
+        "label": "Edit profile",
+        "tooltip": "Update your name, username, country, region, or profile image."
+      },
+      "contacts": {
+        "label": "Review contacts",
+        "tooltip": "See why TEED stores your primary contacts and whether they can support recovery."
+      }
+    }
+  },
+  "PersonalInformation": {
+    "title": "Personal information",
+    "description": "Your current identity and profile record. Verification and account dates are read-only.",
+    "imageAlt": "Current profile image",
+    "notProvided": "Not provided",
+    "verified": "Verified",
+    "unverified": "Not verified",
+    "fields": {
+      "firstName": "First name",
+      "lastName": "Last name",
+      "username": "Username",
+      "country": "Country",
+      "region": "Region",
+      "email": "Primary email",
+      "phone": "Primary phone",
+      "created": "Account created"
+    },
+    "countries": {
+      "TZ": "Tanzania",
+      "KE": "Kenya",
+      "UG": "Uganda"
+    }
+  },
+  "ProfileEdit": {
+    "title": "Edit profile",
+    "description": "Update details used to identify you inside TEED and its business workspaces.",
+    "fields": {
+      "image": "Profile image",
+      "firstName": "First name",
+      "lastName": "Last name",
+      "username": "Username",
+      "country": "Country",
+      "region": "Region"
+    },
+    "countries": {
+      "TZ": "Tanzania",
+      "KE": "Kenya",
+      "UG": "Uganda"
+    },
+    "imageHelp": "JPEG, PNG, or WebP; maximum 5 MB. The preview appears before saving.",
+    "removeImage": "Remove current image",
+    "save": "Save changes",
+    "saving": "Saving…",
+    "success": "Your profile was updated.",
+    "imageRemoved": "Your profile image was removed.",
+    "validation": {
+      "firstName": "Enter your first name.",
+      "lastName": "Enter your last name.",
+      "username": "Use 3 to 30 letters, numbers, or underscores.",
+      "region": "Region must be 100 characters or fewer.",
+      "imageSize": "Choose an image that is 5 MB or smaller.",
+      "imageType": "Choose a JPEG, PNG, or WebP image."
+    }
+  },
+  "ContactInformation": {
+    "title": "Contact information",
+    "description": "Review the primary contacts TEED uses, their verification state, and their specific purpose.",
+    "loading": "Loading contact information…",
+    "loadError": "TEED could not load contact information. Reload the page and try again.",
+    "notProvided": "Not provided",
+    "verified": "Verified",
+    "unverified": "Not verified",
+    "recoveryAvailable": "This verified contact can currently support account recovery.",
+    "recoveryUnavailable": "This contact is not currently available for account recovery.",
+    "email": {
+      "title": "Primary email",
+      "purpose": "Used for sign-in, verification, password recovery, and important security notices."
+    },
+    "phone": {
+      "title": "Primary phone",
+      "purpose": "Stored as part of your identity record and reserved for phone verification when that service is enabled."
+    },
+    "identityManaged": {
+      "title": "Protected by Identity",
+      "description": "Email and phone changes require dedicated verification and security decisions. They cannot be edited as ordinary profile text.",
+      "action": "Open Security & access"
+    }
+  }
+}

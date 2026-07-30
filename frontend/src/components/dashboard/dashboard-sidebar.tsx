@@ -3,6 +3,7 @@
 import {
   Bell,
   BriefcaseBusiness,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   LayoutDashboard,
@@ -13,10 +14,12 @@ import {
   X,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { useState } from "react";
 
 import { DashboardAccountMenu } from "@/components/dashboard/dashboard-account-menu";
 import { BrandMark } from "@/components/global/brand/brand-mark";
 import { Tooltip } from "@/components/global/primitives/tooltip";
+import { profileLinks } from "@/components/profile/profile-navigation";
 import { Link, usePathname } from "@/i18n/navigation";
 import { cn } from "@/lib/global/class-names";
 import type { DashboardNavigationItem } from "@/types/dashboard/navigation";
@@ -62,6 +65,13 @@ function DashboardSidebar({
 }: DashboardSidebarProps) {
   const pathname = usePathname();
   const t = useTranslations("DashboardShell");
+  const profileT = useTranslations("ProfileNavigation");
+  const [profileOpen, setProfileOpen] = useState(
+    pathname.startsWith("/dashboard/profile"),
+  );
+
+  const profileExpanded =
+    profileOpen || pathname.startsWith("/dashboard/profile");
 
   return (
     <>
@@ -152,7 +162,7 @@ function DashboardSidebar({
               </Link>
             );
 
-            return collapsed ? (
+            const itemContent = collapsed ? (
               <Tooltip
                 content={t(`navigation.${item.key}`)}
                 key={item.href}
@@ -161,6 +171,58 @@ function DashboardSidebar({
               </Tooltip>
             ) : (
               <div key={item.href}>{link}</div>
+            );
+
+            if (item.key !== "profile" || collapsed) {
+              return itemContent;
+            }
+
+            return (
+              <div key={item.href}>
+                <div className="relative">
+                  {link}
+                  <button
+                    aria-expanded={profileExpanded}
+                    aria-label={profileT("toggle")}
+                    className="absolute right-2 top-1/2 inline-flex size-8 -translate-y-1/2 items-center justify-center rounded-lg hover:bg-black/10 dark:hover:bg-white/10"
+                    onClick={() => setProfileOpen((value) => !value)}
+                    type="button"
+                  >
+                    <ChevronDown
+                      className={cn(
+                        "size-4 transition-transform",
+                        profileExpanded && "rotate-180",
+                      )}
+                    />
+                  </button>
+                </div>
+                {profileExpanded ? (
+                  <div className="ml-7 mt-1 space-y-1 border-l border-slate-200 pl-3 dark:border-slate-800">
+                    {profileLinks.map((profileLink) => {
+                      const active =
+                        profileLink.href === "/dashboard/profile"
+                          ? pathname === profileLink.href
+                          : pathname.startsWith(profileLink.href);
+                      return (
+                        <Link
+                          aria-current={active ? "page" : undefined}
+                          className={cn(
+                            "block rounded-lg px-3 py-2 text-xs font-medium transition-colors",
+                            active
+                              ? "bg-slate-100 text-slate-950 dark:bg-slate-900 dark:text-white"
+                              : "text-slate-500 hover:text-slate-950 dark:text-slate-400 dark:hover:text-white",
+                          )}
+                          href={profileLink.href}
+                          key={profileLink.key}
+                          onClick={onCloseMobile}
+                        >
+                          {profileT(profileLink.key)}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                ) : null}
+              </div>
             );
           })}
         </nav>

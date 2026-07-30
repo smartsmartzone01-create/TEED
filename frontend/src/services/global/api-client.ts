@@ -20,7 +20,7 @@ const API_BASE_URL =
 
 type ApiRequestOptions<T> = {
   accessToken?: string;
-  body?: unknown;
+  body?: FormData | unknown;
   csrfToken?: string;
   method?: "DELETE" | "GET" | "PATCH" | "POST" | "PUT";
   path: string;
@@ -69,7 +69,7 @@ async function requestApi<T>({
     Accept: "application/json",
   });
 
-  if (body !== undefined) {
+  if (body !== undefined && !(body instanceof FormData)) {
     headers.set("Content-Type", "application/json");
   }
 
@@ -85,7 +85,12 @@ async function requestApi<T>({
 
   try {
     response = await fetch(buildUrl(path), {
-      body: body === undefined ? undefined : JSON.stringify(body),
+      body:
+        body === undefined
+          ? undefined
+          : body instanceof FormData
+            ? body
+            : JSON.stringify(body),
       credentials: "include",
       headers,
       method,
