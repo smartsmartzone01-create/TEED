@@ -12,14 +12,16 @@ components/
 │       ├── button.tsx
 │       ├── dropdown-menu.tsx
 │       └── tooltip.tsx
-└── marketing/
-    ├── brand-mark.tsx
-    ├── marketing-header.tsx
-    ├── marketing-hero.tsx
-    ├── marketing-mega-menu.tsx
-    ├── marketing-stage.tsx
-    ├── platform-connections.tsx
-    └── teed-overview.tsx
+├── dashboard/
+├── identity/
+├── marketing/
+└── profile/
+    ├── contact-information.tsx
+    ├── personal-information.tsx
+    ├── profile-edit-form.tsx
+    ├── profile-navigation.tsx
+    ├── profile-overview.tsx
+    └── profile-page.tsx
 ```
 
 ## Global primitives
@@ -38,8 +40,8 @@ radio groups, items, and content.
 ### Tooltip
 
 The tooltip wrapper centralizes delay, portal, positioning, and visual style.
-The current malformed `z-100'` class is a known code issue to correct during
-the code-cleanup phase.
+Compact dashboard destinations use tooltips to explain their purpose without
+replacing visible navigation labels.
 
 ## Global controls
 
@@ -91,11 +93,14 @@ compose reusable primitives and imported assets.
 GlobalProviders
 └── ThemeProvider
     └── TooltipProvider
+        └── IdentitySessionProvider
 ```
 
 `NextIntlClientProvider` is composed by the locale layout around page content.
-Provider order must remain deterministic. Future session and query providers
-should document why they need global scope.
+Provider order must remain deterministic. `ProfileProvider` is intentionally
+scoped to the protected dashboard layout. It loads the profile overview and
+personal record, retries once through the session refresh flow, and keeps the
+dashboard state and Identity session display synchronized after edits.
 
 ## Style map
 
@@ -136,18 +141,11 @@ declaration so TypeScript's standalone check recognizes the asset type.
 7. add a CSS module only for complex owned styling;
 8. promote to global after verified cross-module reuse.
 
-## Future identity component shape
+## Profile component behavior
 
-Expected responsibilities may include:
-
-```text
-components/identity/
-├── login-form.tsx
-├── registration-form.tsx
-├── email-verification-form.tsx
-└── onboarding-form.tsx
-```
-
-Forms will consume identity hooks, schemas, services, types, and styles from
-their respective responsibility-first directories. Those files should be
-introduced one workflow at a time.
+Profile pages consume APIs owned by the Profiles and Identity backend
+applications. The frontend provider does not redefine domain ownership.
+Identity-managed contacts are read-only in profile screens and direct users to
+Security & access for future protected replacement flows. Image uploads use
+multipart form data; identity presentation fields and region share the same
+audited update endpoint.

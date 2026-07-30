@@ -17,6 +17,7 @@ import { DashboardAvatar } from "@/components/dashboard/dashboard-avatar";
 import { Tooltip } from "@/components/global/primitives/tooltip";
 import { Link } from "@/i18n/navigation";
 import { useIdentitySession } from "@/providers/identity/identity-session-provider";
+import { useProfile } from "@/providers/profile/profile-provider";
 import type { DashboardDestination } from "@/types/dashboard/navigation";
 
 type StatusCard = {
@@ -102,6 +103,7 @@ const toneStyles = {
 function DashboardOverview() {
   const t = useTranslations("DashboardOverview");
   const { user } = useIdentitySession();
+  const { overview } = useProfile();
   const accountName = user?.username || user?.email || t("accountFallback");
 
   return (
@@ -160,6 +162,12 @@ function DashboardOverview() {
             const isIdentityReady =
               item.key === "security" &&
               Boolean(user?.isOnboardingComplete);
+            const profileState =
+              item.key === "profile" && overview
+                ? t("cards.profile.progress", {
+                    percentage: overview.completion.percentage,
+                  })
+                : null;
 
             return (
               <Tooltip
@@ -193,9 +201,10 @@ function DashboardOverview() {
                         {t(`cards.${item.key}.title`)}
                       </h3>
                       <p className="mt-1 truncate text-xs text-slate-500 dark:text-slate-400">
-                        {isIdentityReady
+                        {profileState ??
+                          (isIdentityReady
                           ? t("cards.security.ready")
-                          : t(`cards.${item.key}.pending`)}
+                          : t(`cards.${item.key}.pending`))}
                       </p>
                     </div>
                     <ArrowUpRight className="size-4 shrink-0 text-slate-400 transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />

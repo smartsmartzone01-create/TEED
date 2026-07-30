@@ -22,6 +22,9 @@ src/app/
         ├── page.tsx
         ├── ai/
         ├── profile/
+        │   ├── personal/
+        │   ├── edit/
+        │   └── contacts/
         ├── preferences/
         ├── security/
         ├── notifications/
@@ -62,7 +65,7 @@ locale preservation is required.
 
 1. resolves the requested locale;
 2. falls back to the default;
-3. loads dashboard, global, identity, and marketing message bundles;
+3. loads dashboard, global, identity, marketing, and profile message bundles;
 4. merges them for `next-intl`.
 
 Future module messages should be loaded intentionally. Avoid putting all
@@ -157,8 +160,14 @@ live-state destinations, and explicit extension states only. On desktop,
 secondary destination cards provide focused explanations; mobile keeps the four
 live-state cards to avoid unnecessary vertical scrolling. Tooltips clarify
 compact controls and destination cards without replacing visible labels.
+Profile is integrated with its owning backend API and exposes overview,
+personal-information, edit, and contact-information routes. Its desktop
+navigation expands beneath Profile; mobile uses compact section links rather
+than a persistent nested sidebar. The dashboard profile state reads the same
+provider and updates immediately after a successful edit.
+
 Placeholder destinations must not simulate workspace, notification, billing,
-profile, or AI records before their APIs exist. TEED AI is reserved as a
+or AI records before their APIs exist. TEED AI is reserved as a
 navigation boundary until its permissions and data contracts are defined.
 
 The dashboard routes are:
@@ -167,6 +176,9 @@ The dashboard routes are:
 /{locale}/dashboard
 /{locale}/dashboard/ai
 /{locale}/dashboard/profile
+/{locale}/dashboard/profile/personal
+/{locale}/dashboard/profile/edit
+/{locale}/dashboard/profile/contacts
 /{locale}/dashboard/preferences
 /{locale}/dashboard/security
 /{locale}/dashboard/notifications

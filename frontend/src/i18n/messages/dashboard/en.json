@@ -36,6 +36,7 @@
       "profile": {
         "title": "Profile",
         "pending": "Profile API not connected",
+        "progress": "{percentage}% complete",
         "action": "Open profile",
         "tooltip": "Open your personal details, profile image, and contact information."
       },

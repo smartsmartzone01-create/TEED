@@ -1,0 +1,132 @@
+{
+  "ProfileNavigation": {
+    "label": "Sehemu za wasifu",
+    "toggle": "Onyesha au ficha sehemu za wasifu",
+    "overview": "Muhtasari",
+    "personal": "Taarifa binafsi",
+    "edit": "Hariri wasifu",
+    "contacts": "Taarifa za mawasiliano"
+  },
+  "ProfileCommon": {
+    "eyebrow": "Wasifu wako",
+    "loading": "Inapakia wasifu",
+    "loadError": "TEED haikuweza kupakia wasifu wako. Kagua muunganisho kisha ujaribu tena.",
+    "retry": "Jaribu tena"
+  },
+  "ProfileOverview": {
+    "title": "Muhtasari wa wasifu",
+    "description": "Angalia kilichokamilika, kinachohitaji umakini na mahali pa kufanya kila badiliko.",
+    "completion": {
+      "title": "Ukamilifu wa wasifu",
+      "fields": "Taarifa {complete} kati ya {total} zinazohitajika zimekamilika",
+      "complete": "Taarifa zote muhimu za wasifu zimekamilika."
+    },
+    "prompts": {
+      "first_name": "Ongeza jina lako la kwanza.",
+      "last_name": "Ongeza jina lako la mwisho.",
+      "username": "Chagua jina lako la mtumiaji la TEED.",
+      "country_code": "Chagua nchi yako.",
+      "phone_number": "Ongeza namba yako kuu kupitia Usalama na ufikiaji.",
+      "profile_image": "Hiari: ongeza picha ili wanachama wa biashara waweze kukutambua."
+    },
+    "contacts": {
+      "title": "Mawasiliano yaliyothibitishwa",
+      "email": "Barua pepe kuu",
+      "phone": "Simu kuu",
+      "verified": "Imethibitishwa",
+      "unverified": "Haijathibitishwa"
+    },
+    "quickLinks": {
+      "personal": {
+        "label": "Tazama taarifa binafsi",
+        "tooltip": "Kagua utambulisho, eneo, mawasiliano, hali ya uthibitisho na tarehe ya kufungua akaunti."
+      },
+      "edit": {
+        "label": "Hariri wasifu",
+        "tooltip": "Badili jina, jina la mtumiaji, nchi, mkoa au picha yako."
+      },
+      "contacts": {
+        "label": "Kagua mawasiliano",
+        "tooltip": "Fahamu kwa nini TEED huhifadhi mawasiliano yako na kama yanaweza kusaidia urejeshaji."
+      }
+    }
+  },
+  "PersonalInformation": {
+    "title": "Taarifa binafsi",
+    "description": "Rekodi yako ya sasa ya utambulisho na wasifu. Uthibitisho na tarehe ya akaunti haziwezi kuhaririwa.",
+    "imageAlt": "Picha ya sasa ya wasifu",
+    "notProvided": "Haijatolewa",
+    "verified": "Imethibitishwa",
+    "unverified": "Haijathibitishwa",
+    "fields": {
+      "firstName": "Jina la kwanza",
+      "lastName": "Jina la mwisho",
+      "username": "Jina la mtumiaji",
+      "country": "Nchi",
+      "region": "Mkoa",
+      "email": "Barua pepe kuu",
+      "phone": "Simu kuu",
+      "created": "Akaunti ilifunguliwa"
+    },
+    "countries": {
+      "TZ": "Tanzania",
+      "KE": "Kenya",
+      "UG": "Uganda"
+    }
+  },
+  "ProfileEdit": {
+    "title": "Hariri wasifu",
+    "description": "Sasisha taarifa zinazokutambulisha ndani ya TEED na maeneo ya kazi ya biashara.",
+    "fields": {
+      "image": "Picha ya wasifu",
+      "firstName": "Jina la kwanza",
+      "lastName": "Jina la mwisho",
+      "username": "Jina la mtumiaji",
+      "country": "Nchi",
+      "region": "Mkoa"
+    },
+    "countries": {
+      "TZ": "Tanzania",
+      "KE": "Kenya",
+      "UG": "Uganda"
+    },
+    "imageHelp": "JPEG, PNG au WebP; hadi MB 5. Utaona picha kabla ya kuhifadhi.",
+    "removeImage": "Ondoa picha ya sasa",
+    "save": "Hifadhi mabadiliko",
+    "saving": "Inahifadhi…",
+    "success": "Wasifu wako umesasishwa.",
+    "imageRemoved": "Picha yako ya wasifu imeondolewa.",
+    "validation": {
+      "firstName": "Weka jina lako la kwanza.",
+      "lastName": "Weka jina lako la mwisho.",
+      "username": "Tumia herufi, namba au mstari wa chini 3 hadi 30.",
+      "region": "Mkoa usizidi herufi 100.",
+      "imageSize": "Chagua picha ya MB 5 au chini.",
+      "imageType": "Chagua picha ya JPEG, PNG au WebP."
+    }
+  },
+  "ContactInformation": {
+    "title": "Taarifa za mawasiliano",
+    "description": "Kagua mawasiliano makuu ambayo TEED hutumia, hali ya uthibitisho na matumizi yake maalum.",
+    "loading": "Inapakia taarifa za mawasiliano…",
+    "loadError": "TEED haikuweza kupakia taarifa za mawasiliano. Pakia ukurasa upya kisha ujaribu tena.",
+    "notProvided": "Haijatolewa",
+    "verified": "Imethibitishwa",
+    "unverified": "Haijathibitishwa",
+    "recoveryAvailable": "Mawasiliano haya yaliyothibitishwa yanaweza kusaidia urejeshaji wa akaunti.",
+    "recoveryUnavailable": "Mawasiliano haya bado hayawezi kutumika kurejesha akaunti.",
+    "email": {
+      "title": "Barua pepe kuu",
+      "purpose": "Hutumika kuingia, kuthibitisha, kurejesha nenosiri na kupokea taarifa muhimu za usalama."
+    },
+    "phone": {
+      "title": "Simu kuu",
+      "purpose": "Huhifadhiwa kwenye utambulisho wako na itatumika kwa uthibitisho wa simu huduma hiyo itakapowezeshwa."
+    },
+    "identityManaged": {
+      "title": "Inalindwa na Utambulisho",
+      "description": "Kubadili barua pepe au simu kunahitaji uthibitisho na maamuzi maalum ya usalama. Haziwezi kuhaririwa kama maandishi ya kawaida ya wasifu.",
+      "action": "Fungua Usalama na ufikiaji"
+    }
+  }
+}
