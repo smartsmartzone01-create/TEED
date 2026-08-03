@@ -1,11 +1,11 @@
 import { setRequestLocale } from "next-intl/server";
 
-import { DashboardPlaceholder } from "@/components/dashboard/dashboard-placeholder";
+import { PreferencesPage } from "@/components/dashboard/preferences/preferences-page";
 
 type PageProps = { params: Promise<{ locale: string }> };
 
-export default async function PreferencesPage({ params }: PageProps) {
+export default async function PreferencesRoute({ params }: PageProps) {
   const { locale } = await params;
   setRequestLocale(locale);
-  return <DashboardPlaceholder section="preferences" />;
+  return <PreferencesPage />;
 }
