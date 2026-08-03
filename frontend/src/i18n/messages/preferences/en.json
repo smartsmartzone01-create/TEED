@@ -1,0 +1,42 @@
+{
+  "Preferences": {
+    "eyebrow": "Your account",
+    "title": "Preferences",
+    "description": "Control how TEED looks, speaks, formats dates and time, and handles motion across your signed-in devices.",
+    "loading": "Loading preferences…",
+    "loadError": "TEED could not load your preferences.",
+    "retry": "Try again",
+    "saved": "Your preference was saved.",
+    "saveError": "TEED could not save that preference. The previous value was restored.",
+    "language": {
+      "title": "Language",
+      "description": "Choose the language used throughout TEED.",
+      "label": "Application language",
+      "english": "English",
+      "swahili": "Swahili"
+    },
+    "appearance": {
+      "title": "Appearance",
+      "description": "Follow your device or use a fixed light or dark theme.",
+      "label": "Application appearance",
+      "system": "System",
+      "light": "Light",
+      "dark": "Dark"
+    },
+    "dateTime": {
+      "title": "Date & time",
+      "description": "Set your timezone and the formats TEED uses for dates and time.",
+      "timezone": "Timezone",
+      "dateFormat": "Date format",
+      "timeFormat": "Time format",
+      "twelveHour": "12-hour",
+      "twentyFourHour": "24-hour"
+    },
+    "accessibility": {
+      "title": "Accessibility",
+      "description": "Adjust motion behavior for a more comfortable experience.",
+      "reducedMotion": "Reduce motion",
+      "reducedMotionHelp": "Limit animated backgrounds and non-essential transitions."
+    }
+  }
+}
