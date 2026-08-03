@@ -34,6 +34,7 @@ function PreferencesProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const { setTheme } = useTheme();
   const { accessToken, clearSession, refreshAccessToken, user } = useIdentitySession();
+  const accountKey = user?.email ?? "anonymous";
   const [preferences, setPreferences] = useState<UserPreferences | null>(null);
   const [error, setError] = useState<ApiClientError | Error | null>(null);
   const [loading, setLoading] = useState(true);
@@ -95,7 +96,6 @@ function PreferencesProvider({ children }: { children: ReactNode }) {
       if (!response.data) throw new Error("Preferences response data missing.");
       let next = response.data;
       const browserTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      const accountKey = user?.email ?? "anonymous";
       const timezoneKey = `teed.preferences.timezone-initialized:${accountKey}`;
       const timezoneInitialized = window.localStorage.getItem(timezoneKey);
       if (!timezoneInitialized && next.timezone === "UTC" && browserTimezone && browserTimezone !== "UTC") {
@@ -110,7 +110,7 @@ function PreferencesProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }, [applyGlobalPreferences, user?.email, withToken]);
+  }, [accountKey, applyGlobalPreferences, withToken]);
 
   useEffect(() => {
     if (!accessToken) return;
