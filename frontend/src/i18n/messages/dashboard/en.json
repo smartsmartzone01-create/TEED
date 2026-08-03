@@ -33,55 +33,17 @@
     "requestAccessTooltip": "Request access to a business or workspace you are eligible to join.",
     "stateTitle": "Account state",
     "cards": {
-      "profile": {
-        "title": "Profile",
-        "pending": "Profile API not connected",
-        "progress": "{percentage}% complete",
-        "action": "Open profile",
-        "tooltip": "Open your personal details, profile image, and contact information."
-      },
-      "security": {
-        "title": "Security & access",
-        "pending": "Security state unavailable",
-        "ready": "Identity setup complete",
-        "action": "Open security and access",
-        "tooltip": "Review passwords, verified contacts, sessions, and recovery methods."
-      },
-      "notifications": {
-        "title": "Notifications",
-        "pending": "Inbox API not connected",
-        "action": "Open notifications",
-        "tooltip": "Open important alerts and the action links attached to them."
-      },
-      "workspaces": {
-        "title": "Workspaces",
-        "pending": "Workspace API not connected",
-        "action": "Open workspaces",
-        "tooltip": "Review businesses, roles, invitations, and workspace membership."
-      }
+      "profile": {"title": "Profile", "pending": "Profile API not connected", "progress": "{percentage}% complete", "action": "Open profile", "tooltip": "Open your personal details, profile image, and contact information."},
+      "security": {"title": "Security & access", "pending": "Security state unavailable", "ready": "Identity setup complete", "action": "Open security and access", "tooltip": "Review passwords, verified contacts, sessions, and recovery methods."},
+      "notifications": {"title": "Notifications", "pending": "Inbox API not connected", "action": "Open notifications", "tooltip": "Open important alerts and the action links attached to them."},
+      "workspaces": {"title": "Workspaces", "pending": "Workspace API not connected", "action": "Open workspaces", "tooltip": "Review businesses, roles, invitations, and workspace membership."}
     },
     "destinationsTitle": "More destinations",
     "destinations": {
-      "ai": {
-        "title": "TEED AI",
-        "description": "Future intelligent help across connected TEED modules.",
-        "tooltip": "AI tools will appear here after their permissions and data contracts are defined."
-      },
-      "preferences": {
-        "title": "Preferences",
-        "description": "Language, appearance, region, and display choices.",
-        "tooltip": "Control how TEED looks and presents information for your account."
-      },
-      "billing": {
-        "title": "Plan & billing",
-        "description": "Plan, subscription, and payment information.",
-        "tooltip": "Review your TEED plan and billing details when billing becomes available."
-      },
-      "help": {
-        "title": "Help & FAQ",
-        "description": "Guidance and answers for using TEED.",
-        "tooltip": "Find focused guidance about TEED features and common tasks."
-      }
+      "ai": {"title": "TEED AI", "description": "Future intelligent help across connected TEED modules.", "tooltip": "AI tools will appear here after their permissions and data contracts are defined."},
+      "preferences": {"title": "Preferences", "description": "Language, appearance, timezone, date and time formats, and accessibility.", "tooltip": "Control how TEED looks and presents information for your account."},
+      "billing": {"title": "Plan & billing", "description": "Plan, subscription, and payment information.", "tooltip": "Review your TEED plan and billing details when billing becomes available."},
+      "help": {"title": "Help & FAQ", "description": "Guidance and answers for using TEED.", "tooltip": "Find focused guidance about TEED features and common tasks."}
     }
   },
   "DashboardPlaceholder": {

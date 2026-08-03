@@ -2,20 +2,21 @@ import type { ReactNode } from "react";
 
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 import { IdentityAccessBoundary } from "@/components/identity/identity-access-boundary";
+import { PreferencesProvider } from "@/providers/dashboard/preferences-provider";
 import { ProfileProvider } from "@/providers/profile/profile-provider";
 
 type DashboardLayoutProps = {
   children: ReactNode;
 };
 
-export default function DashboardLayout({
-  children,
-}: DashboardLayoutProps) {
+export default function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
     <IdentityAccessBoundary access="dashboard">
-      <ProfileProvider>
-        <DashboardShell>{children}</DashboardShell>
-      </ProfileProvider>
+      <PreferencesProvider>
+        <ProfileProvider>
+          <DashboardShell>{children}</DashboardShell>
+        </ProfileProvider>
+      </PreferencesProvider>
     </IdentityAccessBoundary>
   );
 }
