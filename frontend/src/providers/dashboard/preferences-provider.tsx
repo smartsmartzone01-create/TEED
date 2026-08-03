@@ -15,16 +15,8 @@ import {
 import { usePathname, useRouter } from "@/i18n/navigation";
 import { useIdentitySession } from "@/providers/identity/identity-session-provider";
 import { ApiClientError } from "@/services/global/api-client";
-import {
-  getPreferences,
-  updatePreferences,
-} from "@/services/dashboard/preferences";
-import type {
-  UserPreferences,
-  UserPreferenceUpdate,
-} from "@/types/dashboard/preferences";
-
-const TIMEZONE_INITIALIZED_KEY = "teed.preferences.timezone-initialized";
+import { getPreferences, updatePreferences } from "@/services/dashboard/preferences";
+import type { UserPreferences, UserPreferenceUpdate } from "@/types/dashboard/preferences";
 
 type PreferencesContextValue = {
   error: ApiClientError | Error | null;
@@ -41,7 +33,7 @@ function PreferencesProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { setTheme } = useTheme();
-  const { accessToken, clearSession, refreshAccessToken } = useIdentitySession();
+  const { accessToken, clearSession, refreshAccessToken, user } = useIdentitySession();
   const [preferences, setPreferences] = useState<UserPreferences | null>(null);
   const [error, setError] = useState<ApiClientError | Error | null>(null);
   const [loading, setLoading] = useState(true);
@@ -52,15 +44,11 @@ function PreferencesProvider({ children }: { children: ReactNode }) {
       try {
         return await operation(accessToken);
       } catch (requestError) {
-        if (!(requestError instanceof ApiClientError) || requestError.details.kind !== "unauthenticated") {
-          throw requestError;
-        }
+        if (!(requestError instanceof ApiClientError) || requestError.details.kind !== "unauthenticated") throw requestError;
         try {
           return await operation(await refreshAccessToken());
         } catch (refreshError) {
-          if (refreshError instanceof ApiClientError && refreshError.details.kind === "unauthenticated") {
-            clearSession();
-          }
+          if (refreshError instanceof ApiClientError && refreshError.details.kind === "unauthenticated") clearSession();
           throw refreshError;
         }
       }
@@ -72,9 +60,7 @@ function PreferencesProvider({ children }: { children: ReactNode }) {
     (next: UserPreferences) => {
       setTheme(next.appearance);
       document.documentElement.classList.toggle("reduce-motion", next.reduced_motion);
-      if (next.language !== locale) {
-        router.replace(pathname, { locale: next.language });
-      }
+      if (next.language !== locale) router.replace(pathname, { locale: next.language });
     },
     [locale, pathname, router, setTheme],
   );
@@ -109,14 +95,14 @@ function PreferencesProvider({ children }: { children: ReactNode }) {
       if (!response.data) throw new Error("Preferences response data missing.");
       let next = response.data;
       const browserTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      const timezoneInitialized = window.localStorage.getItem(TIMEZONE_INITIALIZED_KEY);
+      const accountKey = user?.email ?? "anonymous";
+      const timezoneKey = `teed.preferences.timezone-initialized:${accountKey}`;
+      const timezoneInitialized = window.localStorage.getItem(timezoneKey);
       if (!timezoneInitialized && next.timezone === "UTC" && browserTimezone && browserTimezone !== "UTC") {
-        const timezoneResponse = await withToken((token) =>
-          updatePreferences({ timezone: browserTimezone }, token),
-        );
+        const timezoneResponse = await withToken((token) => updatePreferences({ timezone: browserTimezone }, token));
         if (timezoneResponse.data) next = timezoneResponse.data;
       }
-      window.localStorage.setItem(TIMEZONE_INITIALIZED_KEY, "true");
+      window.localStorage.setItem(timezoneKey, "true");
       setPreferences(next);
       applyGlobalPreferences(next);
     } catch (requestError) {
@@ -124,7 +110,7 @@ function PreferencesProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }, [applyGlobalPreferences, withToken]);
+  }, [applyGlobalPreferences, user?.email, withToken]);
 
   useEffect(() => {
     if (!accessToken) return;
@@ -133,13 +119,7 @@ function PreferencesProvider({ children }: { children: ReactNode }) {
   }, [accessToken, refresh]);
 
   const value = useMemo(
-    () => ({
-      error,
-      preferences,
-      refresh,
-      status: loading ? "loading" : error ? "error" : "ready",
-      update,
-    }) satisfies PreferencesContextValue,
+    () => ({ error, preferences, refresh, status: loading ? "loading" : error ? "error" : "ready", update }) satisfies PreferencesContextValue,
     [error, loading, preferences, refresh, update],
   );
 
