@@ -1,5 +1,7 @@
 from django.urls import path
 
+from apps.dashboard.preferences.api import UserPreferenceAPIView
+
 from .api import (
     ContactInformationAPIView,
     PersonalInformationAPIView,
@@ -23,5 +25,10 @@ urlpatterns = [
         "me/contacts/",
         ContactInformationAPIView.as_view(),
         name="contacts",
+    ),
+    path(
+        "me/preferences/",
+        UserPreferenceAPIView.as_view(),
+        name="preferences",
     ),
 ]
