@@ -1,0 +1,42 @@
+{
+  "Preferences": {
+    "eyebrow": "Akaunti yako",
+    "title": "Mapendeleo",
+    "description": "Dhibiti mwonekano, lugha, miundo ya tarehe na saa, pamoja na mwendo kwenye vifaa vyako vilivyoingia.",
+    "loading": "Inapakia mapendeleo…",
+    "loadError": "TEED haikuweza kupakia mapendeleo yako.",
+    "retry": "Jaribu tena",
+    "saved": "Pendeleo lako limehifadhiwa.",
+    "saveError": "TEED haikuweza kuhifadhi pendeleo hilo. Thamani ya awali imerejeshwa.",
+    "language": {
+      "title": "Lugha",
+      "description": "Chagua lugha inayotumika katika TEED.",
+      "label": "Lugha ya programu",
+      "english": "Kiingereza",
+      "swahili": "Kiswahili"
+    },
+    "appearance": {
+      "title": "Mwonekano",
+      "description": "Fuata kifaa chako au tumia mwonekano wa mwanga au giza.",
+      "label": "Mwonekano wa programu",
+      "system": "Mfumo",
+      "light": "Mwanga",
+      "dark": "Giza"
+    },
+    "dateTime": {
+      "title": "Tarehe na saa",
+      "description": "Weka ukanda wa saa na miundo ya tarehe na saa inayotumiwa na TEED.",
+      "timezone": "Ukanda wa saa",
+      "dateFormat": "Muundo wa tarehe",
+      "timeFormat": "Muundo wa saa",
+      "twelveHour": "Saa 12",
+      "twentyFourHour": "Saa 24"
+    },
+    "accessibility": {
+      "title": "Ufikivu",
+      "description": "Rekebisha mwendo ili matumizi yawe yenye faraja zaidi.",
+      "reducedMotion": "Punguza mwendo",
+      "reducedMotionHelp": "Punguza mandharinyuma yenye uhuishaji na mabadiliko yasiyo ya lazima."
+    }
+  }
+}
