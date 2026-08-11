@@ -1,0 +1,281 @@
+from common.responses import SuccessResponse
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_protect
+from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.views import APIView
+
+from apps.profiles.permissions import IsOnboardingComplete
+
+from .models import BusinessMembership
+from .policy import WorkspacePermission
+from .selectors import user_businesses, visible_access_requests, visible_invitations
+from .serializers import (
+    AccessRequestCreateSerializer,
+    AccessRequestDecisionSerializer,
+    AccessRequestSerializer,
+    BusinessCreateSerializer,
+    BusinessSerializer,
+    ControlRequestCreateSerializer,
+    ControlRequestDecisionSerializer,
+    ControlRequestSerializer,
+    EmptyActionSerializer,
+    InvitationCreateSerializer,
+    InvitationSerializer,
+    MembershipSerializer,
+    MembershipUpdateSerializer,
+    OwnershipTransferSerializer,
+)
+from .services import (
+    create_business,
+    create_control_request,
+    create_invitation,
+    decide_access_request,
+    decide_control_request,
+    request_access,
+    require_membership,
+    resolve_invitation,
+    transfer_ownership,
+    update_membership,
+)
+
+
+class WorkspaceBaseAPIView(APIView):
+    permission_classes = [IsAuthenticated, IsOnboardingComplete]
+
+
+class BusinessListCreateAPIView(WorkspaceBaseAPIView):
+    serializer_class = BusinessCreateSerializer
+
+    def get(self, request):
+        memberships = user_businesses(user=request.user)
+        return SuccessResponse(
+            message="Businesses retrieved successfully.",
+            data={
+                "businesses": [
+                    {
+                        **BusinessSerializer(item.business).data,
+                        "membership": MembershipSerializer(item).data,
+                    }
+                    for item in memberships
+                ]
+            },
+        )
+
+    @method_decorator(csrf_protect)
+    def post(self, request):
+        serializer = BusinessCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        business = create_business(user=request.user, **serializer.validated_data)
+        return SuccessResponse(
+            message="Business created successfully.",
+            data=BusinessSerializer(business).data,
+            status_code=status.HTTP_201_CREATED,
+        )
+
+
+class BusinessDetailAPIView(WorkspaceBaseAPIView):
+    serializer_class = BusinessSerializer
+
+    def get(self, request, business_id):
+        membership = require_membership(user=request.user, business_id=business_id)
+        return SuccessResponse(
+            message="Business retrieved successfully.",
+            data={
+                **BusinessSerializer(membership.business).data,
+                "membership": MembershipSerializer(membership).data,
+            },
+        )
+
+
+class MembershipListAPIView(WorkspaceBaseAPIView):
+    serializer_class = MembershipSerializer
+
+    def get(self, request, business_id):
+        membership = require_membership(user=request.user, business_id=business_id)
+        members = BusinessMembership.objects.select_related("user").filter(
+            business=membership.business
+        )
+        return SuccessResponse(
+            message="Business members retrieved successfully.",
+            data={"members": MembershipSerializer(members, many=True).data},
+        )
+
+
+@method_decorator(csrf_protect, name="dispatch")
+class MembershipDetailAPIView(WorkspaceBaseAPIView):
+    serializer_class = MembershipUpdateSerializer
+
+    def patch(self, request, business_id, membership_id):
+        serializer = MembershipUpdateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        membership = update_membership(
+            actor=request.user,
+            business_id=business_id,
+            membership_id=membership_id,
+            **serializer.validated_data,
+        )
+        return SuccessResponse(
+            message="Membership updated successfully.",
+            data=MembershipSerializer(membership).data,
+        )
+
+
+class InvitationListCreateAPIView(WorkspaceBaseAPIView):
+    serializer_class = InvitationCreateSerializer
+
+    def get(self, request, business_id):
+        membership = require_membership(
+            user=request.user,
+            business_id=business_id,
+            permission=WorkspacePermission.MANAGE_INVITATIONS,
+        )
+        invitations = membership.business.invitations.all()
+        return SuccessResponse(
+            message="Business invitations retrieved successfully.",
+            data={"invitations": InvitationSerializer(invitations, many=True).data},
+        )
+
+    @method_decorator(csrf_protect)
+    def post(self, request, business_id):
+        serializer = InvitationCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        invitation = create_invitation(
+            actor=request.user, business_id=business_id, **serializer.validated_data
+        )
+        return SuccessResponse(
+            message="Invitation created successfully.",
+            data=InvitationSerializer(invitation).data,
+            status_code=status.HTTP_201_CREATED,
+        )
+
+
+class MyInvitationListAPIView(WorkspaceBaseAPIView):
+    serializer_class = InvitationSerializer
+
+    def get(self, request):
+        invitations = visible_invitations(user=request.user)
+        return SuccessResponse(
+            message="Invitations retrieved successfully.",
+            data={"invitations": InvitationSerializer(invitations, many=True).data},
+        )
+
+
+@method_decorator(csrf_protect, name="dispatch")
+class InvitationDecisionAPIView(WorkspaceBaseAPIView):
+    serializer_class = EmptyActionSerializer
+
+    def post(self, request, invitation_id, decision):
+        if decision not in {"accept", "decline"}:
+            from rest_framework.exceptions import NotFound
+
+            raise NotFound("Invitation action not found.")
+        membership = resolve_invitation(
+            user=request.user, invitation_id=invitation_id, accept=decision == "accept"
+        )
+        return SuccessResponse(
+            message=f"Invitation {decision}ed successfully.",
+            data=MembershipSerializer(membership).data if membership else None,
+        )
+
+
+@method_decorator(csrf_protect, name="dispatch")
+class AccessRequestCreateAPIView(WorkspaceBaseAPIView):
+    serializer_class = AccessRequestCreateSerializer
+
+    def post(self, request):
+        serializer = AccessRequestCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        access_request = request_access(user=request.user, **serializer.validated_data)
+        return SuccessResponse(
+            message="Business access requested successfully.",
+            data=AccessRequestSerializer(access_request).data,
+            status_code=status.HTTP_201_CREATED,
+        )
+
+
+class BusinessAccessRequestListAPIView(WorkspaceBaseAPIView):
+    serializer_class = AccessRequestSerializer
+
+    def get(self, request, business_id):
+        membership = require_membership(
+            user=request.user,
+            business_id=business_id,
+            permission=WorkspacePermission.MANAGE_MEMBERS,
+        )
+        requests = visible_access_requests(business=membership.business)
+        return SuccessResponse(
+            message="Access requests retrieved successfully.",
+            data={"access_requests": AccessRequestSerializer(requests, many=True).data},
+        )
+
+
+@method_decorator(csrf_protect, name="dispatch")
+class AccessRequestDecisionAPIView(WorkspaceBaseAPIView):
+    serializer_class = AccessRequestDecisionSerializer
+
+    def post(self, request, business_id, request_id):
+        serializer = AccessRequestDecisionSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        access_request = decide_access_request(
+            actor=request.user,
+            business_id=business_id,
+            request_id=request_id,
+            **serializer.validated_data,
+        )
+        return SuccessResponse(
+            message=f"Access request {access_request.status} successfully.",
+            data=AccessRequestSerializer(access_request).data,
+        )
+
+
+@method_decorator(csrf_protect, name="dispatch")
+class ControlRequestCreateAPIView(WorkspaceBaseAPIView):
+    serializer_class = ControlRequestCreateSerializer
+
+    def post(self, request, business_id):
+        serializer = ControlRequestCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        control_request = create_control_request(
+            actor=request.user, business_id=business_id, **serializer.validated_data
+        )
+        return SuccessResponse(
+            message="Business control request created successfully.",
+            data=ControlRequestSerializer(control_request).data,
+            status_code=status.HTTP_201_CREATED,
+        )
+
+
+@method_decorator(csrf_protect, name="dispatch")
+class ControlRequestDecisionAPIView(WorkspaceBaseAPIView):
+    serializer_class = ControlRequestDecisionSerializer
+
+    def post(self, request, business_id, control_request_id):
+        serializer = ControlRequestDecisionSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        control_request = decide_control_request(
+            actor=request.user,
+            business_id=business_id,
+            control_request_id=control_request_id,
+            **serializer.validated_data,
+        )
+        return SuccessResponse(
+            message=f"Business control request {control_request.status}.",
+            data=ControlRequestSerializer(control_request).data,
+        )
+
+
+@method_decorator(csrf_protect, name="dispatch")
+class OwnershipTransferAPIView(WorkspaceBaseAPIView):
+    serializer_class = OwnershipTransferSerializer
+
+    def post(self, request, business_id):
+        serializer = OwnershipTransferSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        membership = transfer_ownership(
+            actor=request.user, business_id=business_id, **serializer.validated_data
+        )
+        return SuccessResponse(
+            message="Business ownership transferred successfully.",
+            data=MembershipSerializer(membership).data,
+        )

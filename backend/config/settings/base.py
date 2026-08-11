@@ -59,6 +59,7 @@ LOCAL_APPS = [
     "apps.profiles.apps.ProfilesConfig",
     "apps.security.apps.SecurityConfig",
     "apps.notifications.apps.NotificationsConfig",
+    "apps.workspaces.apps.WorkspacesConfig",
 ]
 
 # =====================================================
