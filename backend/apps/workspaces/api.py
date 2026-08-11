@@ -3,6 +3,7 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_protect
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
 from apps.profiles.permissions import IsOnboardingComplete
@@ -10,6 +11,7 @@ from apps.profiles.permissions import IsOnboardingComplete
 from .models import BusinessMembership
 from .policy import WorkspacePermission
 from .selectors import (
+    discover_businesses,
     user_businesses,
     visible_access_requests,
     visible_invitations,
@@ -20,6 +22,8 @@ from .serializers import (
     AccessRequestDecisionSerializer,
     AccessRequestSerializer,
     BusinessCreateSerializer,
+    BusinessDiscoveryQuerySerializer,
+    BusinessDiscoverySerializer,
     BusinessSerializer,
     ControlRequestCreateSerializer,
     ControlRequestDecisionSerializer,
@@ -76,6 +80,23 @@ class BusinessListCreateAPIView(WorkspaceBaseAPIView):
             message="Business created successfully.",
             data=BusinessSerializer(business).data,
             status_code=status.HTTP_201_CREATED,
+        )
+
+
+class BusinessDiscoveryAPIView(WorkspaceBaseAPIView):
+    serializer_class = BusinessDiscoveryQuerySerializer
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "workspace_discovery"
+
+    def get(self, request):
+        serializer = BusinessDiscoveryQuerySerializer(data=request.query_params)
+        serializer.is_valid(raise_exception=True)
+        businesses = discover_businesses(query=serializer.validated_data["q"])
+        return SuccessResponse(
+            message="Discoverable Businesses retrieved successfully.",
+            data={
+                "businesses": BusinessDiscoverySerializer(businesses, many=True).data
+            },
         )
 
 

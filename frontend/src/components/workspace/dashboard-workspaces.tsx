@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, Building2, Check, Mail, Plus, RefreshCw, UserPlus, X } from "lucide-react";
+import { ArrowRight, Building2, Check, Copy, Mail, Plus, RefreshCw, UserPlus, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 
@@ -26,6 +26,11 @@ function DashboardWorkspaces() {
     } finally {
       setDecidingId(null);
     }
+  }
+
+  async function copyBusinessId(id: string) {
+    await navigator.clipboard.writeText(id);
+    notify({ message: t("technical.copied"), tone: "success" });
   }
 
   return (
@@ -61,16 +66,26 @@ function DashboardWorkspaces() {
           {businesses.length ? (
             <div className="grid gap-3 lg:grid-cols-2">
               {businesses.map((business) => (
-                <Tooltip content={t("openTooltip", { name: business.name })} key={business.id}>
-                  <Link className="group flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 dark:border-slate-800 dark:bg-slate-950" href={`/workspace/${business.id}`}>
-                    <span className="inline-flex size-11 shrink-0 items-center justify-center rounded-xl bg-brand-navy/10 text-brand-navy dark:bg-brand-orange/10 dark:text-brand-orange"><Building2 className="size-5" /></span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-semibold">{business.name}</span>
-                      <span className="mt-1 block text-xs text-slate-500 dark:text-slate-400">{t("businessMeta", { country: business.country_code, role: t(`roles.${business.membership.role}`) })}</span>
-                    </span>
-                    <ArrowRight className="size-4 text-slate-400 transition group-hover:translate-x-0.5" />
-                  </Link>
-                </Tooltip>
+                <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 dark:border-slate-800 dark:bg-slate-950" key={business.id}>
+                  <Tooltip content={t("openTooltip", { name: business.name })}>
+                    <Link className="group flex items-center gap-4" href={`/workspace/${business.id}`}>
+                      <span className="inline-flex size-11 shrink-0 items-center justify-center rounded-xl bg-brand-navy/10 text-brand-navy dark:bg-brand-orange/10 dark:text-brand-orange"><Building2 className="size-5" /></span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-semibold">{business.name}</span>
+                        <span className="mt-0.5 block truncate text-xs font-medium text-brand-navy dark:text-brand-orange">@{business.public_handle}</span>
+                        <span className="mt-1 block text-xs text-slate-500 dark:text-slate-400">{t("businessMeta", { country: business.country_code, role: t(`roles.${business.membership.role}`) })}</span>
+                      </span>
+                      <ArrowRight className="size-4 text-slate-400 transition group-hover:translate-x-0.5" />
+                    </Link>
+                  </Tooltip>
+                  <details className="mt-3 border-t border-slate-100 pt-3 text-xs dark:border-slate-800">
+                    <summary className="cursor-pointer text-slate-500 dark:text-slate-400">{t("technical.summary")}</summary>
+                    <div className="mt-2 flex items-center gap-2">
+                      <code className="min-w-0 flex-1 truncate text-[11px] text-slate-500">{business.id}</code>
+                      <Button aria-label={t("technical.copy")} onClick={() => void copyBusinessId(business.id)} size="small" type="button" variant="ghost"><Copy className="size-3.5" /></Button>
+                    </div>
+                  </details>
+                </article>
               ))}
             </div>
           ) : (

@@ -64,7 +64,7 @@
   "WorkspaceDashboard": {
     "eyebrow": "Personal dashboard",
     "title": "Businesses and workspace access",
-    "description": "Open Businesses you belong to, create a new Business, respond to invitations, or request access using a Business UUID.",
+    "description": "Open Businesses you belong to, create a new Business, respond to invitations, or find a Business and request access.",
     "create": "Create Business",
     "request": "Request access",
     "loading": "Loading your Businesses…",
@@ -75,6 +75,7 @@
     "emptyHelp": "Create a Business, accept an invitation, or request access.",
     "openTooltip": "Open the {name} workspace.",
     "businessMeta": "{country} · {role}",
+    "technical": {"summary": "Technical details", "copy": "Copy Business UUID", "copied": "Business UUID copied."},
     "invitationsTitle": "Pending invitations",
     "noInvitations": "You have no pending Business invitations.",
     "roles": {"owner": "Owner", "partner": "Partner", "administrator": "Administrator", "manager": "Manager", "member": "Member"},
@@ -83,10 +84,11 @@
   "WorkspaceCreate": {
     "eyebrow": "Workspace setup",
     "title": "Create a Business",
-    "description": "You become the Business owner automatically. TEED creates its UUID workspace and fixed role permissions together.",
-    "fields": {"name": "Business name", "country": "Country"},
+    "description": "Enter three details. TEED creates a unique public handle, UUID workspace and fixed owner permissions automatically.",
+    "fields": {"name": "Workspace name", "country": "Country", "workspaceType": "Workspace type", "workspaceTypeHelp": "Choose the description that best matches how you will use this workspace."},
     "countries": {"TZ": "Tanzania", "KE": "Kenya", "UG": "Uganda"},
-    "validation": {"name": "Enter a Business name between 2 and 120 characters.", "country": "Select a supported country."},
+    "types": {"business": "Business", "service_provider": "Service provider", "creator_brand": "Creator or personal brand", "personal": "Personal", "other": "Other"},
+    "validation": {"name": "Enter a workspace name between 2 and 120 characters.", "country": "Select a supported country.", "workspaceType": "Select a workspace type."},
     "submit": "Create Business",
     "creating": "Creating…",
     "success": "Business created successfully."
@@ -94,9 +96,11 @@
   "WorkspaceAccess": {
     "eyebrow": "Workspace access",
     "title": "Request Business access",
-    "description": "Use the exact Business UUID shared by an authorized Business member. TEED does not expose a public Business directory.",
-    "fields": {"businessId": "Business UUID", "businessIdHelp": "Ask an authorized Business member for this identifier.", "message": "Message", "messageHelp": "Optional context for the Business access managers."},
-    "validation": {"businessId": "Enter a valid Business UUID.", "message": "Keep the message within 300 characters."},
+    "description": "Find the Business by its name or public handle, confirm the result, then send your request.",
+    "fields": {"search": "Find a Business", "searchHelp": "Search results reveal only the Business name, public handle and country.", "searchPlaceholder": "Business name or @handle", "message": "Message", "messageHelp": "Optional context for the Business access managers."},
+    "search": {"minimum": "Enter at least 3 characters to search.", "searching": "Searching Businesses…", "failed": "TEED could not search Businesses. Try again.", "empty": "No available Business matches this search.", "select": "Select"},
+    "validation": {"businessId": "Select a Business from the search results.", "message": "Keep the message within 300 characters."},
+    "errors": {"access_request_already_pending": "You have already requested access to this Business.", "business_membership_exists": "You already belong to this Business. Opening its workspace.", "business_not_found": "This Business could not be found or is no longer available.", "access_request_recently_rejected": "A recent request to this Business was declined. Try again later or contact the Business.", "personal_workspace_membership_restricted": "Personal workspaces do not accept members or access requests."},
     "submit": "Send request",
     "sending": "Sending…",
     "success": "Business access request sent."

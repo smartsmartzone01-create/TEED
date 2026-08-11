@@ -37,6 +37,7 @@ created in advance.
 ## Tenant rules
 
 - Every persistent workspace object uses a UUID primary key.
+- Every Business receives a unique generated public handle for user-facing discovery; the UUID remains the internal tenant and authorization identifier.
 - Business creation and Owner membership creation are one transaction.
 - Membership is the only user-to-Business authorization relationship.
 - Every tenant query includes the Business UUID and verified membership.
@@ -62,9 +63,15 @@ Protected-role rules supplement this mapping. Having `members.manage` never perm
 
 ## Invitations and access requests
 
-An invitation is Business-initiated and targets an account email. An access request is user-initiated and targets a known Business UUID. They are separate audited state machines. Accepting an invitation or approving a request creates or activates membership in the same transaction as the decision.
+An invitation is Business-initiated and targets an account email. An access request is user-initiated and targets a Business selected through controlled discovery. The selected public result resolves to the Business UUID before submission. They are separate audited state machines. Accepting an invitation or approving a request creates or activates membership in the same transaction as the decision.
 
-Access requests work from both the personal dashboard and a workspace switcher. TEED must not expose unrestricted Business discovery merely to support requests; callers need a Business UUID or a future controlled public reference.
+Access requests work from both the personal dashboard and a workspace switcher. Discovery requires authentication and completed onboarding, is throttled, excludes Personal workspaces, and exposes only the minimum public identity needed to choose the correct Business. Duplicate, existing-member, unavailable and recently-rejected states use focused domain error codes.
+
+## Workspace classification
+
+Creation asks only for a name, country and one broad workspace type: Business, Service provider, Creator or personal brand, Personal, or Other. TEED generates the public handle and UUID automatically. Operating model (physical, online or hybrid), industry and precise location belong to the later Business profile rather than the creation gate.
+
+Personal workspaces are single-user. They cannot receive invitations, access requests or additional memberships.
 
 ## Owner and Partner control
 
@@ -81,3 +88,5 @@ This prevents one compromised controller session from immediately disabling or d
 ## Cross-domain communication
 
 Workspace changes write audit events and use `apps.notifications` for personal inbox delivery. Future Business applications import workspace authorization and scope every query with validated membership; they must not duplicate roles or create separate membership tables.
+
+Social account connectivity is a future integration boundary, not a workspace membership concern. OAuth credentials, provider identities, webhook state, sync cursors and provider audit history should live in a dedicated integrations application scoped to a Business UUID. Workspace and Business profile contracts remain provider-neutral so those integrations can be added without refactoring tenancy or RBAC.

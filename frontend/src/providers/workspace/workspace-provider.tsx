@@ -17,12 +17,14 @@ import {
   decideInvitation as decideInvitationRequest,
   getBusinesses,
   getMyInvitations,
+  discoverBusinesses as discoverBusinessesRequest,
   requestBusinessAccess as requestBusinessAccessRequest,
 } from "@/services/workspace/workspace";
 import type {
   CreateBusinessValues,
   RequestBusinessAccessValues,
   WorkspaceBusiness,
+  WorkspaceBusinessDiscovery,
   WorkspaceBusinessListItem,
   WorkspaceInvitation,
   WorkspaceOverviewData,
@@ -33,6 +35,7 @@ type WorkspaceContextValue = {
   businesses: WorkspaceBusinessListItem[];
   createBusiness: (values: CreateBusinessValues) => Promise<WorkspaceBusiness>;
   decideInvitation: (id: string, decision: "accept" | "decline") => Promise<void>;
+  discoverBusinesses: (query: string, signal?: AbortSignal) => Promise<WorkspaceBusinessDiscovery[]>;
   error: ApiClientError | Error | null;
   invitations: WorkspaceInvitation[];
   loadOverview: (businessId: string, signal?: AbortSignal) => Promise<WorkspaceOverviewData>;
@@ -127,6 +130,12 @@ function WorkspaceProvider({ children }: { children: ReactNode }) {
       decideInvitation: async (id, decision) => {
         await withToken((token) => decideInvitationRequest(id, decision, token));
         await refresh();
+      },
+      discoverBusinesses: async (query, signal) => {
+        const response = await withToken((token) =>
+          discoverBusinessesRequest(query, token, signal),
+        );
+        return response.data?.businesses ?? [];
       },
       error,
       invitations,

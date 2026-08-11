@@ -17,6 +17,13 @@ from .identity import (
     SessionInvalid,
     UsernameAlreadyTaken,
 )
+from .workspaces import (
+    PersonalWorkspaceMembershipRestricted,
+    WorkspaceAccessRequestCooldown,
+    WorkspaceAccessRequestPending,
+    WorkspaceBusinessNotFound,
+    WorkspaceMembershipExists,
+)
 
 __all__ = [
     "EmailVerificationAttemptLimitReached",
@@ -36,4 +43,9 @@ __all__ = [
     "RefreshTokenReuseDetected",
     "SessionExpired",
     "SessionInvalid",
+    "PersonalWorkspaceMembershipRestricted",
+    "WorkspaceAccessRequestCooldown",
+    "WorkspaceAccessRequestPending",
+    "WorkspaceBusinessNotFound",
+    "WorkspaceMembershipExists",
 ]

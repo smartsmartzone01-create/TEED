@@ -1,4 +1,11 @@
+from common.exceptions.modules import (
+    PersonalWorkspaceMembershipRestricted,
+    WorkspaceAccessRequestCooldown,
+    WorkspaceAccessRequestPending,
+    WorkspaceMembershipExists,
+)
 from django.test import TestCase
+from django.utils import timezone
 from rest_framework.exceptions import PermissionDenied, ValidationError
 
 from ..models import (
@@ -63,8 +70,39 @@ class WorkspaceServiceTests(TestCase):
 
     def test_duplicate_pending_access_request_is_rejected(self):
         request_access(user=self.member, business_id=self.business.id)
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(WorkspaceAccessRequestPending):
             request_access(user=self.member, business_id=self.business.id)
+
+    def test_existing_member_cannot_request_access(self):
+        with self.assertRaises(WorkspaceMembershipExists):
+            request_access(user=self.owner, business_id=self.business.id)
+
+    def test_recently_rejected_request_observes_retry_cooldown(self):
+        access_request = request_access(user=self.member, business_id=self.business.id)
+        access_request.status = BusinessAccessRequest.Status.REJECTED
+        access_request.resolved_at = timezone.now()
+        access_request.save(update_fields=["status", "resolved_at", "updated_at"])
+
+        with self.assertRaises(WorkspaceAccessRequestCooldown):
+            request_access(user=self.member, business_id=self.business.id)
+
+    def test_personal_workspace_rejects_multi_user_membership(self):
+        personal = create_business(
+            user=self.owner,
+            name="My private workspace",
+            country_code="TZ",
+            workspace_type=Business.WorkspaceType.PERSONAL,
+        )
+
+        with self.assertRaises(PersonalWorkspaceMembershipRestricted):
+            request_access(user=self.member, business_id=personal.id)
+        with self.assertRaises(PersonalWorkspaceMembershipRestricted):
+            create_invitation(
+                actor=self.owner,
+                business_id=personal.id,
+                email="invitee@example.com",
+                role=WorkspaceRole.MEMBER,
+            )
 
     def test_manager_can_invite_only_members(self):
         manager = BusinessMembership.objects.create(

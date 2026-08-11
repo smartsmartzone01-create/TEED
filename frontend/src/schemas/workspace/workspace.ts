@@ -7,7 +7,23 @@ const workspaceBusinessSchema = z.object({
   created_at: z.string(),
   id: z.string().uuid(),
   name: z.string(),
+  public_handle: z.string(),
   status: z.string(),
+  workspace_type: z.enum([
+    "business",
+    "service_provider",
+    "creator_brand",
+    "personal",
+    "other",
+  ]),
+});
+
+const workspaceBusinessDiscoverySchema = workspaceBusinessSchema.pick({
+  country_code: true,
+  id: true,
+  name: true,
+  public_handle: true,
+  workspace_type: true,
 });
 
 const workspaceMembershipSchema = z.object({
@@ -63,6 +79,9 @@ const workspaceBusinessListEnvelopeSchema = createApiEnvelopeSchema(
   z.object({ businesses: z.array(workspaceBusinessListItemSchema) }),
 );
 const workspaceBusinessEnvelopeSchema = createApiEnvelopeSchema(workspaceBusinessSchema);
+const workspaceBusinessDiscoveryEnvelopeSchema = createApiEnvelopeSchema(
+  z.object({ businesses: z.array(workspaceBusinessDiscoverySchema) }),
+);
 const workspaceOverviewEnvelopeSchema = createApiEnvelopeSchema(workspaceOverviewSchema);
 const workspaceInvitationListEnvelopeSchema = createApiEnvelopeSchema(
   z.object({ invitations: z.array(workspaceInvitationSchema) }),
@@ -70,10 +89,14 @@ const workspaceInvitationListEnvelopeSchema = createApiEnvelopeSchema(
 const workspaceMembershipEnvelopeSchema = createApiEnvelopeSchema(workspaceMembershipSchema);
 const workspaceAccessRequestEnvelopeSchema = createApiEnvelopeSchema(workspaceAccessRequestSchema);
 
-function createBusinessFormSchema(messages: { country: string; name: string }) {
+function createBusinessFormSchema(messages: { country: string; name: string; workspaceType: string }) {
   return z.object({
     countryCode: z.enum(["TZ", "KE", "UG"], { message: messages.country }),
     name: z.string().trim().min(2, messages.name).max(120, messages.name),
+    workspaceType: z.enum(
+      ["business", "service_provider", "creator_brand", "personal", "other"],
+      { message: messages.workspaceType },
+    ),
   });
 }
 
@@ -89,6 +112,7 @@ export {
   createBusinessFormSchema,
   workspaceAccessRequestEnvelopeSchema,
   workspaceBusinessEnvelopeSchema,
+  workspaceBusinessDiscoveryEnvelopeSchema,
   workspaceBusinessListEnvelopeSchema,
   workspaceInvitationListEnvelopeSchema,
   workspaceMembershipEnvelopeSchema,

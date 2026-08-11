@@ -1,7 +1,12 @@
 from django.db.models import Q
 from django.utils import timezone
 
-from .models import BusinessAccessRequest, BusinessInvitation, BusinessMembership
+from .models import (
+    Business,
+    BusinessAccessRequest,
+    BusinessInvitation,
+    BusinessMembership,
+)
 
 
 def active_membership(*, user, business_id):
@@ -21,6 +26,15 @@ def user_businesses(*, user):
         user=user,
         status=BusinessMembership.Status.ACTIVE,
     )
+
+
+def discover_businesses(*, query):
+    normalized = query.strip().removeprefix("@")
+    return Business.objects.filter(
+        Q(name__icontains=normalized) | Q(public_handle__istartswith=normalized),
+        is_discoverable=True,
+        status=Business.Status.ACTIVE,
+    ).exclude(workspace_type=Business.WorkspaceType.PERSONAL)[:10]
 
 
 def workspace_overview_state(*, membership):

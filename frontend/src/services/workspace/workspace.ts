@@ -1,6 +1,7 @@
 import {
   workspaceAccessRequestEnvelopeSchema,
   workspaceBusinessEnvelopeSchema,
+  workspaceBusinessDiscoveryEnvelopeSchema,
   workspaceBusinessListEnvelopeSchema,
   workspaceInvitationListEnvelopeSchema,
   workspaceMembershipEnvelopeSchema,
@@ -33,6 +34,15 @@ function getWorkspaceOverview(businessId: string, accessToken: string, signal?: 
   });
 }
 
+function discoverBusinesses(query: string, accessToken: string, signal?: AbortSignal) {
+  return requestApi({
+    accessToken,
+    path: `${WORKSPACE_BASE_PATH}/businesses/discover/?q=${encodeURIComponent(query)}`,
+    schema: workspaceBusinessDiscoveryEnvelopeSchema,
+    signal,
+  });
+}
+
 function getMyInvitations(accessToken: string, signal?: AbortSignal) {
   return requestApi({
     accessToken,
@@ -46,7 +56,11 @@ function createBusiness(values: CreateBusinessValues, accessToken: string) {
   return withCsrfRetry((csrfToken) =>
     requestApi({
       accessToken,
-      body: { country_code: values.countryCode, name: values.name },
+      body: {
+        country_code: values.countryCode,
+        name: values.name,
+        workspace_type: values.workspaceType,
+      },
       csrfToken,
       method: "POST",
       path: `${WORKSPACE_BASE_PATH}/businesses/`,
@@ -84,6 +98,7 @@ function decideInvitation(invitationId: string, decision: "accept" | "decline", 
 export {
   createBusiness,
   decideInvitation,
+  discoverBusinesses,
   getBusinesses,
   getMyInvitations,
   getWorkspaceOverview,

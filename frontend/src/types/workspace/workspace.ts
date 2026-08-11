@@ -3,8 +3,22 @@ type WorkspaceBusiness = {
   created_at: string;
   id: string;
   name: string;
+  public_handle: string;
   status: string;
+  workspace_type: WorkspaceType;
 };
+
+type WorkspaceType =
+  | "business"
+  | "service_provider"
+  | "creator_brand"
+  | "personal"
+  | "other";
+
+type WorkspaceBusinessDiscovery = Pick<
+  WorkspaceBusiness,
+  "country_code" | "id" | "name" | "public_handle" | "workspace_type"
+>;
 
 type WorkspaceMembership = {
   created_at: string;
@@ -48,6 +62,7 @@ type WorkspaceOverviewData = {
 type CreateBusinessValues = {
   countryCode: "KE" | "TZ" | "UG";
   name: string;
+  workspaceType: WorkspaceType;
 };
 
 type RequestBusinessAccessValues = {
@@ -59,9 +74,11 @@ export type {
   CreateBusinessValues,
   RequestBusinessAccessValues,
   WorkspaceBusiness,
+  WorkspaceBusinessDiscovery,
   WorkspaceBusinessListItem,
   WorkspaceInvitation,
   WorkspaceMembership,
   WorkspaceOverviewData,
   WorkspaceOverviewState,
+  WorkspaceType,
 };

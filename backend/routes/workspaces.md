@@ -9,7 +9,8 @@ All identifiers are UUIDs. All endpoints require an authenticated user with comp
 | Method | Route | Purpose |
 |---|---|---|
 | `GET` | `businesses/` | List the caller's Business memberships |
-| `POST` | `businesses/` | Create a Business and atomic Owner membership |
+| `POST` | `businesses/` | Create a Business, unique public handle and atomic Owner membership |
+| `GET` | `businesses/discover/?q={name-or-handle}` | Search active discoverable Businesses by name or public handle |
 | `GET` | `businesses/{business_id}/` | Read an active Business in the caller's workspace context |
 | `GET` | `businesses/{business_id}/overview/` | Read the Business, caller membership, permission-filtered pending counts, and active member count |
 
@@ -38,9 +39,13 @@ The same request endpoint supports a user without a Business from the personal d
 
 | Method | Route | Purpose |
 |---|---|---|
-| `POST` | `access-requests/` | Request access using a known Business UUID |
+| `POST` | `access-requests/` | Request access using the UUID selected from controlled discovery |
 | `GET` | `businesses/{business_id}/access-requests/` | List pending requests |
 | `POST` | `businesses/{business_id}/access-requests/{request_id}/decision/` | Approve or reject |
+
+Discovery requires authentication and completed onboarding, is throttled, excludes Personal workspaces, and returns only UUID, name, public handle, country and workspace type. UUID remains the internal tenant identifier; the public handle is the user-facing discovery reference.
+
+Workspace types are `business`, `service_provider`, `creator_brand`, `personal`, and `other`. Personal workspaces are single-user and reject invitations, access requests and member management.
 
 ## Protected Business control
 
