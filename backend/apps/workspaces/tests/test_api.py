@@ -1,0 +1,80 @@
+from django.urls import reverse
+from rest_framework import status
+from rest_framework.test import APITestCase
+
+from apps.identity.services import issue_token_pair
+
+from ..models import BusinessMembership
+from ..policy import WorkspaceRole
+from ..services import create_business
+from .factories import create_user
+
+
+class WorkspaceAPITests(APITestCase):
+    def authenticate(self, user):
+        tokens = issue_token_pair(user=user)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {tokens['access']}")
+
+    def setUp(self):
+        self.owner = create_user("api-owner@example.com")
+        self.outsider = create_user("api-outsider@example.com")
+        self.authenticate(self.owner)
+
+    def test_create_and_list_business_uses_uuid_contract(self):
+        created = self.client.post(
+            reverse("workspaces:business-list"),
+            {"name": "API Business", "country_code": "tz"},
+            format="json",
+        )
+        self.assertEqual(created.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(created.data["data"]["country_code"], "TZ")
+        self.assertEqual(len(created.data["data"]["id"]), 36)
+        listed = self.client.get(reverse("workspaces:business-list"))
+        self.assertEqual(len(listed.data["data"]["businesses"]), 1)
+        self.assertEqual(
+            listed.data["data"]["businesses"][0]["membership"]["role"],
+            WorkspaceRole.OWNER,
+        )
+
+    def test_outsider_cannot_read_business_or_members(self):
+        business = create_business(user=self.owner, name="Private Business")
+        self.authenticate(self.outsider)
+        detail = self.client.get(
+            reverse("workspaces:business-detail", kwargs={"business_id": business.id})
+        )
+        members = self.client.get(
+            reverse("workspaces:member-list", kwargs={"business_id": business.id})
+        )
+        self.assertEqual(detail.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(members.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_dashboard_access_request_can_be_approved_by_owner(self):
+        business = create_business(user=self.owner, name="Requested Business")
+        self.authenticate(self.outsider)
+        requested = self.client.post(
+            reverse("workspaces:access-request-create"),
+            {"business_id": str(business.id), "message": "Please add me."},
+            format="json",
+        )
+        self.assertEqual(requested.status_code, status.HTTP_201_CREATED)
+
+        self.authenticate(self.owner)
+        decided = self.client.post(
+            reverse(
+                "workspaces:access-request-decision",
+                kwargs={
+                    "business_id": business.id,
+                    "request_id": requested.data["data"]["id"],
+                },
+            ),
+            {"decision": "approve", "role": WorkspaceRole.MEMBER},
+            format="json",
+        )
+        self.assertEqual(decided.status_code, status.HTTP_200_OK)
+        self.assertTrue(
+            BusinessMembership.objects.filter(
+                business=business,
+                user=self.outsider,
+                role=WorkspaceRole.MEMBER,
+            ).exists()
+        )

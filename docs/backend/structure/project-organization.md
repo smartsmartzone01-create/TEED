@@ -45,6 +45,10 @@ module business rules.
 Each subdirectory is a Django business module. The identity module establishes
 the current internal pattern:
 
+`apps.workspaces` owns Business tenancy and fixed-role authorization. Future
+tenant applications depend on its membership policy instead of defining roles
+or workspace tables again. See `workspace-and-rbac-module.md`.
+
 ```text
 apps/{module}/
 ├── api/

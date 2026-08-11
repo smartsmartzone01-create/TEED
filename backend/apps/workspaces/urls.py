@@ -1,0 +1,78 @@
+from django.urls import path
+
+from .api import (
+    AccessRequestCreateAPIView,
+    AccessRequestDecisionAPIView,
+    BusinessAccessRequestListAPIView,
+    BusinessDetailAPIView,
+    BusinessListCreateAPIView,
+    ControlRequestCreateAPIView,
+    ControlRequestDecisionAPIView,
+    InvitationDecisionAPIView,
+    InvitationListCreateAPIView,
+    MembershipDetailAPIView,
+    MembershipListAPIView,
+    MyInvitationListAPIView,
+    OwnershipTransferAPIView,
+)
+
+app_name = "workspaces"
+urlpatterns = [
+    path("businesses/", BusinessListCreateAPIView.as_view(), name="business-list"),
+    path(
+        "businesses/<uuid:business_id>/",
+        BusinessDetailAPIView.as_view(),
+        name="business-detail",
+    ),
+    path(
+        "businesses/<uuid:business_id>/members/",
+        MembershipListAPIView.as_view(),
+        name="member-list",
+    ),
+    path(
+        "businesses/<uuid:business_id>/members/<uuid:membership_id>/",
+        MembershipDetailAPIView.as_view(),
+        name="member-detail",
+    ),
+    path(
+        "businesses/<uuid:business_id>/invitations/",
+        InvitationListCreateAPIView.as_view(),
+        name="invitation-list",
+    ),
+    path("invitations/me/", MyInvitationListAPIView.as_view(), name="my-invitations"),
+    path(
+        "invitations/<uuid:invitation_id>/<str:decision>/",
+        InvitationDecisionAPIView.as_view(),
+        name="invitation-decision",
+    ),
+    path(
+        "access-requests/",
+        AccessRequestCreateAPIView.as_view(),
+        name="access-request-create",
+    ),
+    path(
+        "businesses/<uuid:business_id>/access-requests/",
+        BusinessAccessRequestListAPIView.as_view(),
+        name="access-request-list",
+    ),
+    path(
+        "businesses/<uuid:business_id>/access-requests/<uuid:request_id>/decision/",
+        AccessRequestDecisionAPIView.as_view(),
+        name="access-request-decision",
+    ),
+    path(
+        "businesses/<uuid:business_id>/control-requests/",
+        ControlRequestCreateAPIView.as_view(),
+        name="control-request-create",
+    ),
+    path(
+        "businesses/<uuid:business_id>/control-requests/<uuid:control_request_id>/decision/",
+        ControlRequestDecisionAPIView.as_view(),
+        name="control-request-decision",
+    ),
+    path(
+        "businesses/<uuid:business_id>/ownership-transfer/",
+        OwnershipTransferAPIView.as_view(),
+        name="ownership-transfer",
+    ),
+]

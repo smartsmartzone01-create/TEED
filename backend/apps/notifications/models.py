@@ -20,6 +20,22 @@ class UserNotification(BaseModel):
             "Other sessions revoked",
         )
         WORKSPACE_INVITATION = "workspace_invitation", "Workspace invitation"
+        WORKSPACE_ACCESS_REQUEST = (
+            "workspace_access_request",
+            "Workspace access request",
+        )
+        WORKSPACE_ACCESS_DECISION = (
+            "workspace_access_decision",
+            "Workspace access decision",
+        )
+        BUSINESS_CONTROL_REQUEST = (
+            "business_control_request",
+            "Business control request",
+        )
+        BUSINESS_CONTROL_DECISION = (
+            "business_control_decision",
+            "Business control decision",
+        )
         SYSTEM_ANNOUNCEMENT = "system_announcement", "System announcement"
 
     user = models.ForeignKey(
