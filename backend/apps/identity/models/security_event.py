@@ -79,6 +79,12 @@ class IdentitySecurityEvent(BaseModel):
             "profile_image_removed",
             "Profile image removed",
         )
+        PASSWORD_CHANGED = "password_changed", "Password changed"
+        SESSION_REVOKED = "session_revoked", "Session revoked"
+        OTHER_SESSIONS_REVOKED = (
+            "other_sessions_revoked",
+            "Other sessions revoked",
+        )
 
     class Outcome(models.TextChoices):
         SUCCESS = "success", "Success"

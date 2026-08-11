@@ -11,6 +11,9 @@ def create_user_session(
     ip_address=None,
     device_id=None,
     user_agent_hash="",
+    device_label="",
+    browser="",
+    operating_system="",
 ) -> UserSession:
     return UserSession.objects.create(
         user=user,
@@ -18,6 +21,9 @@ def create_user_session(
         ip_address=ip_address,
         device_id=device_id,
         user_agent_hash=user_agent_hash,
+        device_label=device_label,
+        browser=browser,
+        operating_system=operating_system,
     )
 
 

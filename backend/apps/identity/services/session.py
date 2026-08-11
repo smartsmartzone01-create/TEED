@@ -34,6 +34,39 @@ def _hash_user_agent(user_agent: str) -> str:
     return sha256(user_agent.encode("utf-8")).hexdigest()
 
 
+def _describe_user_agent(user_agent: str) -> dict[str, str]:
+    """Return a deliberately coarse, non-identifying device summary."""
+    value = user_agent.casefold()
+    if "iphone" in value or "ipad" in value:
+        operating_system, device_label = "iOS", "Apple mobile device"
+    elif "android" in value:
+        operating_system, device_label = "Android", "Android device"
+    elif "windows" in value:
+        operating_system, device_label = "Windows", "Windows computer"
+    elif "mac os" in value or "macintosh" in value:
+        operating_system, device_label = "macOS", "Mac computer"
+    elif "linux" in value:
+        operating_system, device_label = "Linux", "Linux computer"
+    else:
+        operating_system, device_label = "", "Unknown device"
+
+    if "edg/" in value:
+        browser = "Edge"
+    elif "firefox/" in value:
+        browser = "Firefox"
+    elif "chrome/" in value or "crios/" in value:
+        browser = "Chrome"
+    elif "safari/" in value:
+        browser = "Safari"
+    else:
+        browser = "Unknown browser"
+    return {
+        "browser": browser,
+        "device_label": device_label,
+        "operating_system": operating_system,
+    }
+
+
 @transaction.atomic
 def issue_token_pair(
     *,
@@ -53,6 +86,7 @@ def issue_token_pair(
         ip_address=ip_address,
         device_id=device_id,
         user_agent_hash=_hash_user_agent(user_agent),
+        **_describe_user_agent(user_agent),
     )
     tokens = build_session_token_pair(
         user=user,

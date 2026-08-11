@@ -57,6 +57,7 @@ THIRD_PARTY_APPS = [
 LOCAL_APPS = [
     "apps.identity.apps.IdentityConfig",
     "apps.profiles.apps.ProfilesConfig",
+    "apps.security.apps.SecurityConfig",
 ]
 
 # =====================================================

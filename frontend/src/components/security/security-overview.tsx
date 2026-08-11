@@ -1,0 +1,8 @@
+"use client";
+import { Activity, MailCheck, MonitorSmartphone, PhoneOff } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
+import { useSecurity } from "@/providers/security/security-provider";
+import { SecurityPage } from "./security-page";
+function SecurityOverview(){const t=useTranslations("SecurityOverview");const {overview}=useSecurity();const cards=[{key:"email",icon:MailCheck,value:overview?.verified_contacts.email?t("verified"):t("unverified")},{key:"phone",icon:PhoneOff,value:overview?.verified_contacts.phone?t("verified"):t("unverified")},{key:"sessions",icon:MonitorSmartphone,value:t("sessionCount",{count:overview?.active_session_count??0})},{key:"recovery",icon:Activity,value:overview?.recovery.email_available?t("emailReady"):t("notReady")} ] as const;return <SecurityPage title={t("title")} description={t("description")}><div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{cards.map(({key,icon:Icon,value})=><div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950" key={key}><Icon className="size-5"/><h2 className="mt-4 text-sm font-semibold">{t(`cards.${key}`)}</h2><p className="mt-1 text-sm text-slate-500">{value}</p></div>)}</div><div className="grid gap-3 lg:grid-cols-3">{(["password","sessions","activity"] as const).map(key=><Link className="rounded-2xl border border-slate-200 bg-white p-5 hover:shadow-md dark:border-slate-800 dark:bg-slate-950" href={`/dashboard/security/${key}`} key={key}><h2 className="font-semibold">{t(`links.${key}.title`)}</h2><p className="mt-1 text-sm text-slate-500">{t(`links.${key}.description`)}</p></Link>)}</div></SecurityPage>}
+export {SecurityOverview};
