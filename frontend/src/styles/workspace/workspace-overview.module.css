@@ -3,7 +3,7 @@
   --state-soft: var(--brand-navy-soft);
   position: relative;
   isolation: isolate;
-  min-height: 8rem;
+  min-height: 4.75rem;
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--state-accent) 28%, transparent);
   border-radius: 1rem;
@@ -11,6 +11,9 @@
     linear-gradient(135deg, color-mix(in srgb, var(--state-soft) 72%, white), white 58%);
   color: var(--brand-navy);
   padding: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
 }
 
 .orange {
@@ -54,6 +57,23 @@
   width: 1.25rem;
   height: 1.25rem;
   color: var(--state-accent);
+}
+
+.copy {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+}
+
+@media (min-width: 640px) {
+  .stateCard {
+    display: block;
+    min-height: 8rem;
+  }
+
+  .copy {
+    margin-top: 1.25rem;
+  }
 }
 
 @keyframes state-breathe {

@@ -47,16 +47,8 @@ function WorkspaceOverview() {
         </p>
       </section>
 
-      <section aria-labelledby="workspace-state-title">
-        <div className="mb-4">
-          <h2 className="text-lg font-semibold" id="workspace-state-title">
-            {t("stateTitle")}
-          </h2>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            {t("stateDescription")}
-          </p>
-        </div>
-        <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+      <section aria-label={t("stateLabel")}>
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3 xl:grid-cols-4">
           {states.map((item, index) => {
             const Icon = item.icon;
             const animationStyle = {
@@ -73,12 +65,14 @@ function WorkspaceOverview() {
                 style={animationStyle}
               >
                 <Icon className={styles.icon} />
-                <p className="mt-5 text-xs font-semibold uppercase tracking-wide opacity-75">
-                  {t(`states.${item.key}.label`)}
-                </p>
-                <p className="mt-1 text-sm font-semibold">
-                  {t(`states.${item.key}.value`)}
-                </p>
+                <div className={styles.copy}>
+                  <p className="text-xs font-semibold uppercase tracking-wide opacity-75">
+                    {t(`states.${item.key}.label`)}
+                  </p>
+                  <p className="mt-1 text-sm font-semibold">
+                    {t(`states.${item.key}.value`)}
+                  </p>
+                </div>
               </article>
             );
           })}

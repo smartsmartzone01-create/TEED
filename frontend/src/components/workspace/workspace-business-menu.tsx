@@ -1,6 +1,6 @@
 "use client";
 
-import { Building2, Check, ChevronDown, LayoutDashboard } from "lucide-react";
+import { Building2, Check, ChevronDown, LayoutDashboard, Plus, UserPlus } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import {
@@ -15,8 +15,7 @@ import { useRouter } from "@/i18n/navigation";
 import { cn } from "@/lib/global/class-names";
 
 type WorkspaceBusinessMenuProps = {
-  compact?: boolean;
-  placement?: "header" | "sidebar";
+  showLabel?: boolean;
 };
 
 const previewBusiness = {
@@ -24,10 +23,7 @@ const previewBusiness = {
   name: "TEED Workspace",
 };
 
-function WorkspaceBusinessMenu({
-  compact = false,
-  placement = "sidebar",
-}: WorkspaceBusinessMenuProps) {
+function WorkspaceBusinessMenu({ showLabel = true }: WorkspaceBusinessMenuProps) {
   const router = useRouter();
   const t = useTranslations("WorkspaceShell");
 
@@ -40,15 +36,14 @@ function WorkspaceBusinessMenu({
             "flex min-w-0 items-center rounded-xl text-left transition-colors",
             "hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/40",
             "dark:hover:bg-slate-900",
-            placement === "header" ? "gap-2 p-1" : "w-full gap-3 p-1.5",
-            compact && "justify-center",
+            "gap-2 p-1",
           )}
           type="button"
         >
           <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-slate-900 text-xs font-bold tracking-wide text-white dark:bg-white dark:text-slate-950">
             {previewBusiness.initials}
           </span>
-          {!compact && placement === "sidebar" ? (
+          {showLabel ? (
             <span className="min-w-0 flex-1">
               <span className="block truncate text-sm font-semibold">
                 {previewBusiness.name}
@@ -58,14 +53,13 @@ function WorkspaceBusinessMenu({
               </span>
             </span>
           ) : null}
-          {!compact ? <ChevronDown className="size-4 shrink-0 text-slate-400" /> : null}
+          {showLabel ? <ChevronDown className="size-4 shrink-0 text-slate-400" /> : null}
         </button>
       </DropdownMenuTrigger>
 
       <DropdownMenuContent
-        align={placement === "header" ? "end" : "start"}
+        align="end"
         className="w-72"
-        side={placement === "sidebar" ? "top" : "bottom"}
       >
         <DropdownMenuLabel>{t("currentBusiness")}</DropdownMenuLabel>
         <DropdownMenuItem className="justify-between">
@@ -78,6 +72,14 @@ function WorkspaceBusinessMenu({
         <DropdownMenuItem disabled>
           <Building2 className="size-4" />
           {t("switchAfterIntegration")}
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => router.push("/dashboard/workspaces/create")}>
+          <Plus className="size-4" />
+          {t("createBusiness")}
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => router.push("/dashboard/workspaces/access")}>
+          <UserPlus className="size-4" />
+          {t("requestAccess")}
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onSelect={() => router.push("/dashboard")}>

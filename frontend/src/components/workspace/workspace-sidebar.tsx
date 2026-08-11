@@ -16,7 +16,7 @@ import { useTranslations } from "next-intl";
 
 import { BrandMark } from "@/components/global/brand/brand-mark";
 import { Tooltip } from "@/components/global/primitives/tooltip";
-import { WorkspaceBusinessMenu } from "@/components/workspace/workspace-business-menu";
+import { WorkspaceAccountMenu } from "@/components/workspace/workspace-account-menu";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/global/class-names";
 
@@ -129,7 +129,7 @@ function WorkspaceSidebar({
         </nav>
 
         <div className="shrink-0 border-t border-slate-200 p-3 dark:border-slate-800">
-          <WorkspaceBusinessMenu compact={collapsed} />
+          <WorkspaceAccountMenu compact={collapsed} />
         </div>
       </aside>
     </>

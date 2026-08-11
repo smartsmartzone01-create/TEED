@@ -3,7 +3,11 @@
 import { Menu } from "lucide-react";
 import { useTranslations } from "next-intl";
 
+import { LanguageSwitcher } from "@/components/global/controls/language-switcher";
+import { ThemeSwitcher } from "@/components/global/controls/theme-switcher";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 import { WorkspaceBusinessMenu } from "@/components/workspace/workspace-business-menu";
+import { WorkspaceMobileMenu } from "@/components/workspace/workspace-mobile-menu";
 
 type WorkspaceHeaderProps = {
   onOpenNavigation: () => void;
@@ -33,7 +37,19 @@ function WorkspaceHeader({ onOpenNavigation }: WorkspaceHeaderProps) {
         </div>
       </div>
 
-      <WorkspaceBusinessMenu placement="header" />
+      <div className="flex shrink-0 items-center gap-1.5">
+        <div className="hidden items-center gap-1.5 sm:flex">
+          <NotificationBell />
+          <LanguageSwitcher showTooltip />
+          <ThemeSwitcher showTooltip />
+        </div>
+        <div className="hidden sm:block">
+          <WorkspaceBusinessMenu showLabel={false} />
+        </div>
+        <div className="sm:hidden">
+          <WorkspaceMobileMenu />
+        </div>
+      </div>
     </header>
   );
 }
