@@ -32,7 +32,10 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="business",
             name="public_handle",
-            field=models.SlugField(max_length=80, null=True),
+            # Keep the temporary backfill field free of PostgreSQL's
+            # varchar_pattern_ops index. The final SlugField below creates it
+            # once after every existing Business has a handle.
+            field=models.CharField(max_length=80, null=True),
         ),
         migrations.AddField(
             model_name="business",
