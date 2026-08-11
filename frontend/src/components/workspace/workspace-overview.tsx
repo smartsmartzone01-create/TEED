@@ -72,12 +72,7 @@ function WorkspaceOverview() {
                 key={item.key}
                 style={animationStyle}
               >
-                <div className={styles.iconRow}>
-                  <Icon className={styles.icon} />
-                  <span aria-hidden="true" className={styles.liveRing}>
-                    <span className={styles.liveDot} />
-                  </span>
-                </div>
+                <Icon className={styles.icon} />
                 <p className="mt-5 text-xs font-semibold uppercase tracking-wide opacity-75">
                   {t(`states.${item.key}.label`)}
                 </p>
