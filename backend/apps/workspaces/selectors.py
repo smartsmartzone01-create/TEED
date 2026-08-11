@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from django.db.models import Q
 from django.utils import timezone
 
@@ -30,8 +32,15 @@ def user_businesses(*, user):
 
 def discover_businesses(*, query):
     normalized = query.strip().removeprefix("@")
+    identity_query = Q(name__icontains=normalized) | Q(
+        public_handle__istartswith=normalized
+    )
+    try:
+        identity_query |= Q(id=UUID(normalized))
+    except ValueError:
+        pass
     return Business.objects.filter(
-        Q(name__icontains=normalized) | Q(public_handle__istartswith=normalized),
+        identity_query,
         is_discoverable=True,
         status=Business.Status.ACTIVE,
     ).exclude(workspace_type=Business.WorkspaceType.PERSONAL)[:10]

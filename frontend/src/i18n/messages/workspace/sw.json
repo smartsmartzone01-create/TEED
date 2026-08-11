@@ -96,9 +96,9 @@
   "WorkspaceAccess": {
     "eyebrow": "Ufikiaji wa eneo la kazi",
     "title": "Omba ufikiaji wa biashara",
-    "description": "Tafuta biashara kwa jina au jina lake la umma, thibitisha matokeo, kisha tuma ombi lako.",
-    "fields": {"search": "Tafuta biashara", "searchHelp": "Matokeo yanaonyesha jina la biashara, jina la umma na nchi pekee.", "searchPlaceholder": "Jina la biashara au @jina", "message": "Ujumbe", "messageHelp": "Maelezo ya hiari kwa wasimamizi wa ufikiaji wa biashara."},
-    "search": {"minimum": "Weka angalau herufi 3 ili kutafuta.", "searching": "Inatafuta biashara…", "failed": "TEED imeshindwa kutafuta biashara. Jaribu tena.", "empty": "Hakuna biashara inayopatikana inayolingana na utafutaji huu.", "select": "Chagua"},
+    "description": "Tafuta biashara kwa jina, jina la umma au UUID kamili, thibitisha matokeo, kisha tuma ombi lako.",
+    "fields": {"search": "Tafuta biashara", "searchHelp": "Tumia jina lolote la biashara au @jina, hata jina fupi, au bandika UUID kamili.", "searchPlaceholder": "Jina la biashara, @jina au UUID", "message": "Ujumbe", "messageHelp": "Maelezo ya hiari kwa wasimamizi wa ufikiaji wa biashara."},
+    "search": {"minimum": "Weka jina la biashara, @jina au UUID.", "searching": "Inatafuta biashara…", "failed": "TEED imeshindwa kutafuta biashara. Jaribu tena.", "empty": "Hakuna biashara inayopatikana inayolingana na utafutaji huu.", "select": "Chagua"},
     "validation": {"businessId": "Chagua biashara kutoka kwenye matokeo ya utafutaji.", "message": "Ujumbe usizidi herufi 300."},
     "errors": {"access_request_already_pending": "Tayari umeomba ufikiaji wa biashara hii.", "business_membership_exists": "Tayari wewe ni mwanachama wa biashara hii. Inafungua eneo lake la kazi.", "business_not_found": "Biashara hii haikupatikana au haipatikani tena.", "access_request_recently_rejected": "Ombi lako la hivi karibuni kwa biashara hii lilikataliwa. Jaribu baadaye au wasiliana na biashara.", "personal_workspace_membership_restricted": "Maeneo ya kazi binafsi hayapokei wanachama wala maombi ya ufikiaji."},
     "submit": "Tuma ombi",

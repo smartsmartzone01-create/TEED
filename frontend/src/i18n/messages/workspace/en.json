@@ -96,9 +96,9 @@
   "WorkspaceAccess": {
     "eyebrow": "Workspace access",
     "title": "Request Business access",
-    "description": "Find the Business by its name or public handle, confirm the result, then send your request.",
-    "fields": {"search": "Find a Business", "searchHelp": "Search results reveal only the Business name, public handle and country.", "searchPlaceholder": "Business name or @handle", "message": "Message", "messageHelp": "Optional context for the Business access managers."},
-    "search": {"minimum": "Enter at least 3 characters to search.", "searching": "Searching Businesses…", "failed": "TEED could not search Businesses. Try again.", "empty": "No available Business matches this search.", "select": "Select"},
+    "description": "Find the Business by its name, public handle, or exact UUID, confirm the result, then send your request.",
+    "fields": {"search": "Find a Business", "searchHelp": "Use any Business name or @handle, including short names, or paste an exact UUID.", "searchPlaceholder": "Business name, @handle, or UUID", "message": "Message", "messageHelp": "Optional context for the Business access managers."},
+    "search": {"minimum": "Enter a Business name, @handle, or UUID.", "searching": "Searching Businesses…", "failed": "TEED could not search Businesses. Try again.", "empty": "No available Business matches this search.", "select": "Select"},
     "validation": {"businessId": "Select a Business from the search results.", "message": "Keep the message within 300 characters."},
     "errors": {"access_request_already_pending": "You have already requested access to this Business.", "business_membership_exists": "You already belong to this Business. Opening its workspace.", "business_not_found": "This Business could not be found or is no longer available.", "access_request_recently_rejected": "A recent request to this Business was declined. Try again later or contact the Business.", "personal_workspace_membership_restricted": "Personal workspaces do not accept members or access requests."},
     "submit": "Send request",

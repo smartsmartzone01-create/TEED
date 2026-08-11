@@ -54,7 +54,7 @@ function RequestBusinessAccessForm() {
 
   useEffect(() => {
     const normalized = query.trim().replace(/^@/, "");
-    if (normalized.length < 3 || selected) {
+    if (!normalized || selected) {
       setResults([]);
       setSearching(false);
       setSearchFailed(false);
@@ -177,7 +177,7 @@ function RequestBusinessAccessForm() {
               </p>
             </div>
           </div>
-        ) : query.trim().replace(/^@/, "").length < 3 ? (
+        ) : !query.trim().replace(/^@/, "") ? (
           <p className="text-xs text-slate-500 dark:text-slate-400">{t("search.minimum")}</p>
         ) : searching ? (
           <p className="flex items-center gap-2 text-sm text-slate-500">

@@ -31,12 +31,12 @@ class BusinessDiscoverySerializer(serializers.ModelSerializer):
 
 
 class BusinessDiscoveryQuerySerializer(serializers.Serializer):
-    q = serializers.CharField(min_length=3, max_length=80, trim_whitespace=True)
+    q = serializers.CharField(min_length=1, max_length=80, trim_whitespace=True)
 
     def validate_q(self, value):
         normalized = value.removeprefix("@").strip()
-        if len(normalized) < 3:
-            raise serializers.ValidationError("Enter at least 3 search characters.")
+        if not normalized:
+            raise serializers.ValidationError("Enter a Business name, handle, or UUID.")
         return normalized
 
 

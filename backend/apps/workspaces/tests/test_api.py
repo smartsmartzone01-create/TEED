@@ -70,6 +70,30 @@ class WorkspaceAPITests(APITestCase):
         self.assertEqual(result["public_handle"], "afya-services")
         self.assertNotIn("created_at", result)
 
+    def test_business_discovery_accepts_short_names_and_exact_uuid(self):
+        business = create_business(
+            user=self.owner,
+            name="KJ",
+            country_code="TZ",
+        )
+
+        short_name_response = self.client.get(
+            reverse("workspaces:business-discovery"), {"q": "KJ"}
+        )
+        uuid_response = self.client.get(
+            reverse("workspaces:business-discovery"), {"q": str(business.id)}
+        )
+
+        self.assertEqual(short_name_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            short_name_response.data["data"]["businesses"][0]["id"],
+            str(business.id),
+        )
+        self.assertEqual(uuid_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            uuid_response.data["data"]["businesses"][0]["public_handle"], "kj"
+        )
+
     def test_personal_workspace_rejects_access_requests(self):
         personal = create_business(
             user=self.owner,

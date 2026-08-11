@@ -10,7 +10,7 @@ All identifiers are UUIDs. All endpoints require an authenticated user with comp
 |---|---|---|
 | `GET` | `businesses/` | List the caller's Business memberships |
 | `POST` | `businesses/` | Create a Business, unique public handle and atomic Owner membership |
-| `GET` | `businesses/discover/?q={name-or-handle}` | Search active discoverable Businesses by name or public handle |
+| `GET` | `businesses/discover/?q={identity}` | Search active discoverable Businesses by any non-empty name or public handle, or by exact UUID |
 | `GET` | `businesses/{business_id}/` | Read an active Business in the caller's workspace context |
 | `GET` | `businesses/{business_id}/overview/` | Read the Business, caller membership, permission-filtered pending counts, and active member count |
 
