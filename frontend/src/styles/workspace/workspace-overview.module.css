@@ -48,80 +48,12 @@
   animation-delay: var(--state-delay);
 }
 
-.iconRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
 .icon {
   position: relative;
   z-index: 1;
   width: 1.25rem;
   height: 1.25rem;
   color: var(--state-accent);
-}
-
-.liveRing {
-  position: relative;
-  display: inline-flex;
-  width: 1.75rem;
-  height: 1.75rem;
-  align-items: center;
-  justify-content: center;
-  border-radius: 999px;
-}
-
-.liveRing::before {
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: conic-gradient(
-    from 0deg,
-    transparent 0 42%,
-    var(--state-accent) 58% 76%,
-    transparent 90%
-  );
-  content: "";
-  animation: state-orbit 3.2s linear infinite;
-}
-
-.liveRing::after {
-  position: absolute;
-  inset: 3px;
-  border-radius: inherit;
-  background: white;
-  content: "";
-}
-
-.liveDot {
-  z-index: 1;
-  width: 0.4rem;
-  height: 0.4rem;
-  border-radius: 999px;
-  background: var(--state-accent);
-  box-shadow: 0 0 0.7rem color-mix(in srgb, var(--state-accent) 55%, transparent);
-  animation: state-pulse 2.2s ease-in-out infinite;
-  animation-delay: var(--state-delay);
-}
-
-@keyframes state-orbit {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@keyframes state-pulse {
-  0%,
-  100% {
-    opacity: 0.62;
-    transform: scale(0.82);
-  }
-
-  50% {
-    opacity: 1;
-    transform: scale(1.08);
-  }
 }
 
 @keyframes state-breathe {
@@ -158,15 +90,9 @@
   color: var(--state-accent);
 }
 
-:global(.dark) .liveRing::after {
-  background: var(--background);
-}
-
 @media (prefers-reduced-motion: reduce) {
   .stateCard::before,
-  .stateCard::after,
-  .liveRing::before,
-  .liveDot {
+  .stateCard::after {
     animation: none;
   }
 }
