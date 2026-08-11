@@ -1,0 +1,120 @@
+.stateCard {
+  --state-accent: var(--brand-navy);
+  --state-soft: var(--brand-navy-soft);
+  position: relative;
+  isolation: isolate;
+  min-height: 4.75rem;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--state-accent) 28%, transparent);
+  border-radius: 1rem;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--state-soft) 72%, white), white 58%);
+  color: var(--brand-navy);
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  box-shadow: 0 3px 10px color-mix(in srgb, var(--state-accent) 9%, transparent);
+}
+
+.orange {
+  --state-accent: var(--brand-orange);
+  --state-soft: var(--brand-orange-soft);
+}
+
+.stateCard::before {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 20%,
+    color-mix(in srgb, var(--state-accent) 9%, transparent) 42%,
+    transparent 64%
+  );
+  content: "";
+  transform: translateX(-110%);
+  animation: state-shimmer 5.8s ease-in-out infinite;
+  animation-delay: var(--state-delay);
+}
+
+.stateCard::after {
+  position: absolute;
+  z-index: -1;
+  width: 5rem;
+  height: 5rem;
+  top: -2.25rem;
+  right: -2rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--state-accent) 10%, transparent);
+  content: "";
+  animation: state-breathe 3.8s ease-in-out infinite;
+  animation-delay: var(--state-delay);
+}
+
+.icon {
+  position: relative;
+  z-index: 1;
+  width: 1.25rem;
+  height: 1.25rem;
+  color: var(--state-accent);
+}
+
+.copy {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+}
+
+@media (min-width: 640px) {
+  .stateCard {
+    display: block;
+    min-height: 8rem;
+  }
+
+  .copy {
+    margin-top: 1.25rem;
+  }
+}
+
+@keyframes state-breathe {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(0.86);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+}
+
+@keyframes state-shimmer {
+  0%,
+  54% {
+    transform: translateX(-110%);
+  }
+
+  82%,
+  100% {
+    transform: translateX(110%);
+  }
+}
+
+:global(.dark) .stateCard {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--state-soft) 82%, var(--background)),
+    var(--background) 62%
+  );
+  color: var(--state-accent);
+  box-shadow: 0 3px 10px rgb(0 0 0 / 18%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stateCard::before,
+  .stateCard::after {
+    animation: none;
+  }
+}

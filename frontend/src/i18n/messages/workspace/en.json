@@ -1,0 +1,58 @@
+{
+  "WorkspaceShell": {
+    "workspaceLabel": "Business workspace",
+    "businessMenu": "Open Business menu",
+    "currentBusiness": "Current Business",
+    "previewState": "Shell preview",
+    "switchAfterIntegration": "Business switching connects next",
+    "createBusiness": "Create another Business",
+    "requestAccess": "Request Business access",
+    "backToDashboard": "Back to personal dashboard",
+    "notifications": "Notifications",
+    "accountMenu": "Open personal account menu",
+    "account": "Personal account",
+    "loggingOut": "Signing out…",
+    "logout": "Sign out",
+    "accountLinks": {
+      "profile": "Personal profile",
+      "preferences": "Preferences",
+      "security": "Security and access",
+      "help": "Help"
+    },
+    "primaryNavigation": "Workspace navigation",
+    "openNavigation": "Open workspace navigation",
+    "closeNavigation": "Close workspace navigation",
+    "collapseSidebar": "Collapse sidebar",
+    "expandSidebar": "Expand sidebar",
+    "availableAfterIntegration": "This destination will open after Workspace API integration.",
+    "navigation": {
+      "overview": "Overview",
+      "business": "Business",
+      "members": "Members",
+      "invitations": "Invitations",
+      "accessRequests": "Access requests",
+      "roles": "Roles & access",
+      "control": "Security & control"
+    }
+  },
+  "WorkspaceOverview": {
+    "eyebrow": "TEED Workspace",
+    "title": "Business overview",
+    "description": "A focused view of Business state, membership and the actions available in this workspace.",
+    "stateLabel": "Workspace state indicators",
+    "states": {
+      "status": {"label": "Business status", "value": "Preview · not connected"},
+      "role": {"label": "Your role", "value": "Awaiting membership"},
+      "members": {"label": "Members", "value": "Live count pending"},
+      "pending": {"label": "Pending actions", "value": "Live state pending"}
+    },
+    "actionsTitle": "Workspace management",
+    "actionsDescription": "Focused destinations will activate when their APIs and permissions are connected.",
+    "actions": {
+      "business": {"title": "Business information", "description": "Business identity, profile and operational settings.", "tooltip": "Review and maintain the information that identifies this Business."},
+      "members": {"title": "Members and roles", "description": "People with access and the fixed role assigned to each member.", "tooltip": "Review members and role-based access without managing individual permissions."},
+      "invitations": {"title": "Invitations", "description": "Invite eligible users and follow pending invitation decisions.", "tooltip": "Create and review Business-initiated invitations."},
+      "access": {"title": "Access requests", "description": "Review users asking to join this Business.", "tooltip": "Approve or reject user-initiated requests according to your role."}
+    }
+  }
+}

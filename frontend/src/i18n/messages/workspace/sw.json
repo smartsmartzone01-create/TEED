@@ -1,0 +1,58 @@
+{
+  "WorkspaceShell": {
+    "workspaceLabel": "Eneo la kazi la biashara",
+    "businessMenu": "Fungua menyu ya biashara",
+    "currentBusiness": "Biashara ya sasa",
+    "previewState": "Muonekano wa awali",
+    "switchAfterIntegration": "Kubadili biashara kutaunganishwa baadaye",
+    "createBusiness": "Unda biashara nyingine",
+    "requestAccess": "Omba ufikiaji wa biashara",
+    "backToDashboard": "Rudi kwenye dashibodi binafsi",
+    "notifications": "Arifa",
+    "accountMenu": "Fungua menyu ya akaunti binafsi",
+    "account": "Akaunti binafsi",
+    "loggingOut": "Inatoka…",
+    "logout": "Toka",
+    "accountLinks": {
+      "profile": "Wasifu binafsi",
+      "preferences": "Mapendeleo",
+      "security": "Usalama na ufikiaji",
+      "help": "Msaada"
+    },
+    "primaryNavigation": "Urambazaji wa eneo la kazi",
+    "openNavigation": "Fungua urambazaji wa eneo la kazi",
+    "closeNavigation": "Funga urambazaji wa eneo la kazi",
+    "collapseSidebar": "Punguza utepe wa pembeni",
+    "expandSidebar": "Panua utepe wa pembeni",
+    "availableAfterIntegration": "Sehemu hii itafunguka baada ya kuunganisha API ya eneo la kazi.",
+    "navigation": {
+      "overview": "Muhtasari",
+      "business": "Biashara",
+      "members": "Wanachama",
+      "invitations": "Mialiko",
+      "accessRequests": "Maombi ya ufikiaji",
+      "roles": "Majukumu na ufikiaji",
+      "control": "Usalama na udhibiti"
+    }
+  },
+  "WorkspaceOverview": {
+    "eyebrow": "Eneo la kazi la TEED",
+    "title": "Muhtasari wa biashara",
+    "description": "Mwonekano rahisi wa hali ya biashara, uanachama na vitendo vinavyopatikana katika eneo hili la kazi.",
+    "stateLabel": "Viashiria vya hali ya eneo la kazi",
+    "states": {
+      "status": {"label": "Hali ya biashara", "value": "Muonekano · haijaunganishwa"},
+      "role": {"label": "Jukumu lako", "value": "Inasubiri uanachama"},
+      "members": {"label": "Wanachama", "value": "Idadi halisi inasubiri"},
+      "pending": {"label": "Hatua zinazosubiri", "value": "Hali halisi inasubiri"}
+    },
+    "actionsTitle": "Usimamizi wa eneo la kazi",
+    "actionsDescription": "Sehemu hizi zitafunguka baada ya API na ruhusa zake kuunganishwa.",
+    "actions": {
+      "business": {"title": "Taarifa za biashara", "description": "Utambulisho, wasifu na mipangilio ya uendeshaji wa biashara.", "tooltip": "Kagua na tunza taarifa zinazoitambulisha biashara hii."},
+      "members": {"title": "Wanachama na majukumu", "description": "Watu wenye ufikiaji na jukumu maalum la kila mwanachama.", "tooltip": "Kagua wanachama na ufikiaji wa majukumu bila kusimamia ruhusa moja moja."},
+      "invitations": {"title": "Mialiko", "description": "Alika watumiaji wanaostahili na fuatilia maamuzi ya mialiko.", "tooltip": "Unda na kagua mialiko inayoanzishwa na biashara."},
+      "access": {"title": "Maombi ya ufikiaji", "description": "Kagua watumiaji wanaoomba kujiunga na biashara hii.", "tooltip": "Kubali au kataa maombi kulingana na jukumu lako."}
+    }
+  }
+}
