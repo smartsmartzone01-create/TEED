@@ -1,6 +1,5 @@
-"""Notifications subdomain of the personal dashboard.
+"""Dashboard notification composition boundary.
 
-This namespace is reserved for personal notification preferences and related
-user-facing configuration. Delivery infrastructure may become a separate
-domain if its operational responsibilities grow beyond dashboard settings.
+Persistent inbox state and APIs belong to ``apps.notifications``. The dashboard
+may aggregate unread counts and links, but it must not duplicate that domain.
 """

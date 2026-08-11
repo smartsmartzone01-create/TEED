@@ -58,6 +58,7 @@ LOCAL_APPS = [
     "apps.identity.apps.IdentityConfig",
     "apps.profiles.apps.ProfilesConfig",
     "apps.security.apps.SecurityConfig",
+    "apps.notifications.apps.NotificationsConfig",
 ]
 
 # =====================================================

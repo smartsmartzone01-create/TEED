@@ -35,7 +35,7 @@
     "cards": {
       "profile": {"title": "Wasifu", "pending": "API ya wasifu haijaunganishwa", "progress": "Imekamilika kwa {percentage}%", "action": "Fungua wasifu", "tooltip": "Fungua taarifa binafsi, picha ya wasifu na mawasiliano yako."},
       "security": {"title": "Usalama na ufikiaji", "pending": "Hali ya usalama haipatikani", "state": "Barua pepe {email} · vipindi {count}", "verified": "imethibitishwa", "unverified": "haijathibitishwa", "action": "Fungua usalama na ufikiaji", "tooltip": "Kagua nenosiri, mawasiliano yaliyothibitishwa, vipindi na njia za urejeshaji."},
-      "notifications": {"title": "Arifa", "pending": "API ya kikasha haijaunganishwa", "action": "Fungua arifa", "tooltip": "Fungua arifa muhimu pamoja na viungo vya hatua vinavyohusiana nazo."},
+      "notifications": {"title": "Arifa", "pending": "Kikasha hakipatikani", "unread": "Arifa ambazo hazijasomwa: {count}", "action": "Fungua arifa", "tooltip": "Fungua arifa muhimu pamoja na viungo vya hatua vinavyohusiana nazo."},
       "workspaces": {"title": "Eneo la kazi", "pending": "API ya eneo la kazi haijaunganishwa", "action": "Fungua eneo la kazi", "tooltip": "Kagua biashara, majukumu, mialiko na uanachama wa eneo la kazi."}
     },
     "destinationsTitle": "Viungo vingine",

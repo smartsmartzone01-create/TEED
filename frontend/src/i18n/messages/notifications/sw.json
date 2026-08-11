@@ -1,0 +1,34 @@
+{
+  "NotificationInbox": {
+    "eyebrow": "Dashibodi binafsi",
+    "title": "Arifa",
+    "description": "Ujumbe muhimu wa akaunti na viungo salama vya kufungua sehemu ya TEED inayohusika na kila hatua.",
+    "bellLabel": "Fungua arifa, {count} hazijasomwa",
+    "bellTooltip": "Arifa ambazo hazijasomwa: {count}",
+    "refreshTooltip": "Kagua arifa mpya sasa.",
+    "markAllRead": "Weka zote kuwa zimesomwa",
+    "allReadSuccess": "Arifa zote zimewekwa kuwa zimesomwa.",
+    "markRead": "Weka kuwa imesomwa",
+    "openAction": "Fungua ukurasa husika",
+    "openActionTooltip": "Fungua moduli ya TEED inayohusika na arifa hii.",
+    "unreadOnly": "Ambazo hazijasomwa pekee",
+    "loadFailed": "TEED haikuweza kupakia arifa. Kagua muunganisho kisha ujaribu tena.",
+    "actionFailed": "Hatua ya arifa imeshindikana.",
+    "retry": "Jaribu tena",
+    "emptyTitle": "Umesoma arifa zote",
+    "emptyDescription": "Ujumbe mpya wa akaunti, usalama, eneo la kazi na mfumo utaonekana hapa.",
+    "paginationLabel": "Kurasa za arifa",
+    "previous": "Iliyotangulia",
+    "next": "Inayofuata",
+    "page": "Ukurasa {page} kati ya {total}",
+    "categories": {"all":"Zote","security":"Usalama","account":"Akaunti","workspace":"Eneo la kazi","system":"Mfumo"},
+    "templates": {
+      "password_changed": {"title":"Nenosiri limebadilishwa","message":"Nenosiri limebadilishwa. Vipindi vingine vilivyofungwa: {count}."},
+      "session_revoked": {"title":"Kipindi kimefungwa","message":"Ufikiaji wa kipindi cha kifaa kimoja umeondolewa kwenye akaunti yako."},
+      "other_sessions_revoked": {"title":"Vipindi vingine vimefungwa","message":"Vipindi vingine vilivyofungwa: {count}."},
+      "workspace_invitation": {"title":"Mwaliko wa eneo la kazi","message":"Umealikwa kujiunga na {workspace_name} kama {role}."},
+      "system_announcement": {"title":"Taarifa ya TEED","message":"Taarifa muhimu ya akaunti ya TEED inapatikana."},
+      "default": {"title":"Arifa ya akaunti","message":"Taarifa muhimu inapatikana kwa akaunti yako."}
+    }
+  }
+}

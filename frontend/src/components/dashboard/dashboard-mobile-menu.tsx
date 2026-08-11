@@ -18,6 +18,7 @@ import { useRouter } from "@/i18n/navigation";
 import type { AppLocale } from "@/i18n/routing";
 import { usePreferences } from "@/providers/dashboard/preferences-provider";
 import { useNotification } from "@/providers/global/notification-provider";
+import { useNotifications } from "@/providers/notifications/notifications-provider";
 import type { PreferenceAppearance } from "@/types/dashboard/preferences";
 
 const subscribe = () => () => undefined;
@@ -32,6 +33,7 @@ function DashboardMobileMenu() {
   const themeT = useTranslations("Theme");
   const preferencesT = useTranslations("Preferences");
   const { notify } = useNotification();
+  const { unreadCount } = useNotifications();
   const { update } = usePreferences();
   const { theme } = useTheme();
   const mounted = useSyncExternalStore(subscribe, getClientSnapshot, getServerSnapshot);
@@ -61,6 +63,11 @@ function DashboardMobileMenu() {
         <DropdownMenuItem onSelect={() => router.push("/dashboard/notifications")}>
           <Bell className="size-4" />
           {t("navigation.notifications")}
+          {unreadCount > 0 ? (
+            <span className="ml-auto rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-bold text-white">
+              {unreadCount > 99 ? "99+" : unreadCount}
+            </span>
+          ) : null}
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuLabel>{languageT("label")}</DropdownMenuLabel>

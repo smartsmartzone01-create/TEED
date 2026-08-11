@@ -5,6 +5,7 @@ import { IdentityAccessBoundary } from "@/components/identity/identity-access-bo
 import { PreferencesProvider } from "@/providers/dashboard/preferences-provider";
 import { ProfileProvider } from "@/providers/profile/profile-provider";
 import { SecurityProvider } from "@/providers/security/security-provider";
+import { NotificationsProvider } from "@/providers/notifications/notifications-provider";
 
 type DashboardLayoutProps = {
   children: ReactNode;
@@ -16,7 +17,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       <PreferencesProvider>
         <ProfileProvider>
           <SecurityProvider>
-            <DashboardShell>{children}</DashboardShell>
+            <NotificationsProvider>
+              <DashboardShell>{children}</DashboardShell>
+            </NotificationsProvider>
           </SecurityProvider>
         </ProfileProvider>
       </PreferencesProvider>

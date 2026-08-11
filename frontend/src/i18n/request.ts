@@ -18,6 +18,7 @@ export default getRequestConfig(async ({ requestLocale }) => {
     preferencesMessages,
     profileMessages,
     securityMessages,
+    notificationMessages,
   ] = await Promise.all([
     import(`@/i18n/messages/dashboard/${locale}.json`),
     import(`@/i18n/messages/global/${locale}.json`),
@@ -26,6 +27,7 @@ export default getRequestConfig(async ({ requestLocale }) => {
     import(`@/i18n/messages/preferences/${locale}.json`),
     import(`@/i18n/messages/profile/${locale}.json`),
     import(`@/i18n/messages/security/${locale}.json`),
+    import(`@/i18n/messages/notifications/${locale}.json`),
   ]);
 
   return {
@@ -38,6 +40,7 @@ export default getRequestConfig(async ({ requestLocale }) => {
       ...preferencesMessages.default,
       ...profileMessages.default,
       ...securityMessages.default,
+      ...notificationMessages.default,
     },
   };
 });

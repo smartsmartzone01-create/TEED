@@ -1,0 +1,34 @@
+{
+  "NotificationInbox": {
+    "eyebrow": "Personal dashboard",
+    "title": "Notifications",
+    "description": "Important account messages and safe links to the TEED area where each action belongs.",
+    "bellLabel": "Open notifications, {count} unread",
+    "bellTooltip": "{count, plural, =0 {No unread notifications} one {# unread notification} other {# unread notifications}}",
+    "refreshTooltip": "Check for new notifications now.",
+    "markAllRead": "Mark all as read",
+    "allReadSuccess": "All notifications are marked as read.",
+    "markRead": "Mark as read",
+    "openAction": "Open related page",
+    "openActionTooltip": "Open the TEED module responsible for this notification.",
+    "unreadOnly": "Unread only",
+    "loadFailed": "TEED could not load your notifications. Check the connection and try again.",
+    "actionFailed": "The notification action failed.",
+    "retry": "Try again",
+    "emptyTitle": "You are all caught up",
+    "emptyDescription": "New account, security, workspace, and system messages will appear here.",
+    "paginationLabel": "Notification pages",
+    "previous": "Previous",
+    "next": "Next",
+    "page": "Page {page} of {total}",
+    "categories": {"all":"All","security":"Security","account":"Account","workspace":"Workspace","system":"System"},
+    "templates": {
+      "password_changed": {"title":"Password changed","message":"Your password was changed successfully. {count, plural, =0 {No other sessions were active.} one {# other session was ended.} other {# other sessions were ended.}}"},
+      "session_revoked": {"title":"Session revoked","message":"Access for one device session was revoked from your account."},
+      "other_sessions_revoked": {"title":"Other sessions revoked","message":"{count, plural, =0 {No other sessions needed to be ended.} one {# other session was ended.} other {# other sessions were ended.}}"},
+      "workspace_invitation": {"title":"Workspace invitation","message":"You have been invited to join {workspace_name} as {role}."},
+      "system_announcement": {"title":"TEED update","message":"An important TEED account update is available."},
+      "default": {"title":"Account notification","message":"An important update is available for your account."}
+    }
+  }
+}
