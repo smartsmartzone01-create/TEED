@@ -35,7 +35,7 @@ function WorkspaceOverview() {
 
   return (
     <div className="space-y-8">
-      <section className="border-b border-slate-200 pb-6 dark:border-slate-800">
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_3px_10px_rgba(15,23,42,0.05)] dark:border-slate-800 dark:bg-slate-950 dark:shadow-[0_3px_10px_rgba(0,0,0,0.18)] sm:p-6">
         <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
           {t("eyebrow")}
         </p>
@@ -88,7 +88,7 @@ function WorkspaceOverview() {
             {t("actionsDescription")}
           </p>
         </div>
-        <div className="divide-y divide-slate-200 overflow-hidden rounded-2xl border border-slate-200 dark:divide-slate-800 dark:border-slate-800">
+        <div className="divide-y divide-slate-200 overflow-hidden rounded-2xl border border-slate-200 shadow-[0_3px_10px_rgba(15,23,42,0.05)] dark:divide-slate-800 dark:border-slate-800 dark:shadow-[0_3px_10px_rgba(0,0,0,0.18)]">
           {actions.map((item) => {
             const Icon = item.icon;
             return (

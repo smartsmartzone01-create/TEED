@@ -14,6 +14,7 @@
   display: flex;
   align-items: center;
   gap: 0.875rem;
+  box-shadow: 0 3px 10px color-mix(in srgb, var(--state-accent) 9%, transparent);
 }
 
 .orange {
@@ -108,6 +109,7 @@
     var(--background) 62%
   );
   color: var(--state-accent);
+  box-shadow: 0 3px 10px rgb(0 0 0 / 18%);
 }
 
 @media (prefers-reduced-motion: reduce) {
