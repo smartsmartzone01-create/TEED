@@ -1,12 +1,12 @@
 "use client";
 
-import { Bell, Menu } from "lucide-react";
+import { Menu } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { DashboardMobileMenu } from "@/components/dashboard/dashboard-mobile-menu";
 import { LanguageSwitcher } from "@/components/global/controls/language-switcher";
 import { ThemeSwitcher } from "@/components/global/controls/theme-switcher";
-import { Tooltip } from "@/components/global/primitives/tooltip";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 import { usePathname } from "@/i18n/navigation";
 
 type DashboardHeaderProps = {
@@ -46,15 +46,7 @@ function DashboardHeader({
       </div>
 
       <div className="hidden shrink-0 items-center gap-1.5 sm:flex">
-        <Tooltip content={t("notificationsSoon")}>
-          <button
-            aria-label={t("navigation.notifications")}
-            className="relative inline-flex size-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300 dark:hover:bg-slate-900"
-            type="button"
-          >
-            <Bell className="size-4.5" />
-          </button>
-        </Tooltip>
+        <NotificationBell />
         <LanguageSwitcher showTooltip />
         <ThemeSwitcher showTooltip />
       </div>

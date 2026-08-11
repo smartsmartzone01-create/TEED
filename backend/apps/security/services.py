@@ -5,6 +5,8 @@ from apps.identity.models import IdentitySecurityEvent, UserSession
 from apps.identity.repositories import revoke_session
 from apps.identity.services import record_identity_security_event
 from apps.identity.services.token import blacklist_outstanding_refresh
+from apps.notifications.models import UserNotification
+from apps.notifications.services import notify_user
 
 
 def _revoke(session, reason):
@@ -32,6 +34,13 @@ def change_password(*, user, current_session_id, new_password, audit_metadata):
         **audit_metadata,
         metadata={"revoked_other_sessions": len(others)},
     )
+    notify_user(
+        user=user,
+        category=UserNotification.Category.SECURITY,
+        template=UserNotification.Template.PASSWORD_CHANGED,
+        context={"count": len(others)},
+        action_path="/dashboard/security/activity",
+    )
     return len(others)
 
 
@@ -52,6 +61,12 @@ def revoke_owned_session(*, user, session_id, current_session_id, audit_metadata
         session_id=session.id,
         **audit_metadata,
     )
+    notify_user(
+        user=user,
+        category=UserNotification.Category.SECURITY,
+        template=UserNotification.Template.SESSION_REVOKED,
+        action_path="/dashboard/security/sessions",
+    )
     return True
 
 
@@ -71,5 +86,12 @@ def revoke_other_sessions(*, user, current_session_id, audit_metadata):
         session_id=current_session_id,
         metadata={"revoked_sessions": len(sessions)},
         **audit_metadata,
+    )
+    notify_user(
+        user=user,
+        category=UserNotification.Category.SECURITY,
+        template=UserNotification.Template.OTHER_SESSIONS_REVOKED,
+        context={"count": len(sessions)},
+        action_path="/dashboard/security/sessions",
     )
     return len(sessions)
