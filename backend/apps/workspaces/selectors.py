@@ -23,6 +23,61 @@ def user_businesses(*, user):
     )
 
 
+def workspace_overview_state(*, membership):
+    from .policy import WorkspacePermission, role_has_permission
+
+    business = membership.business
+    can_manage_invitations = role_has_permission(
+        membership.role, WorkspacePermission.MANAGE_INVITATIONS
+    )
+    can_manage_members = role_has_permission(
+        membership.role, WorkspacePermission.MANAGE_MEMBERS
+    )
+    can_control_business = role_has_permission(
+        membership.role, WorkspacePermission.CONTROL_BUSINESS
+    )
+    pending_invitations = (
+        business.invitations.filter(
+            status=BusinessInvitation.Status.PENDING,
+            expires_at__gt=timezone.now(),
+        ).count()
+        if can_manage_invitations
+        else None
+    )
+    pending_access_requests = (
+        business.access_requests.filter(
+            status=BusinessAccessRequest.Status.PENDING
+        ).count()
+        if can_manage_members
+        else None
+    )
+    pending_control_requests = (
+        business.control_requests.filter(
+            status="pending", expires_at__gt=timezone.now()
+        ).count()
+        if can_control_business
+        else None
+    )
+    visible_pending_counts = [
+        count
+        for count in (
+            pending_invitations,
+            pending_access_requests,
+            pending_control_requests,
+        )
+        if count is not None
+    ]
+    return {
+        "active_member_count": business.memberships.filter(
+            status=BusinessMembership.Status.ACTIVE
+        ).count(),
+        "pending_access_request_count": pending_access_requests,
+        "pending_action_count": sum(visible_pending_counts),
+        "pending_control_request_count": pending_control_requests,
+        "pending_invitation_count": pending_invitations,
+    }
+
+
 def visible_invitations(*, user):
     if not user.email:
         return BusinessInvitation.objects.none()

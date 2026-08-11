@@ -48,6 +48,46 @@ class WorkspaceAPITests(APITestCase):
         self.assertEqual(detail.status_code, status.HTTP_404_NOT_FOUND)
         self.assertEqual(members.status_code, status.HTTP_404_NOT_FOUND)
 
+    def test_workspace_overview_returns_live_role_and_state(self):
+        business = create_business(user=self.owner, name="Overview Business")
+        response = self.client.get(
+            reverse(
+                "workspaces:business-overview",
+                kwargs={"business_id": business.id},
+            )
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["data"]["business"]["id"], str(business.id))
+        self.assertEqual(
+            response.data["data"]["membership"]["role"], WorkspaceRole.OWNER
+        )
+        self.assertEqual(response.data["data"]["state"]["active_member_count"], 1)
+        self.assertEqual(response.data["data"]["state"]["pending_action_count"], 0)
+
+    def test_workspace_overview_hides_management_counts_from_member(self):
+        business = create_business(user=self.owner, name="Member Overview")
+        membership = BusinessMembership.objects.create(
+            business=business,
+            user=self.outsider,
+            role=WorkspaceRole.MEMBER,
+        )
+        self.authenticate(self.outsider)
+        response = self.client.get(
+            reverse(
+                "workspaces:business-overview",
+                kwargs={"business_id": business.id},
+            )
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["data"]["membership"]["id"], str(membership.id))
+        self.assertIsNone(response.data["data"]["state"]["pending_invitation_count"])
+        self.assertIsNone(
+            response.data["data"]["state"]["pending_access_request_count"]
+        )
+        self.assertIsNone(
+            response.data["data"]["state"]["pending_control_request_count"]
+        )
+
     def test_dashboard_access_request_can_be_approved_by_owner(self):
         business = create_business(user=self.owner, name="Requested Business")
         self.authenticate(self.outsider)

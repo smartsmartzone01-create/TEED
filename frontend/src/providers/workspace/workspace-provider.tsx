@@ -1,0 +1,159 @@
+"use client";
+
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
+
+import { useIdentitySession } from "@/providers/identity/identity-session-provider";
+import { ApiClientError } from "@/services/global/api-client";
+import {
+  createBusiness as createBusinessRequest,
+  decideInvitation as decideInvitationRequest,
+  getBusinesses,
+  getMyInvitations,
+  requestBusinessAccess as requestBusinessAccessRequest,
+} from "@/services/workspace/workspace";
+import type {
+  CreateBusinessValues,
+  RequestBusinessAccessValues,
+  WorkspaceBusiness,
+  WorkspaceBusinessListItem,
+  WorkspaceInvitation,
+  WorkspaceOverviewData,
+} from "@/types/workspace/workspace";
+import { getWorkspaceOverview } from "@/services/workspace/workspace";
+
+type WorkspaceContextValue = {
+  businesses: WorkspaceBusinessListItem[];
+  createBusiness: (values: CreateBusinessValues) => Promise<WorkspaceBusiness>;
+  decideInvitation: (id: string, decision: "accept" | "decline") => Promise<void>;
+  error: ApiClientError | Error | null;
+  invitations: WorkspaceInvitation[];
+  loadOverview: (businessId: string, signal?: AbortSignal) => Promise<WorkspaceOverviewData>;
+  refresh: () => Promise<void>;
+  requestAccess: (values: RequestBusinessAccessValues) => Promise<void>;
+  status: "error" | "loading" | "ready";
+};
+
+const WorkspaceContext = createContext<WorkspaceContextValue | null>(null);
+
+function WorkspaceProvider({ children }: { children: ReactNode }) {
+  const { accessToken, clearSession, refreshAccessToken } = useIdentitySession();
+  const [businesses, setBusinesses] = useState<WorkspaceBusinessListItem[]>([]);
+  const [invitations, setInvitations] = useState<WorkspaceInvitation[]>([]);
+  const [error, setError] = useState<ApiClientError | Error | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const withToken = useCallback(
+    async <T,>(operation: (token: string) => Promise<T>) => {
+      if (!accessToken) throw new Error("An authenticated session is required.");
+      try {
+        return await operation(accessToken);
+      } catch (requestError) {
+        if (
+          !(requestError instanceof ApiClientError) ||
+          requestError.details.kind !== "unauthenticated"
+        ) {
+          throw requestError;
+        }
+        try {
+          return await operation(await refreshAccessToken());
+        } catch (refreshError) {
+          if (
+            refreshError instanceof ApiClientError &&
+            refreshError.details.kind === "unauthenticated"
+          ) {
+            clearSession();
+          }
+          throw refreshError;
+        }
+      }
+    },
+    [accessToken, clearSession, refreshAccessToken],
+  );
+
+  const refresh = useCallback(async () => {
+    if (!accessToken) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const [businessResponse, invitationResponse] = await Promise.all([
+        withToken((token) => getBusinesses(token)),
+        withToken((token) => getMyInvitations(token)),
+      ]);
+      setBusinesses(businessResponse.data?.businesses ?? []);
+      setInvitations(invitationResponse.data?.invitations ?? []);
+    } catch (requestError) {
+      setError(
+        requestError instanceof ApiClientError || requestError instanceof Error
+          ? requestError
+          : new Error("Workspace request failed."),
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, [accessToken, withToken]);
+
+  useEffect(() => {
+    if (!accessToken) return;
+    const initial = window.setTimeout(() => void refresh(), 0);
+    const interval = window.setInterval(() => void refresh(), 30_000);
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") void refresh();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.clearTimeout(initial);
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [accessToken, refresh]);
+
+  const value = useMemo<WorkspaceContextValue>(
+    () => ({
+      businesses,
+      createBusiness: async (values) => {
+        const response = await withToken((token) => createBusinessRequest(values, token));
+        if (!response.data) throw new Error("Business creation response data missing.");
+        await refresh();
+        return response.data;
+      },
+      decideInvitation: async (id, decision) => {
+        await withToken((token) => decideInvitationRequest(id, decision, token));
+        await refresh();
+      },
+      error,
+      invitations,
+      loadOverview: async (businessId, signal) => {
+        const response = await withToken((token) =>
+          getWorkspaceOverview(businessId, token, signal),
+        );
+        if (!response.data) throw new Error("Workspace overview response data missing.");
+        return response.data;
+      },
+      refresh,
+      requestAccess: async (values) => {
+        await withToken((token) => requestBusinessAccessRequest(values, token));
+        await refresh();
+      },
+      status: loading ? "loading" : error ? "error" : "ready",
+    }),
+    [businesses, error, invitations, loading, refresh, withToken],
+  );
+
+  return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>;
+}
+
+function useWorkspace() {
+  const context = useContext(WorkspaceContext);
+  if (!context) throw new Error("useWorkspace must be used within WorkspaceProvider.");
+  return context;
+}
+
+export { WorkspaceProvider, useWorkspace };

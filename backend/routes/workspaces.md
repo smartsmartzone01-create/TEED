@@ -11,6 +11,7 @@ All identifiers are UUIDs. All endpoints require an authenticated user with comp
 | `GET` | `businesses/` | List the caller's Business memberships |
 | `POST` | `businesses/` | Create a Business and atomic Owner membership |
 | `GET` | `businesses/{business_id}/` | Read an active Business in the caller's workspace context |
+| `GET` | `businesses/{business_id}/overview/` | Read the Business, caller membership, permission-filtered pending counts, and active member count |
 
 ## Membership and fixed roles
 
@@ -49,4 +50,3 @@ The same request endpoint supports a user without a Business from the personal d
 | `POST` | `businesses/{business_id}/control-requests/{control_request_id}/decision/` | Independently approve or reject |
 
 Business control requires an active Owner and Partner. The initiator cannot approve their own request. Approved deletion enters `deletion_pending`; it does not immediately destroy tenant data.
-

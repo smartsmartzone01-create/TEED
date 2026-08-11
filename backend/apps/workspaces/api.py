@@ -9,7 +9,12 @@ from apps.profiles.permissions import IsOnboardingComplete
 
 from .models import BusinessMembership
 from .policy import WorkspacePermission
-from .selectors import user_businesses, visible_access_requests, visible_invitations
+from .selectors import (
+    user_businesses,
+    visible_access_requests,
+    visible_invitations,
+    workspace_overview_state,
+)
 from .serializers import (
     AccessRequestCreateSerializer,
     AccessRequestDecisionSerializer,
@@ -84,6 +89,21 @@ class BusinessDetailAPIView(WorkspaceBaseAPIView):
             data={
                 **BusinessSerializer(membership.business).data,
                 "membership": MembershipSerializer(membership).data,
+            },
+        )
+
+
+class BusinessOverviewAPIView(WorkspaceBaseAPIView):
+    serializer_class = BusinessSerializer
+
+    def get(self, request, business_id):
+        membership = require_membership(user=request.user, business_id=business_id)
+        return SuccessResponse(
+            message="Business workspace overview retrieved successfully.",
+            data={
+                "business": BusinessSerializer(membership.business).data,
+                "membership": MembershipSerializer(membership).data,
+                "state": workspace_overview_state(membership=membership),
             },
         )
 

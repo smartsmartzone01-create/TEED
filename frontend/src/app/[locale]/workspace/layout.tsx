@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { IdentityAccessBoundary } from "@/components/identity/identity-access-boundary";
 import { WorkspaceShell } from "@/components/workspace/workspace-shell";
 import { NotificationsProvider } from "@/providers/notifications/notifications-provider";
+import { WorkspaceProvider } from "@/providers/workspace/workspace-provider";
 
 type WorkspaceLayoutProps = {
   children: ReactNode;
@@ -12,7 +13,9 @@ export default function WorkspaceLayout({ children }: WorkspaceLayoutProps) {
   return (
     <IdentityAccessBoundary access="dashboard">
       <NotificationsProvider>
-        <WorkspaceShell>{children}</WorkspaceShell>
+        <WorkspaceProvider>
+          <WorkspaceShell>{children}</WorkspaceShell>
+        </WorkspaceProvider>
       </NotificationsProvider>
     </IdentityAccessBoundary>
   );

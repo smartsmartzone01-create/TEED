@@ -6,6 +6,7 @@ import { PreferencesProvider } from "@/providers/dashboard/preferences-provider"
 import { ProfileProvider } from "@/providers/profile/profile-provider";
 import { SecurityProvider } from "@/providers/security/security-provider";
 import { NotificationsProvider } from "@/providers/notifications/notifications-provider";
+import { WorkspaceProvider } from "@/providers/workspace/workspace-provider";
 
 type DashboardLayoutProps = {
   children: ReactNode;
@@ -18,7 +19,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         <ProfileProvider>
           <SecurityProvider>
             <NotificationsProvider>
-              <DashboardShell>{children}</DashboardShell>
+              <WorkspaceProvider>
+                <DashboardShell>{children}</DashboardShell>
+              </WorkspaceProvider>
             </NotificationsProvider>
           </SecurityProvider>
         </ProfileProvider>

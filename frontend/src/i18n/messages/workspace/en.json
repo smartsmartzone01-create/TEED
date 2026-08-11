@@ -3,8 +3,9 @@
     "workspaceLabel": "Business workspace",
     "businessMenu": "Open Business menu",
     "currentBusiness": "Current Business",
-    "previewState": "Shell preview",
-    "switchAfterIntegration": "Business switching connects next",
+    "previewState": "Active Business",
+    "businessFallback": "Business workspace",
+    "noOtherBusinesses": "No other Businesses available",
     "createBusiness": "Create another Business",
     "requestAccess": "Request Business access",
     "backToDashboard": "Back to personal dashboard",
@@ -39,13 +40,18 @@
     "eyebrow": "TEED Workspace",
     "title": "Business overview",
     "description": "A focused view of Business state, membership and the actions available in this workspace.",
+    "loading": "Loading live workspace state…",
+    "loadError": "TEED could not load this Business workspace. It may be unavailable or you may no longer have access.",
+    "retry": "Try again",
     "stateLabel": "Workspace state indicators",
     "states": {
-      "status": {"label": "Business status", "value": "Preview · not connected"},
-      "role": {"label": "Your role", "value": "Awaiting membership"},
-      "members": {"label": "Members", "value": "Live count pending"},
-      "pending": {"label": "Pending actions", "value": "Live state pending"}
+      "status": {"label": "Business status"},
+      "role": {"label": "Your role"},
+      "members": {"label": "Members", "count": "{count, plural, one {# active member} other {# active members}}"},
+      "pending": {"label": "Pending actions", "count": "{count, plural, =0 {Nothing pending} one {# action pending} other {# actions pending}}"}
     },
+    "roles": {"owner": "Owner", "partner": "Partner", "administrator": "Administrator", "manager": "Manager", "member": "Member"},
+    "statuses": {"active": "Active", "disabled": "Disabled", "deletion_pending": "Pending deletion"},
     "actionsTitle": "Workspace management",
     "actionsDescription": "Focused destinations will activate when their APIs and permissions are connected.",
     "actions": {
@@ -54,5 +60,45 @@
       "invitations": {"title": "Invitations", "description": "Invite eligible users and follow pending invitation decisions.", "tooltip": "Create and review Business-initiated invitations."},
       "access": {"title": "Access requests", "description": "Review users asking to join this Business.", "tooltip": "Approve or reject user-initiated requests according to your role."}
     }
+  },
+  "WorkspaceDashboard": {
+    "eyebrow": "Personal dashboard",
+    "title": "Businesses and workspace access",
+    "description": "Open Businesses you belong to, create a new Business, respond to invitations, or request access using a Business UUID.",
+    "create": "Create Business",
+    "request": "Request access",
+    "loading": "Loading your Businesses…",
+    "loadError": "TEED could not load your workspace information.",
+    "retry": "Try again",
+    "businessesTitle": "My Businesses",
+    "empty": "You do not belong to a Business yet.",
+    "emptyHelp": "Create a Business, accept an invitation, or request access.",
+    "openTooltip": "Open the {name} workspace.",
+    "businessMeta": "{country} · {role}",
+    "invitationsTitle": "Pending invitations",
+    "noInvitations": "You have no pending Business invitations.",
+    "roles": {"owner": "Owner", "partner": "Partner", "administrator": "Administrator", "manager": "Manager", "member": "Member"},
+    "invitation": {"title": "Business invitation", "details": "Business {businessId} · {role}", "accept": "Accept", "decline": "Decline", "acceptSuccess": "Invitation accepted.", "declineSuccess": "Invitation declined.", "decisionError": "TEED could not update this invitation."}
+  },
+  "WorkspaceCreate": {
+    "eyebrow": "Workspace setup",
+    "title": "Create a Business",
+    "description": "You become the Business owner automatically. TEED creates its UUID workspace and fixed role permissions together.",
+    "fields": {"name": "Business name", "country": "Country"},
+    "countries": {"TZ": "Tanzania", "KE": "Kenya", "UG": "Uganda"},
+    "validation": {"name": "Enter a Business name between 2 and 120 characters.", "country": "Select a supported country."},
+    "submit": "Create Business",
+    "creating": "Creating…",
+    "success": "Business created successfully."
+  },
+  "WorkspaceAccess": {
+    "eyebrow": "Workspace access",
+    "title": "Request Business access",
+    "description": "Use the exact Business UUID shared by an authorized Business member. TEED does not expose a public Business directory.",
+    "fields": {"businessId": "Business UUID", "businessIdHelp": "Ask an authorized Business member for this identifier.", "message": "Message", "messageHelp": "Optional context for the Business access managers."},
+    "validation": {"businessId": "Enter a valid Business UUID.", "message": "Keep the message within 300 characters."},
+    "submit": "Send request",
+    "sending": "Sending…",
+    "success": "Business access request sent."
   }
 }

@@ -20,6 +20,7 @@ import { useIdentitySession } from "@/providers/identity/identity-session-provid
 import { useProfile } from "@/providers/profile/profile-provider";
 import { useSecurity } from "@/providers/security/security-provider";
 import { useNotifications } from "@/providers/notifications/notifications-provider";
+import { useWorkspace } from "@/providers/workspace/workspace-provider";
 import type { DashboardDestination } from "@/types/dashboard/navigation";
 
 type StatusCard = {
@@ -108,6 +109,7 @@ function DashboardOverview() {
   const { overview } = useProfile();
   const { overview: securityOverview } = useSecurity();
   const { unreadCount } = useNotifications();
+  const { businesses, invitations } = useWorkspace();
   const accountName = user?.username || user?.email || t("accountFallback");
 
   return (
@@ -182,6 +184,13 @@ function DashboardOverview() {
               item.key === "notifications"
                 ? t("cards.notifications.unread", { count: unreadCount })
                 : null;
+            const workspaceState =
+              item.key === "workspaces"
+                ? t("cards.workspaces.state", {
+                    businesses: businesses.length,
+                    invitations: invitations.length,
+                  })
+                : null;
 
             return (
               <Tooltip
@@ -215,7 +224,7 @@ function DashboardOverview() {
                         {t(`cards.${item.key}.title`)}
                       </h3>
                       <p className="mt-1 truncate text-xs text-slate-500 dark:text-slate-400">
-                        {profileState ?? securityState ?? notificationState ?? t(`cards.${item.key}.pending`)}
+                        {profileState ?? securityState ?? notificationState ?? workspaceState ?? t(`cards.${item.key}.pending`)}
                       </p>
                     </div>
                     <ArrowUpRight className="size-4 shrink-0 text-slate-400 transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />

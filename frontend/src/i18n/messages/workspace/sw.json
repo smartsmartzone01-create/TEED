@@ -3,8 +3,9 @@
     "workspaceLabel": "Eneo la kazi la biashara",
     "businessMenu": "Fungua menyu ya biashara",
     "currentBusiness": "Biashara ya sasa",
-    "previewState": "Muonekano wa awali",
-    "switchAfterIntegration": "Kubadili biashara kutaunganishwa baadaye",
+    "previewState": "Biashara inayotumika",
+    "businessFallback": "Eneo la kazi la biashara",
+    "noOtherBusinesses": "Hakuna biashara nyingine",
     "createBusiness": "Unda biashara nyingine",
     "requestAccess": "Omba ufikiaji wa biashara",
     "backToDashboard": "Rudi kwenye dashibodi binafsi",
@@ -39,13 +40,18 @@
     "eyebrow": "Eneo la kazi la TEED",
     "title": "Muhtasari wa biashara",
     "description": "Mwonekano rahisi wa hali ya biashara, uanachama na vitendo vinavyopatikana katika eneo hili la kazi.",
+    "loading": "Inapakia hali halisi ya eneo la kazi…",
+    "loadError": "TEED imeshindwa kupakia eneo hili la kazi. Huenda halipatikani au huna tena ruhusa.",
+    "retry": "Jaribu tena",
     "stateLabel": "Viashiria vya hali ya eneo la kazi",
     "states": {
-      "status": {"label": "Hali ya biashara", "value": "Muonekano · haijaunganishwa"},
-      "role": {"label": "Jukumu lako", "value": "Inasubiri uanachama"},
-      "members": {"label": "Wanachama", "value": "Idadi halisi inasubiri"},
-      "pending": {"label": "Hatua zinazosubiri", "value": "Hali halisi inasubiri"}
+      "status": {"label": "Hali ya biashara"},
+      "role": {"label": "Jukumu lako"},
+      "members": {"label": "Wanachama", "count": "Wanachama hai: {count}"},
+      "pending": {"label": "Hatua zinazosubiri", "count": "Hatua zinazosubiri: {count}"}
     },
+    "roles": {"owner": "Mmiliki", "partner": "Mshirika", "administrator": "Msimamizi mkuu", "manager": "Meneja", "member": "Mwanachama"},
+    "statuses": {"active": "Inatumika", "disabled": "Imezimwa", "deletion_pending": "Inasubiri kufutwa"},
     "actionsTitle": "Usimamizi wa eneo la kazi",
     "actionsDescription": "Sehemu hizi zitafunguka baada ya API na ruhusa zake kuunganishwa.",
     "actions": {
@@ -54,5 +60,45 @@
       "invitations": {"title": "Mialiko", "description": "Alika watumiaji wanaostahili na fuatilia maamuzi ya mialiko.", "tooltip": "Unda na kagua mialiko inayoanzishwa na biashara."},
       "access": {"title": "Maombi ya ufikiaji", "description": "Kagua watumiaji wanaoomba kujiunga na biashara hii.", "tooltip": "Kubali au kataa maombi kulingana na jukumu lako."}
     }
+  },
+  "WorkspaceDashboard": {
+    "eyebrow": "Dashibodi binafsi",
+    "title": "Biashara na ufikiaji wa eneo la kazi",
+    "description": "Fungua biashara ulizo mwanachama, unda biashara mpya, jibu mialiko au omba ufikiaji kwa kutumia UUID ya biashara.",
+    "create": "Unda biashara",
+    "request": "Omba ufikiaji",
+    "loading": "Inapakia biashara zako…",
+    "loadError": "TEED imeshindwa kupakia taarifa za maeneo yako ya kazi.",
+    "retry": "Jaribu tena",
+    "businessesTitle": "Biashara zangu",
+    "empty": "Bado hujaunganishwa na biashara yoyote.",
+    "emptyHelp": "Unda biashara, kubali mwaliko au omba ufikiaji.",
+    "openTooltip": "Fungua eneo la kazi la {name}.",
+    "businessMeta": "{country} · {role}",
+    "invitationsTitle": "Mialiko inayosubiri",
+    "noInvitations": "Huna mialiko ya biashara inayosubiri.",
+    "roles": {"owner": "Mmiliki", "partner": "Mshirika", "administrator": "Msimamizi mkuu", "manager": "Meneja", "member": "Mwanachama"},
+    "invitation": {"title": "Mwaliko wa biashara", "details": "Biashara {businessId} · {role}", "accept": "Kubali", "decline": "Kataa", "acceptSuccess": "Mwaliko umekubaliwa.", "declineSuccess": "Mwaliko umekataliwa.", "decisionError": "TEED imeshindwa kubadilisha mwaliko huu."}
+  },
+  "WorkspaceCreate": {
+    "eyebrow": "Kuanzisha eneo la kazi",
+    "title": "Unda biashara",
+    "description": "Unakuwa mmiliki wa biashara moja kwa moja. TEED inaunda eneo lake la kazi la UUID na ruhusa za majukumu kwa pamoja.",
+    "fields": {"name": "Jina la biashara", "country": "Nchi"},
+    "countries": {"TZ": "Tanzania", "KE": "Kenya", "UG": "Uganda"},
+    "validation": {"name": "Weka jina la biashara lenye herufi 2 hadi 120.", "country": "Chagua nchi inayokubaliwa."},
+    "submit": "Unda biashara",
+    "creating": "Inaunda…",
+    "success": "Biashara imeundwa."
+  },
+  "WorkspaceAccess": {
+    "eyebrow": "Ufikiaji wa eneo la kazi",
+    "title": "Omba ufikiaji wa biashara",
+    "description": "Tumia UUID halisi ya biashara uliyopewa na mwanachama mwenye ruhusa. TEED haionyeshi orodha ya biashara kwa umma.",
+    "fields": {"businessId": "UUID ya biashara", "businessIdHelp": "Omba kitambulisho hiki kutoka kwa mwanachama mwenye ruhusa.", "message": "Ujumbe", "messageHelp": "Maelezo ya hiari kwa wasimamizi wa ufikiaji wa biashara."},
+    "validation": {"businessId": "Weka UUID sahihi ya biashara.", "message": "Ujumbe usizidi herufi 300."},
+    "submit": "Tuma ombi",
+    "sending": "Inatuma…",
+    "success": "Ombi la ufikiaji limetumwa."
   }
 }
