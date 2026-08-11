@@ -18,6 +18,7 @@ import { Tooltip } from "@/components/global/primitives/tooltip";
 import { Link } from "@/i18n/navigation";
 import { useIdentitySession } from "@/providers/identity/identity-session-provider";
 import { useProfile } from "@/providers/profile/profile-provider";
+import { useSecurity } from "@/providers/security/security-provider";
 import type { DashboardDestination } from "@/types/dashboard/navigation";
 
 type StatusCard = {
@@ -104,6 +105,7 @@ function DashboardOverview() {
   const t = useTranslations("DashboardOverview");
   const { user } = useIdentitySession();
   const { overview } = useProfile();
+  const { overview: securityOverview } = useSecurity();
   const accountName = user?.username || user?.email || t("accountFallback");
 
   return (
@@ -159,9 +161,15 @@ function DashboardOverview() {
           {statusCards.map((item) => {
             const Icon = item.icon;
             const styles = toneStyles[item.tone];
-            const isIdentityReady =
-              item.key === "security" &&
-              Boolean(user?.isOnboardingComplete);
+            const securityState =
+              item.key === "security" && securityOverview
+                ? t("cards.security.state", {
+                    count: securityOverview.active_session_count,
+                    email: securityOverview.verified_contacts.email
+                      ? t("cards.security.verified")
+                      : t("cards.security.unverified"),
+                  })
+                : null;
             const profileState =
               item.key === "profile" && overview
                 ? t("cards.profile.progress", {
@@ -201,10 +209,7 @@ function DashboardOverview() {
                         {t(`cards.${item.key}.title`)}
                       </h3>
                       <p className="mt-1 truncate text-xs text-slate-500 dark:text-slate-400">
-                        {profileState ??
-                          (isIdentityReady
-                          ? t("cards.security.ready")
-                          : t(`cards.${item.key}.pending`))}
+                        {profileState ?? securityState ?? t(`cards.${item.key}.pending`)}
                       </p>
                     </div>
                     <ArrowUpRight className="size-4 shrink-0 text-slate-400 transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />

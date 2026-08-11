@@ -16,6 +16,8 @@ class UserSession(BaseModel):
         EXPIRED = "expired", "Expired"
         SECURITY_EVENT = "security_event", "Security event"
         PASSWORD_RESET = "password_reset", "Password reset"
+        PASSWORD_CHANGE = "password_change", "Password change"
+        USER_REVOKED = "user_revoked", "Revoked by user"
 
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -59,6 +61,9 @@ class UserSession(BaseModel):
         blank=True,
         default="",
     )
+    device_label = models.CharField(max_length=80, blank=True, default="")
+    browser = models.CharField(max_length=40, blank=True, default="")
+    operating_system = models.CharField(max_length=40, blank=True, default="")
 
     class Meta:
         db_table = "identity_user_sessions"

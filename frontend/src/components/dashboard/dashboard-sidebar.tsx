@@ -20,6 +20,7 @@ import { DashboardAccountMenu } from "@/components/dashboard/dashboard-account-m
 import { BrandMark } from "@/components/global/brand/brand-mark";
 import { Tooltip } from "@/components/global/primitives/tooltip";
 import { profileLinks } from "@/components/profile/profile-navigation";
+import { securityLinks } from "@/components/security/security-navigation";
 import { Link, usePathname } from "@/i18n/navigation";
 import { cn } from "@/lib/global/class-names";
 import type { DashboardNavigationItem } from "@/types/dashboard/navigation";
@@ -66,8 +67,12 @@ function DashboardSidebar({
   const pathname = usePathname();
   const t = useTranslations("DashboardShell");
   const profileT = useTranslations("ProfileNavigation");
+  const securityT = useTranslations("SecurityNavigation");
   const [profileOpen, setProfileOpen] = useState(
     pathname.startsWith("/dashboard/profile"),
+  );
+  const [securityOpen, setSecurityOpen] = useState(
+    pathname.startsWith("/dashboard/security"),
   );
 
   const profileExpanded =
@@ -173,7 +178,26 @@ function DashboardSidebar({
               <div key={item.href}>{link}</div>
             );
 
-            if (item.key !== "profile" || collapsed) {
+            const nested =
+              item.key === "profile"
+                ? {
+                    expanded: profileExpanded,
+                    links: profileLinks,
+                    setOpen: setProfileOpen,
+                    translate: profileT,
+                  }
+                : item.key === "security"
+                  ? {
+                      expanded:
+                        securityOpen ||
+                        pathname.startsWith("/dashboard/security"),
+                      links: securityLinks,
+                      setOpen: setSecurityOpen,
+                      translate: securityT,
+                    }
+                  : null;
+
+            if (!nested || collapsed) {
               return itemContent;
             }
 
@@ -182,27 +206,27 @@ function DashboardSidebar({
                 <div className="relative">
                   {link}
                   <button
-                    aria-expanded={profileExpanded}
-                    aria-label={profileT("toggle")}
+                    aria-expanded={nested.expanded}
+                    aria-label={nested.translate("toggle")}
                     className="absolute right-2 top-1/2 inline-flex size-8 -translate-y-1/2 items-center justify-center rounded-lg hover:bg-black/10 dark:hover:bg-white/10"
-                    onClick={() => setProfileOpen((value) => !value)}
+                    onClick={() => nested.setOpen((value) => !value)}
                     type="button"
                   >
                     <ChevronDown
                       className={cn(
                         "size-4 transition-transform",
-                        profileExpanded && "rotate-180",
+                        nested.expanded && "rotate-180",
                       )}
                     />
                   </button>
                 </div>
-                {profileExpanded ? (
+                {nested.expanded ? (
                   <div className="ml-7 mt-1 space-y-1 border-l border-slate-200 pl-3 dark:border-slate-800">
-                    {profileLinks.map((profileLink) => {
+                    {nested.links.map((nestedLink) => {
                       const active =
-                        profileLink.href === "/dashboard/profile"
-                          ? pathname === profileLink.href
-                          : pathname.startsWith(profileLink.href);
+                        nestedLink.href === item.href
+                          ? pathname === nestedLink.href
+                          : pathname.startsWith(nestedLink.href);
                       return (
                         <Link
                           aria-current={active ? "page" : undefined}
@@ -212,11 +236,11 @@ function DashboardSidebar({
                               ? "bg-slate-100 text-slate-950 dark:bg-slate-900 dark:text-white"
                               : "text-slate-500 hover:text-slate-950 dark:text-slate-400 dark:hover:text-white",
                           )}
-                          href={profileLink.href}
-                          key={profileLink.key}
+                          href={nestedLink.href}
+                          key={nestedLink.key}
                           onClick={onCloseMobile}
                         >
-                          {profileT(profileLink.key)}
+                          {nested.translate(nestedLink.key)}
                         </Link>
                       );
                     })}

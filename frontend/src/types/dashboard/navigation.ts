@@ -12,6 +12,9 @@ type DashboardDestination =
   | "/dashboard/profile/edit"
   | "/dashboard/profile/personal"
   | "/dashboard/security"
+  | "/dashboard/security/activity"
+  | "/dashboard/security/password"
+  | "/dashboard/security/sessions"
   | "/dashboard/workspaces"
   | "/dashboard/workspaces/access"
   | "/dashboard/workspaces/create";

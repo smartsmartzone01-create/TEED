@@ -15,6 +15,7 @@ urlpatterns = [
     path("redoc/", SpectacularRedocView.as_view(), name="redoc"),
     path("api/v1/identity/", include("apps.identity.urls")),
     path("api/v1/profiles/", include("apps.profiles.urls")),
+    path("api/v1/security/", include("apps.security.urls")),
 ]
 
 if settings.DEBUG:

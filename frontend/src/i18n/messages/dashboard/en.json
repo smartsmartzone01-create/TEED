@@ -34,7 +34,7 @@
     "stateTitle": "Account state",
     "cards": {
       "profile": {"title": "Profile", "pending": "Profile API not connected", "progress": "{percentage}% complete", "action": "Open profile", "tooltip": "Open your personal details, profile image, and contact information."},
-      "security": {"title": "Security & access", "pending": "Security state unavailable", "ready": "Identity setup complete", "action": "Open security and access", "tooltip": "Review passwords, verified contacts, sessions, and recovery methods."},
+      "security": {"title": "Security & access", "pending": "Security state unavailable", "state": "Email {email} · {count} active", "verified": "verified", "unverified": "not verified", "action": "Open security and access", "tooltip": "Review passwords, verified contacts, sessions, and recovery methods."},
       "notifications": {"title": "Notifications", "pending": "Inbox API not connected", "action": "Open notifications", "tooltip": "Open important alerts and the action links attached to them."},
       "workspaces": {"title": "Workspaces", "pending": "Workspace API not connected", "action": "Open workspaces", "tooltip": "Review businesses, roles, invitations, and workspace membership."}
     },
