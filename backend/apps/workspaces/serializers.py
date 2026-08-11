@@ -13,12 +13,37 @@ from .policy import ASSIGNABLE_ROLES, WorkspaceRole
 class BusinessSerializer(serializers.ModelSerializer):
     class Meta:
         model = Business
-        fields = ["id", "name", "country_code", "status", "created_at"]
+        fields = [
+            "id",
+            "name",
+            "public_handle",
+            "country_code",
+            "workspace_type",
+            "status",
+            "created_at",
+        ]
+
+
+class BusinessDiscoverySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Business
+        fields = ["id", "name", "public_handle", "country_code", "workspace_type"]
+
+
+class BusinessDiscoveryQuerySerializer(serializers.Serializer):
+    q = serializers.CharField(min_length=1, max_length=80, trim_whitespace=True)
+
+    def validate_q(self, value):
+        normalized = value.removeprefix("@").strip()
+        if not normalized:
+            raise serializers.ValidationError("Enter a Business name, handle, or UUID.")
+        return normalized
 
 
 class BusinessCreateSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=120, trim_whitespace=True)
     country_code = serializers.CharField(max_length=2, required=False, allow_blank=True)
+    workspace_type = serializers.ChoiceField(choices=Business.WorkspaceType.values)
 
     def validate_country_code(self, value):
         return value.upper()

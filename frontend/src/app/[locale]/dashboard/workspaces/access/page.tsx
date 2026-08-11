@@ -1,6 +1,6 @@
 import { setRequestLocale } from "next-intl/server";
 
-import { DashboardPlaceholder } from "@/components/dashboard/dashboard-placeholder";
+import { RequestBusinessAccessForm } from "@/components/workspace/request-business-access-form";
 
 type PageProps = { params: Promise<{ locale: string }> };
 
@@ -9,5 +9,5 @@ export default async function RequestWorkspaceAccessPage({
 }: PageProps) {
   const { locale } = await params;
   setRequestLocale(locale);
-  return <DashboardPlaceholder section="workspaces" />;
+  return <RequestBusinessAccessForm />;
 }

@@ -11,10 +11,13 @@ import {
   UsersRound,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
-import type { CSSProperties } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 
 import { Tooltip } from "@/components/global/primitives/tooltip";
+import { Button } from "@/components/global/primitives/button";
+import { useWorkspace } from "@/providers/workspace/workspace-provider";
 import styles from "@/styles/workspace/workspace-overview.module.css";
+import type { WorkspaceOverviewData } from "@/types/workspace/workspace";
 
 const states = [
   { icon: CircleCheck, key: "status", tone: "navy" },
@@ -30,8 +33,47 @@ const actions = [
   { icon: UserRoundCog, key: "access" },
 ] as const;
 
-function WorkspaceOverview() {
+function WorkspaceOverview({ businessId }: { businessId: string }) {
   const t = useTranslations("WorkspaceOverview");
+  const { loadOverview } = useWorkspace();
+  const [overview, setOverview] = useState<WorkspaceOverviewData | null>(null);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const load = async () => {
+      try {
+        setError(false);
+        setOverview(await loadOverview(businessId, controller.signal));
+      } catch {
+        if (!controller.signal.aborted) setError(true);
+      }
+    };
+    void load();
+    const interval = window.setInterval(() => void load(), 30_000);
+    return () => {
+      controller.abort();
+      window.clearInterval(interval);
+    };
+  }, [businessId, loadOverview]);
+
+  if (error) {
+    return (
+      <section className="rounded-2xl border border-red-200 bg-red-50 p-5 dark:border-red-900 dark:bg-red-950/30">
+        <p className="text-sm font-medium text-red-800 dark:text-red-200">{t("loadError")}</p>
+        <Button className="mt-3" onClick={() => window.location.reload()} size="small" variant="outline">{t("retry")}</Button>
+      </section>
+    );
+  }
+
+  if (!overview) return <p className="text-sm text-slate-500">{t("loading")}</p>;
+
+  const stateValues = {
+    members: t("states.members.count", { count: overview.state.active_member_count }),
+    pending: t("states.pending.count", { count: overview.state.pending_action_count }),
+    role: t(`roles.${overview.membership.role}`),
+    status: t(`statuses.${overview.business.status}`),
+  };
 
   return (
     <div className="space-y-8">
@@ -40,7 +82,7 @@ function WorkspaceOverview() {
           {t("eyebrow")}
         </p>
         <h2 className="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">
-          {t("title")}
+          {overview.business.name}
         </h2>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300">
           {t("description")}
@@ -69,9 +111,7 @@ function WorkspaceOverview() {
                   <p className="text-xs font-semibold uppercase tracking-wide opacity-75">
                     {t(`states.${item.key}.label`)}
                   </p>
-                  <p className="mt-1 text-sm font-semibold">
-                    {t(`states.${item.key}.value`)}
-                  </p>
+                  <p className="mt-1 text-sm font-semibold">{stateValues[item.key]}</p>
                 </div>
               </article>
             );

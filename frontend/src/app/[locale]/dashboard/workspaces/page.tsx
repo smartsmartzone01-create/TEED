@@ -1,11 +1,11 @@
 import { setRequestLocale } from "next-intl/server";
 
-import { DashboardPlaceholder } from "@/components/dashboard/dashboard-placeholder";
+import { DashboardWorkspaces } from "@/components/workspace/dashboard-workspaces";
 
 type PageProps = { params: Promise<{ locale: string }> };
 
 export default async function WorkspacesPage({ params }: PageProps) {
   const { locale } = await params;
   setRequestLocale(locale);
-  return <DashboardPlaceholder section="workspaces" />;
+  return <DashboardWorkspaces />;
 }

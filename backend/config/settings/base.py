@@ -256,8 +256,16 @@ REST_FRAMEWORK = {
             "PASSWORD_RESET_CONFIRM_IP_THROTTLE_RATE",
             default="30/hour",
         ),
+        "workspace_discovery": config(
+            "WORKSPACE_DISCOVERY_THROTTLE_RATE",
+            default="30/minute",
+        ),
     },
 }
+
+WORKSPACE_ACCESS_REQUEST_RETRY_HOURS = config(
+    "WORKSPACE_ACCESS_REQUEST_RETRY_HOURS", default=24, cast=int
+)
 
 
 SIMPLE_JWT = {

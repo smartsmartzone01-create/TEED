@@ -1,8 +1,17 @@
 from datetime import timedelta
 
+from common.exceptions.modules.workspaces import (
+    PersonalWorkspaceMembershipRestricted,
+    WorkspaceAccessRequestCooldown,
+    WorkspaceAccessRequestPending,
+    WorkspaceBusinessNotFound,
+    WorkspaceMembershipExists,
+)
+from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.utils import timezone
+from django.utils.text import slugify
 from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
 
 from apps.notifications.models import UserNotification
@@ -54,10 +63,33 @@ def require_membership(*, user, business_id, permission=WorkspacePermission.ACCE
     return membership
 
 
+def _create_business_record(*, user, name, country_code, workspace_type):
+    base_handle = slugify(name)[:64] or "workspace"
+    business = Business(
+        name=name.strip(),
+        country_code=country_code,
+        created_by=user,
+        public_handle=base_handle,
+        workspace_type=workspace_type,
+    )
+    try:
+        with transaction.atomic():
+            business.save(force_insert=True)
+    except IntegrityError:
+        business.public_handle = f"{base_handle}-{business.id.hex[:6]}"
+        business.save(force_insert=True)
+    return business
+
+
 @transaction.atomic
-def create_business(*, user, name, country_code=""):
-    business = Business.objects.create(
-        name=name.strip(), country_code=country_code, created_by=user
+def create_business(
+    *, user, name, country_code="", workspace_type=Business.WorkspaceType.BUSINESS
+):
+    business = _create_business_record(
+        user=user,
+        name=name,
+        country_code=country_code,
+        workspace_type=workspace_type,
     )
     BusinessMembership.objects.create(
         business=business,
@@ -96,6 +128,8 @@ def create_invitation(*, actor, business_id, email, role):
         business_id=business_id,
         permission=WorkspacePermission.MANAGE_INVITATIONS,
     )
+    if actor_membership.business.workspace_type == Business.WorkspaceType.PERSONAL:
+        raise PersonalWorkspaceMembershipRestricted()
     if role not in _roles_actor_can_assign(actor_membership.role):
         raise PermissionDenied(
             "You cannot assign this role.", code="role_assignment_denied"
@@ -167,6 +201,8 @@ def resolve_invitation(*, user, invitation_id, accept):
     invitation.resolved_at = timezone.now()
     invitation.save(update_fields=["status", "resolved_at", "updated_at"])
     if accept:
+        if invitation.business.workspace_type == Business.WorkspaceType.PERSONAL:
+            raise PersonalWorkspaceMembershipRestricted()
         membership, _ = BusinessMembership.objects.update_or_create(
             business=invitation.business,
             user=user,
@@ -192,13 +228,22 @@ def request_access(*, user, business_id, message=""):
         id=business_id, status=Business.Status.ACTIVE
     ).first()
     if business is None:
-        raise NotFound("Business not found.", code="business_not_found")
+        raise WorkspaceBusinessNotFound()
+    if business.workspace_type == Business.WorkspaceType.PERSONAL:
+        raise PersonalWorkspaceMembershipRestricted()
     if BusinessMembership.objects.filter(
         business=business, user=user, status=BusinessMembership.Status.ACTIVE
     ).exists():
-        raise ValidationError(
-            "You already belong to this Business.", code="membership_exists"
-        )
+        raise WorkspaceMembershipExists()
+    recently_rejected = BusinessAccessRequest.objects.filter(
+        business=business,
+        user=user,
+        status=BusinessAccessRequest.Status.REJECTED,
+        resolved_at__gte=timezone.now()
+        - timedelta(hours=settings.WORKSPACE_ACCESS_REQUEST_RETRY_HOURS),
+    ).exists()
+    if recently_rejected:
+        raise WorkspaceAccessRequestCooldown()
     access_request, created = BusinessAccessRequest.objects.get_or_create(
         business=business,
         user=user,
@@ -206,9 +251,7 @@ def request_access(*, user, business_id, message=""):
         defaults={"message": message},
     )
     if not created:
-        raise ValidationError(
-            "A pending access request already exists.", code="access_request_exists"
-        )
+        raise WorkspaceAccessRequestPending()
     audit(
         business=business,
         actor=user,
@@ -305,6 +348,8 @@ def update_membership(*, actor, business_id, membership_id, role=None, status=No
         business_id=business_id,
         permission=WorkspacePermission.MANAGE_MEMBERS,
     )
+    if actor_membership.business.workspace_type == Business.WorkspaceType.PERSONAL:
+        raise PersonalWorkspaceMembershipRestricted()
     target = (
         BusinessMembership.objects.select_for_update()
         .filter(id=membership_id, business=actor_membership.business)

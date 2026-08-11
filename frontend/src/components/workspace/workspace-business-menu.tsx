@@ -12,20 +12,27 @@ import {
   DropdownMenuTrigger,
 } from "@/components/global/primitives/dropdown-menu";
 import { useRouter } from "@/i18n/navigation";
+import { usePathname } from "@/i18n/navigation";
 import { cn } from "@/lib/global/class-names";
+import { useWorkspace } from "@/providers/workspace/workspace-provider";
 
 type WorkspaceBusinessMenuProps = {
   showLabel?: boolean;
 };
 
-const previewBusiness = {
-  initials: "TW",
-  name: "TEED Workspace",
-};
+function getBusinessInitials(name: string) {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  return (words.length > 1 ? `${words[0][0]}${words[1][0]}` : name.slice(0, 2)).toUpperCase();
+}
 
 function WorkspaceBusinessMenu({ showLabel = true }: WorkspaceBusinessMenuProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const t = useTranslations("WorkspaceShell");
+  const { businesses } = useWorkspace();
+  const activeId = pathname.match(/^\/workspace\/([^/]+)/)?.[1];
+  const activeBusiness = businesses.find((business) => business.id === activeId) ?? businesses[0];
+  const businessName = activeBusiness?.name ?? t("businessFallback");
 
   return (
     <DropdownMenu modal={false}>
@@ -41,12 +48,12 @@ function WorkspaceBusinessMenu({ showLabel = true }: WorkspaceBusinessMenuProps)
           type="button"
         >
           <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-slate-900 text-xs font-bold tracking-wide text-white dark:bg-white dark:text-slate-950">
-            {previewBusiness.initials}
+            {getBusinessInitials(businessName)}
           </span>
           {showLabel ? (
             <span className="min-w-0 flex-1">
               <span className="block truncate text-sm font-semibold">
-                {previewBusiness.name}
+                {businessName}
               </span>
               <span className="block truncate text-xs text-slate-500 dark:text-slate-400">
                 {t("previewState")}
@@ -65,14 +72,17 @@ function WorkspaceBusinessMenu({ showLabel = true }: WorkspaceBusinessMenuProps)
         <DropdownMenuItem className="justify-between">
           <span className="flex min-w-0 items-center gap-3">
             <Building2 className="size-4 shrink-0" />
-            <span className="truncate">{previewBusiness.name}</span>
+            <span className="truncate">{businessName}</span>
           </span>
           <Check className="size-4 shrink-0" />
         </DropdownMenuItem>
-        <DropdownMenuItem disabled>
-          <Building2 className="size-4" />
-          {t("switchAfterIntegration")}
-        </DropdownMenuItem>
+        {businesses.filter((business) => business.id !== activeBusiness?.id).map((business) => (
+          <DropdownMenuItem key={business.id} onSelect={() => router.push(`/workspace/${business.id}`)}>
+            <Building2 className="size-4" />
+            <span className="truncate">{business.name}</span>
+          </DropdownMenuItem>
+        ))}
+        {businesses.length < 2 ? <DropdownMenuItem disabled>{t("noOtherBusinesses")}</DropdownMenuItem> : null}
         <DropdownMenuItem onSelect={() => router.push("/dashboard/workspaces/create")}>
           <Plus className="size-4" />
           {t("createBusiness")}

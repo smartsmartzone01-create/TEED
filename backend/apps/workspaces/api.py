@@ -3,18 +3,27 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_protect
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
 from apps.profiles.permissions import IsOnboardingComplete
 
 from .models import BusinessMembership
 from .policy import WorkspacePermission
-from .selectors import user_businesses, visible_access_requests, visible_invitations
+from .selectors import (
+    discover_businesses,
+    user_businesses,
+    visible_access_requests,
+    visible_invitations,
+    workspace_overview_state,
+)
 from .serializers import (
     AccessRequestCreateSerializer,
     AccessRequestDecisionSerializer,
     AccessRequestSerializer,
     BusinessCreateSerializer,
+    BusinessDiscoveryQuerySerializer,
+    BusinessDiscoverySerializer,
     BusinessSerializer,
     ControlRequestCreateSerializer,
     ControlRequestDecisionSerializer,
@@ -74,6 +83,23 @@ class BusinessListCreateAPIView(WorkspaceBaseAPIView):
         )
 
 
+class BusinessDiscoveryAPIView(WorkspaceBaseAPIView):
+    serializer_class = BusinessDiscoveryQuerySerializer
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "workspace_discovery"
+
+    def get(self, request):
+        serializer = BusinessDiscoveryQuerySerializer(data=request.query_params)
+        serializer.is_valid(raise_exception=True)
+        businesses = discover_businesses(query=serializer.validated_data["q"])
+        return SuccessResponse(
+            message="Discoverable Businesses retrieved successfully.",
+            data={
+                "businesses": BusinessDiscoverySerializer(businesses, many=True).data
+            },
+        )
+
+
 class BusinessDetailAPIView(WorkspaceBaseAPIView):
     serializer_class = BusinessSerializer
 
@@ -84,6 +110,21 @@ class BusinessDetailAPIView(WorkspaceBaseAPIView):
             data={
                 **BusinessSerializer(membership.business).data,
                 "membership": MembershipSerializer(membership).data,
+            },
+        )
+
+
+class BusinessOverviewAPIView(WorkspaceBaseAPIView):
+    serializer_class = BusinessSerializer
+
+    def get(self, request, business_id):
+        membership = require_membership(user=request.user, business_id=business_id)
+        return SuccessResponse(
+            message="Business workspace overview retrieved successfully.",
+            data={
+                "business": BusinessSerializer(membership.business).data,
+                "membership": MembershipSerializer(membership).data,
+                "state": workspace_overview_state(membership=membership),
             },
         )
 

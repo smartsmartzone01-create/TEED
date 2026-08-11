@@ -33,6 +33,8 @@ src/app/
         │   └── access/
         ├── billing/
         └── help/
+    └── workspace/
+        └── [businessId]/
 ```
 
 `generateStaticParams` produces English and Swahili variants. The canonical
@@ -170,6 +172,12 @@ Placeholder destinations must not simulate workspace, notification, billing,
 or AI records before their APIs exist. TEED AI is reserved as a
 navigation boundary until its permissions and data contracts are defined.
 
+Workspace selection is URL-owned through the Business UUID. The canonical
+route is `/{locale}/workspace/{businessId}`; `/{locale}/workspace` resolves to
+the caller's first available membership or returns to the personal workspace
+list. This prevents a hidden global selection from becoming the authorization
+boundary. Backend membership and fixed-role policies remain authoritative.
+
 The dashboard routes are:
 
 ```text
@@ -187,6 +195,8 @@ The dashboard routes are:
 /{locale}/dashboard/workspaces/access
 /{locale}/dashboard/billing
 /{locale}/dashboard/help
+/{locale}/workspace
+/{locale}/workspace/{businessId}
 ```
 
 Future layouts may include a system/error layout and administration layout.

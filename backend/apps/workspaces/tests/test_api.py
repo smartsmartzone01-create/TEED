@@ -4,7 +4,7 @@ from rest_framework.test import APITestCase
 
 from apps.identity.services import issue_token_pair
 
-from ..models import BusinessMembership
+from ..models import Business, BusinessMembership
 from ..policy import WorkspaceRole
 from ..services import create_business
 from .factories import create_user
@@ -23,17 +23,108 @@ class WorkspaceAPITests(APITestCase):
     def test_create_and_list_business_uses_uuid_contract(self):
         created = self.client.post(
             reverse("workspaces:business-list"),
-            {"name": "API Business", "country_code": "tz"},
+            {
+                "name": "API Business",
+                "country_code": "tz",
+                "workspace_type": Business.WorkspaceType.BUSINESS,
+            },
             format="json",
         )
         self.assertEqual(created.status_code, status.HTTP_201_CREATED)
         self.assertEqual(created.data["data"]["country_code"], "TZ")
         self.assertEqual(len(created.data["data"]["id"]), 36)
+        self.assertEqual(created.data["data"]["public_handle"], "api-business")
         listed = self.client.get(reverse("workspaces:business-list"))
         self.assertEqual(len(listed.data["data"]["businesses"]), 1)
         self.assertEqual(
             listed.data["data"]["businesses"][0]["membership"]["role"],
             WorkspaceRole.OWNER,
+        )
+
+    def test_duplicate_business_names_receive_unique_public_handles(self):
+        first = create_business(user=self.owner, name="Shared Name")
+        second = create_business(user=self.owner, name="Shared Name")
+        self.assertEqual(first.public_handle, "shared-name")
+        self.assertTrue(second.public_handle.startswith("shared-name-"))
+        self.assertNotEqual(first.public_handle, second.public_handle)
+
+    def test_business_discovery_returns_minimal_public_identity(self):
+        discoverable = create_business(
+            user=self.owner,
+            name="Afya Services",
+            country_code="TZ",
+            workspace_type=Business.WorkspaceType.SERVICE_PROVIDER,
+        )
+        create_business(
+            user=self.owner,
+            name="Afya Personal",
+            workspace_type=Business.WorkspaceType.PERSONAL,
+        )
+        response = self.client.get(
+            reverse("workspaces:business-discovery"), {"q": "afya"}
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data["data"]["businesses"]), 1)
+        result = response.data["data"]["businesses"][0]
+        self.assertEqual(result["id"], str(discoverable.id))
+        self.assertEqual(result["public_handle"], "afya-services")
+        self.assertNotIn("created_at", result)
+
+    def test_business_discovery_accepts_short_names_and_exact_uuid(self):
+        business = create_business(
+            user=self.owner,
+            name="KJ",
+            country_code="TZ",
+        )
+
+        short_name_response = self.client.get(
+            reverse("workspaces:business-discovery"), {"q": "KJ"}
+        )
+        uuid_response = self.client.get(
+            reverse("workspaces:business-discovery"), {"q": str(business.id)}
+        )
+
+        self.assertEqual(short_name_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            short_name_response.data["data"]["businesses"][0]["id"],
+            str(business.id),
+        )
+        self.assertEqual(uuid_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            uuid_response.data["data"]["businesses"][0]["public_handle"], "kj"
+        )
+
+    def test_personal_workspace_rejects_access_requests(self):
+        personal = create_business(
+            user=self.owner,
+            name="Private Space",
+            workspace_type=Business.WorkspaceType.PERSONAL,
+        )
+        self.authenticate(self.outsider)
+        response = self.client.post(
+            reverse("workspaces:access-request-create"),
+            {"business_id": str(personal.id)},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
+        self.assertEqual(
+            response.data["errors"]["code"],
+            "personal_workspace_membership_restricted",
+        )
+
+    def test_duplicate_access_request_returns_focused_conflict(self):
+        business = create_business(user=self.owner, name="Request Target")
+        self.authenticate(self.outsider)
+        payload = {"business_id": str(business.id)}
+        self.client.post(
+            reverse("workspaces:access-request-create"), payload, format="json"
+        )
+        response = self.client.post(
+            reverse("workspaces:access-request-create"), payload, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
+        self.assertEqual(
+            response.data["errors"]["code"], "access_request_already_pending"
         )
 
     def test_outsider_cannot_read_business_or_members(self):
@@ -47,6 +138,46 @@ class WorkspaceAPITests(APITestCase):
         )
         self.assertEqual(detail.status_code, status.HTTP_404_NOT_FOUND)
         self.assertEqual(members.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_workspace_overview_returns_live_role_and_state(self):
+        business = create_business(user=self.owner, name="Overview Business")
+        response = self.client.get(
+            reverse(
+                "workspaces:business-overview",
+                kwargs={"business_id": business.id},
+            )
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["data"]["business"]["id"], str(business.id))
+        self.assertEqual(
+            response.data["data"]["membership"]["role"], WorkspaceRole.OWNER
+        )
+        self.assertEqual(response.data["data"]["state"]["active_member_count"], 1)
+        self.assertEqual(response.data["data"]["state"]["pending_action_count"], 0)
+
+    def test_workspace_overview_hides_management_counts_from_member(self):
+        business = create_business(user=self.owner, name="Member Overview")
+        membership = BusinessMembership.objects.create(
+            business=business,
+            user=self.outsider,
+            role=WorkspaceRole.MEMBER,
+        )
+        self.authenticate(self.outsider)
+        response = self.client.get(
+            reverse(
+                "workspaces:business-overview",
+                kwargs={"business_id": business.id},
+            )
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["data"]["membership"]["id"], str(membership.id))
+        self.assertIsNone(response.data["data"]["state"]["pending_invitation_count"])
+        self.assertIsNone(
+            response.data["data"]["state"]["pending_access_request_count"]
+        )
+        self.assertIsNone(
+            response.data["data"]["state"]["pending_control_request_count"]
+        )
 
     def test_dashboard_access_request_can_be_approved_by_owner(self):
         business = create_business(user=self.owner, name="Requested Business")
