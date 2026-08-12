@@ -627,19 +627,19 @@ def create_control_request(*, actor, business_id, action):
             "This control action is not valid for the current Business state.",
             code="invalid_business_transition",
         )
-    other_controller_exists = (
-        BusinessMembership.objects.filter(
-            business=actor_membership.business,
-            role__in=[WorkspaceRole.OWNER.value, WorkspaceRole.PARTNER.value],
-            status=BusinessMembership.Status.ACTIVE,
-        )
-        .exclude(user=actor)
-        .exists()
+    controllers = BusinessMembership.objects.filter(
+        business=actor_membership.business,
+        role__in=[WorkspaceRole.OWNER.value, WorkspaceRole.PARTNER.value],
+        status=BusinessMembership.Status.ACTIVE,
     )
-    if not other_controller_exists:
-        raise ValidationError(
-            "Add an active Partner before disabling or deleting this Business.",
-            code="second_controller_required",
+    other_controller_exists = controllers.exclude(user=actor).exists()
+    if (
+        not other_controller_exists
+        and actor_membership.role != WorkspaceRole.OWNER.value
+    ):
+        raise PermissionDenied(
+            "Only the sole Owner can complete this action without independent approval.",
+            code="owner_required",
         )
     control_request, created = BusinessControlRequest.objects.get_or_create(
         business=actor_membership.business,
@@ -654,6 +654,25 @@ def create_control_request(*, actor, business_id, action):
         raise ValidationError(
             "A pending control request already exists.", code="control_request_exists"
         )
+    if not other_controller_exists:
+        control_request.status = BusinessControlRequest.Status.APPROVED
+        control_request.resolved_by = actor
+        control_request.resolved_at = timezone.now()
+        control_request.save(
+            update_fields=["status", "resolved_by", "resolved_at", "updated_at"]
+        )
+        _apply_control_action(
+            business=control_request.business,
+            action=control_request.action,
+        )
+        audit(
+            business=control_request.business,
+            actor=actor,
+            event_type=f"business.{action}.approved",
+            target_id=control_request.id,
+            metadata={"approval_mode": "sole_owner"},
+        )
+        return control_request
     audit(
         business=control_request.business,
         actor=actor,
@@ -685,6 +704,18 @@ def create_control_request(*, actor, business_id, action):
             expires_at=control_request.expires_at,
         )
     return control_request
+
+
+def _apply_control_action(*, business, action):
+    if action == BusinessControlRequest.Action.DISABLE:
+        business.status = Business.Status.DISABLED
+    elif action == BusinessControlRequest.Action.REACTIVATE:
+        business.status = Business.Status.ACTIVE
+    elif action == BusinessControlRequest.Action.DELETE:
+        business.status = Business.Status.DELETION_PENDING
+    else:
+        business.status = Business.Status.ACTIVE
+    business.save(update_fields=["status", "updated_at"])
 
 
 @transaction.atomic
@@ -729,16 +760,10 @@ def decide_control_request(*, actor, business_id, control_request_id, decision):
         update_fields=["status", "resolved_by", "resolved_at", "updated_at"]
     )
     if approved:
-        business = control_request.business
-        if control_request.action == BusinessControlRequest.Action.DISABLE:
-            business.status = Business.Status.DISABLED
-        elif control_request.action == BusinessControlRequest.Action.REACTIVATE:
-            business.status = Business.Status.ACTIVE
-        elif control_request.action == BusinessControlRequest.Action.DELETE:
-            business.status = Business.Status.DELETION_PENDING
-        else:
-            business.status = Business.Status.ACTIVE
-        business.save(update_fields=["status", "updated_at"])
+        _apply_control_action(
+            business=control_request.business,
+            action=control_request.action,
+        )
     audit(
         business=control_request.business,
         actor=actor,

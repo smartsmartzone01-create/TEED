@@ -51,7 +51,7 @@ The same request endpoint supports a user without a Business from the personal d
 | `GET` | `businesses/{business_id}/access-requests/` | List pending requests |
 | `POST` | `businesses/{business_id}/access-requests/{request_id}/decision/` | Approve or reject |
 
-Discovery requires authentication and completed onboarding, is throttled, excludes Personal Brand workspaces, and returns only UUID, name, public handle, country and workspace type. UUID remains the internal tenant identifier; the public handle is the user-facing discovery reference.
+Discovery requires authentication and completed onboarding, is throttled, excludes Personal Brand workspaces, and returns only UUID, name, public handle, country and workspace type. Business display names may repeat because legitimate organizations can share a name; UUID remains the internal tenant identifier and the unique public handle is the user-facing discovery reference.
 
 Workspace types are `business`, `service`, and `personal_brand`. They form a capability-policy layer beneath RBAC: roles decide what a member may do, while workspace type decides which product domains may exist. Personal Brand workspaces are single-user and reject invitations, access requests and member management.
 
@@ -64,4 +64,4 @@ Every authenticated Business response includes backend-defined `capabilities`. C
 | `POST` | `businesses/{business_id}/control-requests/` | Request disable, reactivate, delete, or cancel-deletion |
 | `POST` | `businesses/{business_id}/control-requests/{control_request_id}/decision/` | Independently approve or reject |
 
-Business control requires an active Owner and Partner. The initiator cannot approve their own request. Approved deletion enters `deletion_pending`; it does not immediately destroy tenant data.
+A sole active Owner completes valid lifecycle actions immediately. If an active Partner exists, an independent Owner or Partner must approve; the initiator cannot approve their own request. Approved deletion enters recoverable `deletion_pending` and never immediately destroys tenant data.

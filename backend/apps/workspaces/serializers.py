@@ -284,7 +284,7 @@ class AccessRequestCreateSerializer(serializers.Serializer):
 class AccessRequestDecisionSerializer(serializers.Serializer):
     decision = serializers.ChoiceField(choices=["approve", "reject"])
     role = serializers.ChoiceField(
-        choices=[WorkspaceRole.MANAGER.value, WorkspaceRole.MEMBER.value],
+        choices=sorted(role.value for role in ASSIGNABLE_ROLES),
         required=False,
         default=WorkspaceRole.MEMBER.value,
     )

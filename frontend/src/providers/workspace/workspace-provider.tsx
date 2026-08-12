@@ -47,6 +47,8 @@ import type {
   BusinessSecurityData,
   BusinessSettingsData,
   BusinessSettingsValues,
+  BusinessControlRequest,
+  AssignableWorkspaceRole,
   WorkspaceAccessRequest,
   WorkspaceMembership,
 } from "@/types/workspace/workspace";
@@ -67,7 +69,7 @@ type WorkspaceContextValue = {
   requestAccess: (values: RequestBusinessAccessValues) => Promise<void>;
   saveProfile: (businessId: string, values: Partial<BusinessProfileValues>) => Promise<BusinessProfileData>;
   saveSettings: (businessId: string, values: BusinessSettingsValues) => Promise<BusinessSettingsData>;
-  createControl: (businessId: string, action: "cancel_deletion" | "delete" | "disable" | "reactivate") => Promise<void>;
+  createControl: (businessId: string, action: "cancel_deletion" | "delete" | "disable" | "reactivate") => Promise<BusinessControlRequest>;
   decideControl: (businessId: string, requestId: string, decision: "approve" | "reject") => Promise<void>;
   status: "error" | "loading" | "ready";
   loadMembers: (businessId: string, signal?: AbortSignal) => Promise<WorkspaceMembership[]>;
@@ -76,7 +78,7 @@ type WorkspaceContextValue = {
   inviteMember: (businessId: string, values: { email: string; role: string }) => Promise<WorkspaceInvitation>;
   cancelInvitation: (businessId: string, invitationId: string) => Promise<WorkspaceInvitation>;
   loadAccessRequests: (businessId: string, signal?: AbortSignal) => Promise<WorkspaceAccessRequest[]>;
-  decideAccessRequest: (businessId: string, requestId: string, values: { decision: "approve" | "reject"; role?: "manager" | "member" }) => Promise<void>;
+  decideAccessRequest: (businessId: string, requestId: string, values: { decision: "approve" | "reject"; role?: AssignableWorkspaceRole }) => Promise<void>;
 };
 
 const WorkspaceContext = createContext<WorkspaceContextValue | null>(null);
@@ -163,7 +165,10 @@ function WorkspaceProvider({ children }: { children: ReactNode }) {
         return response.data;
       },
       createControl: async (businessId, action) => {
-        await withToken((token) => createBusinessControlRequest(businessId, action, token));
+        const response = await withToken((token) => createBusinessControlRequest(businessId, action, token));
+        if (!response.data) throw new Error("Business control response data missing.");
+        await refresh();
+        return response.data;
       },
       decideInvitation: async (id, decision) => {
         await withToken((token) => decideInvitationRequest(id, decision, token));
@@ -173,6 +178,7 @@ function WorkspaceProvider({ children }: { children: ReactNode }) {
         await withToken((token) =>
           decideBusinessControlRequest(businessId, requestId, decision, token),
         );
+        await refresh();
       },
       discoverBusinesses: async (query, signal) => {
         const response = await withToken((token) =>

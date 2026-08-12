@@ -17,7 +17,7 @@ apps/workspaces/
 ├── rbac/              # memberships, fixed roles and authorization policy
 ├── invitations/       # Business-initiated membership invitations
 ├── access_requests/   # user-initiated membership requests
-├── lifecycle/         # dual-approved Business state transitions
+├── lifecycle/         # recoverable and independently approved state transitions
 ├── audit/             # immutable workspace audit records
 ├── migrations/
 ├── tests/
@@ -89,7 +89,7 @@ Personal Brand workspaces are single-user. They cannot receive invitations, acce
 
 ## Owner and Partner control
 
-Owner and Partner share operational control. Disable, reactivate, delete and cancel-deletion require independent approval:
+Owner and Partner share operational control. A sole active Owner may disable, reactivate, schedule deletion, or cancel deletion immediately. Every transition is recoverable and audited. When one or more active Partners exist, the same actions require independent approval:
 
 1. One controller creates a request.
 2. Another active controller approves or rejects it.
@@ -97,7 +97,7 @@ Owner and Partner share operational control. Disable, reactivate, delete and can
 4. Requests expire after 24 hours.
 5. Deletion first enters recoverable `deletion_pending` state.
 
-This prevents one compromised controller session from immediately disabling or destroying the tenant.
+This keeps a one-person Business usable without manufacturing a second controller, while preventing one compromised controller session from immediately disabling a jointly controlled tenant. Deletion is always scheduled through `deletion_pending`; it is not an immediate physical erase.
 
 ## Cross-domain communication
 

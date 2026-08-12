@@ -17,6 +17,7 @@ import {
 import { requestApi } from "@/services/global/api-client";
 import { withCsrfRetry } from "@/services/identity/csrf";
 import type {
+  AssignableWorkspaceRole,
   CreateBusinessValues,
   RequestBusinessAccessValues,
   BusinessProfileValues,
@@ -249,7 +250,7 @@ function getWorkspaceAccessRequests(businessId: string, accessToken: string, sig
   return requestApi({ accessToken, path: `${WORKSPACE_BASE_PATH}/businesses/${businessId}/access-requests/`, schema: workspaceAccessRequestListEnvelopeSchema, signal });
 }
 
-function decideWorkspaceAccessRequest(businessId: string, requestId: string, values: { decision: "approve" | "reject"; role?: "manager" | "member" }, accessToken: string) {
+function decideWorkspaceAccessRequest(businessId: string, requestId: string, values: { decision: "approve" | "reject"; role?: AssignableWorkspaceRole }, accessToken: string) {
   return withCsrfRetry((csrfToken) => requestApi({ accessToken, body: values, csrfToken, method: "POST", path: `${WORKSPACE_BASE_PATH}/businesses/${businessId}/access-requests/${requestId}/decision/`, schema: workspaceAccessRequestEnvelopeSchema }));
 }
 

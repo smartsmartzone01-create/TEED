@@ -11,6 +11,7 @@ from rest_framework.exceptions import PermissionDenied, ValidationError
 from ..models import (
     Business,
     BusinessAccessRequest,
+    BusinessControlRequest,
     BusinessMembership,
     WorkspaceAuditEvent,
 )
@@ -261,13 +262,42 @@ class WorkspaceServiceTests(TestCase):
                 status=BusinessMembership.Status.REMOVED,
             )
 
-    def test_destructive_control_requires_another_controller(self):
-        with self.assertRaises(ValidationError):
-            create_control_request(
-                actor=self.owner,
-                business_id=self.business.id,
-                action="disable",
-            )
+    def test_sole_owner_controls_business_without_second_approval(self):
+        disabled = create_control_request(
+            actor=self.owner,
+            business_id=self.business.id,
+            action="disable",
+        )
+        self.business.refresh_from_db()
+        self.assertEqual(disabled.status, BusinessControlRequest.Status.APPROVED)
+        self.assertEqual(self.business.status, Business.Status.DISABLED)
+
+        reactivated = create_control_request(
+            actor=self.owner,
+            business_id=self.business.id,
+            action="reactivate",
+        )
+        self.business.refresh_from_db()
+        self.assertEqual(reactivated.status, BusinessControlRequest.Status.APPROVED)
+        self.assertEqual(self.business.status, Business.Status.ACTIVE)
+
+        deleted = create_control_request(
+            actor=self.owner,
+            business_id=self.business.id,
+            action="delete",
+        )
+        self.business.refresh_from_db()
+        self.assertEqual(deleted.status, BusinessControlRequest.Status.APPROVED)
+        self.assertEqual(self.business.status, Business.Status.DELETION_PENDING)
+
+        restored = create_control_request(
+            actor=self.owner,
+            business_id=self.business.id,
+            action="cancel_deletion",
+        )
+        self.business.refresh_from_db()
+        self.assertEqual(restored.status, BusinessControlRequest.Status.APPROVED)
+        self.assertEqual(self.business.status, Business.Status.ACTIVE)
 
     def test_initiator_cannot_self_approve_business_disable(self):
         BusinessMembership.objects.create(

@@ -70,6 +70,7 @@ type WorkspaceAccessRequest = {
 };
 
 type WorkspaceRole = "administrator" | "manager" | "member" | "owner" | "partner";
+type AssignableWorkspaceRole = Exclude<WorkspaceRole, "owner">;
 
 type WorkspaceOverviewState = {
   active_member_count: number;
@@ -214,4 +215,5 @@ export type {
   WorkspaceAuditEvent,
   WorkspaceAccessRequest,
   WorkspaceRole,
+  AssignableWorkspaceRole,
 };

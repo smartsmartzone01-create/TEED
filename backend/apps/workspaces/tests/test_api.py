@@ -364,6 +364,37 @@ class WorkspaceAPITests(APITestCase):
             ).exists()
         )
 
+    def test_owner_can_assign_partner_when_approving_access_request(self):
+        business = create_business(user=self.owner, name="Partner Request")
+        self.authenticate(self.outsider)
+        requested = self.client.post(
+            reverse("workspaces:access-request-create"),
+            {"business_id": str(business.id)},
+            format="json",
+        )
+
+        self.authenticate(self.owner)
+        decided = self.client.post(
+            reverse(
+                "workspaces:access-request-decision",
+                kwargs={
+                    "business_id": business.id,
+                    "request_id": requested.data["data"]["id"],
+                },
+            ),
+            {"decision": "approve", "role": WorkspaceRole.PARTNER},
+            format="json",
+        )
+
+        self.assertEqual(decided.status_code, status.HTTP_200_OK)
+        self.assertTrue(
+            BusinessMembership.objects.filter(
+                business=business,
+                user=self.outsider,
+                role=WorkspaceRole.PARTNER,
+            ).exists()
+        )
+
     def test_owner_can_cancel_pending_invitation(self):
         business = create_business(user=self.owner, name="Invitation Business")
         created = self.client.post(
