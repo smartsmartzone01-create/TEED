@@ -46,7 +46,7 @@ def discover_businesses(*, query):
         identity_query,
         is_discoverable=True,
         status=Business.Status.ACTIVE,
-    ).exclude(workspace_type=Business.WorkspaceType.PERSONAL)[:10]
+    ).exclude(workspace_type=Business.WorkspaceType.PERSONAL_BRAND)[:10]
 
 
 def workspace_overview_state(*, membership):
@@ -120,8 +120,7 @@ def business_profile_completion(*, business):
         "name": business.name,
         "country_code": business.country_code,
         "workspace_type": business.workspace_type,
-        "description": profile.description,
-        "industry": profile.industry,
+        "business_category": profile.business_category,
         "operating_model": profile.operating_model,
         "city": profile.city,
     }

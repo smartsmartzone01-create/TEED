@@ -3,19 +3,14 @@ import { z } from "zod";
 import { createApiEnvelopeSchema } from "@/schemas/global/api";
 
 const workspaceBusinessSchema = z.object({
+  capabilities: z.array(z.string()),
   country_code: z.string(),
   created_at: z.string(),
   id: z.string().uuid(),
   name: z.string(),
   public_handle: z.string(),
   status: z.string(),
-  workspace_type: z.enum([
-    "business",
-    "service_provider",
-    "creator_brand",
-    "personal",
-    "other",
-  ]),
+  workspace_type: z.enum(["business", "service", "personal_brand"]),
 });
 
 const workspaceBusinessDiscoverySchema = workspaceBusinessSchema.pick({
@@ -71,8 +66,19 @@ const workspaceOverviewSchema = z.object({
 const businessProfileSchema = z.object({
   address: z.string(),
   city: z.string(),
-  description: z.string(),
-  industry: z.string(),
+  business_category: z.enum([
+    "",
+    "retail_commerce",
+    "food_hospitality",
+    "professional_services",
+    "health_wellness",
+    "education_training",
+    "technology_digital",
+    "creative_media",
+    "manufacturing_agriculture",
+    "nonprofit_community",
+    "other",
+  ]),
   logo_url: z.string().nullable(),
   operating_model: z.enum(["", "physical", "online", "hybrid"]),
   primary_brand_color: z.string(),
@@ -177,7 +183,7 @@ function createBusinessFormSchema(messages: { country: string; name: string; wor
     countryCode: z.enum(["TZ", "KE", "UG"], { message: messages.country }),
     name: z.string().trim().min(2, messages.name).max(120, messages.name),
     workspaceType: z.enum(
-      ["business", "service_provider", "creator_brand", "personal", "other"],
+      ["business", "service", "personal_brand"],
       { message: messages.workspaceType },
     ),
   });

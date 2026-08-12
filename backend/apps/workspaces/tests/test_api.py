@@ -34,6 +34,7 @@ class WorkspaceAPITests(APITestCase):
         self.assertEqual(created.data["data"]["country_code"], "TZ")
         self.assertEqual(len(created.data["data"]["id"]), 36)
         self.assertEqual(created.data["data"]["public_handle"], "api-business")
+        self.assertIn("business_operations", created.data["data"]["capabilities"])
         listed = self.client.get(reverse("workspaces:business-list"))
         self.assertEqual(len(listed.data["data"]["businesses"]), 1)
         self.assertEqual(
@@ -53,12 +54,12 @@ class WorkspaceAPITests(APITestCase):
             user=self.owner,
             name="Afya Services",
             country_code="TZ",
-            workspace_type=Business.WorkspaceType.SERVICE_PROVIDER,
+            workspace_type=Business.WorkspaceType.SERVICE,
         )
         create_business(
             user=self.owner,
             name="Afya Personal",
-            workspace_type=Business.WorkspaceType.PERSONAL,
+            workspace_type=Business.WorkspaceType.PERSONAL_BRAND,
         )
         response = self.client.get(
             reverse("workspaces:business-discovery"), {"q": "afya"}
@@ -98,7 +99,7 @@ class WorkspaceAPITests(APITestCase):
         personal = create_business(
             user=self.owner,
             name="Private Space",
-            workspace_type=Business.WorkspaceType.PERSONAL,
+            workspace_type=Business.WorkspaceType.PERSONAL_BRAND,
         )
         self.authenticate(self.outsider)
         response = self.client.post(
@@ -155,17 +156,32 @@ class WorkspaceAPITests(APITestCase):
         self.assertEqual(response.data["data"]["state"]["active_member_count"], 1)
         self.assertEqual(response.data["data"]["state"]["pending_action_count"], 0)
         self.assertEqual(
-            response.data["data"]["state"]["profile_completion_percentage"], 29
+            response.data["data"]["state"]["profile_completion_percentage"], 33
         )
+
+    def test_workspace_type_change_to_personal_brand_rejects_other_members(self):
+        business = create_business(user=self.owner, name="Collaborative Business")
+        BusinessMembership.objects.create(
+            business=business,
+            user=self.outsider,
+            role=WorkspaceRole.MEMBER,
+        )
+        response = self.client.patch(
+            reverse("workspaces:business-profile", kwargs={"business_id": business.id}),
+            {"workspace_type": Business.WorkspaceType.PERSONAL_BRAND},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        business.refresh_from_db()
+        self.assertEqual(business.workspace_type, Business.WorkspaceType.BUSINESS)
 
     def test_owner_can_manage_business_profile_and_brand(self):
         business = create_business(user=self.owner, name="Managed Business")
         response = self.client.patch(
             reverse("workspaces:business-profile", kwargs={"business_id": business.id}),
             {
-                "description": "A focused retail operation.",
                 "country_code": "TZ",
-                "industry": "Retail",
+                "business_category": "retail_commerce",
                 "operating_model": "hybrid",
                 "region": "Dar es Salaam",
                 "city": "Dar es Salaam",
@@ -192,7 +208,9 @@ class WorkspaceAPITests(APITestCase):
             "workspaces:business-profile", kwargs={"business_id": business.id}
         )
         self.assertEqual(self.client.get(url).status_code, status.HTTP_200_OK)
-        response = self.client.patch(url, {"description": "Denied"}, format="json")
+        response = self.client.patch(
+            url, {"business_category": "retail_commerce"}, format="json"
+        )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_owner_can_update_workspace_settings(self):

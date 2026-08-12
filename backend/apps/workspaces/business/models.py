@@ -12,10 +12,8 @@ def business_logo_upload_path(instance, filename):
 class Business(BaseModel):
     class WorkspaceType(models.TextChoices):
         BUSINESS = "business", "Business"
-        SERVICE_PROVIDER = "service_provider", "Service provider"
-        CREATOR_BRAND = "creator_brand", "Creator or personal brand"
-        PERSONAL = "personal", "Personal"
-        OTHER = "other", "Other"
+        SERVICE = "service", "Service"
+        PERSONAL_BRAND = "personal_brand", "Personal brand"
 
     class Status(models.TextChoices):
         ACTIVE = "active", "Active"
@@ -56,6 +54,21 @@ class Business(BaseModel):
 
 
 class BusinessProfile(BaseModel):
+    class BusinessCategory(models.TextChoices):
+        RETAIL_COMMERCE = "retail_commerce", "Retail and commerce"
+        FOOD_HOSPITALITY = "food_hospitality", "Food and hospitality"
+        PROFESSIONAL_SERVICES = "professional_services", "Professional services"
+        HEALTH_WELLNESS = "health_wellness", "Health and wellness"
+        EDUCATION_TRAINING = "education_training", "Education and training"
+        TECHNOLOGY_DIGITAL = "technology_digital", "Technology and digital"
+        CREATIVE_MEDIA = "creative_media", "Creative and media"
+        MANUFACTURING_AGRICULTURE = (
+            "manufacturing_agriculture",
+            "Manufacturing and agriculture",
+        )
+        NONPROFIT_COMMUNITY = "nonprofit_community", "Nonprofit and community"
+        OTHER = "other", "Other"
+
     class OperatingModel(models.TextChoices):
         PHYSICAL = "physical", "Physical"
         ONLINE = "online", "Online"
@@ -65,8 +78,9 @@ class BusinessProfile(BaseModel):
         Business, on_delete=models.CASCADE, related_name="profile"
     )
     logo = models.ImageField(upload_to=business_logo_upload_path, blank=True, null=True)
-    description = models.CharField(max_length=300, blank=True, default="")
-    industry = models.CharField(max_length=80, blank=True, default="")
+    business_category = models.CharField(
+        max_length=32, choices=BusinessCategory.choices, blank=True, default=""
+    )
     operating_model = models.CharField(
         max_length=16, choices=OperatingModel.choices, blank=True, default=""
     )

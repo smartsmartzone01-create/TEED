@@ -35,8 +35,7 @@ function BusinessProfileEditor({ businessId, section }: { businessId: string; se
         address: result.profile.address,
         city: result.profile.city,
         countryCode: result.business.country_code,
-        description: result.profile.description,
-        industry: result.profile.industry,
+        businessCategory: result.profile.business_category,
         name: result.business.name,
         operatingModel: result.profile.operating_model,
         primaryBrandColor: result.profile.primary_brand_color,
@@ -78,12 +77,11 @@ function BusinessProfileEditor({ businessId, section }: { businessId: string; se
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label={t("fields.name")}><Input disabled={!data.can_manage} onChange={(e) => update("name", e.target.value)} required value={values.name ?? ""} /></Field>
             <Field label={t("fields.handle")}><Input disabled={!data.can_manage} onChange={(e) => update("publicHandle", e.target.value)} required value={values.publicHandle ?? ""} /></Field>
-            <Field label={t("fields.type")}><Select disabled={!data.can_manage} onChange={(e) => update("workspaceType", e.target.value)} value={values.workspaceType}><option value="business">{t("types.business")}</option><option value="service_provider">{t("types.service_provider")}</option><option value="creator_brand">{t("types.creator_brand")}</option><option value="personal">{t("types.personal")}</option><option value="other">{t("types.other")}</option></Select></Field>
+            <Field label={t("fields.workspaceType")}><Select disabled={!data.can_manage} onChange={(e) => update("workspaceType", e.target.value)} value={values.workspaceType}><option value="business">{t("types.business")}</option><option value="service">{t("types.service")}</option><option value="personal_brand">{t("types.personal_brand")}</option></Select></Field>
             <Field label={t("fields.country")}><Select disabled={!data.can_manage} onChange={(e) => update("countryCode", e.target.value)} value={values.countryCode}><option value="TZ">Tanzania</option><option value="KE">Kenya</option><option value="UG">Uganda</option></Select></Field>
-            <Field label={t("fields.industry")}><Input disabled={!data.can_manage} onChange={(e) => update("industry", e.target.value)} value={values.industry ?? ""} /></Field>
+            <Field label={t("fields.businessCategory")}><Select disabled={!data.can_manage} onChange={(e) => update("businessCategory", e.target.value)} value={values.businessCategory}><option value="">{t("categories.notSet")}</option>{["retail_commerce", "food_hospitality", "professional_services", "health_wellness", "education_training", "technology_digital", "creative_media", "manufacturing_agriculture", "nonprofit_community", "other"].map((category) => <option key={category} value={category}>{t(`categories.${category}`)}</option>)}</Select></Field>
             <Field label={t("fields.logo")}><Input accept="image/jpeg,image/png,image/webp" disabled={!data.can_manage} onChange={(e) => e.target.files && update("logo", e.target.files)} type="file" /></Field>
           </div>
-          <Field label={t("fields.description")}><textarea className="min-h-28 rounded-xl border border-slate-300 bg-transparent px-3 py-2 text-sm dark:border-slate-700" disabled={!data.can_manage} maxLength={300} onChange={(e) => update("description", e.target.value)} value={values.description ?? ""} /></Field>
           <p className="text-xs text-slate-500">{t("handleNotice")}</p>
         </> : null}
 

@@ -37,7 +37,7 @@ must not become a second domain. Business profile and settings belong under
 
 Every Business receives one profile and one settings record. Creation provisions both records atomically with the Business and Owner membership. A data migration provisions them for existing Businesses.
 
-The profile owns focused Business presentation and operating context: optional logo, short description, industry, physical/online/hybrid operating model, region, city, address, and two brand colors. The settings record owns workspace language, timezone, date/time formats, discoverability and whether adaptive branding is enabled.
+The profile owns focused Business presentation and operating context: optional logo, controlled Business category, physical/online/hybrid operating model, region, city, address, and two brand colors. The settings record owns workspace language, timezone, date/time formats, discoverability and whether adaptive branding is enabled.
 
 Business name and public handle are intentionally separate. Name changes do not silently break a known public reference. Handle changes are explicit, unique, audited and cooldown-protected.
 
@@ -74,13 +74,15 @@ Protected-role rules supplement this mapping. Having `members.manage` never perm
 
 An invitation is Business-initiated and targets an account email. An access request is user-initiated and targets a Business selected through controlled discovery. The selected public result resolves to the Business UUID before submission. They are separate audited state machines. Accepting an invitation or approving a request creates or activates membership in the same transaction as the decision.
 
-Access requests work from both the personal dashboard and a workspace switcher. Discovery requires authentication and completed onboarding, is throttled, excludes Personal workspaces, and exposes only the minimum public identity needed to choose the correct Business. Duplicate, existing-member, unavailable and recently-rejected states use focused domain error codes.
+Access requests work from both the personal dashboard and a workspace switcher. Discovery requires authentication and completed onboarding, is throttled, excludes Personal Brand workspaces, and exposes only the minimum public identity needed to choose the correct Business. Duplicate, existing-member, unavailable and recently-rejected states use focused domain error codes.
 
-## Workspace classification
+## Workspace classification and capability policy
 
-Creation asks only for a name, country and one broad workspace type: Business, Service provider, Creator or personal brand, Personal, or Other. TEED generates the public handle and UUID automatically. Operating model (physical, online or hybrid), industry and precise location belong to the later Business profile rather than the creation gate.
+Creation asks only for a name, country and one broad workspace type: Business, Service, or Personal Brand. TEED generates the public handle and UUID automatically. Type is not descriptive metadata: version-controlled backend policy maps it to capabilities. RBAC continues to govern member authority independently.
 
-Personal workspaces are single-user. They cannot receive invitations, access requests or additional memberships.
+Business category is a separate controlled profile value: Retail and commerce, Food and hospitality, Professional services, Health and wellness, Education and training, Technology and digital, Creative and media, Manufacturing and agriculture, Nonprofit and community, or Other. It supplies useful product and future AI context without changing authorization.
+
+Personal Brand workspaces are single-user. They cannot receive invitations, access requests or additional memberships. A collaborative workspace cannot become Personal Brand until all other active memberships are removed. This prevents a type change from silently contradicting tenant access state.
 
 ## Owner and Partner control
 

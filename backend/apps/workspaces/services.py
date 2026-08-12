@@ -126,8 +126,7 @@ def update_business_profile(*, actor, business_id, **changes):
     business_fields = {"name", "country_code", "workspace_type"}
     profile_fields = {
         "logo",
-        "description",
-        "industry",
+        "business_category",
         "operating_model",
         "region",
         "city",
@@ -158,6 +157,20 @@ def update_business_profile(*, actor, business_id, **changes):
         changed_fields.append("public_handle")
 
     business_updates = []
+    requested_workspace_type = changes.get("workspace_type")
+    if (
+        requested_workspace_type == Business.WorkspaceType.PERSONAL_BRAND
+        and business.workspace_type != Business.WorkspaceType.PERSONAL_BRAND
+        and business.memberships.filter(status=BusinessMembership.Status.ACTIVE)
+        .exclude(user=actor)
+        .exists()
+    ):
+        raise ValidationError(
+            {
+                "workspace_type": "Remove other active members before changing to a Personal brand workspace."
+            },
+            code="personal_brand_workspace_has_members",
+        )
     for field in business_fields:
         if field in changes and getattr(business, field) != changes[field]:
             setattr(business, field, changes[field])
@@ -250,7 +263,10 @@ def create_invitation(*, actor, business_id, email, role):
         business_id=business_id,
         permission=WorkspacePermission.MANAGE_INVITATIONS,
     )
-    if actor_membership.business.workspace_type == Business.WorkspaceType.PERSONAL:
+    if (
+        actor_membership.business.workspace_type
+        == Business.WorkspaceType.PERSONAL_BRAND
+    ):
         raise PersonalWorkspaceMembershipRestricted()
     if role not in _roles_actor_can_assign(actor_membership.role):
         raise PermissionDenied(
@@ -323,7 +339,7 @@ def resolve_invitation(*, user, invitation_id, accept):
     invitation.resolved_at = timezone.now()
     invitation.save(update_fields=["status", "resolved_at", "updated_at"])
     if accept:
-        if invitation.business.workspace_type == Business.WorkspaceType.PERSONAL:
+        if invitation.business.workspace_type == Business.WorkspaceType.PERSONAL_BRAND:
             raise PersonalWorkspaceMembershipRestricted()
         membership, _ = BusinessMembership.objects.update_or_create(
             business=invitation.business,
@@ -351,7 +367,7 @@ def request_access(*, user, business_id, message=""):
     ).first()
     if business is None:
         raise WorkspaceBusinessNotFound()
-    if business.workspace_type == Business.WorkspaceType.PERSONAL:
+    if business.workspace_type == Business.WorkspaceType.PERSONAL_BRAND:
         raise PersonalWorkspaceMembershipRestricted()
     if BusinessMembership.objects.filter(
         business=business, user=user, status=BusinessMembership.Status.ACTIVE
@@ -470,7 +486,10 @@ def update_membership(*, actor, business_id, membership_id, role=None, status=No
         business_id=business_id,
         permission=WorkspacePermission.MANAGE_MEMBERS,
     )
-    if actor_membership.business.workspace_type == Business.WorkspaceType.PERSONAL:
+    if (
+        actor_membership.business.workspace_type
+        == Business.WorkspaceType.PERSONAL_BRAND
+    ):
         raise PersonalWorkspaceMembershipRestricted()
     target = (
         BusinessMembership.objects.select_for_update()

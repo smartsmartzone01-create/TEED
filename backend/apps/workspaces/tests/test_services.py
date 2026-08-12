@@ -91,7 +91,7 @@ class WorkspaceServiceTests(TestCase):
             user=self.owner,
             name="My private workspace",
             country_code="TZ",
-            workspace_type=Business.WorkspaceType.PERSONAL,
+            workspace_type=Business.WorkspaceType.PERSONAL_BRAND,
         )
 
         with self.assertRaises(PersonalWorkspaceMembershipRestricted):

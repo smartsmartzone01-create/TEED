@@ -1,4 +1,5 @@
 type WorkspaceBusiness = {
+  capabilities: string[];
   country_code: string;
   created_at: string;
   id: string;
@@ -8,11 +9,19 @@ type WorkspaceBusiness = {
   workspace_type: WorkspaceType;
 };
 
-type WorkspaceType =
-  | "business"
-  | "service_provider"
-  | "creator_brand"
-  | "personal"
+type WorkspaceType = "business" | "service" | "personal_brand";
+
+type BusinessCategory =
+  | ""
+  | "retail_commerce"
+  | "food_hospitality"
+  | "professional_services"
+  | "health_wellness"
+  | "education_training"
+  | "technology_digital"
+  | "creative_media"
+  | "manufacturing_agriculture"
+  | "nonprofit_community"
   | "other";
 
 type WorkspaceBusinessDiscovery = Pick<
@@ -78,8 +87,7 @@ type RequestBusinessAccessValues = {
 type BusinessProfile = {
   address: string;
   city: string;
-  description: string;
-  industry: string;
+  business_category: BusinessCategory;
   logo_url: string | null;
   operating_model: "" | "hybrid" | "online" | "physical";
   primary_brand_color: string;
@@ -106,8 +114,7 @@ type BusinessProfileValues = {
   address: string;
   city: string;
   countryCode: string;
-  description: string;
-  industry: string;
+  businessCategory: BusinessCategory;
   logo?: FileList;
   name: string;
   operatingModel: "" | "hybrid" | "online" | "physical";
@@ -168,6 +175,7 @@ type BusinessSecurityData = {
 };
 
 export type {
+  BusinessCategory,
   CreateBusinessValues,
   BusinessControlRequest,
   BusinessProfile,

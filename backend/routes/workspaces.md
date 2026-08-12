@@ -17,7 +17,7 @@ All identifiers are UUIDs. All endpoints require an authenticated user with comp
 | `GET/PATCH` | `businesses/{business_id}/settings/` | Read or update discoverability, branding and regional display preferences |
 | `GET` | `businesses/{business_id}/security/` | Read fixed permissions, controllers, pending controls and recent audit activity |
 
-Profile and settings reads are available to active members. Mutations require the fixed `business.manage` permission. Public-handle changes are explicit, unique, audited and subject to a configured cooldown; changing the Business name never changes its handle automatically.
+Profile and settings reads are available to active members. Mutations require the fixed `business.manage` permission. Public-handle changes are explicit, unique, audited and subject to a configured cooldown; changing the Business name never changes its handle automatically. Converting a collaborative workspace to Personal Brand is blocked until every other active membership is removed.
 
 Business branding accepts two `#RRGGBB` colors. The frontend scopes them to workspace identity accents and never replaces semantic success, warning, error or destructive colors.
 
@@ -50,9 +50,11 @@ The same request endpoint supports a user without a Business from the personal d
 | `GET` | `businesses/{business_id}/access-requests/` | List pending requests |
 | `POST` | `businesses/{business_id}/access-requests/{request_id}/decision/` | Approve or reject |
 
-Discovery requires authentication and completed onboarding, is throttled, excludes Personal workspaces, and returns only UUID, name, public handle, country and workspace type. UUID remains the internal tenant identifier; the public handle is the user-facing discovery reference.
+Discovery requires authentication and completed onboarding, is throttled, excludes Personal Brand workspaces, and returns only UUID, name, public handle, country and workspace type. UUID remains the internal tenant identifier; the public handle is the user-facing discovery reference.
 
-Workspace types are `business`, `service_provider`, `creator_brand`, `personal`, and `other`. Personal workspaces are single-user and reject invitations, access requests and member management.
+Workspace types are `business`, `service`, and `personal_brand`. They form a capability-policy layer beneath RBAC: roles decide what a member may do, while workspace type decides which product domains may exist. Personal Brand workspaces are single-user and reject invitations, access requests and member management.
+
+Every authenticated Business response includes backend-defined `capabilities`. Current capabilities distinguish Business operations, Service operations, Personal Brand tools, collaboration, social presence and future AI guidance. Billing may later consume the same entitlement boundary, but plan selection must not override authorization.
 
 ## Protected Business control
 

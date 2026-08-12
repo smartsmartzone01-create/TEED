@@ -1,6 +1,7 @@
 from django.core.validators import RegexValidator
 from rest_framework import serializers
 
+from .business.capabilities import capabilities_for_workspace_type
 from .models import (
     Business,
     BusinessAccessRequest,
@@ -15,6 +16,8 @@ from .policy import ASSIGNABLE_ROLES, WorkspaceRole
 
 
 class BusinessSerializer(serializers.ModelSerializer):
+    capabilities = serializers.SerializerMethodField()
+
     class Meta:
         model = Business
         fields = [
@@ -23,9 +26,13 @@ class BusinessSerializer(serializers.ModelSerializer):
             "public_handle",
             "country_code",
             "workspace_type",
+            "capabilities",
             "status",
             "created_at",
         ]
+
+    def get_capabilities(self, instance):
+        return sorted(capabilities_for_workspace_type(instance.workspace_type))
 
 
 class BusinessDiscoverySerializer(serializers.ModelSerializer):
@@ -67,8 +74,7 @@ class BusinessProfileSerializer(serializers.ModelSerializer):
         model = BusinessProfile
         fields = [
             "logo_url",
-            "description",
-            "industry",
+            "business_category",
             "operating_model",
             "region",
             "city",
@@ -97,10 +103,10 @@ class BusinessProfileUpdateSerializer(serializers.Serializer):
     )
     country_code = serializers.CharField(max_length=2, required=False)
     logo = serializers.ImageField(required=False, allow_null=True)
-    description = serializers.CharField(
-        max_length=300, required=False, allow_blank=True
+    business_category = serializers.ChoiceField(
+        choices=["", *BusinessProfile.BusinessCategory.values],
+        required=False,
     )
-    industry = serializers.CharField(max_length=80, required=False, allow_blank=True)
     operating_model = serializers.ChoiceField(
         choices=["", *BusinessProfile.OperatingModel.values], required=False
     )
