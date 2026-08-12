@@ -321,7 +321,7 @@ class WorkspaceAPITests(APITestCase):
         )
         self.assertEqual(requested.status_code, status.HTTP_201_CREATED)
         notification = UserNotification.objects.get(
-            recipient=self.owner,
+            user=self.owner,
             template=UserNotification.Template.WORKSPACE_ACCESS_REQUEST,
         )
         self.assertEqual(
