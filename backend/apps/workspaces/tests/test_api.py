@@ -154,6 +154,91 @@ class WorkspaceAPITests(APITestCase):
         )
         self.assertEqual(response.data["data"]["state"]["active_member_count"], 1)
         self.assertEqual(response.data["data"]["state"]["pending_action_count"], 0)
+        self.assertEqual(
+            response.data["data"]["state"]["profile_completion_percentage"], 29
+        )
+
+    def test_owner_can_manage_business_profile_and_brand(self):
+        business = create_business(user=self.owner, name="Managed Business")
+        response = self.client.patch(
+            reverse("workspaces:business-profile", kwargs={"business_id": business.id}),
+            {
+                "description": "A focused retail operation.",
+                "country_code": "TZ",
+                "industry": "Retail",
+                "operating_model": "hybrid",
+                "region": "Dar es Salaam",
+                "city": "Dar es Salaam",
+                "primary_brand_color": "#112233",
+                "secondary_brand_color": "#EE7722",
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            response.data["data"]["profile"]["primary_brand_color"], "#112233"
+        )
+        self.assertEqual(response.data["data"]["completion"]["percentage"], 100)
+
+    def test_member_can_read_but_not_edit_business_profile(self):
+        business = create_business(user=self.owner, name="Visible Profile")
+        BusinessMembership.objects.create(
+            business=business,
+            user=self.outsider,
+            role=WorkspaceRole.MEMBER,
+        )
+        self.authenticate(self.outsider)
+        url = reverse(
+            "workspaces:business-profile", kwargs={"business_id": business.id}
+        )
+        self.assertEqual(self.client.get(url).status_code, status.HTTP_200_OK)
+        response = self.client.patch(url, {"description": "Denied"}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_owner_can_update_workspace_settings(self):
+        business = create_business(user=self.owner, name="Settings Business")
+        response = self.client.patch(
+            reverse(
+                "workspaces:business-settings", kwargs={"business_id": business.id}
+            ),
+            {
+                "is_discoverable": False,
+                "language_code": "sw",
+                "timezone": "Africa/Nairobi",
+                "date_format": "YYYY-MM-DD",
+                "time_format": "12h",
+                "branding_enabled": False,
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(response.data["data"]["settings"]["is_discoverable"])
+        self.assertEqual(response.data["data"]["settings"]["language_code"], "sw")
+
+    def test_security_state_returns_controllers_permissions_and_audit(self):
+        business = create_business(user=self.owner, name="Secure Business")
+        response = self.client.get(
+            reverse("workspaces:business-security", kwargs={"business_id": business.id})
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data["data"]["controllers"]), 1)
+        self.assertIn("business.control", response.data["data"]["permissions"])
+        self.assertTrue(response.data["data"]["recent_events"])
+
+    def test_public_handle_change_is_explicit_and_cooled_down(self):
+        business = create_business(user=self.owner, name="Handle Business")
+        url = reverse(
+            "workspaces:business-profile", kwargs={"business_id": business.id}
+        )
+        first = self.client.patch(url, {"public_handle": "new-handle"}, format="json")
+        second = self.client.patch(
+            url, {"public_handle": "another-handle"}, format="json"
+        )
+        self.assertEqual(first.status_code, status.HTTP_200_OK)
+        self.assertEqual(second.status_code, status.HTTP_409_CONFLICT)
+        self.assertEqual(
+            second.data["errors"]["code"], "business_handle_change_cooldown"
+        )
 
     def test_workspace_overview_hides_management_counts_from_member(self):
         business = create_business(user=self.owner, name="Member Overview")

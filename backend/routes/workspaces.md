@@ -13,6 +13,13 @@ All identifiers are UUIDs. All endpoints require an authenticated user with comp
 | `GET` | `businesses/discover/?q={identity}` | Search active discoverable Businesses by any non-empty name or public handle, or by exact UUID |
 | `GET` | `businesses/{business_id}/` | Read an active Business in the caller's workspace context |
 | `GET` | `businesses/{business_id}/overview/` | Read the Business, caller membership, permission-filtered pending counts, and active member count |
+| `GET/PATCH` | `businesses/{business_id}/profile/` | Read or update Business identity, logo, brand colors, location and operating details |
+| `GET/PATCH` | `businesses/{business_id}/settings/` | Read or update discoverability, branding and regional display preferences |
+| `GET` | `businesses/{business_id}/security/` | Read fixed permissions, controllers, pending controls and recent audit activity |
+
+Profile and settings reads are available to active members. Mutations require the fixed `business.manage` permission. Public-handle changes are explicit, unique, audited and subject to a configured cooldown; changing the Business name never changes its handle automatically.
+
+Business branding accepts two `#RRGGBB` colors. The frontend scopes them to workspace identity accents and never replaces semantic success, warning, error or destructive colors.
 
 ## Membership and fixed roles
 

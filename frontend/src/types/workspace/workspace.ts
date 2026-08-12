@@ -51,6 +51,11 @@ type WorkspaceOverviewState = {
   pending_action_count: number;
   pending_control_request_count: number | null;
   pending_invitation_count: number | null;
+  profile_completion_percentage: number;
+  profile_missing_fields: string[];
+  is_discoverable: boolean;
+  branding_enabled: boolean;
+  brand_configured: boolean;
 };
 
 type WorkspaceOverviewData = {
@@ -70,8 +75,108 @@ type RequestBusinessAccessValues = {
   message: string;
 };
 
+type BusinessProfile = {
+  address: string;
+  city: string;
+  description: string;
+  industry: string;
+  logo_url: string | null;
+  operating_model: "" | "hybrid" | "online" | "physical";
+  primary_brand_color: string;
+  region: string;
+  secondary_brand_color: string;
+  updated_at: string;
+};
+
+type BusinessProfileCompletion = {
+  completed_fields: number;
+  missing_fields: string[];
+  percentage: number;
+  total_fields: number;
+};
+
+type BusinessProfileData = {
+  business: WorkspaceBusiness;
+  can_manage: boolean;
+  completion: BusinessProfileCompletion;
+  profile: BusinessProfile;
+};
+
+type BusinessProfileValues = {
+  address: string;
+  city: string;
+  countryCode: string;
+  description: string;
+  industry: string;
+  logo?: FileList;
+  name: string;
+  operatingModel: "" | "hybrid" | "online" | "physical";
+  primaryBrandColor: string;
+  publicHandle: string;
+  region: string;
+  secondaryBrandColor: string;
+  workspaceType: WorkspaceType;
+};
+
+type BusinessSettings = {
+  branding_enabled: boolean;
+  date_format: "DD/MM/YYYY" | "MM/DD/YYYY" | "YYYY-MM-DD";
+  is_discoverable: boolean;
+  language_code: "en" | "sw";
+  time_format: "12h" | "24h";
+  timezone: "Africa/Dar_es_Salaam" | "Africa/Kampala" | "Africa/Nairobi" | "UTC";
+  updated_at: string;
+};
+
+type BusinessSettingsData = { can_manage: boolean; settings: BusinessSettings };
+type BusinessSettingsValues = {
+  brandingEnabled: boolean;
+  dateFormat: BusinessSettings["date_format"];
+  discoverable: boolean;
+  languageCode: BusinessSettings["language_code"];
+  timeFormat: BusinessSettings["time_format"];
+  timezone: BusinessSettings["timezone"];
+};
+
+type WorkspaceAuditEvent = {
+  actor_email: string | null;
+  created_at: string;
+  event_type: string;
+  id: string;
+  metadata: Record<string, unknown>;
+  target_id: string | null;
+};
+
+type BusinessControlRequest = {
+  action: "cancel_deletion" | "delete" | "disable" | "reactivate";
+  business_id: string;
+  created_at: string;
+  expires_at: string;
+  id: string;
+  initiated_by_id: string;
+  status: string;
+};
+
+type BusinessSecurityData = {
+  business: WorkspaceBusiness;
+  can_control: boolean;
+  controllers: WorkspaceMembership[];
+  membership: WorkspaceMembership;
+  pending_controls: BusinessControlRequest[];
+  permissions: string[];
+  recent_events: WorkspaceAuditEvent[];
+};
+
 export type {
   CreateBusinessValues,
+  BusinessControlRequest,
+  BusinessProfile,
+  BusinessProfileData,
+  BusinessProfileValues,
+  BusinessSecurityData,
+  BusinessSettings,
+  BusinessSettingsData,
+  BusinessSettingsValues,
   RequestBusinessAccessValues,
   WorkspaceBusiness,
   WorkspaceBusinessDiscovery,
@@ -81,4 +186,5 @@ export type {
   WorkspaceOverviewData,
   WorkspaceOverviewState,
   WorkspaceType,
+  WorkspaceAuditEvent,
 };

@@ -1,3 +1,4 @@
+from django.core.validators import RegexValidator
 from rest_framework import serializers
 
 from .models import (
@@ -6,6 +7,9 @@ from .models import (
     BusinessControlRequest,
     BusinessInvitation,
     BusinessMembership,
+    BusinessProfile,
+    BusinessSettings,
+    WorkspaceAuditEvent,
 )
 from .policy import ASSIGNABLE_ROLES, WorkspaceRole
 
@@ -47,6 +51,135 @@ class BusinessCreateSerializer(serializers.Serializer):
 
     def validate_country_code(self, value):
         return value.upper()
+
+
+hex_color_validator = RegexValidator(
+    regex=r"^#[0-9A-Fa-f]{6}$",
+    message="Enter a color in #RRGGBB format.",
+    code="invalid_hex_color",
+)
+
+
+class BusinessProfileSerializer(serializers.ModelSerializer):
+    logo_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = BusinessProfile
+        fields = [
+            "logo_url",
+            "description",
+            "industry",
+            "operating_model",
+            "region",
+            "city",
+            "address",
+            "primary_brand_color",
+            "secondary_brand_color",
+            "updated_at",
+        ]
+
+    def get_logo_url(self, instance):
+        if not instance.logo:
+            return None
+        request = self.context.get("request")
+        return (
+            request.build_absolute_uri(instance.logo.url)
+            if request
+            else instance.logo.url
+        )
+
+
+class BusinessProfileUpdateSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=120, trim_whitespace=True, required=False)
+    public_handle = serializers.SlugField(max_length=80, required=False)
+    workspace_type = serializers.ChoiceField(
+        choices=Business.WorkspaceType.values, required=False
+    )
+    country_code = serializers.CharField(max_length=2, required=False)
+    logo = serializers.ImageField(required=False, allow_null=True)
+    description = serializers.CharField(
+        max_length=300, required=False, allow_blank=True
+    )
+    industry = serializers.CharField(max_length=80, required=False, allow_blank=True)
+    operating_model = serializers.ChoiceField(
+        choices=["", *BusinessProfile.OperatingModel.values], required=False
+    )
+    region = serializers.CharField(max_length=80, required=False, allow_blank=True)
+    city = serializers.CharField(max_length=80, required=False, allow_blank=True)
+    address = serializers.CharField(max_length=160, required=False, allow_blank=True)
+    primary_brand_color = serializers.CharField(
+        max_length=7, validators=[hex_color_validator], required=False
+    )
+    secondary_brand_color = serializers.CharField(
+        max_length=7, validators=[hex_color_validator], required=False
+    )
+
+    def validate_country_code(self, value):
+        return value.upper()
+
+    def validate_logo(self, value):
+        if value and value.size > 5 * 1024 * 1024:
+            raise serializers.ValidationError(
+                "The logo must be 5 MB or smaller.", code="business_logo_too_large"
+            )
+        if value and value.content_type not in {
+            "image/jpeg",
+            "image/png",
+            "image/webp",
+        }:
+            raise serializers.ValidationError(
+                "Use a JPEG, PNG, or WebP logo.", code="business_logo_type_invalid"
+            )
+        return value
+
+
+class BusinessSettingsSerializer(serializers.ModelSerializer):
+    is_discoverable = serializers.BooleanField(source="business.is_discoverable")
+
+    class Meta:
+        model = BusinessSettings
+        fields = [
+            "is_discoverable",
+            "language_code",
+            "timezone",
+            "date_format",
+            "time_format",
+            "branding_enabled",
+            "updated_at",
+        ]
+
+
+class BusinessSettingsUpdateSerializer(serializers.Serializer):
+    is_discoverable = serializers.BooleanField(required=False)
+    language_code = serializers.ChoiceField(
+        choices=BusinessSettings.Language.values, required=False
+    )
+    timezone = serializers.ChoiceField(
+        choices=["Africa/Dar_es_Salaam", "Africa/Nairobi", "Africa/Kampala", "UTC"],
+        required=False,
+    )
+    date_format = serializers.ChoiceField(
+        choices=BusinessSettings.DateFormat.values, required=False
+    )
+    time_format = serializers.ChoiceField(
+        choices=BusinessSettings.TimeFormat.values, required=False
+    )
+    branding_enabled = serializers.BooleanField(required=False)
+
+
+class WorkspaceAuditEventSerializer(serializers.ModelSerializer):
+    actor_email = serializers.EmailField(source="actor.email", read_only=True)
+
+    class Meta:
+        model = WorkspaceAuditEvent
+        fields = [
+            "id",
+            "event_type",
+            "actor_email",
+            "target_id",
+            "metadata",
+            "created_at",
+        ]
 
 
 class MembershipSerializer(serializers.ModelSerializer):

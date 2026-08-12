@@ -60,8 +60,91 @@ const workspaceOverviewSchema = z.object({
     pending_action_count: z.number().int().nonnegative(),
     pending_control_request_count: z.number().int().nonnegative().nullable(),
     pending_invitation_count: z.number().int().nonnegative().nullable(),
+    profile_completion_percentage: z.number().int().min(0).max(100),
+    profile_missing_fields: z.array(z.string()),
+    is_discoverable: z.boolean(),
+    branding_enabled: z.boolean(),
+    brand_configured: z.boolean(),
   }),
 });
+
+const businessProfileSchema = z.object({
+  address: z.string(),
+  city: z.string(),
+  description: z.string(),
+  industry: z.string(),
+  logo_url: z.string().nullable(),
+  operating_model: z.enum(["", "physical", "online", "hybrid"]),
+  primary_brand_color: z.string(),
+  region: z.string(),
+  secondary_brand_color: z.string(),
+  updated_at: z.string(),
+});
+
+const businessProfileCompletionSchema = z.object({
+  completed_fields: z.number().int().nonnegative(),
+  missing_fields: z.array(z.string()),
+  percentage: z.number().int().min(0).max(100),
+  total_fields: z.number().int().positive(),
+});
+
+const businessProfileEnvelopeSchema = createApiEnvelopeSchema(
+  z.object({
+    business: workspaceBusinessSchema,
+    can_manage: z.boolean(),
+    completion: businessProfileCompletionSchema,
+    profile: businessProfileSchema,
+  }),
+);
+
+const businessSettingsSchema = z.object({
+  branding_enabled: z.boolean(),
+  date_format: z.enum(["DD/MM/YYYY", "MM/DD/YYYY", "YYYY-MM-DD"]),
+  is_discoverable: z.boolean(),
+  language_code: z.enum(["en", "sw"]),
+  time_format: z.enum(["12h", "24h"]),
+  timezone: z.enum(["Africa/Dar_es_Salaam", "Africa/Nairobi", "Africa/Kampala", "UTC"]),
+  updated_at: z.string(),
+});
+
+const businessSettingsEnvelopeSchema = createApiEnvelopeSchema(
+  z.object({ can_manage: z.boolean(), settings: businessSettingsSchema }),
+);
+
+const workspaceAuditEventSchema = z.object({
+  actor_email: z.string().nullable(),
+  created_at: z.string(),
+  event_type: z.string(),
+  id: z.string().uuid(),
+  metadata: z.record(z.string(), z.unknown()),
+  target_id: z.string().uuid().nullable(),
+});
+
+const businessControlRequestSchema = z.object({
+  action: z.enum(["disable", "reactivate", "delete", "cancel_deletion"]),
+  business_id: z.string().uuid(),
+  created_at: z.string(),
+  expires_at: z.string(),
+  id: z.string().uuid(),
+  initiated_by_id: z.string().uuid(),
+  status: z.string(),
+});
+
+const businessSecurityEnvelopeSchema = createApiEnvelopeSchema(
+  z.object({
+    business: workspaceBusinessSchema,
+    can_control: z.boolean(),
+    controllers: z.array(workspaceMembershipSchema),
+    membership: workspaceMembershipSchema,
+    pending_controls: z.array(businessControlRequestSchema),
+    permissions: z.array(z.string()),
+    recent_events: z.array(workspaceAuditEventSchema),
+  }),
+);
+
+const businessControlRequestEnvelopeSchema = createApiEnvelopeSchema(
+  businessControlRequestSchema,
+);
 
 const workspaceAccessRequestSchema = z.object({
   business_id: z.string().uuid(),
@@ -117,4 +200,8 @@ export {
   workspaceInvitationListEnvelopeSchema,
   workspaceMembershipEnvelopeSchema,
   workspaceOverviewEnvelopeSchema,
+  businessControlRequestEnvelopeSchema,
+  businessProfileEnvelopeSchema,
+  businessSecurityEnvelopeSchema,
+  businessSettingsEnvelopeSchema,
 };

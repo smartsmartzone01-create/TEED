@@ -34,3 +34,17 @@ class PersonalWorkspaceMembershipRestricted(TEEDException):
     default_message = "Personal workspaces do not accept members or access requests."
     default_code = "personal_workspace_membership_restricted"
     default_status_code = status.HTTP_409_CONFLICT
+
+
+class WorkspaceHandleChangeCooldown(TEEDException):
+    default_message = (
+        "The public handle was changed recently. Try again after the cooldown."
+    )
+    default_code = "business_handle_change_cooldown"
+    default_status_code = status.HTTP_409_CONFLICT
+
+
+class WorkspaceHandleUnavailable(TEEDException):
+    default_message = "This public handle is already in use."
+    default_code = "business_handle_unavailable"
+    default_status_code = status.HTTP_409_CONFLICT

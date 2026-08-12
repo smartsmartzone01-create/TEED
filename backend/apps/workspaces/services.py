@@ -5,6 +5,8 @@ from common.exceptions.modules.workspaces import (
     WorkspaceAccessRequestCooldown,
     WorkspaceAccessRequestPending,
     WorkspaceBusinessNotFound,
+    WorkspaceHandleChangeCooldown,
+    WorkspaceHandleUnavailable,
     WorkspaceMembershipExists,
 )
 from django.conf import settings
@@ -23,6 +25,8 @@ from .models import (
     BusinessControlRequest,
     BusinessInvitation,
     BusinessMembership,
+    BusinessProfile,
+    BusinessSettings,
     WorkspaceAuditEvent,
 )
 from .policy import (
@@ -91,6 +95,8 @@ def create_business(
         country_code=country_code,
         workspace_type=workspace_type,
     )
+    BusinessProfile.objects.create(business=business)
+    BusinessSettings.objects.create(business=business)
     BusinessMembership.objects.create(
         business=business,
         user=user,
@@ -104,6 +110,122 @@ def create_business(
         target_id=business.id,
     )
     return business
+
+
+@transaction.atomic
+def update_business_profile(*, actor, business_id, **changes):
+    membership = require_membership(
+        user=actor,
+        business_id=business_id,
+        permission=WorkspacePermission.MANAGE_BUSINESS,
+    )
+    business = membership.business
+    profile, _ = BusinessProfile.objects.select_for_update().get_or_create(
+        business=business
+    )
+    business_fields = {"name", "country_code", "workspace_type"}
+    profile_fields = {
+        "logo",
+        "description",
+        "industry",
+        "operating_model",
+        "region",
+        "city",
+        "address",
+        "primary_brand_color",
+        "secondary_brand_color",
+    }
+    changed_fields = []
+
+    requested_handle = changes.pop("public_handle", None)
+    if requested_handle is not None and requested_handle != business.public_handle:
+        cooldown_ends = (
+            business.public_handle_changed_at
+            + timedelta(days=settings.WORKSPACE_HANDLE_CHANGE_COOLDOWN_DAYS)
+            if business.public_handle_changed_at
+            else None
+        )
+        if cooldown_ends and cooldown_ends > timezone.now():
+            raise WorkspaceHandleChangeCooldown()
+        if (
+            Business.objects.filter(public_handle__iexact=requested_handle)
+            .exclude(id=business.id)
+            .exists()
+        ):
+            raise WorkspaceHandleUnavailable()
+        business.public_handle = requested_handle.lower()
+        business.public_handle_changed_at = timezone.now()
+        changed_fields.append("public_handle")
+
+    business_updates = []
+    for field in business_fields:
+        if field in changes and getattr(business, field) != changes[field]:
+            setattr(business, field, changes[field])
+            business_updates.append(field)
+            changed_fields.append(field)
+    if "public_handle" in changed_fields:
+        business_updates.extend(["public_handle", "public_handle_changed_at"])
+    if business_updates:
+        business.save(update_fields=[*business_updates, "updated_at"])
+
+    profile_updates = []
+    old_logo = profile.logo if "logo" in changes else None
+    for field in profile_fields:
+        if field in changes and getattr(profile, field) != changes[field]:
+            setattr(profile, field, changes[field])
+            profile_updates.append(field)
+            changed_fields.append(field)
+    if profile_updates:
+        profile.save(update_fields=[*profile_updates, "updated_at"])
+        if old_logo and old_logo.name != getattr(profile.logo, "name", None):
+            transaction.on_commit(lambda: old_logo.storage.delete(old_logo.name))
+
+    if changed_fields:
+        audit(
+            business=business,
+            actor=actor,
+            event_type="business.profile.updated",
+            target_id=profile.id,
+            metadata={"changed_fields": sorted(changed_fields)},
+        )
+    return business, profile
+
+
+@transaction.atomic
+def update_business_settings(*, actor, business_id, **changes):
+    membership = require_membership(
+        user=actor,
+        business_id=business_id,
+        permission=WorkspacePermission.MANAGE_BUSINESS,
+    )
+    business = membership.business
+    settings_record, _ = BusinessSettings.objects.select_for_update().get_or_create(
+        business=business
+    )
+    changed_fields = []
+    if "is_discoverable" in changes:
+        discoverable = changes.pop("is_discoverable")
+        if business.is_discoverable != discoverable:
+            business.is_discoverable = discoverable
+            business.save(update_fields=["is_discoverable", "updated_at"])
+            changed_fields.append("is_discoverable")
+
+    for field, value in changes.items():
+        if getattr(settings_record, field) != value:
+            setattr(settings_record, field, value)
+            changed_fields.append(field)
+    settings_fields = [field for field in changed_fields if field != "is_discoverable"]
+    if settings_fields:
+        settings_record.save(update_fields=[*settings_fields, "updated_at"])
+    if changed_fields:
+        audit(
+            business=business,
+            actor=actor,
+            event_type="business.settings.updated",
+            target_id=settings_record.id,
+            metadata={"changed_fields": sorted(changed_fields)},
+        )
+    return settings_record
 
 
 def _roles_actor_can_assign(actor_role):

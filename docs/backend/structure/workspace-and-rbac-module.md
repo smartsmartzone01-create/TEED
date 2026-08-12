@@ -2,7 +2,7 @@
 
 ## Ownership boundary
 
-`apps.workspaces` owns Business tenancy, membership, invitations, access requests, protected Business lifecycle decisions and workspace audit events. It does not own billing, commerce or future Business-domain records.
+`apps.workspaces` owns Business tenancy, profile, workspace preferences, membership, invitations, access requests, protected Business lifecycle decisions and workspace audit events. It does not own billing, commerce or future Business-domain records.
 
 For the current architecture, one Business is one Workspace. The Business UUID is both tenant identifier and workspace context identifier. A second Workspace model must not be introduced unless TEED later supports multiple operational workspaces inside one legal Business.
 
@@ -13,7 +13,7 @@ domain responsibility:
 
 ```text
 apps/workspaces/
-├── business/          # Business identity and creation
+├── business/          # Business identity, profile, preferences and creation
 ├── rbac/              # memberships, fixed roles and authorization policy
 ├── invitations/       # Business-initiated membership invitations
 ├── access_requests/   # user-initiated membership requests
@@ -31,8 +31,17 @@ apps/workspaces/
 Internal packages own their models and stable import surfaces. Top-level
 composition files may coordinate transactions spanning multiple packages, but
 must not become a second domain. Business profile and settings belong under
-`business/` when their real contracts are implemented; empty folders are not
-created in advance.
+`business/`; they do not create a second tenant or authorization boundary.
+
+## Business management contract
+
+Every Business receives one profile and one settings record. Creation provisions both records atomically with the Business and Owner membership. A data migration provisions them for existing Businesses.
+
+The profile owns focused Business presentation and operating context: optional logo, short description, industry, physical/online/hybrid operating model, region, city, address, and two brand colors. The settings record owns workspace language, timezone, date/time formats, discoverability and whether adaptive branding is enabled.
+
+Business name and public handle are intentionally separate. Name changes do not silently break a known public reference. Handle changes are explicit, unique, audited and cooldown-protected.
+
+Adaptive brand colors are presentation data, not authorization or safety state. Consumers may use them for workspace navigation, progress and decorative emphasis. They must retain system-defined colors for errors, warnings, success and destructive controls.
 
 ## Tenant rules
 

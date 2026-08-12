@@ -14,11 +14,18 @@ import { useIdentitySession } from "@/providers/identity/identity-session-provid
 import { ApiClientError } from "@/services/global/api-client";
 import {
   createBusiness as createBusinessRequest,
+  createBusinessControlRequest,
+  decideBusinessControlRequest,
   decideInvitation as decideInvitationRequest,
   getBusinesses,
   getMyInvitations,
+  getBusinessProfile,
+  getBusinessSecurity,
+  getBusinessSettings,
   discoverBusinesses as discoverBusinessesRequest,
   requestBusinessAccess as requestBusinessAccessRequest,
+  updateBusinessProfile,
+  updateBusinessSettings,
 } from "@/services/workspace/workspace";
 import type {
   CreateBusinessValues,
@@ -28,6 +35,11 @@ import type {
   WorkspaceBusinessListItem,
   WorkspaceInvitation,
   WorkspaceOverviewData,
+  BusinessProfileData,
+  BusinessProfileValues,
+  BusinessSecurityData,
+  BusinessSettingsData,
+  BusinessSettingsValues,
 } from "@/types/workspace/workspace";
 import { getWorkspaceOverview } from "@/services/workspace/workspace";
 
@@ -39,8 +51,15 @@ type WorkspaceContextValue = {
   error: ApiClientError | Error | null;
   invitations: WorkspaceInvitation[];
   loadOverview: (businessId: string, signal?: AbortSignal) => Promise<WorkspaceOverviewData>;
+  loadProfile: (businessId: string, signal?: AbortSignal) => Promise<BusinessProfileData>;
+  loadSecurity: (businessId: string, signal?: AbortSignal) => Promise<BusinessSecurityData>;
+  loadSettings: (businessId: string, signal?: AbortSignal) => Promise<BusinessSettingsData>;
   refresh: () => Promise<void>;
   requestAccess: (values: RequestBusinessAccessValues) => Promise<void>;
+  saveProfile: (businessId: string, values: Partial<BusinessProfileValues>) => Promise<BusinessProfileData>;
+  saveSettings: (businessId: string, values: BusinessSettingsValues) => Promise<BusinessSettingsData>;
+  createControl: (businessId: string, action: "cancel_deletion" | "delete" | "disable" | "reactivate") => Promise<void>;
+  decideControl: (businessId: string, requestId: string, decision: "approve" | "reject") => Promise<void>;
   status: "error" | "loading" | "ready";
 };
 
@@ -127,9 +146,17 @@ function WorkspaceProvider({ children }: { children: ReactNode }) {
         await refresh();
         return response.data;
       },
+      createControl: async (businessId, action) => {
+        await withToken((token) => createBusinessControlRequest(businessId, action, token));
+      },
       decideInvitation: async (id, decision) => {
         await withToken((token) => decideInvitationRequest(id, decision, token));
         await refresh();
+      },
+      decideControl: async (businessId, requestId, decision) => {
+        await withToken((token) =>
+          decideBusinessControlRequest(businessId, requestId, decision, token),
+        );
       },
       discoverBusinesses: async (query, signal) => {
         const response = await withToken((token) =>
@@ -146,10 +173,46 @@ function WorkspaceProvider({ children }: { children: ReactNode }) {
         if (!response.data) throw new Error("Workspace overview response data missing.");
         return response.data;
       },
+      loadProfile: async (businessId, signal) => {
+        const response = await withToken((token) =>
+          getBusinessProfile(businessId, token, signal),
+        );
+        if (!response.data) throw new Error("Business profile response data missing.");
+        return response.data;
+      },
+      loadSecurity: async (businessId, signal) => {
+        const response = await withToken((token) =>
+          getBusinessSecurity(businessId, token, signal),
+        );
+        if (!response.data) throw new Error("Business security response data missing.");
+        return response.data;
+      },
+      loadSettings: async (businessId, signal) => {
+        const response = await withToken((token) =>
+          getBusinessSettings(businessId, token, signal),
+        );
+        if (!response.data) throw new Error("Business settings response data missing.");
+        return response.data;
+      },
       refresh,
       requestAccess: async (values) => {
         await withToken((token) => requestBusinessAccessRequest(values, token));
         await refresh();
+      },
+      saveProfile: async (businessId, values) => {
+        const response = await withToken((token) =>
+          updateBusinessProfile(businessId, values, token),
+        );
+        if (!response.data) throw new Error("Business profile response data missing.");
+        await refresh();
+        return response.data;
+      },
+      saveSettings: async (businessId, values) => {
+        const response = await withToken((token) =>
+          updateBusinessSettings(businessId, values, token),
+        );
+        if (!response.data) throw new Error("Business settings response data missing.");
+        return response.data;
       },
       status: loading ? "loading" : error ? "error" : "ready",
     }),

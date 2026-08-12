@@ -2,17 +2,23 @@
 
 import {
   Building2,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Inbox,
   LayoutDashboard,
   LockKeyhole,
+  Palette,
+  Settings2,
+  Store,
   MailPlus,
   UserRoundCog,
   UsersRound,
   X,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { usePathname } from "next/navigation";
+import { useMemo } from "react";
 
 import { BrandMark } from "@/components/global/brand/brand-mark";
 import { Tooltip } from "@/components/global/primitives/tooltip";
@@ -28,13 +34,10 @@ type WorkspaceSidebarProps = {
 };
 
 const items = [
-  { icon: LayoutDashboard, key: "overview", ready: true },
-  { icon: Building2, key: "business", ready: false },
   { icon: UsersRound, key: "members", ready: false },
   { icon: MailPlus, key: "invitations", ready: false },
   { icon: Inbox, key: "accessRequests", ready: false },
   { icon: UserRoundCog, key: "roles", ready: false },
-  { icon: LockKeyhole, key: "control", ready: false },
 ] as const;
 
 function WorkspaceSidebar({
@@ -44,6 +47,17 @@ function WorkspaceSidebar({
   onToggleCollapsed,
 }: WorkspaceSidebarProps) {
   const t = useTranslations("WorkspaceShell");
+  const pathname = usePathname();
+  const businessId = useMemo(() => pathname.match(/\/workspace\/([^/]+)/)?.[1] ?? null, [pathname]);
+  const inProfile = pathname.includes("/profile");
+  const inSecurity = pathname.includes("/security");
+
+  const readyItems = businessId ? [
+    { icon: LayoutDashboard, href: `/workspace/${businessId}`, key: "overview" },
+    { icon: Building2, href: `/workspace/${businessId}/profile`, key: "business" },
+    { icon: Settings2, href: `/workspace/${businessId}/settings`, key: "settings" },
+    { icon: LockKeyhole, href: `/workspace/${businessId}/security`, key: "control" },
+  ] as const : [];
 
   return (
     <>
@@ -90,23 +104,21 @@ function WorkspaceSidebar({
         </div>
 
         <nav aria-label={t("primaryNavigation")} className="flex-1 space-y-1 overflow-y-auto px-3 py-5">
+          {readyItems.map((item) => {
+            const Icon = item.icon;
+            const active = item.key === "business" ? inProfile : item.key === "control" ? inSecurity : pathname === item.href;
+            return <div key={item.key}>
+              <Tooltip content={t(`navigation.${item.key}`)}>
+                <Link aria-current={active ? "page" : undefined} className={cn("flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-semibold", active ? "bg-slate-100 text-slate-950 dark:bg-slate-900 dark:text-white" : "text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-900", collapsed && "lg:justify-center lg:px-0")} href={item.href} onClick={onCloseMobile}><Icon className="size-4.5 shrink-0"/><span className={cn(collapsed && "lg:sr-only")}>{t(`navigation.${item.key}`)}</span>{(item.key === "business" || item.key === "control") && !collapsed ? <ChevronDown className="ml-auto size-3.5"/> : null}</Link>
+              </Tooltip>
+              {!collapsed && ((item.key === "business" && inProfile) || (item.key === "control" && inSecurity)) ? <div className="ml-7 mt-1 grid gap-1 border-l border-slate-200 pl-3 dark:border-slate-800">
+                {(item.key === "business" ? [{ key: "profileOverview", path: "/profile", icon: Building2 }, { key: "information", path: "/profile/information", icon: Store }, { key: "brand", path: "/profile/brand", icon: Palette }, { key: "operations", path: "/profile/operations", icon: Building2 }] : [{ key: "securityOverview", path: "/security", icon: LockKeyhole }, { key: "audit", path: "/security/audit", icon: LockKeyhole }, { key: "protectedControls", path: "/security/control", icon: LockKeyhole }]).map((sub) => <Link className="rounded-lg px-3 py-2 text-xs text-slate-500 hover:bg-slate-50 hover:text-slate-950 dark:hover:bg-slate-900 dark:hover:text-white" href={`/workspace/${businessId}${sub.path}`} key={sub.key} onClick={onCloseMobile}>{t(`subnavigation.${sub.key}`)}</Link>)}
+              </div> : null}
+            </div>;
+          })}
           {items.map((item) => {
             const Icon = item.icon;
-            const content = item.ready ? (
-              <Link
-                aria-current="page"
-                className={cn(
-                  "flex min-h-11 items-center gap-3 rounded-xl bg-slate-100 px-3 text-sm font-semibold text-slate-950",
-                  "dark:bg-slate-900 dark:text-white",
-                  collapsed && "lg:justify-center lg:px-0",
-                )}
-                href="/workspace"
-                onClick={onCloseMobile}
-              >
-                <Icon className="size-4.5 shrink-0" />
-                <span className={cn(collapsed && "lg:sr-only")}>{t(`navigation.${item.key}`)}</span>
-              </Link>
-            ) : (
+            const content = (
               <button
                 className={cn(
                   "flex min-h-11 w-full cursor-not-allowed items-center gap-3 rounded-xl px-3 text-sm font-medium text-slate-400",
@@ -121,7 +133,7 @@ function WorkspaceSidebar({
             );
 
             return (
-              <Tooltip content={item.ready ? t(`navigation.${item.key}`) : t("availableAfterIntegration")} key={item.key}>
+              <Tooltip content={t("availableAfterIntegration")} key={item.key}>
                 {content}
               </Tooltip>
             );

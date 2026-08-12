@@ -8,6 +8,9 @@ from .api import (
     BusinessDiscoveryAPIView,
     BusinessListCreateAPIView,
     BusinessOverviewAPIView,
+    BusinessProfileAPIView,
+    BusinessSecurityAPIView,
+    BusinessSettingsAPIView,
     ControlRequestCreateAPIView,
     ControlRequestDecisionAPIView,
     InvitationDecisionAPIView,
@@ -35,6 +38,21 @@ urlpatterns = [
         "businesses/<uuid:business_id>/overview/",
         BusinessOverviewAPIView.as_view(),
         name="business-overview",
+    ),
+    path(
+        "businesses/<uuid:business_id>/profile/",
+        BusinessProfileAPIView.as_view(),
+        name="business-profile",
+    ),
+    path(
+        "businesses/<uuid:business_id>/settings/",
+        BusinessSettingsAPIView.as_view(),
+        name="business-settings",
+    ),
+    path(
+        "businesses/<uuid:business_id>/security/",
+        BusinessSecurityAPIView.as_view(),
+        name="business-security",
     ),
     path(
         "businesses/<uuid:business_id>/members/",
