@@ -26,6 +26,13 @@ import {
   requestBusinessAccess as requestBusinessAccessRequest,
   updateBusinessProfile,
   updateBusinessSettings,
+  createWorkspaceInvitation,
+  cancelWorkspaceInvitation,
+  decideWorkspaceAccessRequest,
+  getWorkspaceAccessRequests,
+  getWorkspaceInvitations,
+  getWorkspaceMembers,
+  updateWorkspaceMember,
 } from "@/services/workspace/workspace";
 import type {
   CreateBusinessValues,
@@ -40,6 +47,8 @@ import type {
   BusinessSecurityData,
   BusinessSettingsData,
   BusinessSettingsValues,
+  WorkspaceAccessRequest,
+  WorkspaceMembership,
 } from "@/types/workspace/workspace";
 import { getWorkspaceOverview } from "@/services/workspace/workspace";
 
@@ -61,6 +70,13 @@ type WorkspaceContextValue = {
   createControl: (businessId: string, action: "cancel_deletion" | "delete" | "disable" | "reactivate") => Promise<void>;
   decideControl: (businessId: string, requestId: string, decision: "approve" | "reject") => Promise<void>;
   status: "error" | "loading" | "ready";
+  loadMembers: (businessId: string, signal?: AbortSignal) => Promise<WorkspaceMembership[]>;
+  updateMember: (businessId: string, membershipId: string, values: { role?: string; status?: string }) => Promise<WorkspaceMembership>;
+  loadInvitations: (businessId: string, signal?: AbortSignal) => Promise<WorkspaceInvitation[]>;
+  inviteMember: (businessId: string, values: { email: string; role: string }) => Promise<WorkspaceInvitation>;
+  cancelInvitation: (businessId: string, invitationId: string) => Promise<WorkspaceInvitation>;
+  loadAccessRequests: (businessId: string, signal?: AbortSignal) => Promise<WorkspaceAccessRequest[]>;
+  decideAccessRequest: (businessId: string, requestId: string, values: { decision: "approve" | "reject"; role?: "manager" | "member" }) => Promise<void>;
 };
 
 const WorkspaceContext = createContext<WorkspaceContextValue | null>(null);
@@ -172,6 +188,36 @@ function WorkspaceProvider({ children }: { children: ReactNode }) {
         );
         if (!response.data) throw new Error("Workspace overview response data missing.");
         return response.data;
+      },
+      loadMembers: async (businessId, signal) => {
+        const response = await withToken((token) => getWorkspaceMembers(businessId, token, signal));
+        return response.data?.members ?? [];
+      },
+      updateMember: async (businessId, membershipId, values) => {
+        const response = await withToken((token) => updateWorkspaceMember(businessId, membershipId, values, token));
+        if (!response.data) throw new Error("Membership response data missing.");
+        return response.data;
+      },
+      loadInvitations: async (businessId, signal) => {
+        const response = await withToken((token) => getWorkspaceInvitations(businessId, token, signal));
+        return response.data?.invitations ?? [];
+      },
+      inviteMember: async (businessId, values) => {
+        const response = await withToken((token) => createWorkspaceInvitation(businessId, values, token));
+        if (!response.data) throw new Error("Invitation response data missing.");
+        return response.data;
+      },
+      cancelInvitation: async (businessId, invitationId) => {
+        const response = await withToken((token) => cancelWorkspaceInvitation(businessId, invitationId, token));
+        if (!response.data) throw new Error("Invitation response data missing.");
+        return response.data;
+      },
+      loadAccessRequests: async (businessId, signal) => {
+        const response = await withToken((token) => getWorkspaceAccessRequests(businessId, token, signal));
+        return response.data?.access_requests ?? [];
+      },
+      decideAccessRequest: async (businessId, requestId, values) => {
+        await withToken((token) => decideWorkspaceAccessRequest(businessId, requestId, values, token));
       },
       loadProfile: async (businessId, signal) => {
         const response = await withToken((token) =>

@@ -69,10 +69,11 @@ The deliberately small permission vocabulary is:
 - `business.transfer_ownership`
 
 Protected-role rules supplement this mapping. Having `members.manage` never permits an Administrator to modify an Owner or Partner.
+Owner and Partner share operational and protected-control permissions. The unique Owner alone receives `business.transfer_ownership`, because only the active Owner can transfer that unique role to an active Partner.
 
 ## Invitations and access requests
 
-An invitation is Business-initiated and targets an account email. An access request is user-initiated and targets a Business selected through controlled discovery. The selected public result resolves to the Business UUID before submission. They are separate audited state machines. Accepting an invitation or approving a request creates or activates membership in the same transaction as the decision.
+An invitation is Business-initiated and targets an account email. An access request is user-initiated and targets a Business selected through controlled discovery. The selected public result resolves to the Business UUID before submission. They are separate audited state machines. Accepting an invitation or approving a request creates or activates membership in the same transaction as the decision. A member with `invitations.manage` may cancel a pending invitation; the cancellation is persisted and audited rather than deleting history.
 
 Access requests work from both the personal dashboard and a workspace switcher. Discovery requires authentication and completed onboarding, is throttled, excludes Personal Brand workspaces, and exposes only the minimum public identity needed to choose the correct Business. Duplicate, existing-member, unavailable and recently-rejected states use focused domain error codes.
 

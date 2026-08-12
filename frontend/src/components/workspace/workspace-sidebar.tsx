@@ -33,13 +33,6 @@ type WorkspaceSidebarProps = {
   onToggleCollapsed: () => void;
 };
 
-const items = [
-  { icon: UsersRound, key: "members", ready: false },
-  { icon: MailPlus, key: "invitations", ready: false },
-  { icon: Inbox, key: "accessRequests", ready: false },
-  { icon: UserRoundCog, key: "roles", ready: false },
-] as const;
-
 function WorkspaceSidebar({
   collapsed,
   mobileOpen,
@@ -57,6 +50,10 @@ function WorkspaceSidebar({
     { icon: Building2, href: `/workspace/${businessId}/profile`, key: "business" },
     { icon: Settings2, href: `/workspace/${businessId}/settings`, key: "settings" },
     { icon: LockKeyhole, href: `/workspace/${businessId}/security`, key: "control" },
+    { icon: UsersRound, href: `/workspace/${businessId}/members`, key: "members" },
+    { icon: MailPlus, href: `/workspace/${businessId}/invitations`, key: "invitations" },
+    { icon: Inbox, href: `/workspace/${businessId}/access-requests`, key: "accessRequests" },
+    { icon: UserRoundCog, href: `/workspace/${businessId}/roles`, key: "roles" },
   ] as const : [];
 
   return (
@@ -115,28 +112,6 @@ function WorkspaceSidebar({
                 {(item.key === "business" ? [{ key: "profileOverview", path: "/profile", icon: Building2 }, { key: "information", path: "/profile/information", icon: Store }, { key: "brand", path: "/profile/brand", icon: Palette }, { key: "operations", path: "/profile/operations", icon: Building2 }] : [{ key: "securityOverview", path: "/security", icon: LockKeyhole }, { key: "audit", path: "/security/audit", icon: LockKeyhole }, { key: "protectedControls", path: "/security/control", icon: LockKeyhole }]).map((sub) => <Link className="rounded-lg px-3 py-2 text-xs text-slate-500 hover:bg-slate-50 hover:text-slate-950 dark:hover:bg-slate-900 dark:hover:text-white" href={`/workspace/${businessId}${sub.path}`} key={sub.key} onClick={onCloseMobile}>{t(`subnavigation.${sub.key}`)}</Link>)}
               </div> : null}
             </div>;
-          })}
-          {items.map((item) => {
-            const Icon = item.icon;
-            const content = (
-              <button
-                className={cn(
-                  "flex min-h-11 w-full cursor-not-allowed items-center gap-3 rounded-xl px-3 text-sm font-medium text-slate-400",
-                  collapsed && "lg:justify-center lg:px-0",
-                )}
-                disabled
-                type="button"
-              >
-                <Icon className="size-4.5 shrink-0" />
-                <span className={cn(collapsed && "lg:sr-only")}>{t(`navigation.${item.key}`)}</span>
-              </button>
-            );
-
-            return (
-              <Tooltip content={t("availableAfterIntegration")} key={item.key}>
-                {content}
-              </Tooltip>
-            );
           })}
         </nav>
 

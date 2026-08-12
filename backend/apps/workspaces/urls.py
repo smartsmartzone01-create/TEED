@@ -13,6 +13,7 @@ from .api import (
     BusinessSettingsAPIView,
     ControlRequestCreateAPIView,
     ControlRequestDecisionAPIView,
+    InvitationCancelAPIView,
     InvitationDecisionAPIView,
     InvitationListCreateAPIView,
     MembershipDetailAPIView,
@@ -68,6 +69,11 @@ urlpatterns = [
         "businesses/<uuid:business_id>/invitations/",
         InvitationListCreateAPIView.as_view(),
         name="invitation-list",
+    ),
+    path(
+        "businesses/<uuid:business_id>/invitations/<uuid:invitation_id>/cancel/",
+        InvitationCancelAPIView.as_view(),
+        name="invitation-cancel",
     ),
     path("invitations/me/", MyInvitationListAPIView.as_view(), name="my-invitations"),
     path(

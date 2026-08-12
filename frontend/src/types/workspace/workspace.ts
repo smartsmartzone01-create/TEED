@@ -57,6 +57,20 @@ type WorkspaceInvitation = {
   status: string;
 };
 
+type WorkspaceAccessRequest = {
+  business_id: string;
+  created_at: string;
+  email: string;
+  id: string;
+  message: string;
+  requested_role: string;
+  status: string;
+  user_id: string;
+  username: string | null;
+};
+
+type WorkspaceRole = "administrator" | "manager" | "member" | "owner" | "partner";
+
 type WorkspaceOverviewState = {
   active_member_count: number;
   pending_access_request_count: number | null;
@@ -198,4 +212,6 @@ export type {
   WorkspaceOverviewState,
   WorkspaceType,
   WorkspaceAuditEvent,
+  WorkspaceAccessRequest,
+  WorkspaceRole,
 };

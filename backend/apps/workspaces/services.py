@@ -361,6 +361,36 @@ def resolve_invitation(*, user, invitation_id, accept):
 
 
 @transaction.atomic
+def cancel_invitation(*, actor, business_id, invitation_id):
+    actor_membership = require_membership(
+        user=actor,
+        business_id=business_id,
+        permission=WorkspacePermission.MANAGE_INVITATIONS,
+    )
+    invitation = (
+        BusinessInvitation.objects.select_for_update()
+        .filter(
+            id=invitation_id,
+            business=actor_membership.business,
+            status=BusinessInvitation.Status.PENDING,
+        )
+        .first()
+    )
+    if invitation is None:
+        raise NotFound("Pending invitation not found.", code="invitation_not_found")
+    invitation.status = BusinessInvitation.Status.CANCELLED
+    invitation.resolved_at = timezone.now()
+    invitation.save(update_fields=["status", "resolved_at", "updated_at"])
+    audit(
+        business=invitation.business,
+        actor=actor,
+        event_type="invitation.cancelled",
+        target_id=invitation.id,
+    )
+    return invitation
+
+
+@transaction.atomic
 def request_access(*, user, business_id, message=""):
     business = Business.objects.filter(
         id=business_id, status=Business.Status.ACTIVE

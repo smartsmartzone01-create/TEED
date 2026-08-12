@@ -11,6 +11,7 @@ import {
   UsersRound,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 import { useEffect, useState, type CSSProperties } from "react";
 
 import { Tooltip } from "@/components/global/primitives/tooltip";
@@ -27,10 +28,10 @@ const states = [
 ] as const;
 
 const actions = [
-  { icon: Building2, key: "business" },
-  { icon: UsersRound, key: "members" },
-  { icon: MailPlus, key: "invitations" },
-  { icon: UserRoundCog, key: "access" },
+  { icon: Building2, key: "business", path: "profile" },
+  { icon: UsersRound, key: "members", path: "members" },
+  { icon: MailPlus, key: "invitations", path: "invitations" },
+  { icon: UserRoundCog, key: "access", path: "access-requests" },
 ] as const;
 
 function WorkspaceOverview({ businessId }: { businessId: string }) {
@@ -137,10 +138,9 @@ function WorkspaceOverview({ businessId }: { businessId: string }) {
                 key={item.key}
                 side="top"
               >
-                <button
-                  className="group flex w-full cursor-not-allowed items-center gap-4 bg-white px-4 py-4 text-left opacity-70 dark:bg-slate-950 sm:px-5"
-                  disabled
-                  type="button"
+                <Link
+                  className="group flex w-full items-center gap-4 bg-white px-4 py-4 text-left transition-colors hover:bg-slate-50 dark:bg-slate-950 dark:hover:bg-slate-900 sm:px-5"
+                  href={`/workspace/${businessId}/${item.path}`}
                 >
                   <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-700 dark:bg-slate-900 dark:text-slate-200">
                     <Icon className="size-4.5" />
@@ -154,7 +154,7 @@ function WorkspaceOverview({ businessId }: { businessId: string }) {
                     </span>
                   </span>
                   <ArrowRight className="size-4 shrink-0 text-slate-400" />
-                </button>
+                </Link>
               </Tooltip>
             );
           })}

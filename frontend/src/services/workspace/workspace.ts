@@ -4,10 +4,13 @@ import {
   businessSecurityEnvelopeSchema,
   businessSettingsEnvelopeSchema,
   workspaceAccessRequestEnvelopeSchema,
+  workspaceAccessRequestListEnvelopeSchema,
   workspaceBusinessEnvelopeSchema,
   workspaceBusinessDiscoveryEnvelopeSchema,
   workspaceBusinessListEnvelopeSchema,
   workspaceInvitationListEnvelopeSchema,
+  workspaceInvitationEnvelopeSchema,
+  workspaceMemberListEnvelopeSchema,
   workspaceMembershipEnvelopeSchema,
   workspaceOverviewEnvelopeSchema,
 } from "@/schemas/workspace/workspace";
@@ -222,6 +225,34 @@ function decideInvitation(invitationId: string, decision: "accept" | "decline", 
   );
 }
 
+function getWorkspaceMembers(businessId: string, accessToken: string, signal?: AbortSignal) {
+  return requestApi({ accessToken, path: `${WORKSPACE_BASE_PATH}/businesses/${businessId}/members/`, schema: workspaceMemberListEnvelopeSchema, signal });
+}
+
+function updateWorkspaceMember(businessId: string, membershipId: string, values: { role?: string; status?: string }, accessToken: string) {
+  return withCsrfRetry((csrfToken) => requestApi({ accessToken, body: values, csrfToken, method: "PATCH", path: `${WORKSPACE_BASE_PATH}/businesses/${businessId}/members/${membershipId}/`, schema: workspaceMembershipEnvelopeSchema }));
+}
+
+function getWorkspaceInvitations(businessId: string, accessToken: string, signal?: AbortSignal) {
+  return requestApi({ accessToken, path: `${WORKSPACE_BASE_PATH}/businesses/${businessId}/invitations/`, schema: workspaceInvitationListEnvelopeSchema, signal });
+}
+
+function createWorkspaceInvitation(businessId: string, values: { email: string; role: string }, accessToken: string) {
+  return withCsrfRetry((csrfToken) => requestApi({ accessToken, body: values, csrfToken, method: "POST", path: `${WORKSPACE_BASE_PATH}/businesses/${businessId}/invitations/`, schema: workspaceInvitationEnvelopeSchema }));
+}
+
+function cancelWorkspaceInvitation(businessId: string, invitationId: string, accessToken: string) {
+  return withCsrfRetry((csrfToken) => requestApi({ accessToken, body: {}, csrfToken, method: "POST", path: `${WORKSPACE_BASE_PATH}/businesses/${businessId}/invitations/${invitationId}/cancel/`, schema: workspaceInvitationEnvelopeSchema }));
+}
+
+function getWorkspaceAccessRequests(businessId: string, accessToken: string, signal?: AbortSignal) {
+  return requestApi({ accessToken, path: `${WORKSPACE_BASE_PATH}/businesses/${businessId}/access-requests/`, schema: workspaceAccessRequestListEnvelopeSchema, signal });
+}
+
+function decideWorkspaceAccessRequest(businessId: string, requestId: string, values: { decision: "approve" | "reject"; role?: "manager" | "member" }, accessToken: string) {
+  return withCsrfRetry((csrfToken) => requestApi({ accessToken, body: values, csrfToken, method: "POST", path: `${WORKSPACE_BASE_PATH}/businesses/${businessId}/access-requests/${requestId}/decision/`, schema: workspaceAccessRequestEnvelopeSchema }));
+}
+
 export {
   createBusiness,
   createBusinessControlRequest,
@@ -237,4 +268,11 @@ export {
   decideBusinessControlRequest,
   updateBusinessProfile,
   updateBusinessSettings,
+  createWorkspaceInvitation,
+  cancelWorkspaceInvitation,
+  decideWorkspaceAccessRequest,
+  getWorkspaceAccessRequests,
+  getWorkspaceInvitations,
+  getWorkspaceMembers,
+  updateWorkspaceMember,
 };

@@ -180,6 +180,13 @@ const workspaceInvitationListEnvelopeSchema = createApiEnvelopeSchema(
 );
 const workspaceMembershipEnvelopeSchema = createApiEnvelopeSchema(workspaceMembershipSchema);
 const workspaceAccessRequestEnvelopeSchema = createApiEnvelopeSchema(workspaceAccessRequestSchema);
+const workspaceMemberListEnvelopeSchema = createApiEnvelopeSchema(
+  z.object({ members: z.array(workspaceMembershipSchema) }),
+);
+const workspaceInvitationEnvelopeSchema = createApiEnvelopeSchema(workspaceInvitationSchema);
+const workspaceAccessRequestListEnvelopeSchema = createApiEnvelopeSchema(
+  z.object({ access_requests: z.array(workspaceAccessRequestSchema) }),
+);
 
 function createBusinessFormSchema(messages: { country: string; name: string; workspaceType: string }) {
   return z.object({
@@ -203,10 +210,13 @@ export {
   createAccessRequestFormSchema,
   createBusinessFormSchema,
   workspaceAccessRequestEnvelopeSchema,
+  workspaceAccessRequestListEnvelopeSchema,
   workspaceBusinessEnvelopeSchema,
   workspaceBusinessDiscoveryEnvelopeSchema,
   workspaceBusinessListEnvelopeSchema,
   workspaceInvitationListEnvelopeSchema,
+  workspaceInvitationEnvelopeSchema,
+  workspaceMemberListEnvelopeSchema,
   workspaceMembershipEnvelopeSchema,
   workspaceOverviewEnvelopeSchema,
   businessControlRequestEnvelopeSchema,

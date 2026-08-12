@@ -9,7 +9,7 @@ from rest_framework.test import APITestCase
 
 from apps.identity.services import issue_token_pair
 
-from ..models import Business, BusinessMembership
+from ..models import Business, BusinessInvitation, BusinessMembership
 from ..policy import WorkspaceRole
 from ..services import create_business
 from .factories import create_user
@@ -339,4 +339,30 @@ class WorkspaceAPITests(APITestCase):
                 user=self.outsider,
                 role=WorkspaceRole.MEMBER,
             ).exists()
+        )
+
+    def test_owner_can_cancel_pending_invitation(self):
+        business = create_business(user=self.owner, name="Invitation Business")
+        created = self.client.post(
+            reverse(
+                "workspaces:invitation-list",
+                kwargs={"business_id": business.id},
+            ),
+            {"email": "future-member@example.com", "role": WorkspaceRole.MEMBER},
+            format="json",
+        )
+        response = self.client.post(
+            reverse(
+                "workspaces:invitation-cancel",
+                kwargs={
+                    "business_id": business.id,
+                    "invitation_id": created.data["data"]["id"],
+                },
+            ),
+            {},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            response.data["data"]["status"], BusinessInvitation.Status.CANCELLED
         )

@@ -197,6 +197,10 @@ The dashboard routes are:
 /{locale}/dashboard/help
 /{locale}/workspace
 /{locale}/workspace/{businessId}
+/{locale}/workspace/{businessId}/members
+/{locale}/workspace/{businessId}/invitations
+/{locale}/workspace/{businessId}/access-requests
+/{locale}/workspace/{businessId}/roles
 ```
 
 Future layouts may include a system/error layout and administration layout.

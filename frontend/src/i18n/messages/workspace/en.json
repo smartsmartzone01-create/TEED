@@ -107,6 +107,21 @@
     "sending": "Sending…",
     "success": "Business access request sent."
   },
+  "WorkspaceAccessManagement": {
+    "eyebrow": "Workspace access",
+    "loading": "Loading current access state…",
+    "loadError": "TEED could not load this access information.",
+    "actionError": "TEED could not complete that access change.",
+    "readOnly": "Your role can view this area but cannot manage it.",
+    "members": {"title": "Members", "description": "Review everyone with workspace access and maintain eligible roles and membership state.", "updated": "Membership updated.", "suspend": "Suspend", "reactivate": "Reactivate", "remove": "Remove", "removeHelp": "Remove this member's access to the workspace."},
+    "invitations": {"title": "Invitations", "description": "Invite a registered email address using one fixed TEED role and review invitation state.", "email": "Email address", "role": "Role", "send": "Send invitation", "sent": "Invitation sent.", "cancel": "Cancel", "cancelled": "Invitation cancelled.", "empty": "No invitations have been created for this workspace."},
+    "access": {"title": "Access requests", "description": "Review people who asked to join this workspace and make an explicit decision."},
+    "requests": {"empty": "There are no pending access requests.", "approveMember": "Approve as member", "approveManager": "Approve as manager", "reject": "Reject", "approved": "Access request approved.", "rejected": "Access request rejected."},
+    "roles": {"title": "Roles and access", "description": "TEED roles are fixed. Assigning a role automatically applies these backend-controlled permissions.", "yours": "Your role", "descriptions": {"owner": "Created the workspace and holds every workspace permission.", "partner": "Shares protected control with the owner, including independent approval duties.", "administrator": "Maintains the Business, members and invitations without protected lifecycle control.", "manager": "Operates within the workspace and may invite standard members.", "member": "Uses the workspace features made available to the Business."}},
+    "roleNames": {"owner": "Owner", "partner": "Partner", "administrator": "Administrator", "manager": "Manager", "member": "Member"},
+    "statuses": {"active": "Active", "pending": "Pending", "accepted": "Accepted", "declined": "Declined", "cancelled": "Cancelled", "expired": "Expired", "suspended": "Suspended", "removed": "Removed"},
+    "permissions": {"access": {"label": "Workspace access", "help": "Open and use the workspace."}, "business": {"label": "Manage Business", "help": "Update Business profile and settings."}, "members": {"label": "Manage members", "help": "Change eligible member roles and access state."}, "invitations": {"label": "Manage invitations", "help": "Invite eligible people to the workspace."}, "control": {"label": "Protected control", "help": "Initiate or approve protected lifecycle operations."}, "ownership": {"label": "Transfer ownership", "help": "Participate in protected ownership transfer."}}
+  },
   "BusinessProfile": {
     "eyebrow": "Business profile", "loading": "Loading Business profile…", "loadError": "TEED could not load the Business profile.", "save": "Save changes", "saved": "Business profile updated.", "saveError": "TEED could not update the Business profile.", "readOnly": "Your role can view this information but cannot change it.",
     "overview": {"title": "Profile overview", "description": "Review profile completion and open the exact section you need.", "completion": "Profile completion", "missing": "Still needed: {fields}", "complete": "The Business profile is complete."},

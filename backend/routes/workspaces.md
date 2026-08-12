@@ -36,6 +36,7 @@ Roles are `owner`, `partner`, `administrator`, `manager`, and `member`. Permissi
 | Method | Route | Purpose |
 |---|---|---|
 | `GET/POST` | `businesses/{business_id}/invitations/` | List or create invitations |
+| `POST` | `businesses/{business_id}/invitations/{invitation_id}/cancel/` | Cancel a pending invitation |
 | `GET` | `invitations/me/` | List pending invitations matching the caller's email |
 | `POST` | `invitations/{invitation_id}/accept/` | Accept and create membership atomically |
 | `POST` | `invitations/{invitation_id}/decline/` | Decline an invitation |

@@ -44,6 +44,7 @@ from .serializers import (
     WorkspaceAuditEventSerializer,
 )
 from .services import (
+    cancel_invitation,
     create_business,
     create_control_request,
     create_invitation,
@@ -341,6 +342,22 @@ class InvitationDecisionAPIView(WorkspaceBaseAPIView):
         return SuccessResponse(
             message=f"Invitation {decision}ed successfully.",
             data=MembershipSerializer(membership).data if membership else None,
+        )
+
+
+@method_decorator(csrf_protect, name="dispatch")
+class InvitationCancelAPIView(WorkspaceBaseAPIView):
+    serializer_class = EmptyActionSerializer
+
+    def post(self, request, business_id, invitation_id):
+        invitation = cancel_invitation(
+            actor=request.user,
+            business_id=business_id,
+            invitation_id=invitation_id,
+        )
+        return SuccessResponse(
+            message="Invitation cancelled successfully.",
+            data=InvitationSerializer(invitation).data,
         )
 
 
