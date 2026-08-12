@@ -97,6 +97,27 @@ class NotificationAPITests(APITestCase):
                 action_path="https://attacker.example",
             )
 
+    def test_workspace_action_paths_are_allowed(self):
+        notification = notify_user(
+            user=self.user,
+            category="workspace",
+            template="workspace_access_request",
+            action_path="/workspace/550e8400-e29b-41d4-a716-446655440000/access-requests",
+        )
+        self.assertEqual(
+            notification.action_path,
+            "/workspace/550e8400-e29b-41d4-a716-446655440000/access-requests",
+        )
+
+    def test_deceptive_internal_prefix_is_rejected(self):
+        with self.assertRaises(ValueError):
+            notify_user(
+                user=self.user,
+                category="system",
+                template="system_announcement",
+                action_path="/dashboard-attacker/path",
+            )
+
     def test_expired_notifications_are_hidden(self):
         self.notification.expires_at = timezone.now()
         self.notification.save(update_fields=["expires_at", "updated_at"])

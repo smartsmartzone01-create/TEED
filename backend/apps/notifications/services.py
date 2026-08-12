@@ -12,8 +12,15 @@ def _safe_action_path(path):
     if not path:
         return ""
     parsed = urlsplit(path)
-    if parsed.scheme or parsed.netloc or not parsed.path.startswith("/dashboard"):
-        raise ValueError("Notification action paths must stay inside the dashboard.")
+    allowed_roots = ("/dashboard", "/workspace")
+    inside_allowed_root = any(
+        parsed.path == root or parsed.path.startswith(f"{root}/")
+        for root in allowed_roots
+    )
+    if parsed.scheme or parsed.netloc or not inside_allowed_root:
+        raise ValueError(
+            "Notification action paths must stay inside an authenticated TEED area."
+        )
     return parsed.path
 
 
