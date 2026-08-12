@@ -26,7 +26,9 @@ function WorkspaceAccessManagement({ businessId, view }: { businessId: string; v
   const t = useTranslations("WorkspaceAccessManagement");
   const { notify } = useNotification();
   const workspace = useWorkspace();
-  const membership = workspace.businesses.find((item) => item.id === businessId)?.membership;
+  const business = workspace.businesses.find((item) => item.id === businessId);
+  const membership = business?.membership;
+  const supportsCollaboration = business?.capabilities.includes("team_collaboration") ?? false;
   const canManageMembers = membership?.permissions.includes("members.manage") ?? false;
   const canManageInvitations = membership?.permissions.includes("invitations.manage") ?? false;
   const [members, setMembers] = useState<WorkspaceMembership[]>([]);
@@ -45,6 +47,7 @@ function WorkspaceAccessManagement({ businessId, view }: { businessId: string; v
 
   const load = useCallback(async (signal?: AbortSignal) => {
     if (view === "roles") return;
+    if (business && !supportsCollaboration) { setLoading(false); return; }
     if (view === "invitations" && !canManageInvitations) { setLoading(false); return; }
     if (view === "access" && !canManageMembers) { setLoading(false); return; }
     setLoading(true);
@@ -55,7 +58,7 @@ function WorkspaceAccessManagement({ businessId, view }: { businessId: string; v
     } catch (error) {
       if (!isRequestCancelled(error)) notify({ message: t("loadError"), tone: "error" });
     } finally { setLoading(false); }
-  }, [businessId, canManageInvitations, canManageMembers, notify, t, view, workspace]);
+  }, [business, businessId, canManageInvitations, canManageMembers, notify, supportsCollaboration, t, view, workspace]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -110,6 +113,10 @@ function WorkspaceAccessManagement({ businessId, view }: { businessId: string; v
 
   const header = <header><p className="text-sm font-medium text-slate-500">{t("eyebrow")}</p><h1 className="mt-1 text-2xl font-semibold tracking-tight">{t(`${view}.title`)}</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300">{t(`${view}.description`)}</p></header>;
   const panel = "rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_3px_10px_rgba(15,23,42,0.05)] dark:border-slate-800 dark:bg-slate-950";
+
+  if (business && !supportsCollaboration && view !== "roles") {
+    return <div className="space-y-6">{header}<section className={panel}><ShieldCheck className="size-5 text-slate-500"/><p className="mt-3 text-sm font-medium">{t("collaborationUnavailable")}</p></section></div>;
+  }
 
   if (view === "roles") return <div className="space-y-6">{header}<div className="grid gap-3 lg:grid-cols-2">{roles.map((role) => <article className={panel} key={role}><div className="flex items-center gap-3"><ShieldCheck className="size-5 text-brand-orange"/><h2 className="font-semibold">{t(`roleNames.${role}`)}</h2>{membership?.role === role ? <span className="ml-auto rounded-full bg-brand-orange/10 px-2 py-1 text-xs font-semibold text-brand-orange">{t("roles.yours")}</span> : null}</div><p className="mt-2 text-sm text-slate-500">{t(`roles.descriptions.${role}`)}</p><div className="mt-4 flex flex-wrap gap-2">{rolePermissions[role].map((permission) => <Tooltip content={t(`permissions.${permission}.help`)} key={permission}><span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium dark:bg-slate-900">{t(`permissions.${permission}.label`)}</span></Tooltip>)}</div></article>)}</div></div>;
 

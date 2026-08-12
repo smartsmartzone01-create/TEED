@@ -113,6 +113,7 @@
     "loadError": "TEED haikuweza kupakia taarifa hizi za ufikiaji.",
     "actionError": "TEED haikuweza kukamilisha badiliko hilo la ufikiaji.",
     "readOnly": "Wajibu wako unaweza kuona eneo hili lakini hauwezi kulisimamia.",
+    "collaborationUnavailable": "Eneo hili la Chapa Binafsi ni la mtumiaji mmoja, kwa hiyo uanachama, mialiko na maombi ya ufikiaji hayatumiki.",
     "members": {"title": "Wanachama", "description": "Kagua wote wenye ufikiaji wa eneo la kazi na simamia wajibu na hali zinazostahili.", "updated": "Uanachama umesasishwa.", "suspend": "Simamisha", "reactivate": "Rudisha", "remove": "Ondoa", "removeHelp": "Ondoa ufikiaji wa mwanachama huyu kwenye eneo la kazi."},
     "invitations": {"title": "Mialiko", "description": "Alika anwani ya barua pepe iliyosajiliwa kwa kutumia wajibu mmoja maalum wa TEED.", "email": "Anwani ya barua pepe", "role": "Wajibu", "send": "Tuma mwaliko", "sent": "Mwaliko umetumwa.", "cancel": "Ghairi", "cancelled": "Mwaliko umeghairiwa.", "empty": "Hakuna mialiko iliyoundwa kwa eneo hili la kazi."},
     "access": {"title": "Maombi ya ufikiaji", "description": "Kagua watu walioomba kujiunga na eneo hili la kazi na ufanye uamuzi wa wazi."},

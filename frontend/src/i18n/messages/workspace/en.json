@@ -113,6 +113,7 @@
     "loadError": "TEED could not load this access information.",
     "actionError": "TEED could not complete that access change.",
     "readOnly": "Your role can view this area but cannot manage it.",
+    "collaborationUnavailable": "This Personal Brand workspace is single-user, so memberships, invitations and access requests do not apply.",
     "members": {"title": "Members", "description": "Review everyone with workspace access and maintain eligible roles and membership state.", "updated": "Membership updated.", "suspend": "Suspend", "reactivate": "Reactivate", "remove": "Remove", "removeHelp": "Remove this member's access to the workspace."},
     "invitations": {"title": "Invitations", "description": "Invite a registered email address using one fixed TEED role and review invitation state.", "email": "Email address", "role": "Role", "send": "Send invitation", "sent": "Invitation sent.", "cancel": "Cancel", "cancelled": "Invitation cancelled.", "empty": "No invitations have been created for this workspace."},
     "access": {"title": "Access requests", "description": "Review people who asked to join this workspace and make an explicit decision."},
