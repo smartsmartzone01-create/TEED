@@ -15,6 +15,7 @@ import {
 } from "@/components/global/primitives/dropdown-menu";
 import { usePathname, useRouter } from "@/i18n/navigation";
 import type { AppLocale } from "@/i18n/routing";
+import { replaceDocumentLocale } from "@/lib/global/locale-navigation";
 import { useNotifications } from "@/providers/notifications/notifications-provider";
 import { useWorkspace } from "@/providers/workspace/workspace-provider";
 
@@ -100,7 +101,7 @@ function WorkspaceMobileMenu() {
         {(["en", "sw"] as const).map((value) => (
           <DropdownMenuItem
             key={value}
-            onSelect={() => router.replace(pathname, { locale: value })}
+            onSelect={() => replaceDocumentLocale(value)}
           >
             <span className="w-5 text-xs font-semibold">{value.toUpperCase()}</span>
             {languageT(value === "en" ? "english" : "swahili")}
