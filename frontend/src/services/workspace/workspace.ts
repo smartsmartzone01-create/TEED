@@ -71,8 +71,7 @@ function updateBusinessProfile(
   Object.entries(mapping).forEach(([key, value]) => {
     if (value !== undefined) body.append(key, value);
   });
-  const logo = values.logo?.item(0);
-  if (logo) body.append("logo", logo);
+  if (values.logo) body.append("logo", values.logo, values.logo.name);
   return withCsrfRetry((csrfToken) =>
     requestApi({
       accessToken,

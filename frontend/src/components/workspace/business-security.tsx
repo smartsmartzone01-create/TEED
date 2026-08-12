@@ -10,6 +10,7 @@ import { Tooltip } from "@/components/global/primitives/tooltip";
 import { Link } from "@/i18n/navigation";
 import { useNotification } from "@/providers/global/notification-provider";
 import { useWorkspace } from "@/providers/workspace/workspace-provider";
+import { isRequestCancelled } from "@/services/global/api-client";
 import type { BusinessSecurityData } from "@/types/workspace/workspace";
 
 function BusinessSecurity({ businessId, view = "overview" }: { businessId: string; view?: "audit" | "control" | "overview" }) {
@@ -17,7 +18,13 @@ function BusinessSecurity({ businessId, view = "overview" }: { businessId: strin
   const { createControl, decideControl, loadSecurity } = useWorkspace();
   const { notify } = useNotification();
   const [data, setData] = useState<BusinessSecurityData | null>(null);
-  useEffect(() => { const controller = new AbortController(); void loadSecurity(businessId, controller.signal).then(setData); return () => controller.abort(); }, [businessId, loadSecurity]);
+  useEffect(() => {
+    const controller = new AbortController();
+    void loadSecurity(businessId, controller.signal).then(setData).catch((error) => {
+      if (!isRequestCancelled(error)) setData(null);
+    });
+    return () => controller.abort();
+  }, [businessId, loadSecurity]);
   if (!data) return <p className="text-sm text-slate-500">{t("loading")}</p>;
 
   if (view === "audit") return <BusinessPage description={t("audit.description")} title={t("audit.title")}><div className="divide-y divide-slate-200 overflow-hidden rounded-2xl border border-slate-200 dark:divide-slate-800 dark:border-slate-800">{data.recent_events.length ? data.recent_events.map((event) => <article className="bg-white p-4 dark:bg-slate-950" key={event.id}><p className="text-sm font-semibold">{event.event_type}</p><p className="mt-1 text-xs text-slate-500">{event.actor_email ?? t("system")} · {new Date(event.created_at).toLocaleString()}</p></article>) : <p className="p-5 text-sm text-slate-500">{t("audit.empty")}</p>}</div></BusinessPage>;

@@ -7,8 +7,11 @@ const workspaceBusinessSchema = z.object({
   country_code: z.string(),
   created_at: z.string(),
   id: z.string().uuid(),
+  logo_url: z.string().nullable(),
   name: z.string(),
   public_handle: z.string(),
+  primary_brand_color: z.string(),
+  secondary_brand_color: z.string(),
   status: z.string(),
   workspace_type: z.enum(["business", "service", "personal_brand"]),
 });

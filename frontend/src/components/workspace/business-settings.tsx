@@ -9,6 +9,7 @@ import { Button } from "@/components/global/primitives/button";
 import { Select } from "@/components/global/primitives/select";
 import { useNotification } from "@/providers/global/notification-provider";
 import { useWorkspace } from "@/providers/workspace/workspace-provider";
+import { isRequestCancelled } from "@/services/global/api-client";
 import type { BusinessSettingsData, BusinessSettingsValues } from "@/types/workspace/workspace";
 
 function BusinessSettings({ businessId }: { businessId: string }) {
@@ -21,12 +22,16 @@ function BusinessSettings({ businessId }: { businessId: string }) {
 
   useEffect(() => {
     const controller = new AbortController();
-    void loadSettings(businessId, controller.signal).then((result) => {
-      setData(result);
-      setValues({ brandingEnabled: result.settings.branding_enabled, dateFormat: result.settings.date_format, discoverable: result.settings.is_discoverable, languageCode: result.settings.language_code, timeFormat: result.settings.time_format, timezone: result.settings.timezone });
-    });
+    void loadSettings(businessId, controller.signal)
+      .then((result) => {
+        setData(result);
+        setValues({ brandingEnabled: result.settings.branding_enabled, dateFormat: result.settings.date_format, discoverable: result.settings.is_discoverable, languageCode: result.settings.language_code, timeFormat: result.settings.time_format, timezone: result.settings.timezone });
+      })
+      .catch((error) => {
+        if (!isRequestCancelled(error)) notify({ message: t("loadError"), tone: "error" });
+      });
     return () => controller.abort();
-  }, [businessId, loadSettings]);
+  }, [businessId, loadSettings, notify, t]);
 
   if (!data || !values) return <p className="text-sm text-slate-500">{t("loading")}</p>;
   const submit = async (event: FormEvent) => {

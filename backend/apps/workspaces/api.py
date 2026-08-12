@@ -73,7 +73,9 @@ class BusinessListCreateAPIView(WorkspaceBaseAPIView):
             data={
                 "businesses": [
                     {
-                        **BusinessSerializer(item.business).data,
+                        **BusinessSerializer(
+                            item.business, context={"request": request}
+                        ).data,
                         "membership": MembershipSerializer(item).data,
                     }
                     for item in memberships
@@ -88,7 +90,7 @@ class BusinessListCreateAPIView(WorkspaceBaseAPIView):
         business = create_business(user=request.user, **serializer.validated_data)
         return SuccessResponse(
             message="Business created successfully.",
-            data=BusinessSerializer(business).data,
+            data=BusinessSerializer(business, context={"request": request}).data,
             status_code=status.HTTP_201_CREATED,
         )
 
@@ -118,7 +120,9 @@ class BusinessDetailAPIView(WorkspaceBaseAPIView):
         return SuccessResponse(
             message="Business retrieved successfully.",
             data={
-                **BusinessSerializer(membership.business).data,
+                **BusinessSerializer(
+                    membership.business, context={"request": request}
+                ).data,
                 "membership": MembershipSerializer(membership).data,
             },
         )
@@ -132,7 +136,9 @@ class BusinessOverviewAPIView(WorkspaceBaseAPIView):
         return SuccessResponse(
             message="Business workspace overview retrieved successfully.",
             data={
-                "business": BusinessSerializer(membership.business).data,
+                "business": BusinessSerializer(
+                    membership.business, context={"request": request}
+                ).data,
                 "membership": MembershipSerializer(membership).data,
                 "state": workspace_overview_state(membership=membership),
             },
@@ -148,7 +154,9 @@ class BusinessProfileAPIView(WorkspaceBaseAPIView):
         return SuccessResponse(
             message="Business profile retrieved successfully.",
             data={
-                "business": BusinessSerializer(membership.business).data,
+                "business": BusinessSerializer(
+                    membership.business, context={"request": request}
+                ).data,
                 "profile": BusinessProfileSerializer(
                     profile, context={"request": request}
                 ).data,
@@ -171,7 +179,9 @@ class BusinessProfileAPIView(WorkspaceBaseAPIView):
         return SuccessResponse(
             message="Business profile updated successfully.",
             data={
-                "business": BusinessSerializer(business).data,
+                "business": BusinessSerializer(
+                    business, context={"request": request}
+                ).data,
                 "profile": BusinessProfileSerializer(
                     profile, context={"request": request}
                 ).data,
@@ -222,7 +232,9 @@ class BusinessSecurityAPIView(WorkspaceBaseAPIView):
         return SuccessResponse(
             message="Business security state retrieved successfully.",
             data={
-                "business": BusinessSerializer(membership.business).data,
+                "business": BusinessSerializer(
+                    membership.business, context={"request": request}
+                ).data,
                 "membership": MembershipSerializer(membership).data,
                 "controllers": MembershipSerializer(
                     state["controllers"], many=True

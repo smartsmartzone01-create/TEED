@@ -17,6 +17,13 @@ from .policy import ASSIGNABLE_ROLES, WorkspaceRole
 
 class BusinessSerializer(serializers.ModelSerializer):
     capabilities = serializers.SerializerMethodField()
+    logo_url = serializers.SerializerMethodField()
+    primary_brand_color = serializers.CharField(
+        source="profile.primary_brand_color", read_only=True
+    )
+    secondary_brand_color = serializers.CharField(
+        source="profile.secondary_brand_color", read_only=True
+    )
 
     class Meta:
         model = Business
@@ -27,12 +34,26 @@ class BusinessSerializer(serializers.ModelSerializer):
             "country_code",
             "workspace_type",
             "capabilities",
+            "logo_url",
+            "primary_brand_color",
+            "secondary_brand_color",
             "status",
             "created_at",
         ]
 
     def get_capabilities(self, instance):
         return sorted(capabilities_for_workspace_type(instance.workspace_type))
+
+    def get_logo_url(self, instance):
+        profile = getattr(instance, "profile", None)
+        if not profile or not profile.logo:
+            return None
+        request = self.context.get("request")
+        return (
+            request.build_absolute_uri(profile.logo.url)
+            if request
+            else profile.logo.url
+        )
 
 
 class BusinessDiscoverySerializer(serializers.ModelSerializer):

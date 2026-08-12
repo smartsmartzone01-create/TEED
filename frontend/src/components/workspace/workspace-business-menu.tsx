@@ -3,6 +3,7 @@
 import { Building2, Check, ChevronDown, LayoutDashboard, Plus, UserPlus } from "lucide-react";
 import { useTranslations } from "next-intl";
 
+import { BusinessIcon } from "@/components/workspace/business-icon";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,11 +20,6 @@ import { useWorkspace } from "@/providers/workspace/workspace-provider";
 type WorkspaceBusinessMenuProps = {
   showLabel?: boolean;
 };
-
-function getBusinessInitials(name: string) {
-  const words = name.trim().split(/\s+/).filter(Boolean);
-  return (words.length > 1 ? `${words[0][0]}${words[1][0]}` : name.slice(0, 2)).toUpperCase();
-}
 
 function WorkspaceBusinessMenu({ showLabel = true }: WorkspaceBusinessMenuProps) {
   const router = useRouter();
@@ -47,9 +43,12 @@ function WorkspaceBusinessMenu({ showLabel = true }: WorkspaceBusinessMenuProps)
           )}
           type="button"
         >
-          <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-slate-900 text-xs font-bold tracking-wide text-white dark:bg-white dark:text-slate-950">
-            {getBusinessInitials(businessName)}
-          </span>
+          <BusinessIcon
+            logoUrl={activeBusiness?.logo_url ?? null}
+            name={businessName}
+            primaryColor={activeBusiness?.primary_brand_color ?? "#0B1F3A"}
+            secondaryColor={activeBusiness?.secondary_brand_color ?? "#F97316"}
+          />
           {showLabel ? (
             <span className="min-w-0 flex-1">
               <span className="block truncate text-sm font-semibold">
@@ -71,14 +70,14 @@ function WorkspaceBusinessMenu({ showLabel = true }: WorkspaceBusinessMenuProps)
         <DropdownMenuLabel>{t("currentBusiness")}</DropdownMenuLabel>
         <DropdownMenuItem className="justify-between">
           <span className="flex min-w-0 items-center gap-3">
-            <Building2 className="size-4 shrink-0" />
+            {activeBusiness ? <BusinessIcon className="size-7 rounded-lg text-[0.6rem]" logoUrl={activeBusiness.logo_url} name={activeBusiness.name} primaryColor={activeBusiness.primary_brand_color} secondaryColor={activeBusiness.secondary_brand_color} /> : <Building2 className="size-4 shrink-0" />}
             <span className="truncate">{businessName}</span>
           </span>
           <Check className="size-4 shrink-0" />
         </DropdownMenuItem>
         {businesses.filter((business) => business.id !== activeBusiness?.id).map((business) => (
           <DropdownMenuItem key={business.id} onSelect={() => router.push(`/workspace/${business.id}`)}>
-            <Building2 className="size-4" />
+            <BusinessIcon className="size-7 rounded-lg text-[0.6rem]" logoUrl={business.logo_url} name={business.name} primaryColor={business.primary_brand_color} secondaryColor={business.secondary_brand_color} />
             <span className="truncate">{business.name}</span>
           </DropdownMenuItem>
         ))}

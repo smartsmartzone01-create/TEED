@@ -10,7 +10,8 @@ import { Input } from "@/components/global/primitives/input";
 import { Select } from "@/components/global/primitives/select";
 import { useNotification } from "@/providers/global/notification-provider";
 import { useWorkspace } from "@/providers/workspace/workspace-provider";
-import { ApiClientError } from "@/services/global/api-client";
+import { ApiClientError, isRequestCancelled } from "@/services/global/api-client";
+import { firstFieldIssue } from "@/lib/global/api-errors";
 import type { BusinessProfileData, BusinessProfileValues } from "@/types/workspace/workspace";
 
 type Section = "brand" | "information" | "operations";
@@ -29,9 +30,10 @@ function BusinessProfileEditor({ businessId, section }: { businessId: string; se
 
   useEffect(() => {
     const controller = new AbortController();
-    void loadProfile(businessId, controller.signal).then((result) => {
-      setData(result);
-      setValues({
+    void loadProfile(businessId, controller.signal)
+      .then((result) => {
+        setData(result);
+        setValues({
         address: result.profile.address,
         city: result.profile.city,
         countryCode: result.business.country_code,
@@ -43,12 +45,17 @@ function BusinessProfileEditor({ businessId, section }: { businessId: string; se
         region: result.profile.region,
         secondaryBrandColor: result.profile.secondary_brand_color,
         workspaceType: result.business.workspace_type,
+        });
+      })
+      .catch((error) => {
+        if (!isRequestCancelled(error)) {
+          notify({ message: t("loadError"), tone: "error" });
+        }
       });
-    });
     return () => controller.abort();
-  }, [businessId, loadProfile]);
+  }, [businessId, loadProfile, notify, t]);
 
-  const update = (key: keyof BusinessProfileValues, value: string | FileList) =>
+  const update = (key: keyof BusinessProfileValues, value: string | File) =>
     setValues((current) => ({ ...current, [key]: value }));
 
   const submit = async (event: FormEvent) => {
@@ -59,8 +66,11 @@ function BusinessProfileEditor({ businessId, section }: { businessId: string; se
       setData(result);
       notify({ message: t("saved"), tone: "success" });
     } catch (error) {
+      const logoIssue = error instanceof ApiClientError
+        ? firstFieldIssue(error.details.fieldErrors, "logo")
+        : undefined;
       notify({
-        message: error instanceof ApiClientError ? error.details.message : t("saveError"),
+        message: logoIssue?.message ?? (error instanceof ApiClientError ? error.details.message : t("saveError")),
         tone: "error",
       });
     } finally {
@@ -80,7 +90,7 @@ function BusinessProfileEditor({ businessId, section }: { businessId: string; se
             <Field label={t("fields.workspaceType")}><Select disabled={!data.can_manage} onChange={(e) => update("workspaceType", e.target.value)} value={values.workspaceType}><option value="business">{t("types.business")}</option><option value="service">{t("types.service")}</option><option value="personal_brand">{t("types.personal_brand")}</option></Select></Field>
             <Field label={t("fields.country")}><Select disabled={!data.can_manage} onChange={(e) => update("countryCode", e.target.value)} value={values.countryCode}><option value="TZ">Tanzania</option><option value="KE">Kenya</option><option value="UG">Uganda</option></Select></Field>
             <Field label={t("fields.businessCategory")}><Select disabled={!data.can_manage} onChange={(e) => update("businessCategory", e.target.value)} value={values.businessCategory}><option value="">{t("categories.notSet")}</option>{["retail_commerce", "food_hospitality", "professional_services", "health_wellness", "education_training", "technology_digital", "creative_media", "manufacturing_agriculture", "nonprofit_community", "other"].map((category) => <option key={category} value={category}>{t(`categories.${category}`)}</option>)}</Select></Field>
-            <Field label={t("fields.logo")}><Input accept="image/jpeg,image/png,image/webp" disabled={!data.can_manage} onChange={(e) => e.target.files && update("logo", e.target.files)} type="file" /></Field>
+            <Field label={t("fields.logo")}><Input accept="image/jpeg,image/png,image/webp" disabled={!data.can_manage} onChange={(e) => { const file = e.target.files?.item(0); if (file) update("logo", file); }} type="file" /></Field>
           </div>
           <p className="text-xs text-slate-500">{t("handleNotice")}</p>
         </> : null}

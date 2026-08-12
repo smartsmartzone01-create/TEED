@@ -1,4 +1,9 @@
+from io import BytesIO
+from tempfile import TemporaryDirectory
+
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
+from PIL import Image
 from rest_framework import status
 from rest_framework.test import APITestCase
 
@@ -195,6 +200,29 @@ class WorkspaceAPITests(APITestCase):
             response.data["data"]["profile"]["primary_brand_color"], "#112233"
         )
         self.assertEqual(response.data["data"]["completion"]["percentage"], 100)
+
+    def test_owner_can_upload_business_logo_and_list_returns_it(self):
+        business = create_business(user=self.owner, name="Logo Business")
+        content = BytesIO()
+        Image.new("RGB", (16, 16), "navy").save(content, format="PNG")
+        logo = SimpleUploadedFile(
+            "logo.png", content.getvalue(), content_type="image/png"
+        )
+        with TemporaryDirectory() as media_root, self.settings(MEDIA_ROOT=media_root):
+            response = self.client.patch(
+                reverse(
+                    "workspaces:business-profile", kwargs={"business_id": business.id}
+                ),
+                {"logo": logo},
+                format="multipart",
+            )
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            self.assertIn(
+                "/media/businesses/", response.data["data"]["profile"]["logo_url"]
+            )
+            listed = self.client.get(reverse("workspaces:business-list"))
+            listed_business = listed.data["data"]["businesses"][0]
+            self.assertIn("/media/businesses/", listed_business["logo_url"])
 
     def test_member_can_read_but_not_edit_business_profile(self):
         business = create_business(user=self.owner, name="Visible Profile")

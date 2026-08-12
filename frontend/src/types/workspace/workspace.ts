@@ -3,8 +3,11 @@ type WorkspaceBusiness = {
   country_code: string;
   created_at: string;
   id: string;
+  logo_url: string | null;
   name: string;
   public_handle: string;
+  primary_brand_color: string;
+  secondary_brand_color: string;
   status: string;
   workspace_type: WorkspaceType;
 };
@@ -115,7 +118,7 @@ type BusinessProfileValues = {
   city: string;
   countryCode: string;
   businessCategory: BusinessCategory;
-  logo?: FileList;
+  logo?: File;
   name: string;
   operatingModel: "" | "hybrid" | "online" | "physical";
   primaryBrandColor: string;

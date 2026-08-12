@@ -9,6 +9,7 @@ import { Tooltip } from "@/components/global/primitives/tooltip";
 import { Link } from "@/i18n/navigation";
 import { useWorkspace } from "@/providers/workspace/workspace-provider";
 import type { BusinessProfileData } from "@/types/workspace/workspace";
+import { isRequestCancelled } from "@/services/global/api-client";
 
 const links = [
   { icon: Store, key: "information", path: "information" },
@@ -23,7 +24,9 @@ function BusinessProfileOverview({ businessId }: { businessId: string }) {
 
   useEffect(() => {
     const controller = new AbortController();
-    void loadProfile(businessId, controller.signal).then(setData);
+    void loadProfile(businessId, controller.signal).then(setData).catch((error) => {
+      if (!isRequestCancelled(error)) setData(null);
+    });
     return () => controller.abort();
   }, [businessId, loadProfile]);
 

@@ -27,7 +27,9 @@ def active_membership(*, user, business_id):
 
 
 def user_businesses(*, user):
-    return BusinessMembership.objects.select_related("business").filter(
+    return BusinessMembership.objects.select_related(
+        "business", "business__profile"
+    ).filter(
         user=user,
         status=BusinessMembership.Status.ACTIVE,
     )
