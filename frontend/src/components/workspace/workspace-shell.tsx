@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from
 import { WorkspaceHeader } from "@/components/workspace/workspace-header";
 import { WorkspaceSidebar } from "@/components/workspace/workspace-sidebar";
 import { cn } from "@/lib/global/class-names";
+import { useRouter } from "@/i18n/navigation";
 import { useWorkspace } from "@/providers/workspace/workspace-provider";
 
 type WorkspaceShellProps = {
@@ -17,8 +18,15 @@ function WorkspaceShell({ children }: WorkspaceShellProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [colors, setColors] = useState<{ primary: string; secondary: string } | null>(null);
   const pathname = usePathname();
-  const { loadProfile, loadSettings } = useWorkspace();
+  const router = useRouter();
+  const { businesses, loadProfile, loadSettings, status } = useWorkspace();
   const businessId = useMemo(() => pathname.match(/\/workspace\/([^/]+)/)?.[1] ?? null, [pathname]);
+
+  useEffect(() => {
+    if (!businessId || status !== "ready") return;
+    if (businesses.some((business) => business.id === businessId)) return;
+    router.replace(businesses[0] ? `/workspace/${businesses[0].id}` : "/dashboard/workspaces");
+  }, [businessId, businesses, router, status]);
 
   useEffect(() => {
     if (!businessId) return;

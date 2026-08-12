@@ -36,7 +36,9 @@ function WorkspaceMobileMenu() {
   const mounted = useSyncExternalStore(subscribe, getClientSnapshot, getServerSnapshot);
   const selectedTheme = mounted && ["system", "light", "dark"].includes(theme ?? "") ? theme : "system";
   const activeId = pathname.match(/^\/workspace\/([^/]+)/)?.[1];
-  const activeBusiness = businesses.find((business) => business.id === activeId) ?? businesses[0];
+  const activeBusiness = activeId
+    ? businesses.find((business) => business.id === activeId)
+    : businesses[0];
   const businessName = activeBusiness?.name ?? t("businessFallback");
   const words = businessName.trim().split(/\s+/).filter(Boolean);
   const initials = (words.length > 1 ? `${words[0][0]}${words[1][0]}` : businessName.slice(0, 2)).toUpperCase();

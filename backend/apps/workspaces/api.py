@@ -260,7 +260,11 @@ class MembershipListAPIView(WorkspaceBaseAPIView):
     def get(self, request, business_id):
         membership = require_membership(user=request.user, business_id=business_id)
         members = BusinessMembership.objects.select_related("user").filter(
-            business=membership.business
+            business=membership.business,
+            status__in=[
+                BusinessMembership.Status.ACTIVE,
+                BusinessMembership.Status.SUSPENDED,
+            ],
         )
         return SuccessResponse(
             message="Business members retrieved successfully.",

@@ -27,7 +27,9 @@ function WorkspaceBusinessMenu({ showLabel = true }: WorkspaceBusinessMenuProps)
   const t = useTranslations("WorkspaceShell");
   const { businesses } = useWorkspace();
   const activeId = pathname.match(/^\/workspace\/([^/]+)/)?.[1];
-  const activeBusiness = businesses.find((business) => business.id === activeId) ?? businesses[0];
+  const activeBusiness = activeId
+    ? businesses.find((business) => business.id === activeId)
+    : businesses[0];
   const businessName = activeBusiness?.name ?? t("businessFallback");
 
   return (

@@ -146,6 +146,20 @@ class WorkspaceAPITests(APITestCase):
         self.assertEqual(detail.status_code, status.HTTP_404_NOT_FOUND)
         self.assertEqual(members.status_code, status.HTTP_404_NOT_FOUND)
 
+    def test_member_list_excludes_removed_members(self):
+        business = create_business(user=self.owner, name="Current Members")
+        removed = BusinessMembership.objects.create(
+            business=business,
+            user=self.outsider,
+            role=WorkspaceRole.MEMBER,
+            status=BusinessMembership.Status.REMOVED,
+        )
+        response = self.client.get(
+            reverse("workspaces:member-list", kwargs={"business_id": business.id})
+        )
+        member_ids = {item["id"] for item in response.data["data"]["members"]}
+        self.assertNotIn(str(removed.id), member_ids)
+
     def test_workspace_overview_returns_live_role_and_state(self):
         business = create_business(user=self.owner, name="Overview Business")
         response = self.client.get(

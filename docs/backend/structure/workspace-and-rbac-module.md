@@ -53,6 +53,8 @@ Adaptive brand colors are presentation data, not authorization or safety state. 
 - Unauthorized tenants receive not-found responses to reduce enumeration.
 - The backend is authoritative; frontend visibility is not authorization.
 - Suspended and removed memberships lose authority immediately.
+- Membership state is scoped by the `(Business UUID, user UUID)` pair. Approval, suspension, removal, and reactivation in one Business never mutate another Business membership owned by the same person.
+- Active member lists expose active and suspended memberships; removed memberships remain available only as audit history. A removed user may submit a new request and approval reactivates the same unique membership record.
 - The Owner cannot be removed or demoted; ownership uses a dedicated transfer.
 
 ## Fixed policy

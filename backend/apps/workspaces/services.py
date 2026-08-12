@@ -349,6 +349,15 @@ def resolve_invitation(*, user, invitation_id, accept):
                 "status": BusinessMembership.Status.ACTIVE,
             },
         )
+        BusinessAccessRequest.objects.filter(
+            business=invitation.business,
+            user=user,
+            status=BusinessAccessRequest.Status.PENDING,
+        ).update(
+            status=BusinessAccessRequest.Status.CANCELLED,
+            resolved_at=timezone.now(),
+            updated_at=timezone.now(),
+        )
     else:
         membership = None
     audit(
@@ -399,10 +408,26 @@ def request_access(*, user, business_id, message=""):
         raise WorkspaceBusinessNotFound()
     if business.workspace_type == Business.WorkspaceType.PERSONAL_BRAND:
         raise PersonalWorkspaceMembershipRestricted()
-    if BusinessMembership.objects.filter(
-        business=business, user=user, status=BusinessMembership.Status.ACTIVE
-    ).exists():
+    membership_status = (
+        BusinessMembership.objects.filter(business=business, user=user)
+        .values_list("status", flat=True)
+        .first()
+    )
+    if membership_status in {
+        BusinessMembership.Status.ACTIVE,
+        BusinessMembership.Status.SUSPENDED,
+    }:
         raise WorkspaceMembershipExists()
+    if membership_status == BusinessMembership.Status.REMOVED:
+        BusinessAccessRequest.objects.filter(
+            business=business,
+            user=user,
+            status=BusinessAccessRequest.Status.PENDING,
+        ).update(
+            status=BusinessAccessRequest.Status.CANCELLED,
+            resolved_at=timezone.now(),
+            updated_at=timezone.now(),
+        )
     recently_rejected = BusinessAccessRequest.objects.filter(
         business=business,
         user=user,
@@ -550,6 +575,17 @@ def update_membership(*, actor, business_id, membership_id, role=None, status=No
     if status:
         target.status = status
         changed.append("status")
+        if status == BusinessMembership.Status.REMOVED:
+            BusinessAccessRequest.objects.filter(
+                business=target.business,
+                user=target.user,
+                status=BusinessAccessRequest.Status.PENDING,
+            ).update(
+                status=BusinessAccessRequest.Status.CANCELLED,
+                resolved_by=actor,
+                resolved_at=timezone.now(),
+                updated_at=timezone.now(),
+            )
     target.save(update_fields=[*changed, "updated_at"])
     audit(
         business=target.business,

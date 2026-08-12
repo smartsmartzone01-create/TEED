@@ -73,7 +73,9 @@ function WorkspaceAccessManagement({ businessId, view }: { businessId: string; v
     setBusy(member.id);
     try {
       const updated = await workspace.updateMember(businessId, member.id, values);
-      setMembers((current) => current.map((item) => item.id === updated.id ? updated : item));
+      setMembers((current) => values.status === "removed"
+        ? current.filter((item) => item.id !== updated.id)
+        : current.map((item) => item.id === updated.id ? updated : item));
       notify({ message: t("members.updated"), tone: "success" });
     } catch { notify({ message: t("actionError"), tone: "error" }); }
     finally { setBusy(null); }

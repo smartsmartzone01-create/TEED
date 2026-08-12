@@ -196,6 +196,7 @@ function WorkspaceProvider({ children }: { children: ReactNode }) {
       updateMember: async (businessId, membershipId, values) => {
         const response = await withToken((token) => updateWorkspaceMember(businessId, membershipId, values, token));
         if (!response.data) throw new Error("Membership response data missing.");
+        await refresh();
         return response.data;
       },
       loadInvitations: async (businessId, signal) => {
@@ -218,6 +219,7 @@ function WorkspaceProvider({ children }: { children: ReactNode }) {
       },
       decideAccessRequest: async (businessId, requestId, values) => {
         await withToken((token) => decideWorkspaceAccessRequest(businessId, requestId, values, token));
+        await refresh();
       },
       loadProfile: async (businessId, signal) => {
         const response = await withToken((token) =>
