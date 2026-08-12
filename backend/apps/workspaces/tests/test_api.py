@@ -8,6 +8,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from apps.identity.services import issue_token_pair
+from apps.notifications.models import UserNotification
 
 from ..models import Business, BusinessInvitation, BusinessMembership
 from ..policy import WorkspaceRole
@@ -319,6 +320,14 @@ class WorkspaceAPITests(APITestCase):
             format="json",
         )
         self.assertEqual(requested.status_code, status.HTTP_201_CREATED)
+        notification = UserNotification.objects.get(
+            recipient=self.owner,
+            template=UserNotification.Template.WORKSPACE_ACCESS_REQUEST,
+        )
+        self.assertEqual(
+            notification.action_path,
+            f"/workspace/{business.id}/access-requests",
+        )
 
         self.authenticate(self.owner)
         decided = self.client.post(

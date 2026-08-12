@@ -441,7 +441,7 @@ def request_access(*, user, business_id, message=""):
             category=UserNotification.Category.WORKSPACE,
             template=UserNotification.Template.WORKSPACE_ACCESS_REQUEST,
             context={"workspace_name": business.name},
-            action_path="/dashboard/workspaces",
+            action_path=f"/workspace/{business.id}/access-requests",
             deduplication_key=(
                 f"workspace-access-request:{access_request.id}:{controller.id}"
             ),
