@@ -6,6 +6,7 @@ const workspaceBusinessSchema = z.object({
   capabilities: z.array(z.string()),
   country_code: z.string(),
   created_at: z.string(),
+  deletion_scheduled_for: z.string().nullable(),
   id: z.string().uuid(),
   logo_url: z.string().nullable(),
   name: z.string(),

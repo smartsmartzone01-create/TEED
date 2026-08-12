@@ -27,11 +27,19 @@ def active_membership(*, user, business_id):
 
 
 def user_businesses(*, user):
-    return BusinessMembership.objects.select_related(
+    queryset = BusinessMembership.objects.select_related(
         "business", "business__profile"
     ).filter(
         user=user,
         status=BusinessMembership.Status.ACTIVE,
+        business__deleted_at__isnull=True,
+    )
+    return queryset.filter(
+        Q(business__status__in=[Business.Status.ACTIVE, Business.Status.DISABLED])
+        | Q(
+            business__status=Business.Status.DELETION_PENDING,
+            role__in=["owner", "partner"],
+        )
     )
 
 

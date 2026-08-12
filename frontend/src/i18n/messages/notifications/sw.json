@@ -3,6 +3,9 @@
     "eyebrow": "Dashibodi binafsi",
     "title": "Arifa",
     "description": "Ujumbe muhimu wa akaunti na viungo salama vya kufungua sehemu ya TEED inayohusika na kila hatua.",
+    "workspaceEyebrow": "Eneo la kazi la biashara",
+    "workspaceTitle": "Arifa za biashara",
+    "workspaceDescription": "Ujumbe wa utawala na udhibiti wa biashara hii pekee.",
     "bellLabel": "Fungua arifa, {count} hazijasomwa",
     "bellTooltip": "Arifa ambazo hazijasomwa: {count}",
     "refreshTooltip": "Kagua arifa mpya sasa.",
@@ -27,6 +30,11 @@
       "session_revoked": {"title":"Kipindi kimefungwa","message":"Ufikiaji wa kipindi cha kifaa kimoja umeondolewa kwenye akaunti yako."},
       "other_sessions_revoked": {"title":"Vipindi vingine vimefungwa","message":"Vipindi vingine vilivyofungwa: {count}."},
       "workspace_invitation": {"title":"Mwaliko wa eneo la kazi","message":"Umealikwa kujiunga na {workspace_name} kama {role}."},
+      "workspace_access_request": {"title":"Ufikiaji umeombwa","message":"Mtumiaji ameomba ufikiaji wa {workspace_name}."},
+      "workspace_access_decision": {"title":"Ombi la ufikiaji limeamuliwa","message":"Ombi lako la ufikiaji wa {workspace_name} limeamuliwa. Jukumu: {role}."},
+      "workspace_membership_changed": {"title":"Uanachama umebadilishwa","message":"Uanachama wako katika {workspace_name} sasa ni {status}. Jukumu lako ni {role}."},
+      "business_control_request": {"title":"Idhini ya udhibiti inahitajika","message":"Kitendo kilicholindwa cha {workspace_name} kinahitaji uamuzi wako."},
+      "business_control_decision": {"title":"Udhibiti wa biashara umeamuliwa","message":"Ombi la mzunguko wa biashara la {workspace_name} limeamuliwa."},
       "system_announcement": {"title":"Taarifa ya TEED","message":"Taarifa muhimu ya akaunti ya TEED inapatikana."},
       "default": {"title":"Arifa ya akaunti","message":"Taarifa muhimu inapatikana kwa akaunti yako."}
     }

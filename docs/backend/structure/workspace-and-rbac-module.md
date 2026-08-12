@@ -97,10 +97,10 @@ Owner and Partner share operational control. A sole active Owner may disable, re
 4. Requests expire after 24 hours.
 5. Deletion first enters recoverable `deletion_pending` state.
 
-This keeps a one-person Business usable without manufacturing a second controller, while preventing one compromised controller session from immediately disabling a jointly controlled tenant. Deletion is always scheduled through `deletion_pending`; it is not an immediate physical erase.
+This keeps a one-person Business usable without manufacturing a second controller, while preventing one compromised controller session from immediately disabling a jointly controlled tenant. Deletion is always scheduled through `deletion_pending`; it is not an immediate physical erase. The recovery window is 30 days. Ordinary members lose visibility immediately, controllers may cancel deletion during the window, and the scheduled `finalize_business_deletions` command performs the eventual soft deletion.
 
 ## Cross-domain communication
 
-Workspace changes write audit events and use `apps.notifications` for personal inbox delivery. Future Business applications import workspace authorization and scope every query with validated membership; they must not duplicate roles or create separate membership tables.
+Workspace changes write audit events and use `apps.notifications` for delivery. Membership events are dashboard-scoped; governance events are scoped to a Business UUID, validated against that tenant's route, and displayed in its workspace inbox. Future Business applications import workspace authorization and scope every query with validated membership; they must not duplicate roles or create separate membership tables.
 
 Social account connectivity is a future integration boundary, not a workspace membership concern. OAuth credentials, provider identities, webhook state, sync cursors and provider audit history should live in a dedicated integrations application scoped to a Business UUID. Workspace and Business profile contracts remain provider-neutral so those integrations can be added without refactoring tenancy or RBAC.

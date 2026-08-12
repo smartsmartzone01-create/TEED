@@ -38,6 +38,7 @@ class BusinessSerializer(serializers.ModelSerializer):
             "primary_brand_color",
             "secondary_brand_color",
             "status",
+            "deletion_scheduled_for",
             "created_at",
         ]
 

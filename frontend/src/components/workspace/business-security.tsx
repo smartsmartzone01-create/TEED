@@ -110,6 +110,13 @@ function BusinessSecurity({
           <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
             {t(data.can_control ? "control.available" : "control.unavailable")}
           </p>
+          {data.business.deletion_scheduled_for ? (
+            <p className="mt-3 text-sm font-semibold text-amber-800 dark:text-amber-300">
+              {t("control.scheduledFor", {
+                date: new Date(data.business.deletion_scheduled_for).toLocaleString(),
+              })}
+            </p>
+          ) : null}
         </div>
         {data.can_control ? (
           <section>

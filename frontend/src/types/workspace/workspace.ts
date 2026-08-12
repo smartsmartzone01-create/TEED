@@ -2,6 +2,7 @@ type WorkspaceBusiness = {
   capabilities: string[];
   country_code: string;
   created_at: string;
+  deletion_scheduled_for: string | null;
   id: string;
   logo_url: string | null;
   name: string;

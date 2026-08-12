@@ -1,9 +1,12 @@
+from datetime import timedelta
+
 from common.exceptions.modules import (
     PersonalWorkspaceMembershipRestricted,
     WorkspaceAccessRequestCooldown,
     WorkspaceAccessRequestPending,
     WorkspaceMembershipExists,
 )
+from django.core.management import call_command
 from django.test import TestCase
 from django.utils import timezone
 from rest_framework.exceptions import PermissionDenied, ValidationError
@@ -16,6 +19,7 @@ from ..models import (
     WorkspaceAuditEvent,
 )
 from ..policy import WorkspaceRole
+from ..selectors import user_businesses
 from ..services import (
     create_business,
     create_control_request,
@@ -289,6 +293,7 @@ class WorkspaceServiceTests(TestCase):
         self.business.refresh_from_db()
         self.assertEqual(deleted.status, BusinessControlRequest.Status.APPROVED)
         self.assertEqual(self.business.status, Business.Status.DELETION_PENDING)
+        self.assertIsNotNone(self.business.deletion_scheduled_for)
 
         restored = create_control_request(
             actor=self.owner,
@@ -298,6 +303,39 @@ class WorkspaceServiceTests(TestCase):
         self.business.refresh_from_db()
         self.assertEqual(restored.status, BusinessControlRequest.Status.APPROVED)
         self.assertEqual(self.business.status, Business.Status.ACTIVE)
+        self.assertIsNone(self.business.deletion_scheduled_for)
+
+    def test_pending_deletion_remains_visible_only_to_controllers(self):
+        BusinessMembership.objects.create(
+            business=self.business,
+            user=self.member,
+            role=WorkspaceRole.MEMBER,
+            status=BusinessMembership.Status.ACTIVE,
+        )
+        create_control_request(
+            actor=self.owner,
+            business_id=self.business.id,
+            action="delete",
+        )
+
+        self.assertTrue(user_businesses(user=self.owner).exists())
+        self.assertFalse(user_businesses(user=self.member).exists())
+
+    def test_expired_business_deletion_is_finalized_by_command(self):
+        self.business.status = Business.Status.DELETION_PENDING
+        self.business.deletion_scheduled_for = timezone.now() - timedelta(minutes=1)
+        self.business.save(
+            update_fields=["status", "deletion_scheduled_for", "updated_at"]
+        )
+
+        call_command("finalize_business_deletions", verbosity=0)
+
+        deleted = Business.all_objects.get(id=self.business.id)
+        membership = BusinessMembership.objects.get(
+            business_id=self.business.id, user=self.owner
+        )
+        self.assertIsNotNone(deleted.deleted_at)
+        self.assertEqual(membership.status, BusinessMembership.Status.REMOVED)
 
     def test_initiator_cannot_self_approve_business_disable(self):
         BusinessMembership.objects.create(

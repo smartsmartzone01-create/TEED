@@ -2,6 +2,7 @@
 
 import { ArrowUpRight, CheckCheck, Inbox, RefreshCw } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { useEffect } from "react";
 
 import { Button } from "@/components/global/primitives/button";
 import { Tooltip } from "@/components/global/primitives/tooltip";
@@ -9,12 +10,17 @@ import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/global/class-names";
 import { useNotification } from "@/providers/global/notification-provider";
 import { useNotifications } from "@/providers/notifications/notifications-provider";
-import type { DashboardDestination } from "@/types/dashboard/navigation";
-import type { NotificationCategory } from "@/types/notifications/notifications";
+import type { NotificationCategory, NotificationScope } from "@/types/notifications/notifications";
 
 const categories = ["all", "security", "account", "workspace", "system"] as const;
 
-function NotificationInbox() {
+function NotificationInbox({
+  businessId,
+  scope,
+}: {
+  businessId?: string;
+  scope?: NotificationScope;
+} = {}) {
   const t = useTranslations("NotificationInbox");
   const { notify } = useNotification();
   const {
@@ -29,10 +35,16 @@ function NotificationInbox() {
     setCategory,
     setPage,
     setUnreadOnly,
+    setContextFilter,
     totalPages,
     unreadCount,
     unreadOnly,
   } = useNotifications();
+
+  useEffect(() => {
+    setContextFilter(scope, businessId);
+    return () => setContextFilter();
+  }, [businessId, scope, setContextFilter]);
 
   async function run(action: () => Promise<void>, success?: string) {
     try {
@@ -50,9 +62,9 @@ function NotificationInbox() {
     <div className="space-y-5">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[.18em] text-slate-500">{t("eyebrow")}</p>
-          <h1 className="mt-2 text-2xl font-semibold">{t("title")}</h1>
-          <p className="mt-1 max-w-2xl text-sm text-slate-500">{t("description")}</p>
+          <p className="text-xs font-semibold uppercase tracking-[.18em] text-slate-500">{t(scope === "workspace" ? "workspaceEyebrow" : "eyebrow")}</p>
+          <h1 className="mt-2 text-2xl font-semibold">{t(scope === "workspace" ? "workspaceTitle" : "title")}</h1>
+          <p className="mt-1 max-w-2xl text-sm text-slate-500">{t(scope === "workspace" ? "workspaceDescription" : "description")}</p>
         </div>
         <div className="flex gap-2">
           <Tooltip content={t("refreshTooltip")}>
@@ -142,7 +154,7 @@ function NotificationInbox() {
                     {item.action_path ? (
                       <Tooltip content={t("openActionTooltip")}>
                         <Button asChild size="small" variant="outline">
-                          <Link href={item.action_path as DashboardDestination} onClick={() => void markRead(item.id)}>
+                          <Link href={item.action_path as never} onClick={() => void markRead(item.id)}>
                             {t("openAction")}<ArrowUpRight className="size-4" />
                           </Link>
                         </Button>

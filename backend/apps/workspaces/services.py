@@ -301,6 +301,8 @@ def create_invitation(*, actor, business_id, email, role):
             action_path="/dashboard/workspaces",
             deduplication_key=f"workspace-invitation:{invitation.id}",
             expires_at=invitation.expires_at,
+            scope=UserNotification.Scope.MEMBERSHIP,
+            business_id=invitation.business_id,
         )
     audit(
         business=invitation.business,
@@ -470,6 +472,8 @@ def request_access(*, user, business_id, message=""):
             deduplication_key=(
                 f"workspace-access-request:{access_request.id}:{controller.id}"
             ),
+            scope=UserNotification.Scope.WORKSPACE,
+            business_id=business.id,
         )
     return access_request
 
@@ -530,6 +534,8 @@ def decide_access_request(*, actor, business_id, request_id, decision, role):
         },
         action_path="/dashboard/workspaces",
         deduplication_key=f"workspace-access-decision:{access_request.id}",
+        scope=UserNotification.Scope.MEMBERSHIP,
+        business_id=access_request.business_id,
     )
     return access_request
 
@@ -587,6 +593,21 @@ def update_membership(*, actor, business_id, membership_id, role=None, status=No
                 updated_at=timezone.now(),
             )
     target.save(update_fields=[*changed, "updated_at"])
+    if changed:
+        notify_user(
+            user=target.user,
+            category=UserNotification.Category.WORKSPACE,
+            template=UserNotification.Template.WORKSPACE_MEMBERSHIP_CHANGED,
+            context={
+                "workspace_name": target.business.name,
+                "role": target.role,
+                "status": target.status,
+            },
+            action_path="/dashboard/workspaces",
+            deduplication_key=f"membership-change:{target.id}:{target.updated_at.isoformat()}",
+            scope=UserNotification.Scope.MEMBERSHIP,
+            business_id=target.business_id,
+        )
     audit(
         business=target.business,
         actor=actor,
@@ -697,11 +718,13 @@ def create_control_request(*, actor, business_id, action):
             category=UserNotification.Category.WORKSPACE,
             template=UserNotification.Template.BUSINESS_CONTROL_REQUEST,
             context={"workspace_name": control_request.business.name},
-            action_path="/dashboard/workspaces",
+            action_path=f"/workspace/{control_request.business_id}/security/control",
             deduplication_key=(
                 f"business-control:{control_request.id}:{controller.id}"
             ),
             expires_at=control_request.expires_at,
+            scope=UserNotification.Scope.WORKSPACE,
+            business_id=control_request.business_id,
         )
     return control_request
 
@@ -711,11 +734,14 @@ def _apply_control_action(*, business, action):
         business.status = Business.Status.DISABLED
     elif action == BusinessControlRequest.Action.REACTIVATE:
         business.status = Business.Status.ACTIVE
+        business.deletion_scheduled_for = None
     elif action == BusinessControlRequest.Action.DELETE:
         business.status = Business.Status.DELETION_PENDING
+        business.deletion_scheduled_for = timezone.now() + timedelta(days=30)
     else:
         business.status = Business.Status.ACTIVE
-    business.save(update_fields=["status", "updated_at"])
+        business.deletion_scheduled_for = None
+    business.save(update_fields=["status", "deletion_scheduled_for", "updated_at"])
 
 
 @transaction.atomic
@@ -775,8 +801,10 @@ def decide_control_request(*, actor, business_id, control_request_id, decision):
         category=UserNotification.Category.WORKSPACE,
         template=UserNotification.Template.BUSINESS_CONTROL_DECISION,
         context={"workspace_name": control_request.business.name},
-        action_path="/dashboard/workspaces",
+        action_path=f"/workspace/{control_request.business_id}/security/control",
         deduplication_key=f"business-control-decision:{control_request.id}",
+        scope=UserNotification.Scope.WORKSPACE,
+        business_id=control_request.business_id,
     )
     return control_request
 

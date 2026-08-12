@@ -37,6 +37,7 @@ class NotificationAPITests(APITestCase):
         response = self.client.get(reverse("notifications:list"))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["data"]["unread_count"], 1)
+
         self.assertEqual(len(response.data["data"]["notifications"]), 1)
         self.assertEqual(response.data["meta"]["total_records"], 1)
         self.assertEqual(
@@ -98,16 +99,67 @@ class NotificationAPITests(APITestCase):
             )
 
     def test_workspace_action_paths_are_allowed(self):
+        business_id = "550e8400-e29b-41d4-a716-446655440000"
         notification = notify_user(
             user=self.user,
             category="workspace",
             template="workspace_access_request",
             action_path="/workspace/550e8400-e29b-41d4-a716-446655440000/access-requests",
+            scope=UserNotification.Scope.WORKSPACE,
+            business_id=business_id,
         )
+        self.assertEqual(str(notification.business_id), business_id)
         self.assertEqual(
             notification.action_path,
             "/workspace/550e8400-e29b-41d4-a716-446655440000/access-requests",
         )
+
+    def test_workspace_scope_cannot_target_another_business(self):
+        with self.assertRaises(ValueError):
+            notify_user(
+                user=self.user,
+                category="workspace",
+                template="workspace_access_request",
+                action_path="/workspace/550e8400-e29b-41d4-a716-446655440000/access-requests",
+                scope=UserNotification.Scope.WORKSPACE,
+                business_id="2ec8d25f-d42e-487c-946f-a0bf9620c489",
+            )
+
+    def test_workspace_inbox_and_read_all_are_business_scoped(self):
+        business_id = "550e8400-e29b-41d4-a716-446655440000"
+        workspace_notification = notify_user(
+            user=self.user,
+            category="workspace",
+            template="business_control_request",
+            action_path=f"/workspace/{business_id}/security/control",
+            scope=UserNotification.Scope.WORKSPACE,
+            business_id=business_id,
+        )
+        response = self.client.get(
+            reverse("notifications:list"),
+            {"scope": "workspace", "business_id": business_id},
+        )
+        self.assertEqual(len(response.data["data"]["notifications"]), 1)
+        self.assertEqual(response.data["data"]["unread_count"], 1)
+
+        dashboard = self.client.get(
+            reverse("notifications:list"), {"surface": "dashboard"}
+        )
+        self.assertEqual(len(dashboard.data["data"]["notifications"]), 1)
+        self.assertEqual(
+            dashboard.data["data"]["notifications"][0]["id"],
+            str(self.notification.id),
+        )
+
+        self.client.post(
+            f"{reverse('notifications:read-all')}?scope=workspace&business_id={business_id}",
+            {},
+            format="json",
+        )
+        workspace_notification.refresh_from_db()
+        self.notification.refresh_from_db()
+        self.assertIsNotNone(workspace_notification.read_at)
+        self.assertIsNone(self.notification.read_at)
 
     def test_deceptive_internal_prefix_is_rejected(self):
         with self.assertRaises(ValueError):

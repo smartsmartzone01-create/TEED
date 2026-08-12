@@ -82,6 +82,7 @@ type WorkspaceContextValue = {
 };
 
 const WorkspaceContext = createContext<WorkspaceContextValue | null>(null);
+const WORKSPACE_CHANNEL = "teed-workspace-state";
 
 function WorkspaceProvider({ children }: { children: ReactNode }) {
   const { accessToken, clearSession, refreshAccessToken } = useIdentitySession();
@@ -89,6 +90,13 @@ function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [invitations, setInvitations] = useState<WorkspaceInvitation[]>([]);
   const [error, setError] = useState<ApiClientError | Error | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const broadcastChange = useCallback(() => {
+    if (typeof BroadcastChannel === "undefined") return;
+    const channel = new BroadcastChannel(WORKSPACE_CHANNEL);
+    channel.postMessage({ type: "refresh" });
+    channel.close();
+  }, []);
 
   const withToken = useCallback(
     async <T,>(operation: (token: string) => Promise<T>) => {
@@ -143,7 +151,10 @@ function WorkspaceProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!accessToken) return;
     const initial = window.setTimeout(() => void refresh(), 0);
-    const interval = window.setInterval(() => void refresh(), 30_000);
+    const interval = window.setInterval(() => void refresh(), 10_000);
+    const channel = typeof BroadcastChannel === "undefined" ? null : new BroadcastChannel(WORKSPACE_CHANNEL);
+    const onWorkspaceChange = () => void refresh();
+    channel?.addEventListener("message", onWorkspaceChange);
     const onVisibility = () => {
       if (document.visibilityState === "visible") void refresh();
     };
@@ -151,6 +162,8 @@ function WorkspaceProvider({ children }: { children: ReactNode }) {
     return () => {
       window.clearTimeout(initial);
       window.clearInterval(interval);
+      channel?.removeEventListener("message", onWorkspaceChange);
+      channel?.close();
       document.removeEventListener("visibilitychange", onVisibility);
     };
   }, [accessToken, refresh]);
@@ -162,23 +175,27 @@ function WorkspaceProvider({ children }: { children: ReactNode }) {
         const response = await withToken((token) => createBusinessRequest(values, token));
         if (!response.data) throw new Error("Business creation response data missing.");
         await refresh();
+        broadcastChange();
         return response.data;
       },
       createControl: async (businessId, action) => {
         const response = await withToken((token) => createBusinessControlRequest(businessId, action, token));
         if (!response.data) throw new Error("Business control response data missing.");
         await refresh();
+        broadcastChange();
         return response.data;
       },
       decideInvitation: async (id, decision) => {
         await withToken((token) => decideInvitationRequest(id, decision, token));
         await refresh();
+        broadcastChange();
       },
       decideControl: async (businessId, requestId, decision) => {
         await withToken((token) =>
           decideBusinessControlRequest(businessId, requestId, decision, token),
         );
         await refresh();
+        broadcastChange();
       },
       discoverBusinesses: async (query, signal) => {
         const response = await withToken((token) =>
@@ -203,6 +220,7 @@ function WorkspaceProvider({ children }: { children: ReactNode }) {
         const response = await withToken((token) => updateWorkspaceMember(businessId, membershipId, values, token));
         if (!response.data) throw new Error("Membership response data missing.");
         await refresh();
+        broadcastChange();
         return response.data;
       },
       loadInvitations: async (businessId, signal) => {
@@ -226,6 +244,7 @@ function WorkspaceProvider({ children }: { children: ReactNode }) {
       decideAccessRequest: async (businessId, requestId, values) => {
         await withToken((token) => decideWorkspaceAccessRequest(businessId, requestId, values, token));
         await refresh();
+        broadcastChange();
       },
       loadProfile: async (businessId, signal) => {
         const response = await withToken((token) =>
@@ -252,6 +271,7 @@ function WorkspaceProvider({ children }: { children: ReactNode }) {
       requestAccess: async (values) => {
         await withToken((token) => requestBusinessAccessRequest(values, token));
         await refresh();
+        broadcastChange();
       },
       saveProfile: async (businessId, values) => {
         const response = await withToken((token) =>
@@ -270,7 +290,7 @@ function WorkspaceProvider({ children }: { children: ReactNode }) {
       },
       status: loading ? "loading" : error ? "error" : "ready",
     }),
-    [businesses, error, invitations, loading, refresh, withToken],
+    [broadcastChange, businesses, error, invitations, loading, refresh, withToken],
   );
 
   return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>;

@@ -64,4 +64,6 @@ Every authenticated Business response includes backend-defined `capabilities`. C
 | `POST` | `businesses/{business_id}/control-requests/` | Request disable, reactivate, delete, or cancel-deletion |
 | `POST` | `businesses/{business_id}/control-requests/{control_request_id}/decision/` | Independently approve or reject |
 
-A sole active Owner completes valid lifecycle actions immediately. If an active Partner exists, an independent Owner or Partner must approve; the initiator cannot approve their own request. Approved deletion enters recoverable `deletion_pending` and never immediately destroys tenant data.
+A sole active Owner completes valid lifecycle actions immediately. If an active Partner exists, an independent Owner or Partner must approve; the initiator cannot approve their own request. Approved deletion enters recoverable `deletion_pending` for 30 days and never immediately destroys tenant data. During recovery, only active Owners and Partners retain visibility. Run `python manage.py finalize_business_deletions` from a scheduler to soft-delete expired Businesses and remove their memberships.
+
+Workspace-governance notifications are scoped to the Business UUID and link to `/workspace/{business_id}/...`. Membership and personal notifications remain dashboard-scoped. The backend validates action destinations so one Business cannot generate a link into another tenant.

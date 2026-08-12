@@ -34,6 +34,7 @@ class Business(BaseModel):
     status = models.CharField(
         max_length=24, choices=Status.choices, default=Status.ACTIVE, db_index=True
     )
+    deletion_scheduled_for = models.DateTimeField(null=True, blank=True, db_index=True)
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,

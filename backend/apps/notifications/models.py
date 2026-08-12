@@ -4,13 +4,19 @@ from django.db import models
 
 
 class UserNotification(BaseModel):
-    """Personal inbox record; the owning domain remains responsible for actions."""
+    """User-addressed event routed to its owning TEED surface."""
 
     class Category(models.TextChoices):
         SECURITY = "security", "Security"
         ACCOUNT = "account", "Account"
         WORKSPACE = "workspace", "Workspace"
         SYSTEM = "system", "System"
+
+    class Scope(models.TextChoices):
+        PERSONAL = "personal", "Personal"
+        MEMBERSHIP = "membership", "Membership"
+        WORKSPACE = "workspace", "Workspace governance"
+        CROSS_BUSINESS = "cross_business", "Cross-business"
 
     class Template(models.TextChoices):
         PASSWORD_CHANGED = "password_changed", "Password changed"
@@ -27,6 +33,10 @@ class UserNotification(BaseModel):
         WORKSPACE_ACCESS_DECISION = (
             "workspace_access_decision",
             "Workspace access decision",
+        )
+        WORKSPACE_MEMBERSHIP_CHANGED = (
+            "workspace_membership_changed",
+            "Workspace membership changed",
         )
         BUSINESS_CONTROL_REQUEST = (
             "business_control_request",
@@ -47,6 +57,10 @@ class UserNotification(BaseModel):
     template = models.CharField(max_length=48, choices=Template.choices, db_index=True)
     context = models.JSONField(default=dict, blank=True)
     action_path = models.CharField(max_length=240, blank=True, default="")
+    scope = models.CharField(
+        max_length=24, choices=Scope.choices, default=Scope.PERSONAL, db_index=True
+    )
+    business_id = models.UUIDField(null=True, blank=True, db_index=True)
     read_at = models.DateTimeField(null=True, blank=True, db_index=True)
     expires_at = models.DateTimeField(null=True, blank=True, db_index=True)
     deduplication_key = models.CharField(max_length=120, blank=True, default="")
