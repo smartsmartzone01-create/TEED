@@ -717,7 +717,10 @@ def create_control_request(*, actor, business_id, action):
             user=controller,
             category=UserNotification.Category.WORKSPACE,
             template=UserNotification.Template.BUSINESS_CONTROL_REQUEST,
-            context={"workspace_name": control_request.business.name},
+            context={
+                "action": control_request.action,
+                "workspace_name": control_request.business.name,
+            },
             action_path=f"/workspace/{control_request.business_id}/security/control",
             deduplication_key=(
                 f"business-control:{control_request.id}:{controller.id}"
@@ -800,7 +803,12 @@ def decide_control_request(*, actor, business_id, control_request_id, decision):
         user=control_request.initiated_by,
         category=UserNotification.Category.WORKSPACE,
         template=UserNotification.Template.BUSINESS_CONTROL_DECISION,
-        context={"workspace_name": control_request.business.name},
+        context={
+            "action": control_request.action,
+            "decision": decision,
+            "status": control_request.business.status,
+            "workspace_name": control_request.business.name,
+        },
         action_path=f"/workspace/{control_request.business_id}/security/control",
         deduplication_key=f"business-control-decision:{control_request.id}",
         scope=UserNotification.Scope.WORKSPACE,

@@ -35,9 +35,12 @@ def user_businesses(*, user):
         business__deleted_at__isnull=True,
     )
     return queryset.filter(
-        Q(business__status__in=[Business.Status.ACTIVE, Business.Status.DISABLED])
+        Q(business__status=Business.Status.ACTIVE)
         | Q(
-            business__status=Business.Status.DELETION_PENDING,
+            business__status__in=[
+                Business.Status.DISABLED,
+                Business.Status.DELETION_PENDING,
+            ],
             role__in=["owner", "partner"],
         )
     )

@@ -51,7 +51,7 @@ def notify_user(
     safe_context = {
         key: value
         for key, value in (context or {}).items()
-        if key in {"count", "workspace_name", "role", "status"}
+        if key in {"action", "count", "decision", "workspace_name", "role", "status"}
         and isinstance(value, (str, int))
     }
     return create_notification(

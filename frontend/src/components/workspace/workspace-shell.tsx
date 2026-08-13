@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 
 import { WorkspaceHeader } from "@/components/workspace/workspace-header";
+import { BusinessLifecycleState } from "@/components/workspace/business-lifecycle-state";
 import { WorkspaceSidebar } from "@/components/workspace/workspace-sidebar";
 import { cn } from "@/lib/global/class-names";
 import { useRouter } from "@/i18n/navigation";
@@ -26,10 +27,13 @@ function WorkspaceShell({ children }: WorkspaceShellProps) {
   const { businesses, loadProfile, loadSettings, status } = useWorkspace();
   const businessId = useMemo(() => pathname.match(/\/workspace\/([^/]+)/)?.[1] ?? null, [pathname]);
   const knownBusiness = useRef<string | null>(null);
+  const currentBusiness = businessId
+    ? businesses.find((business) => business.id === businessId)
+    : undefined;
 
   useEffect(() => {
     if (!businessId || status !== "ready") return;
-    if (businesses.some((business) => business.id === businessId)) {
+    if (currentBusiness) {
       knownBusiness.current = businessId;
       return;
     }
@@ -39,16 +43,20 @@ function WorkspaceShell({ children }: WorkspaceShellProps) {
     });
     knownBusiness.current = null;
     router.replace(businesses[0] ? `/workspace/${businesses[0].id}` : "/dashboard/workspaces");
-  }, [businessId, businesses, notify, router, status, t]);
+  }, [businessId, businesses, currentBusiness, notify, router, status, t]);
 
   useEffect(() => {
-    if (!businessId) return;
+    if (!businessId || currentBusiness?.status !== "active") return;
     const controller = new AbortController();
     void Promise.all([loadProfile(businessId, controller.signal), loadSettings(businessId, controller.signal)])
       .then(([profile, settings]) => setColors(settings.settings.branding_enabled ? { primary: profile.profile.primary_brand_color, secondary: profile.profile.secondary_brand_color } : null))
       .catch(() => { if (!controller.signal.aborted) setColors(null); });
     return () => controller.abort();
-  }, [businessId, loadProfile, loadSettings]);
+  }, [businessId, currentBusiness?.status, loadProfile, loadSettings]);
+
+  if (currentBusiness && currentBusiness.status !== "active") {
+    return <BusinessLifecycleState business={currentBusiness} />;
+  }
 
   const brandStyle = businessId && colors ? ({ "--workspace-primary": colors.primary, "--workspace-secondary": colors.secondary } as CSSProperties) : undefined;
 

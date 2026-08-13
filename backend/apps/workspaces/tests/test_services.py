@@ -321,6 +321,22 @@ class WorkspaceServiceTests(TestCase):
         self.assertTrue(user_businesses(user=self.owner).exists())
         self.assertFalse(user_businesses(user=self.member).exists())
 
+    def test_disabled_business_remains_visible_only_to_controllers(self):
+        BusinessMembership.objects.create(
+            business=self.business,
+            user=self.member,
+            role=WorkspaceRole.MEMBER,
+            status=BusinessMembership.Status.ACTIVE,
+        )
+        create_control_request(
+            actor=self.owner,
+            business_id=self.business.id,
+            action="disable",
+        )
+
+        self.assertTrue(user_businesses(user=self.owner).exists())
+        self.assertFalse(user_businesses(user=self.member).exists())
+
     def test_expired_business_deletion_is_finalized_by_command(self):
         self.business.status = Business.Status.DELETION_PENDING
         self.business.deletion_scheduled_for = timezone.now() - timedelta(minutes=1)

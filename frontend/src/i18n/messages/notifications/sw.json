@@ -33,8 +33,8 @@
       "workspace_access_request": {"title":"Ufikiaji umeombwa","message":"Mtumiaji ameomba ufikiaji wa {workspace_name}."},
       "workspace_access_decision": {"title":"Ombi la ufikiaji limeamuliwa","message":"Ombi lako la ufikiaji wa {workspace_name} limeamuliwa. Jukumu: {role}."},
       "workspace_membership_changed": {"title":"Uanachama umebadilishwa","message":"Uanachama wako katika {workspace_name} sasa ni {status}. Jukumu lako ni {role}."},
-      "business_control_request": {"title":"Idhini ya udhibiti inahitajika","message":"Kitendo kilicholindwa cha {workspace_name} kinahitaji uamuzi wako."},
-      "business_control_decision": {"title":"Udhibiti wa biashara umeamuliwa","message":"Ombi la mzunguko wa biashara la {workspace_name} limeamuliwa."},
+      "business_control_request": {"title":"Idhini ya udhibiti inahitajika","message":"{action, select, delete {Ombi la kupanga kufutwa kwa {workspace_name} linahitaji uamuzi wako.} disable {Ombi la kuzima {workspace_name} linahitaji uamuzi wako.} reactivate {Ombi la kuwasha tena {workspace_name} linahitaji uamuzi wako.} cancel_deletion {Ombi la kughairi kufutwa kwa {workspace_name} linahitaji uamuzi wako.} other {Kitendo kilicholindwa cha {workspace_name} kinahitaji uamuzi wako.}}"},
+      "business_control_decision": {"title":"Mzunguko wa biashara umebadilishwa","message":"{decision, select, approve {{action, select, delete {{workspace_name} sasa imepangwa kufutwa. Unaweza kughairi ufutaji wakati wa kipindi cha kurejesha.} disable {{workspace_name} sasa imezimwa.} reactivate {{workspace_name} imerudi kutumika.} cancel_deletion {Ufutaji wa {workspace_name} umeghairiwa na biashara imerudi kutumika.} other {Ombi la mzunguko wa {workspace_name} limeidhinishwa.}}} reject {Ombi la {action} kwa {workspace_name} limekataliwa. Hakuna mabadiliko yaliyofanyika.} other {Ombi la mzunguko wa {workspace_name} limeamuliwa.}}"},
       "system_announcement": {"title":"Taarifa ya TEED","message":"Taarifa muhimu ya akaunti ya TEED inapatikana."},
       "default": {"title":"Arifa ya akaunti","message":"Taarifa muhimu inapatikana kwa akaunti yako."}
     }

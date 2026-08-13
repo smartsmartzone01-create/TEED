@@ -72,8 +72,18 @@ function DashboardWorkspaces() {
                       <span className="inline-flex size-11 shrink-0 items-center justify-center rounded-xl bg-brand-navy/10 text-brand-navy dark:bg-brand-orange/10 dark:text-brand-orange"><Building2 className="size-5" /></span>
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-sm font-semibold">{business.name}</span>
+                        {business.status !== "active" ? (
+                          <span className="mt-1 inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-800 dark:bg-amber-950/50 dark:text-amber-300">
+                            {t(`statuses.${business.status}`)}
+                          </span>
+                        ) : null}
                         <span className="mt-0.5 block truncate text-xs font-medium text-brand-navy dark:text-brand-orange">@{business.public_handle}</span>
                         <span className="mt-1 block text-xs text-slate-500 dark:text-slate-400">{t("businessMeta", { country: business.country_code, role: t(`roles.${business.membership.role}`) })}</span>
+                        {business.status === "deletion_pending" && business.deletion_scheduled_for ? (
+                          <span className="mt-1 block text-xs font-medium text-amber-700 dark:text-amber-300">
+                            {t("scheduledDeletion", { date: new Date(business.deletion_scheduled_for).toLocaleString() })}
+                          </span>
+                        ) : null}
                       </span>
                       <ArrowRight className="size-4 text-slate-400 transition group-hover:translate-x-0.5" />
                     </Link>

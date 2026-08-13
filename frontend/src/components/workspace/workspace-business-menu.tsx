@@ -26,10 +26,11 @@ function WorkspaceBusinessMenu({ showLabel = true }: WorkspaceBusinessMenuProps)
   const pathname = usePathname();
   const t = useTranslations("WorkspaceShell");
   const { businesses } = useWorkspace();
+  const activeBusinesses = businesses.filter((business) => business.status === "active");
   const activeId = pathname.match(/^\/workspace\/([^/]+)/)?.[1];
   const activeBusiness = activeId
-    ? businesses.find((business) => business.id === activeId)
-    : businesses[0];
+    ? activeBusinesses.find((business) => business.id === activeId)
+    : activeBusinesses[0];
   const businessName = activeBusiness?.name ?? t("businessFallback");
 
   return (
@@ -77,13 +78,13 @@ function WorkspaceBusinessMenu({ showLabel = true }: WorkspaceBusinessMenuProps)
           </span>
           <Check className="size-4 shrink-0" />
         </DropdownMenuItem>
-        {businesses.filter((business) => business.id !== activeBusiness?.id).map((business) => (
+        {activeBusinesses.filter((business) => business.id !== activeBusiness?.id).map((business) => (
           <DropdownMenuItem key={business.id} onSelect={() => router.push(`/workspace/${business.id}`)}>
             <BusinessIcon className="size-7 rounded-lg text-[0.6rem]" logoUrl={business.logo_url} name={business.name} primaryColor={business.primary_brand_color} secondaryColor={business.secondary_brand_color} />
             <span className="truncate">{business.name}</span>
           </DropdownMenuItem>
         ))}
-        {businesses.length < 2 ? <DropdownMenuItem disabled>{t("noOtherBusinesses")}</DropdownMenuItem> : null}
+        {activeBusinesses.length < 2 ? <DropdownMenuItem disabled>{t("noOtherBusinesses")}</DropdownMenuItem> : null}
         <DropdownMenuItem onSelect={() => router.push("/dashboard/workspaces/create")}>
           <Plus className="size-4" />
           {t("createBusiness")}
