@@ -60,6 +60,7 @@ LOCAL_APPS = [
     "apps.security.apps.SecurityConfig",
     "apps.notifications.apps.NotificationsConfig",
     "apps.workspaces.apps.WorkspacesConfig",
+    "apps.commerce.apps.CommerceConfig",
 ]
 
 # =====================================================

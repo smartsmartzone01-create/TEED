@@ -30,6 +30,7 @@
     "workspaceUnavailable": "This Business is unavailable or you no longer have access.",
     "navigation": {
       "overview": "Overview",
+      "commerce": "Commerce Operations",
       "business": "Business",
       "membership": "Membership",
       "profile": "Business profile",
@@ -41,7 +42,7 @@
       "roles": "Roles & access",
       "control": "Security & control"
     },
-    "subnavigation": {"members": "Members", "invitations": "Invitations", "accessRequests": "Access requests", "roles": "Roles and permissions", "profileOverview": "Profile overview", "information": "Business information", "brand": "Brand and appearance", "operations": "Locations and operations", "settingsOverview": "Settings overview", "workspacePreferences": "Workspace preferences", "audit": "Security activity", "businessLifecycle": "Business lifecycle"}
+    "subnavigation": {"members": "Members", "invitations": "Invitations", "accessRequests": "Access requests", "roles": "Roles and permissions", "profileOverview": "Profile overview", "information": "Business information", "brand": "Brand and appearance", "operations": "Locations and operations", "settingsOverview": "Settings overview", "workspacePreferences": "Workspace preferences", "audit": "Security activity", "businessLifecycle": "Business lifecycle", "commerceOverview": "Business Pulse", "products": "Products", "inventory": "Inventory", "sales": "Sales", "returns": "Returns", "expenses": "Expenses", "budgets": "Budgets"}
   },
   "WorkspaceOverview": {
     "eyebrow": "TEED Workspace",

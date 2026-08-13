@@ -1,0 +1,23 @@
+{
+  "Commerce": {
+    "eyebrow": "Commerce Operations",
+    "views": {
+      "overview": {"title":"Business Pulse","description":"A live operational picture and a decision inbox that tells you what needs attention."},
+      "products": {"title":"Products","description":"Define what the business sells once, then use it across stock, sales, and returns."},
+      "inventory": {"title":"Inventory","description":"Receive stock in costed batches and keep a traceable movement history."},
+      "sales": {"title":"Sales","description":"Record retail or wholesale sales. TEED deducts the oldest available stock first."},
+      "returns": {"title":"Returns","description":"Trace a return to its original receipt and decide whether stock is sellable again."},
+      "expenses": {"title":"Expenses","description":"Record operating costs so Business Pulse can show a practical operating result."},
+      "budgets": {"title":"Budgets","description":"Set simple monthly limits and compare plans with recorded spending."}
+    },
+    "pulse":{"revenue":"Net sales today","sales":"Sales today","lowStock":"Stock alerts","stockValue":"Stock value"},
+    "decisions":{"title":"Decision Inbox","description":"Powered by Business Pulse—focused explanations and direct next actions, without waiting for AI.","clear":"Nothing urgent needs your attention right now."},
+    "recentSales":"Recent sales","catalog":"Product catalog","movements":"Recent stock movements",
+    "forms":{"product":"Add product","stock":"Receive stock","sale":"Record sale","return":"Record return","expenses":"Record expense","budgets":"Set monthly budget"},
+    "fields":{"name":"Product name","sku":"SKU (optional)","variant":"Variant (optional)","price":"Selling price","unit":"Unit","lowStock":"Low-stock alert","quantity":"Quantity","unitCost":"Unit cost","additionalCost":"Additional batch cost","reference":"Reference","supplier":"Supplier","date":"Date and time","saleType":"Sale type","customer":"Customer name","phone":"Customer phone","product":"Product","discount":"Discount","payment":"Payment status","receipt":"Receipt","condition":"Condition","resolution":"Resolution","reason":"Reason","category":"Category","description":"Description","amount":"Amount","month":"Month","planned":"Planned amount"},
+    "values":{"retail":"Retail","wholesale":"Wholesale","paid":"Paid","partial":"Partially paid","unpaid":"Unpaid","sellable":"Sellable","damaged":"Damaged","refund":"Refund","replacement":"Replacement","credit":"Store credit"},
+    "actions":{"saveProduct":"Save product","receiveStock":"Receive stock","recordSale":"Record sale","recordReturn":"Record return","addLine":"Add another product","save":"Save"},
+    "success":{"product":"Product saved.","stock":"Stock received and totals updated.","sale":"Sale recorded and inventory updated.","return":"Return recorded.","expenses":"Expense saved.","budgets":"Budget saved."},
+    "empty":{"sales":"No sales recorded today."},"errors":{"load":"Commerce data could not be loaded.","save":"The record could not be saved."}
+  }
+}

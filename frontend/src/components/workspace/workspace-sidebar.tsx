@@ -1,6 +1,6 @@
 "use client";
 
-import { Building2, ChevronDown, ChevronLeft, ChevronRight, Inbox, LayoutDashboard, LockKeyhole, MailPlus, MapPin, Palette, Settings2, ShieldCheck, Store, UserRoundCog, UsersRound, X, type LucideIcon } from "lucide-react";
+import { Building2, ChevronDown, ChevronLeft, ChevronRight, Inbox, LayoutDashboard, LockKeyhole, MailPlus, MapPin, Palette, Settings2, ShieldCheck, ShoppingBag, Store, UserRoundCog, UsersRound, X, type LucideIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { usePathname } from "next/navigation";
 import { useMemo, useState } from "react";
@@ -10,9 +10,10 @@ import { Tooltip } from "@/components/global/primitives/tooltip";
 import { WorkspaceAccountMenu } from "@/components/workspace/workspace-account-menu";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/global/class-names";
+import { useWorkspace } from "@/providers/workspace/workspace-provider";
 
 type WorkspaceSidebarProps = { collapsed: boolean; mobileOpen: boolean; onCloseMobile: () => void; onToggleCollapsed: () => void };
-type NavigationGroupKey = "membership" | "profile" | "settingsSecurity";
+type NavigationGroupKey = "commerce" | "membership" | "profile" | "settingsSecurity";
 type NavigationItem = { icon: LucideIcon; key: string; path: string };
 
 const membershipItems: NavigationItem[] = [
@@ -33,8 +34,18 @@ const settingsItems: NavigationItem[] = [
   { icon: LockKeyhole, key: "audit", path: "/security/audit" },
   { icon: ShieldCheck, key: "businessLifecycle", path: "/security/control" },
 ];
+const commerceItems: NavigationItem[] = [
+  { icon: LayoutDashboard, key: "commerceOverview", path: "/commerce" },
+  { icon: Store, key: "products", path: "/commerce/products" },
+  { icon: Building2, key: "inventory", path: "/commerce/inventory" },
+  { icon: ShoppingBag, key: "sales", path: "/commerce/sales" },
+  { icon: Inbox, key: "returns", path: "/commerce/returns" },
+  { icon: Settings2, key: "expenses", path: "/commerce/expenses" },
+  { icon: ShieldCheck, key: "budgets", path: "/commerce/budgets" },
+];
 
 function groupForPath(pathname: string): NavigationGroupKey | null {
+  if (pathname.includes("/commerce")) return "commerce";
   if (/\/(members|invitations|access-requests|roles)(\/|$)/.test(pathname)) return "membership";
   if (pathname.includes("/profile")) return "profile";
   if (pathname.includes("/administration") || pathname.includes("/settings") || pathname.includes("/security")) return "settingsSecurity";
@@ -44,7 +55,9 @@ function groupForPath(pathname: string): NavigationGroupKey | null {
 function WorkspaceSidebar({ collapsed, mobileOpen, onCloseMobile, onToggleCollapsed }: WorkspaceSidebarProps) {
   const t = useTranslations("WorkspaceShell");
   const pathname = usePathname();
+  const { businesses } = useWorkspace();
   const businessId = useMemo(() => pathname.match(/\/workspace\/([^/]+)/)?.[1] ?? null, [pathname]);
+  const commerceEnabled = businesses.find((business) => business.id === businessId)?.capabilities.includes("business_operations") ?? false;
   const activeGroup = groupForPath(pathname);
   const [accordion, setAccordion] = useState<{
     group: NavigationGroupKey | null;
@@ -53,6 +66,7 @@ function WorkspaceSidebar({ collapsed, mobileOpen, onCloseMobile, onToggleCollap
   const openGroup = accordion.pathname === pathname ? accordion.group : activeGroup;
 
   const groups: Array<{ icon: LucideIcon; items: NavigationItem[]; key: NavigationGroupKey }> = [
+    { icon: ShoppingBag, items: commerceItems, key: "commerce" },
     { icon: UsersRound, items: membershipItems, key: "membership" },
     { icon: Building2, items: profileItems, key: "profile" },
     { icon: Settings2, items: settingsItems, key: "settingsSecurity" },
@@ -72,7 +86,7 @@ function WorkspaceSidebar({ collapsed, mobileOpen, onCloseMobile, onToggleCollap
       </div>
       <nav aria-label={t("primaryNavigation")} className="flex-1 space-y-1 overflow-y-auto px-3 py-5">
         {businessId ? <Tooltip content={t("navigation.overview")}><Link aria-current={pathname === `/workspace/${businessId}` ? "page" : undefined} className={cn("flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-semibold", pathname === `/workspace/${businessId}` ? "bg-slate-100 text-slate-950 dark:bg-slate-900 dark:text-white" : "text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-900", collapsed && "lg:justify-center lg:px-0")} href={`/workspace/${businessId}`} onClick={onCloseMobile}><LayoutDashboard className="size-4.5 shrink-0" /><span className={cn(collapsed && "lg:sr-only")}>{t("navigation.overview")}</span></Link></Tooltip> : null}
-        {businessId ? groups.map((group) => {
+        {businessId ? groups.filter((group) => group.key !== "commerce" || commerceEnabled).map((group) => {
           const Icon = group.icon;
           const expanded = openGroup === group.key && !collapsed;
           const groupActive = activeGroup === group.key;

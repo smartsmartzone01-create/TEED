@@ -16,6 +16,11 @@ class WorkspacePermission(StrEnum):
     MANAGE_INVITATIONS = "invitations.manage"
     CONTROL_BUSINESS = "business.control"
     TRANSFER_OWNERSHIP = "business.transfer_ownership"
+    VIEW_COMMERCE = "commerce.view"
+    MANAGE_CATALOG = "commerce.catalog.manage"
+    MANAGE_INVENTORY = "commerce.inventory.manage"
+    RECORD_SALES = "commerce.sales.record"
+    MANAGE_FINANCE = "commerce.finance.manage"
 
 
 ROLE_PERMISSIONS = {
@@ -31,12 +36,30 @@ ROLE_PERMISSIONS = {
             WorkspacePermission.MANAGE_BUSINESS,
             WorkspacePermission.MANAGE_MEMBERS,
             WorkspacePermission.MANAGE_INVITATIONS,
+            WorkspacePermission.VIEW_COMMERCE,
+            WorkspacePermission.MANAGE_CATALOG,
+            WorkspacePermission.MANAGE_INVENTORY,
+            WorkspacePermission.RECORD_SALES,
+            WorkspacePermission.MANAGE_FINANCE,
         }
     ),
     WorkspaceRole.MANAGER: frozenset(
-        {WorkspacePermission.ACCESS, WorkspacePermission.MANAGE_INVITATIONS}
+        {
+            WorkspacePermission.ACCESS,
+            WorkspacePermission.MANAGE_INVITATIONS,
+            WorkspacePermission.VIEW_COMMERCE,
+            WorkspacePermission.MANAGE_CATALOG,
+            WorkspacePermission.MANAGE_INVENTORY,
+            WorkspacePermission.RECORD_SALES,
+        }
     ),
-    WorkspaceRole.MEMBER: frozenset({WorkspacePermission.ACCESS}),
+    WorkspaceRole.MEMBER: frozenset(
+        {
+            WorkspacePermission.ACCESS,
+            WorkspacePermission.VIEW_COMMERCE,
+            WorkspacePermission.RECORD_SALES,
+        }
+    ),
 }
 
 PROTECTED_ROLES = frozenset({WorkspaceRole.OWNER, WorkspaceRole.PARTNER})
