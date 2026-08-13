@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -90,6 +91,14 @@ function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [invitations, setInvitations] = useState<WorkspaceInvitation[]>([]);
   const [error, setError] = useState<ApiClientError | Error | null>(null);
   const [loading, setLoading] = useState(true);
+  const hasLoaded = useRef(false);
+  const loadedAccessToken = useRef<string | null>(null);
+  const refreshInFlight = useRef<{
+    promise: Promise<void>;
+    sequence: number;
+    token: string;
+  } | null>(null);
+  const refreshSequence = useRef(0);
 
   const broadcastChange = useCallback(() => {
     if (typeof BroadcastChannel === "undefined") return;
@@ -128,24 +137,54 @@ function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   const refresh = useCallback(async () => {
     if (!accessToken) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const [businessResponse, invitationResponse] = await Promise.all([
-        withToken((token) => getBusinesses(token)),
-        withToken((token) => getMyInvitations(token)),
-      ]);
-      setBusinesses(businessResponse.data?.businesses ?? []);
-      setInvitations(invitationResponse.data?.invitations ?? []);
-    } catch (requestError) {
-      setError(
-        requestError instanceof ApiClientError || requestError instanceof Error
-          ? requestError
-          : new Error("Workspace request failed."),
-      );
-    } finally {
-      setLoading(false);
+    if (refreshInFlight.current?.token === accessToken) {
+      return refreshInFlight.current.promise;
     }
+    const initialLoad = !hasLoaded.current || loadedAccessToken.current !== accessToken;
+    if (initialLoad) {
+      if (loadedAccessToken.current && loadedAccessToken.current !== accessToken) {
+        setBusinesses([]);
+        setInvitations([]);
+      }
+      setLoading(true);
+      setError(null);
+    }
+    const sequence = refreshSequence.current + 1;
+    refreshSequence.current = sequence;
+    const operation = (async () => {
+      try {
+        const [businessResponse, invitationResponse] = await Promise.all([
+          withToken((token) => getBusinesses(token)),
+          withToken((token) => getMyInvitations(token)),
+        ]);
+        const nextBusinesses = businessResponse.data?.businesses ?? [];
+        const nextInvitations = invitationResponse.data?.invitations ?? [];
+        setBusinesses((current) =>
+          JSON.stringify(current) === JSON.stringify(nextBusinesses) ? current : nextBusinesses,
+        );
+        setInvitations((current) =>
+          JSON.stringify(current) === JSON.stringify(nextInvitations) ? current : nextInvitations,
+        );
+        hasLoaded.current = true;
+        loadedAccessToken.current = accessToken;
+        setError(null);
+      } catch (requestError) {
+        if (initialLoad) {
+          setError(
+            requestError instanceof ApiClientError || requestError instanceof Error
+              ? requestError
+              : new Error("Workspace request failed."),
+          );
+        }
+      } finally {
+        if (initialLoad) setLoading(false);
+        if (refreshInFlight.current?.sequence === sequence) {
+          refreshInFlight.current = null;
+        }
+      }
+    })();
+    refreshInFlight.current = { promise: operation, sequence, token: accessToken };
+    return operation;
   }, [accessToken, withToken]);
 
   useEffect(() => {
