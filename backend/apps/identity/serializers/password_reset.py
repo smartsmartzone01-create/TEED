@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from rest_framework import serializers
@@ -12,7 +13,11 @@ class PasswordResetRequestSerializer(serializers.Serializer):
 
 class PasswordResetVerifySerializer(serializers.Serializer):
     email = serializers.EmailField(max_length=254)
-    code = serializers.CharField(min_length=4, max_length=12, trim_whitespace=True)
+    code = serializers.RegexField(
+        regex=rf"^\d{{{settings.EMAIL_VERIFICATION_CODE_LENGTH}}}$",
+        trim_whitespace=True,
+        error_messages={"invalid": "Enter a valid six-digit reset code."},
+    )
 
     def validate_email(self, value):
         return value.strip().lower()

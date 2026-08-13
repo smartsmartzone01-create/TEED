@@ -10,6 +10,7 @@ from ..email import DeliveryProviderError, DeliveryReceipt
 from ..models import EmailDelivery, IdentitySecurityEvent, User
 from ..services import (
     enqueue_email_delivery,
+    process_email_delivery,
     process_one_email_delivery,
 )
 from ..services.email_delivery_crypto import decrypt_delivery_payload
@@ -101,6 +102,42 @@ class EmailDeliveryServiceTests(TestCase):
         self.assertEqual(delivery.encrypted_payload, "")
         self.assertEqual(delivery.provider_message_id, "provider-123")
         self.assertIn("123456", SuccessfulProvider.messages[0].body)
+
+    @override_settings(
+        EMAIL_DELIVERY_AUTOPROCESS=True,
+        EMAIL_DELIVERY_PROVIDER=(
+            "apps.identity.tests.test_email_delivery.SuccessfulProvider"
+        ),
+    )
+    def test_autoprocess_targets_new_delivery_instead_of_oldest_backlog(self):
+        oldest = self.enqueue(idempotency_key="oldest-pending")
+        with self.captureOnCommitCallbacks(execute=True):
+            requested = self.enqueue(
+                idempotency_key="requested-reset",
+                template=EmailDelivery.Template.PASSWORD_RESET,
+            )
+
+        oldest.refresh_from_db()
+        requested.refresh_from_db()
+        self.assertEqual(oldest.status, EmailDelivery.Status.PENDING)
+        self.assertEqual(requested.status, EmailDelivery.Status.SENT)
+        self.assertIn("password reset code", SuccessfulProvider.messages[0].body)
+
+    @override_settings(
+        EMAIL_DELIVERY_PROVIDER=(
+            "apps.identity.tests.test_email_delivery.SuccessfulProvider"
+        )
+    )
+    def test_specific_delivery_processor_claims_requested_job(self):
+        oldest = self.enqueue(idempotency_key="specific-oldest")
+        requested = self.enqueue(idempotency_key="specific-requested")
+
+        self.assertTrue(process_email_delivery(delivery_id=requested.id))
+
+        oldest.refresh_from_db()
+        requested.refresh_from_db()
+        self.assertEqual(oldest.status, EmailDelivery.Status.PENDING)
+        self.assertEqual(requested.status, EmailDelivery.Status.SENT)
 
     @override_settings(
         EMAIL_DELIVERY_PROVIDER=(
