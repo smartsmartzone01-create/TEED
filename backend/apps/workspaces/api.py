@@ -228,7 +228,11 @@ class BusinessSettingsAPIView(WorkspaceBaseAPIView):
 
 class BusinessSecurityAPIView(WorkspaceBaseAPIView):
     def get(self, request, business_id):
-        membership = require_membership(user=request.user, business_id=business_id)
+        membership = require_membership(
+            user=request.user,
+            business_id=business_id,
+            allow_inactive_controllers=True,
+        )
         state = business_security_state(membership=membership)
         return SuccessResponse(
             message="Business security state retrieved successfully.",

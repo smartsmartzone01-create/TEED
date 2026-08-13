@@ -68,7 +68,14 @@ function DashboardWorkspaces() {
               {businesses.map((business) => (
                 <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 dark:border-slate-800 dark:bg-slate-950" key={business.id}>
                   <Tooltip content={t("openTooltip", { name: business.name })}>
-                    <Link className="group flex items-center gap-4" href={`/workspace/${business.id}`}>
+                    <Link
+                      className="group flex items-center gap-4"
+                      href={
+                        business.status === "active"
+                          ? `/workspace/${business.id}`
+                          : `/dashboard/workspaces/${business.id}/lifecycle`
+                      }
+                    >
                       <span className="inline-flex size-11 shrink-0 items-center justify-center rounded-xl bg-brand-navy/10 text-brand-navy dark:bg-brand-orange/10 dark:text-brand-orange"><Building2 className="size-5" /></span>
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-sm font-semibold">{business.name}</span>

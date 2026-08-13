@@ -5,7 +5,6 @@ import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 
 import { WorkspaceHeader } from "@/components/workspace/workspace-header";
-import { BusinessLifecycleState } from "@/components/workspace/business-lifecycle-state";
 import { WorkspaceSidebar } from "@/components/workspace/workspace-sidebar";
 import { cn } from "@/lib/global/class-names";
 import { useRouter } from "@/i18n/navigation";
@@ -34,6 +33,10 @@ function WorkspaceShell({ children }: WorkspaceShellProps) {
   useEffect(() => {
     if (!businessId || status !== "ready") return;
     if (currentBusiness) {
+      if (currentBusiness.status !== "active") {
+        router.replace(`/dashboard/workspaces/${businessId}/lifecycle`);
+        return;
+      }
       knownBusiness.current = businessId;
       return;
     }
@@ -53,10 +56,6 @@ function WorkspaceShell({ children }: WorkspaceShellProps) {
       .catch(() => { if (!controller.signal.aborted) setColors(null); });
     return () => controller.abort();
   }, [businessId, currentBusiness?.status, loadProfile, loadSettings]);
-
-  if (currentBusiness && currentBusiness.status !== "active") {
-    return <BusinessLifecycleState business={currentBusiness} />;
-  }
 
   const brandStyle = businessId && colors ? ({ "--workspace-primary": colors.primary, "--workspace-secondary": colors.secondary } as CSSProperties) : undefined;
 

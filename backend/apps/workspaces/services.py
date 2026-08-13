@@ -48,7 +48,13 @@ def audit(*, business, actor, event_type, target_id=None, metadata=None):
     )
 
 
-def require_membership(*, user, business_id, permission=WorkspacePermission.ACCESS):
+def require_membership(
+    *,
+    user,
+    business_id,
+    permission=WorkspacePermission.ACCESS,
+    allow_inactive_controllers=False,
+):
     membership = active_membership(user=user, business_id=business_id)
     if membership is None:
         raise NotFound("Business not found.", code="business_not_found")
@@ -57,9 +63,13 @@ def require_membership(*, user, business_id, permission=WorkspacePermission.ACCE
             "You do not have permission to perform this action.",
             code="workspace_permission_denied",
         )
+    inactive_controller_allowed = allow_inactive_controllers and role_has_permission(
+        membership.role, WorkspacePermission.CONTROL_BUSINESS
+    )
     if (
         permission != WorkspacePermission.CONTROL_BUSINESS
         and membership.business.status != Business.Status.ACTIVE
+        and not inactive_controller_allowed
     ):
         raise PermissionDenied(
             "This Business is not currently active.", code="business_inactive"
@@ -721,12 +731,28 @@ def create_control_request(*, actor, business_id, action):
                 "action": control_request.action,
                 "workspace_name": control_request.business.name,
             },
-            action_path=f"/workspace/{control_request.business_id}/security/control",
+            action_path=(
+                f"/dashboard/workspaces/{control_request.business_id}/lifecycle"
+                if control_request.action
+                in {
+                    BusinessControlRequest.Action.REACTIVATE,
+                    BusinessControlRequest.Action.CANCEL_DELETION,
+                }
+                else f"/workspace/{control_request.business_id}/security/control"
+            ),
             deduplication_key=(
                 f"business-control:{control_request.id}:{controller.id}"
             ),
             expires_at=control_request.expires_at,
-            scope=UserNotification.Scope.WORKSPACE,
+            scope=(
+                UserNotification.Scope.MEMBERSHIP
+                if control_request.action
+                in {
+                    BusinessControlRequest.Action.REACTIVATE,
+                    BusinessControlRequest.Action.CANCEL_DELETION,
+                }
+                else UserNotification.Scope.WORKSPACE
+            ),
             business_id=control_request.business_id,
         )
     return control_request
@@ -809,9 +835,17 @@ def decide_control_request(*, actor, business_id, control_request_id, decision):
             "status": control_request.business.status,
             "workspace_name": control_request.business.name,
         },
-        action_path=f"/workspace/{control_request.business_id}/security/control",
+        action_path=(
+            f"/workspace/{control_request.business_id}/security/control"
+            if control_request.business.status == Business.Status.ACTIVE
+            else f"/dashboard/workspaces/{control_request.business_id}/lifecycle"
+        ),
         deduplication_key=f"business-control-decision:{control_request.id}",
-        scope=UserNotification.Scope.WORKSPACE,
+        scope=(
+            UserNotification.Scope.WORKSPACE
+            if control_request.business.status == Business.Status.ACTIVE
+            else UserNotification.Scope.MEMBERSHIP
+        ),
         business_id=control_request.business_id,
     )
     return control_request

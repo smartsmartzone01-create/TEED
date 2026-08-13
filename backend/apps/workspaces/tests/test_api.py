@@ -10,9 +10,14 @@ from rest_framework.test import APITestCase
 from apps.identity.services import issue_token_pair
 from apps.notifications.models import UserNotification
 
-from ..models import Business, BusinessInvitation, BusinessMembership
+from ..models import (
+    Business,
+    BusinessControlRequest,
+    BusinessInvitation,
+    BusinessMembership,
+)
 from ..policy import WorkspaceRole
-from ..services import create_business
+from ..services import create_business, create_control_request, decide_control_request
 from .factories import create_user
 
 
@@ -285,6 +290,110 @@ class WorkspaceAPITests(APITestCase):
         self.assertEqual(len(response.data["data"]["controllers"]), 1)
         self.assertIn("business.control", response.data["data"]["permissions"])
         self.assertTrue(response.data["data"]["recent_events"])
+
+    def test_inactive_business_security_supports_independent_reactivation(self):
+        partner = create_user("api-partner@example.com")
+        business = create_business(user=self.owner, name="Recoverable Business")
+        BusinessMembership.objects.create(
+            business=business,
+            user=partner,
+            role=WorkspaceRole.PARTNER,
+        )
+        disabled = create_control_request(
+            actor=self.owner,
+            business_id=business.id,
+            action=BusinessControlRequest.Action.DISABLE,
+        )
+        decide_control_request(
+            actor=partner,
+            business_id=business.id,
+            control_request_id=disabled.id,
+            decision="approve",
+        )
+
+        security_url = reverse(
+            "workspaces:business-security", kwargs={"business_id": business.id}
+        )
+        security = self.client.get(security_url)
+        requested = self.client.post(
+            reverse(
+                "workspaces:control-request-create",
+                kwargs={"business_id": business.id},
+            ),
+            {"action": BusinessControlRequest.Action.REACTIVATE},
+            format="json",
+        )
+
+        self.assertEqual(security.status_code, status.HTTP_200_OK)
+        self.assertEqual(requested.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(requested.data["data"]["status"], "pending")
+        notification = UserNotification.objects.get(
+            user=partner,
+            template=UserNotification.Template.BUSINESS_CONTROL_REQUEST,
+            context__action=BusinessControlRequest.Action.REACTIVATE,
+        )
+        self.assertEqual(
+            notification.action_path,
+            f"/dashboard/workspaces/{business.id}/lifecycle",
+        )
+
+        self.authenticate(partner)
+        partner_security = self.client.get(security_url)
+        self.assertEqual(partner_security.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(partner_security.data["data"]["pending_controls"]), 1)
+        approved = self.client.post(
+            reverse(
+                "workspaces:control-request-decision",
+                kwargs={
+                    "business_id": business.id,
+                    "control_request_id": requested.data["data"]["id"],
+                },
+            ),
+            {"decision": "approve"},
+            format="json",
+        )
+        business.refresh_from_db()
+        self.assertEqual(approved.status_code, status.HTTP_200_OK)
+        self.assertEqual(business.status, Business.Status.ACTIVE)
+
+        deletion = create_control_request(
+            actor=partner,
+            business_id=business.id,
+            action=BusinessControlRequest.Action.DELETE,
+        )
+        decide_control_request(
+            actor=self.owner,
+            business_id=business.id,
+            control_request_id=deletion.id,
+            decision="approve",
+        )
+        cancellation = self.client.post(
+            reverse(
+                "workspaces:control-request-create",
+                kwargs={"business_id": business.id},
+            ),
+            {"action": BusinessControlRequest.Action.CANCEL_DELETION},
+            format="json",
+        )
+        self.assertEqual(cancellation.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(cancellation.data["data"]["status"], "pending")
+
+    def test_inactive_business_security_remains_hidden_from_member(self):
+        business = create_business(user=self.owner, name="Inactive Private Business")
+        BusinessMembership.objects.create(
+            business=business,
+            user=self.outsider,
+            role=WorkspaceRole.MEMBER,
+        )
+        business.status = Business.Status.DISABLED
+        business.save(update_fields=["status", "updated_at"])
+
+        self.authenticate(self.outsider)
+        response = self.client.get(
+            reverse("workspaces:business-security", kwargs={"business_id": business.id})
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_public_handle_change_is_explicit_and_cooled_down(self):
         business = create_business(user=self.owner, name="Handle Business")

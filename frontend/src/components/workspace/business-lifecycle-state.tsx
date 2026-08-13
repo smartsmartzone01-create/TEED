@@ -1,18 +1,19 @@
 "use client";
 
-import { AlertTriangle, ArrowLeft, CalendarClock, RotateCcw } from "lucide-react";
+import { AlertTriangle, CalendarClock, RotateCcw } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 
 import { Button } from "@/components/global/primitives/button";
 import { BusinessIcon } from "@/components/workspace/business-icon";
-import { Link } from "@/i18n/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { useNotification } from "@/providers/global/notification-provider";
 import { useWorkspace } from "@/providers/workspace/workspace-provider";
 import type { BusinessSecurityData, WorkspaceBusinessListItem } from "@/types/workspace/workspace";
 
 function BusinessLifecycleState({ business }: { business: WorkspaceBusinessListItem }) {
   const t = useTranslations("BusinessLifecycleState");
+  const router = useRouter();
   const { notify } = useNotification();
   const { createControl, decideControl, loadSecurity } = useWorkspace();
   const [busy, setBusy] = useState(false);
@@ -57,6 +58,9 @@ function BusinessLifecycleState({ business }: { business: WorkspaceBusinessListI
       await decideControl(business.id, requestId, decision);
       await reload();
       notify({ message: t("decisionRecorded"), tone: "success" });
+      if (decision === "approve") {
+        router.replace(`/workspace/${business.id}`);
+      }
     } catch (error) {
       notify({
         message: error instanceof Error ? error.message : t("failed"),
@@ -75,8 +79,8 @@ function BusinessLifecycleState({ business }: { business: WorkspaceBusinessListI
     pendingRequest?.initiated_by_id === security?.membership.user_id;
 
   return (
-    <main className="flex min-h-svh items-center justify-center bg-slate-50 p-4 text-slate-950 dark:bg-slate-950 dark:text-white sm:p-8">
-      <section className="w-full max-w-2xl rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-10">
+    <div className="mx-auto w-full max-w-3xl py-2 sm:py-6">
+      <section className="w-full rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950 sm:p-10">
         <BusinessIcon
           className="size-14 rounded-2xl"
           logoUrl={business.logo_url}
@@ -135,15 +139,12 @@ function BusinessLifecycleState({ business }: { business: WorkspaceBusinessListI
               {t(pendingDeletion ? "cancelDeletion" : "reactivate")}
             </Button>
           )}
-          <Button asChild variant="outline">
-            <Link href="/dashboard/workspaces">
-              <ArrowLeft className="size-4" />
-              {t("back")}
-            </Link>
+          <Button onClick={() => router.push("/dashboard/workspaces")} variant="outline">
+            {t("back")}
           </Button>
         </div>
       </section>
-    </main>
+    </div>
   );
 }
 
