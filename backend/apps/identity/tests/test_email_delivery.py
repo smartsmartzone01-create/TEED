@@ -1,9 +1,10 @@
+from contextlib import redirect_stdout
 from datetime import timedelta
 from io import StringIO
 
 from django.core.management import call_command
 from django.db import transaction
-from django.test import TestCase, override_settings
+from django.test import TestCase, TransactionTestCase, override_settings
 from django.utils import timezone
 
 from ..email import DeliveryProviderError, DeliveryReceipt
@@ -12,6 +13,8 @@ from ..services import (
     enqueue_email_delivery,
     process_email_delivery,
     process_one_email_delivery,
+    register_email_user,
+    request_password_reset,
 )
 from ..services.email_delivery_crypto import decrypt_delivery_payload
 
@@ -214,3 +217,35 @@ class EmailDeliveryServiceTests(TestCase):
 
         self.assertFalse(EmailDelivery.all_objects.filter(pk=old.pk).exists())
         self.assertTrue(EmailDelivery.all_objects.filter(pk=current.pk).exists())
+
+
+@override_settings(
+    EMAIL_BACKEND="django.core.mail.backends.console.EmailBackend",
+    EMAIL_DELIVERY_AUTOPROCESS=True,
+    EMAIL_DELIVERY_ENCRYPTION_KEY="",
+)
+class DevelopmentConsoleDeliveryTests(TransactionTestCase):
+    def test_initial_registration_prints_code_before_service_returns(self):
+        output = StringIO()
+
+        with redirect_stdout(output):
+            register_email_user(
+                email="console-registration@example.com",
+                password="Strong-Password-123!",
+            )
+
+        self.assertIn("verification code is", output.getvalue())
+
+    def test_eligible_password_reset_prints_code_before_service_returns(self):
+        user = User.objects.create_user(
+            email="console-reset@example.com",
+            password="Strong-Password-123!",
+        )
+        user.is_email_verified = True
+        user.save(update_fields=["is_email_verified", "updated_at"])
+        output = StringIO()
+
+        with redirect_stdout(output):
+            request_password_reset(email=user.email)
+
+        self.assertIn("password reset code is", output.getvalue())

@@ -1,5 +1,6 @@
 from datetime import timedelta
 
+from common.logging import get_logger
 from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
@@ -22,6 +23,16 @@ from .security_event import (
     hash_identity_identifier,
     record_identity_security_event,
 )
+
+logger = get_logger(__name__)
+
+
+def _autoprocess_email_delivery(*, delivery_id) -> None:
+    if not process_email_delivery(delivery_id=delivery_id):
+        logger.warning(
+            "Immediate email delivery could not claim its outbox row: delivery_id=%s",
+            delivery_id,
+        )
 
 
 def enqueue_email_delivery(
@@ -55,9 +66,15 @@ def enqueue_email_delivery(
             metadata={"template": template},
         )
         if settings.EMAIL_DELIVERY_AUTOPROCESS:
+            logger.info(
+                "Email delivery queued for immediate processing: "
+                "delivery_id=%s template=%s",
+                delivery.id,
+                delivery.template,
+            )
             transaction.on_commit(
-                lambda delivery_id=delivery.id: process_email_delivery(
-                    delivery_id=delivery_id
+                lambda delivery_id=delivery.id: _autoprocess_email_delivery(
+                    delivery_id=delivery_id,
                 )
             )
     return delivery
@@ -141,6 +158,12 @@ def _finish_success(*, delivery, receipt):
             "attempt": delivery.attempt_count,
         },
     )
+    logger.info(
+        "Email delivery sent successfully: delivery_id=%s template=%s attempt=%s",
+        delivery.id,
+        delivery.template,
+        delivery.attempt_count,
+    )
 
 
 def _finish_failure(*, delivery, error_code, permanent=False):
@@ -191,6 +214,15 @@ def _finish_failure(*, delivery, error_code, permanent=False):
             "reason": error_code,
         },
     )
+    logger.warning(
+        "Email delivery failed and was persisted for recovery: "
+        "delivery_id=%s template=%s attempt=%s reason=%s terminal=%s",
+        delivery.id,
+        delivery.template,
+        delivery.attempt_count,
+        error_code,
+        dead,
+    )
 
 
 def _process_delivery(delivery) -> bool:
@@ -223,6 +255,11 @@ def _process_delivery(delivery) -> bool:
             permanent=exc.permanent,
         )
     except Exception:
+        logger.exception(
+            "Unexpected email delivery error: delivery_id=%s template=%s",
+            delivery.id,
+            delivery.template,
+        )
         _finish_failure(
             delivery=delivery,
             error_code="delivery_internal_error",

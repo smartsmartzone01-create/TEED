@@ -10,6 +10,7 @@ from common.exceptions.modules.identity import (
     PasswordResetGrantInvalid,
     PasswordResetPasswordUnchanged,
 )
+from common.logging import get_logger
 from django.conf import settings
 from django.contrib.auth.hashers import check_password
 from django.db import transaction
@@ -35,6 +36,8 @@ from .email_delivery import enqueue_email_delivery
 from .email_verification import issue_email_verification_challenge
 from .security_event import hash_identity_identifier, record_identity_security_event
 from .session import revoke_all_user_sessions
+
+logger = get_logger(__name__)
 
 
 def _digest_grant(raw_grant: str) -> str:
@@ -71,6 +74,19 @@ def request_password_reset(
         or not user.is_email_verified
         or not user.has_usable_password()
     ):
+        if user is None:
+            reason = "account_not_found"
+        elif not user.is_active:
+            reason = "account_inactive"
+        elif not user.is_email_verified:
+            reason = "email_unverified"
+        else:
+            reason = "password_unusable"
+        logger.info(
+            "Password reset email was not issued: identifier_hash=%s reason=%s",
+            hash_identity_identifier(normalized_email),
+            reason,
+        )
         record_identity_security_event(
             user=user,
             identifier=normalized_email,
@@ -90,6 +106,11 @@ def request_password_reset(
         created_at__gte=timezone.now() - timedelta(hours=1),
     ).count()
     if recent_count >= settings.PASSWORD_RESET_REQUESTS_PER_HOUR:
+        logger.info(
+            "Password reset email was not issued: identifier_hash=%s reason=%s",
+            identifier_hash,
+            "adaptive_rate_limit",
+        )
         record_identity_security_event(
             user=user,
             identifier=normalized_email,
@@ -120,6 +141,11 @@ def request_password_reset(
         EmailVerificationDailyLimitReached,
         EmailVerificationResendCooldown,
     ) as exc:
+        logger.info(
+            "Password reset email was not issued: identifier_hash=%s reason=%s",
+            identifier_hash,
+            exc.default_code,
+        )
         record_identity_security_event(
             user=user,
             identifier=normalized_email,
@@ -131,6 +157,10 @@ def request_password_reset(
             metadata={"reason": exc.default_code},
         )
         return
+    logger.info(
+        "Password reset challenge and email delivery were issued: identifier_hash=%s",
+        identifier_hash,
+    )
     record_identity_security_event(
         user=user,
         identifier=normalized_email,
