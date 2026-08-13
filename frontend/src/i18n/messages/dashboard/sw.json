@@ -12,6 +12,7 @@
     "notificationsSoon": "Kikasha cha arifa kitafuata",
     "logout": "Toka",
     "loggingOut": "Inatoka…",
+    "subnavigation": {"workspaces": {"overview": "Muhtasari wa maeneo ya kazi", "create": "Unda biashara", "requestAccess": "Omba ufikiaji"}},
     "navigation": {
       "overview": "Muhtasari",
       "ai": "TEED AI",
