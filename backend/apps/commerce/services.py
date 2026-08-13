@@ -2,6 +2,7 @@ from datetime import timedelta
 from decimal import Decimal
 from zoneinfo import ZoneInfo
 
+from django.conf import settings
 from django.db import transaction
 from django.db.models import F, Max, Sum
 from django.utils import timezone
@@ -11,6 +12,7 @@ from apps.workspaces.business.capabilities import (
     WorkspaceCapability,
     workspace_type_has_capability,
 )
+from apps.workspaces.business.models import BusinessSettings
 from apps.workspaces.policy import WorkspacePermission, role_has_permission
 from apps.workspaces.services import require_membership
 
@@ -242,7 +244,13 @@ def _sale_snapshot(sale):
 def _can_edit_sale(*, membership, actor, sale):
     if role_has_permission(membership.role, WorkspacePermission.EDIT_ANY_SALES):
         return True
-    workspace_timezone = ZoneInfo(membership.business.settings.timezone)
+    timezone_name = (
+        BusinessSettings.objects.filter(business=membership.business)
+        .values_list("timezone", flat=True)
+        .first()
+        or settings.TIME_ZONE
+    )
+    workspace_timezone = ZoneInfo(timezone_name)
     return (
         role_has_permission(membership.role, WorkspacePermission.EDIT_OWN_SALES)
         and sale.recorded_by_id == actor.id
