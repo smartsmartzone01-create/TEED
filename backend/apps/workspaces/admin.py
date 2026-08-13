@@ -6,10 +6,14 @@ from .models import (
     BusinessControlRequest,
     BusinessInvitation,
     BusinessMembership,
+    BusinessProfile,
+    BusinessSettings,
     WorkspaceAuditEvent,
 )
 
 admin.site.register(Business)
+admin.site.register(BusinessProfile)
+admin.site.register(BusinessSettings)
 admin.site.register(BusinessMembership)
 admin.site.register(BusinessInvitation)
 admin.site.register(BusinessAccessRequest)

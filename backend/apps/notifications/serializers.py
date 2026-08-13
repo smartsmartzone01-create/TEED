@@ -14,6 +14,8 @@ class NotificationSerializer(serializers.ModelSerializer):
             "template",
             "context",
             "action_path",
+            "scope",
+            "business_id",
             "is_read",
             "read_at",
             "created_at",

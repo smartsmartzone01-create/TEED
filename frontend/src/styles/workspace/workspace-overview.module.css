@@ -1,6 +1,6 @@
 .stateCard {
-  --state-accent: var(--brand-navy);
-  --state-soft: var(--brand-navy-soft);
+  --state-accent: var(--workspace-primary, var(--brand-navy));
+  --state-soft: color-mix(in srgb, var(--state-accent) 12%, white);
   position: relative;
   isolation: isolate;
   min-height: 4.75rem;
@@ -9,7 +9,7 @@
   border-radius: 1rem;
   background:
     linear-gradient(135deg, color-mix(in srgb, var(--state-soft) 72%, white), white 58%);
-  color: var(--brand-navy);
+  color: var(--state-accent);
   padding: 1rem;
   display: flex;
   align-items: center;
@@ -18,8 +18,7 @@
 }
 
 .orange {
-  --state-accent: var(--brand-orange);
-  --state-soft: var(--brand-orange-soft);
+  --state-accent: var(--workspace-secondary, var(--brand-orange));
 }
 
 .stateCard::before {

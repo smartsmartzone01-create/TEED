@@ -15,6 +15,7 @@ import {
 } from "@/components/global/primitives/dropdown-menu";
 import { usePathname, useRouter } from "@/i18n/navigation";
 import type { AppLocale } from "@/i18n/routing";
+import { replaceDocumentLocale } from "@/lib/global/locale-navigation";
 import { useNotifications } from "@/providers/notifications/notifications-provider";
 import { useWorkspace } from "@/providers/workspace/workspace-provider";
 
@@ -31,11 +32,14 @@ function WorkspaceMobileMenu() {
   const themeT = useTranslations("Theme");
   const { unreadCount } = useNotifications();
   const { businesses } = useWorkspace();
+  const activeBusinesses = businesses.filter((business) => business.status === "active");
   const { setTheme, theme } = useTheme();
   const mounted = useSyncExternalStore(subscribe, getClientSnapshot, getServerSnapshot);
   const selectedTheme = mounted && ["system", "light", "dark"].includes(theme ?? "") ? theme : "system";
   const activeId = pathname.match(/^\/workspace\/([^/]+)/)?.[1];
-  const activeBusiness = businesses.find((business) => business.id === activeId) ?? businesses[0];
+  const activeBusiness = activeId
+    ? activeBusinesses.find((business) => business.id === activeId)
+    : activeBusinesses[0];
   const businessName = activeBusiness?.name ?? t("businessFallback");
   const words = businessName.trim().split(/\s+/).filter(Boolean);
   const initials = (words.length > 1 ? `${words[0][0]}${words[1][0]}` : businessName.slice(0, 2)).toUpperCase();
@@ -66,13 +70,13 @@ function WorkspaceMobileMenu() {
           </span>
           <Check className="size-4" />
         </DropdownMenuItem>
-        {businesses.filter((business) => business.id !== activeBusiness?.id).map((business) => (
+        {activeBusinesses.filter((business) => business.id !== activeBusiness?.id).map((business) => (
           <DropdownMenuItem key={business.id} onSelect={() => router.push(`/workspace/${business.id}`)}>
             <Building2 className="size-4" />
             <span className="truncate">{business.name}</span>
           </DropdownMenuItem>
         ))}
-        {businesses.length < 2 ? <DropdownMenuItem disabled>{t("noOtherBusinesses")}</DropdownMenuItem> : null}
+        {activeBusinesses.length < 2 ? <DropdownMenuItem disabled>{t("noOtherBusinesses")}</DropdownMenuItem> : null}
         <DropdownMenuItem onSelect={() => router.push("/dashboard/workspaces/create")}>
           <Plus className="size-4" />
           {t("createBusiness")}
@@ -100,7 +104,7 @@ function WorkspaceMobileMenu() {
         {(["en", "sw"] as const).map((value) => (
           <DropdownMenuItem
             key={value}
-            onSelect={() => router.replace(pathname, { locale: value })}
+            onSelect={() => replaceDocumentLocale(value)}
           >
             <span className="w-5 text-xs font-semibold">{value.toUpperCase()}</span>
             {languageT(value === "en" ? "english" : "swahili")}

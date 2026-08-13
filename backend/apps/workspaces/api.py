@@ -2,15 +2,18 @@ from common.responses import SuccessResponse
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_protect
 from rest_framework import status
+from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
 from apps.profiles.permissions import IsOnboardingComplete
 
-from .models import BusinessMembership
-from .policy import WorkspacePermission
+from .models import BusinessMembership, BusinessProfile, BusinessSettings
+from .policy import WorkspacePermission, role_has_permission
 from .selectors import (
+    business_profile_completion,
+    business_security_state,
     discover_businesses,
     user_businesses,
     visible_access_requests,
@@ -24,7 +27,11 @@ from .serializers import (
     BusinessCreateSerializer,
     BusinessDiscoveryQuerySerializer,
     BusinessDiscoverySerializer,
+    BusinessProfileSerializer,
+    BusinessProfileUpdateSerializer,
     BusinessSerializer,
+    BusinessSettingsSerializer,
+    BusinessSettingsUpdateSerializer,
     ControlRequestCreateSerializer,
     ControlRequestDecisionSerializer,
     ControlRequestSerializer,
@@ -34,8 +41,10 @@ from .serializers import (
     MembershipSerializer,
     MembershipUpdateSerializer,
     OwnershipTransferSerializer,
+    WorkspaceAuditEventSerializer,
 )
 from .services import (
+    cancel_invitation,
     create_business,
     create_control_request,
     create_invitation,
@@ -45,6 +54,8 @@ from .services import (
     require_membership,
     resolve_invitation,
     transfer_ownership,
+    update_business_profile,
+    update_business_settings,
     update_membership,
 )
 
@@ -63,7 +74,9 @@ class BusinessListCreateAPIView(WorkspaceBaseAPIView):
             data={
                 "businesses": [
                     {
-                        **BusinessSerializer(item.business).data,
+                        **BusinessSerializer(
+                            item.business, context={"request": request}
+                        ).data,
                         "membership": MembershipSerializer(item).data,
                     }
                     for item in memberships
@@ -78,7 +91,7 @@ class BusinessListCreateAPIView(WorkspaceBaseAPIView):
         business = create_business(user=request.user, **serializer.validated_data)
         return SuccessResponse(
             message="Business created successfully.",
-            data=BusinessSerializer(business).data,
+            data=BusinessSerializer(business, context={"request": request}).data,
             status_code=status.HTTP_201_CREATED,
         )
 
@@ -108,7 +121,9 @@ class BusinessDetailAPIView(WorkspaceBaseAPIView):
         return SuccessResponse(
             message="Business retrieved successfully.",
             data={
-                **BusinessSerializer(membership.business).data,
+                **BusinessSerializer(
+                    membership.business, context={"request": request}
+                ).data,
                 "membership": MembershipSerializer(membership).data,
             },
         )
@@ -122,9 +137,123 @@ class BusinessOverviewAPIView(WorkspaceBaseAPIView):
         return SuccessResponse(
             message="Business workspace overview retrieved successfully.",
             data={
-                "business": BusinessSerializer(membership.business).data,
+                "business": BusinessSerializer(
+                    membership.business, context={"request": request}
+                ).data,
                 "membership": MembershipSerializer(membership).data,
                 "state": workspace_overview_state(membership=membership),
+            },
+        )
+
+
+class BusinessProfileAPIView(WorkspaceBaseAPIView):
+    parser_classes = [JSONParser, FormParser, MultiPartParser]
+
+    def get(self, request, business_id):
+        membership = require_membership(user=request.user, business_id=business_id)
+        profile, _ = BusinessProfile.objects.get_or_create(business=membership.business)
+        return SuccessResponse(
+            message="Business profile retrieved successfully.",
+            data={
+                "business": BusinessSerializer(
+                    membership.business, context={"request": request}
+                ).data,
+                "profile": BusinessProfileSerializer(
+                    profile, context={"request": request}
+                ).data,
+                "completion": business_profile_completion(business=membership.business),
+                "can_manage": role_has_permission(
+                    membership.role, WorkspacePermission.MANAGE_BUSINESS
+                ),
+            },
+        )
+
+    @method_decorator(csrf_protect)
+    def patch(self, request, business_id):
+        serializer = BusinessProfileUpdateSerializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        business, profile = update_business_profile(
+            actor=request.user,
+            business_id=business_id,
+            **serializer.validated_data,
+        )
+        return SuccessResponse(
+            message="Business profile updated successfully.",
+            data={
+                "business": BusinessSerializer(
+                    business, context={"request": request}
+                ).data,
+                "profile": BusinessProfileSerializer(
+                    profile, context={"request": request}
+                ).data,
+                "completion": business_profile_completion(business=business),
+                "can_manage": True,
+            },
+        )
+
+
+class BusinessSettingsAPIView(WorkspaceBaseAPIView):
+    def get(self, request, business_id):
+        membership = require_membership(user=request.user, business_id=business_id)
+        settings_record, _ = BusinessSettings.objects.get_or_create(
+            business=membership.business
+        )
+        return SuccessResponse(
+            message="Business settings retrieved successfully.",
+            data={
+                "settings": BusinessSettingsSerializer(settings_record).data,
+                "can_manage": role_has_permission(
+                    membership.role, WorkspacePermission.MANAGE_BUSINESS
+                ),
+            },
+        )
+
+    @method_decorator(csrf_protect)
+    def patch(self, request, business_id):
+        serializer = BusinessSettingsUpdateSerializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        settings_record = update_business_settings(
+            actor=request.user,
+            business_id=business_id,
+            **serializer.validated_data,
+        )
+        return SuccessResponse(
+            message="Business settings updated successfully.",
+            data={
+                "settings": BusinessSettingsSerializer(settings_record).data,
+                "can_manage": True,
+            },
+        )
+
+
+class BusinessSecurityAPIView(WorkspaceBaseAPIView):
+    def get(self, request, business_id):
+        membership = require_membership(
+            user=request.user,
+            business_id=business_id,
+            allow_inactive_controllers=True,
+        )
+        state = business_security_state(membership=membership)
+        return SuccessResponse(
+            message="Business security state retrieved successfully.",
+            data={
+                "business": BusinessSerializer(
+                    membership.business, context={"request": request}
+                ).data,
+                "membership": MembershipSerializer(membership).data,
+                "controllers": MembershipSerializer(
+                    state["controllers"], many=True
+                ).data,
+                "permissions": state["permissions"],
+                "pending_controls": ControlRequestSerializer(
+                    state["pending_controls"], many=True
+                ).data,
+                "recent_events": WorkspaceAuditEventSerializer(
+                    state["recent_events"], many=True
+                ).data,
+                "can_control": role_has_permission(
+                    membership.role, WorkspacePermission.CONTROL_BUSINESS
+                ),
             },
         )
 
@@ -135,7 +264,11 @@ class MembershipListAPIView(WorkspaceBaseAPIView):
     def get(self, request, business_id):
         membership = require_membership(user=request.user, business_id=business_id)
         members = BusinessMembership.objects.select_related("user").filter(
-            business=membership.business
+            business=membership.business,
+            status__in=[
+                BusinessMembership.Status.ACTIVE,
+                BusinessMembership.Status.SUSPENDED,
+            ],
         )
         return SuccessResponse(
             message="Business members retrieved successfully.",
@@ -217,6 +350,22 @@ class InvitationDecisionAPIView(WorkspaceBaseAPIView):
         return SuccessResponse(
             message=f"Invitation {decision}ed successfully.",
             data=MembershipSerializer(membership).data if membership else None,
+        )
+
+
+@method_decorator(csrf_protect, name="dispatch")
+class InvitationCancelAPIView(WorkspaceBaseAPIView):
+    serializer_class = EmptyActionSerializer
+
+    def post(self, request, business_id, invitation_id):
+        invitation = cancel_invitation(
+            actor=request.user,
+            business_id=business_id,
+            invitation_id=invitation_id,
+        )
+        return SuccessResponse(
+            message="Invitation cancelled successfully.",
+            data=InvitationSerializer(invitation).data,
         )
 
 

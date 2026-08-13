@@ -38,6 +38,14 @@ class ApiClientError extends Error {
   }
 }
 
+function isRequestCancelled(error: unknown) {
+  return (
+    (error instanceof ApiClientError && error.details.kind === "cancelled") ||
+    (error instanceof DOMException && error.name === "AbortError") ||
+    (error instanceof Error && error.name === "AbortError")
+  );
+}
+
 function buildUrl(path: string) {
   const normalizedPath = path.startsWith("/")
     ? path
@@ -131,5 +139,5 @@ async function requestApi<T>({
   return payload;
 }
 
-export { ApiClientError, requestApi };
+export { ApiClientError, isRequestCancelled, requestApi };
 export type { ApiRequestOptions };

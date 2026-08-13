@@ -26,15 +26,22 @@
     "collapseSidebar": "Punguza utepe wa pembeni",
     "expandSidebar": "Panua utepe wa pembeni",
     "availableAfterIntegration": "Sehemu hii itafunguka baada ya kuunganisha API ya eneo la kazi.",
+    "accessEnded": "Ufikiaji wako wa biashara hii umeisha. TEED imekurudisha kwenye dashibodi.",
+    "workspaceUnavailable": "Biashara hii haipatikani au huna tena ruhusa ya kuifikia.",
     "navigation": {
       "overview": "Muhtasari",
       "business": "Biashara",
+      "membership": "Uanachama",
+      "profile": "Wasifu wa biashara",
+      "settingsSecurity": "Mipangilio na usalama",
+      "settings": "Mipangilio",
       "members": "Wanachama",
       "invitations": "Mialiko",
       "accessRequests": "Maombi ya ufikiaji",
       "roles": "Majukumu na ufikiaji",
       "control": "Usalama na udhibiti"
-    }
+    },
+    "subnavigation": {"members": "Wanachama", "invitations": "Mialiko", "accessRequests": "Maombi ya ufikiaji", "roles": "Majukumu na ruhusa", "profileOverview": "Muhtasari wa wasifu", "information": "Taarifa za biashara", "brand": "Chapa na mwonekano", "operations": "Maeneo na uendeshaji", "settingsOverview": "Muhtasari wa mipangilio", "workspacePreferences": "Mapendeleo ya eneo la kazi", "audit": "Shughuli za usalama", "businessLifecycle": "Mzunguko wa biashara"}
   },
   "WorkspaceOverview": {
     "eyebrow": "Eneo la kazi la TEED",
@@ -75,11 +82,33 @@
     "emptyHelp": "Unda biashara, kubali mwaliko au omba ufikiaji.",
     "openTooltip": "Fungua eneo la kazi la {name}.",
     "businessMeta": "{country} · {role}",
+    "scheduledDeletion": "Imepangwa kuondolewa baada ya {date}",
+    "statuses": {"active": "Inatumika", "disabled": "Imezimwa", "deletion_pending": "Imepangwa kufutwa"},
     "technical": {"summary": "Maelezo ya kiufundi", "copy": "Nakili UUID ya biashara", "copied": "UUID ya biashara imenakiliwa."},
     "invitationsTitle": "Mialiko inayosubiri",
     "noInvitations": "Huna mialiko ya biashara inayosubiri.",
     "roles": {"owner": "Mmiliki", "partner": "Mshirika", "administrator": "Msimamizi mkuu", "manager": "Meneja", "member": "Mwanachama"},
     "invitation": {"title": "Mwaliko wa biashara", "details": "Biashara {businessId} · {role}", "accept": "Kubali", "decline": "Kataa", "acceptSuccess": "Mwaliko umekubaliwa.", "declineSuccess": "Mwaliko umekataliwa.", "decisionError": "TEED imeshindwa kubadilisha mwaliko huu."}
+  },
+  "BusinessLifecycleState": {
+    "eyebrow": "Mzunguko wa biashara",
+    "disabledTitle": "{name} imezimwa",
+    "deletionTitle": "{name} imepangwa kufutwa",
+    "disabledDescription": "Biashara hii haipatikani kwa shughuli za kawaida. Mmiliki au mshirika anaweza kuomba kuiwasha tena.",
+    "deletionDescription": "Shughuli za kawaida zimesimamishwa. Wamiliki na washirika wanaweza kuirejesha kabla ya muda wa kurejesha kuisha.",
+    "disabledNotice": "Biashara imehifadhiwa na itaendelea kuonekana kwenye ukurasa wa kuchagua biashara hadi iwashwe tena.",
+    "recoveryWindow": "Muda wa kurejesha wa siku 30",
+    "scheduledFor": "Inaweza kurejeshwa hadi {date}.",
+    "reactivate": "Washa biashara tena",
+    "cancelDeletion": "Ghairi ufutaji na urejeshe",
+    "back": "Rudi kuchagua biashara",
+    "restored": "Biashara imerudi kutumika.",
+    "approvalRequested": "Ombi lako la kurejesha limetumwa kwa mdhibiti mwingine wa biashara ili aidhinishe.",
+    "awaitingApproval": "Ombi lako la kurejesha linasubiri mdhibiti mwingine wa biashara.",
+    "approveRecovery": "Idhinisha kurejesha",
+    "rejectRecovery": "Kataa kurejesha",
+    "decisionRecorded": "Uamuzi wako wa kurejesha umehifadhiwa.",
+    "failed": "TEED imeshindwa kukamilisha urejeshaji huu."
   },
   "WorkspaceCreate": {
     "eyebrow": "Kuanzisha eneo la kazi",
@@ -87,7 +116,7 @@
     "description": "Weka taarifa tatu. TEED itaunda jina la umma la kipekee, eneo la kazi la UUID na ruhusa za mmiliki moja kwa moja.",
     "fields": {"name": "Jina la eneo la kazi", "country": "Nchi", "workspaceType": "Aina ya eneo la kazi", "workspaceTypeHelp": "Chagua maelezo yanayolingana zaidi na matumizi ya eneo hili la kazi."},
     "countries": {"TZ": "Tanzania", "KE": "Kenya", "UG": "Uganda"},
-    "types": {"business": "Biashara", "service_provider": "Mtoa huduma", "creator_brand": "Mtayarishaji au chapa binafsi", "personal": "Binafsi", "other": "Nyingine"},
+    "types": {"business": "Eneo la kazi la biashara", "service": "Eneo la kazi la huduma", "personal_brand": "Eneo la kazi la chapa binafsi"},
     "validation": {"name": "Weka jina la eneo la kazi lenye herufi 2 hadi 120.", "country": "Chagua nchi inayokubaliwa.", "workspaceType": "Chagua aina ya eneo la kazi."},
     "submit": "Unda biashara",
     "creating": "Inaunda…",
@@ -104,5 +133,36 @@
     "submit": "Tuma ombi",
     "sending": "Inatuma…",
     "success": "Ombi la ufikiaji limetumwa."
-  }
+  },
+  "WorkspaceAccessManagement": {
+    "eyebrow": "Ufikiaji wa eneo la kazi",
+    "loading": "Inapakia hali ya sasa ya ufikiaji…",
+    "loadError": "TEED haikuweza kupakia taarifa hizi za ufikiaji.",
+    "actionError": "TEED haikuweza kukamilisha badiliko hilo la ufikiaji.",
+    "readOnly": "Wajibu wako unaweza kuona eneo hili lakini hauwezi kulisimamia.",
+    "collaborationUnavailable": "Eneo hili la Chapa Binafsi ni la mtumiaji mmoja, kwa hiyo uanachama, mialiko na maombi ya ufikiaji hayatumiki.",
+    "members": {"title": "Wanachama", "description": "Kagua wote wenye ufikiaji wa eneo la kazi na simamia wajibu na hali zinazostahili.", "updated": "Uanachama umesasishwa.", "suspend": "Simamisha", "reactivate": "Rudisha", "remove": "Ondoa", "removeHelp": "Ondoa ufikiaji wa mwanachama huyu kwenye eneo la kazi."},
+    "invitations": {"title": "Mialiko", "description": "Alika anwani ya barua pepe iliyosajiliwa kwa kutumia wajibu mmoja maalum wa TEED.", "email": "Anwani ya barua pepe", "role": "Wajibu", "send": "Tuma mwaliko", "sent": "Mwaliko umetumwa.", "cancel": "Ghairi", "cancelled": "Mwaliko umeghairiwa.", "empty": "Hakuna mialiko iliyoundwa kwa eneo hili la kazi."},
+    "access": {"title": "Maombi ya ufikiaji", "description": "Kagua watu walioomba kujiunga na eneo hili la kazi na ufanye uamuzi wa wazi."},
+    "requests": {"empty": "Hakuna maombi ya ufikiaji yanayosubiri.", "role": "Jukumu baada ya kukubali", "approve": "Kubali ombi", "reject": "Kataa", "approved": "Ombi la ufikiaji limekubaliwa.", "rejected": "Ombi la ufikiaji limekataliwa."},
+    "roles": {"title": "Wajibu na ufikiaji", "description": "Wajibu wa TEED haubadilishwi. Kutoa wajibu huweka ruhusa zinazodhibitiwa na mfumo wa nyuma moja kwa moja.", "yours": "Wajibu wako", "descriptions": {"owner": "Aliunda eneo la kazi na ana ruhusa zote.", "partner": "Anashiriki udhibiti uliolindwa na mmiliki, pamoja na idhini huru.", "administrator": "Anasimamia biashara, wanachama na mialiko bila udhibiti wa mzunguko wa maisha.", "manager": "Anaendesha shughuli na anaweza kualika wanachama wa kawaida.", "member": "Anatumia vipengele vya eneo la kazi vilivyowezeshwa kwa biashara."}},
+    "roleNames": {"owner": "Mmiliki", "partner": "Mshirika", "administrator": "Msimamizi", "manager": "Meneja", "member": "Mwanachama"},
+    "statuses": {"active": "Hai", "pending": "Inasubiri", "accepted": "Imekubaliwa", "declined": "Imekataliwa", "cancelled": "Imeghairiwa", "expired": "Imeisha muda", "suspended": "Imesimamishwa", "removed": "Imeondolewa"},
+    "permissions": {"access": {"label": "Ufikiaji wa eneo", "help": "Fungua na utumie eneo la kazi."}, "business": {"label": "Simamia biashara", "help": "Sasisha wasifu na mipangilio ya biashara."}, "members": {"label": "Simamia wanachama", "help": "Badilisha wajibu na hali za wanachama wanaostahili."}, "invitations": {"label": "Simamia mialiko", "help": "Alika watu wanaostahili kwenye eneo la kazi."}, "control": {"label": "Udhibiti uliolindwa", "help": "Anzisha au idhinisha shughuli za mzunguko wa maisha zilizolindwa."}, "ownership": {"label": "Hamisha umiliki", "help": "Shiriki katika uhamisho wa umiliki uliolindwa."}}
+  },
+  "BusinessProfile": {
+    "eyebrow": "Wasifu wa biashara", "loading": "Inapakia wasifu wa biashara…", "loadError": "TEED imeshindwa kupakia wasifu wa biashara.", "save": "Hifadhi mabadiliko", "saved": "Wasifu wa biashara umesasishwa.", "saveError": "TEED imeshindwa kusasisha wasifu wa biashara.", "readOnly": "Jukumu lako linaweza kuona lakini haliwezi kubadilisha taarifa hizi.",
+    "overview": {"title": "Muhtasari wa wasifu", "description": "Kagua ukamilifu wa wasifu na fungua sehemu unayohitaji.", "completion": "Ukamilifu wa wasifu", "missing": "Bado vinahitajika: {fields}", "complete": "Wasifu wa biashara umekamilika."},
+    "links": {"information": {"title": "Taarifa za biashara", "description": "Utambulisho, jina la umma, aina ya eneo la kazi na kundi la biashara.", "tooltip": "Kagua utambulisho na uainishaji wa sera wa eneo hili la kazi."}, "brand": {"title": "Mwonekano wa chapa", "description": "Nembo na rangi mbili za biashara.", "tooltip": "Hakiki na dhibiti rangi za eneo la kazi la biashara."}, "operations": {"title": "Eneo na uendeshaji", "description": "Mfumo wa uendeshaji na eneo halisi.", "tooltip": "Tunza eneo linalotumika kwa shughuli na muktadha wa AI wa baadaye."}},
+    "information": {"title": "Taarifa za biashara", "description": "Tunza utambulisho unaotumiwa na wanachama na TEED."},
+    "brand": {"title": "Mwonekano wa chapa", "description": "Chagua rangi mbili za kubinafsisha eneo hili bila kubadilisha rangi za usalama.", "preview": "Hakiki ya chapa ya eneo la kazi", "scope": "Rangi hizi zinatumika kwenye mapambo, maendeleo na viashiria pekee."},
+    "operations": {"title": "Eneo na uendeshaji", "description": "Eleza jinsi na mahali biashara hii inafanya kazi.", "notSet": "Haijawekwa", "physical": "Sehemu halisi", "online": "Mtandaoni", "hybrid": "Sehemu halisi na mtandaoni"},
+    "fields": {"name": "Jina la biashara", "handle": "Jina la umma", "workspaceType": "Aina ya eneo la kazi", "country": "Nchi", "businessCategory": "Kundi la biashara", "logo": "Nembo ya biashara", "primaryColor": "Rangi kuu ya chapa", "secondaryColor": "Rangi ya pili", "operatingModel": "Mfumo wa uendeshaji", "region": "Mkoa", "city": "Jiji", "address": "Anwani"},
+    "types": {"business": "Eneo la kazi la biashara", "service": "Eneo la kazi la huduma", "personal_brand": "Eneo la kazi la chapa binafsi"},
+    "categories": {"notSet": "Chagua kundi la biashara", "retail_commerce": "Rejareja na biashara", "food_hospitality": "Chakula na ukarimu", "professional_services": "Huduma za kitaalamu", "health_wellness": "Afya na ustawi", "education_training": "Elimu na mafunzo", "technology_digital": "Teknolojia na kidijitali", "creative_media": "Ubunifu na vyombo vya habari", "manufacturing_agriculture": "Utengenezaji na kilimo", "nonprofit_community": "Mashirika yasiyo ya faida na jamii", "other": "Nyingine"},
+    "handleNotice": "Kubadilisha jina la umma hufanywa wazi, huhifadhiwa kwenye ukaguzi na kuna muda wa usalama. Kubadilisha jina la biashara hakubadilishi jina la umma."
+  },
+  "WorkspaceAdministration": {"eyebrow": "Usimamizi wa eneo la kazi", "title": "Mipangilio na usalama", "description": "Kagua mapendeleo, usalama wa ufikiaji, historia ya ukaguzi na mzunguko wa biashara sehemu moja.", "loading": "Inapakia mipangilio na usalama…", "state": {"role": "Jukumu lako", "language": "Lugha ya eneo la kazi", "pending": "Udhibiti unaosubiri"}, "links": {"preferences": {"title": "Mapendeleo ya eneo la kazi", "description": "Lugha, ukanda wa saa, miundo, ugunduzi na matumizi ya chapa.", "tooltip": "Fungua mapendeleo yanayoweza kubadilishwa ya eneo hili la kazi."}, "security": {"title": "Muhtasari wa usalama", "description": "Ruhusa zinazotumika, wadhibiti na hali ya usalama.", "tooltip": "Kagua hali ya usalama na ufikiaji inayotekelezwa kwa biashara hii."}, "audit": {"title": "Shughuli za usalama", "description": "Mabadiliko yaliyohifadhiwa na seva pamoja na waliohusika.", "tooltip": "Kagua shughuli zinazowajibika zilizohifadhiwa kwa eneo hili."}, "lifecycle": {"title": "Mzunguko wa biashara", "description": "Zima, rejesha au panga kufuta kupitia idhini iliyolindwa.", "tooltip": "Simamia upatikanaji wa biashara na hatua za kufuta."}}},
+  "BusinessSettings": {"eyebrow": "Mapendeleo ya biashara", "title": "Mipangilio ya eneo la kazi", "description": "Dhibiti ugunduzi, chapa na maonyesho ya eneo.", "loading": "Inapakia mipangilio…", "loadError": "TEED imeshindwa kupakia mipangilio ya eneo la kazi.", "language": "Lugha ya eneo la kazi", "timezone": "Ukanda wa saa", "dateFormat": "Muundo wa tarehe", "timeFormat": "Muundo wa saa", "discoverable": "Inaweza kutafutwa hadharani", "discoverableHelp": "Ruhusu watumiaji wanaofaa kuitafuta kabla ya kuomba ufikiaji.", "branding": "Tumia chapa ya biashara", "brandingHelp": "Tumia rangi zilizohifadhiwa kwenye eneo hili la kazi.", "save": "Hifadhi mipangilio", "saved": "Mipangilio imesasishwa.", "saveError": "TEED imeshindwa kusasisha mipangilio.", "readOnly": "Jukumu lako linaweza kuona lakini haliwezi kubadilisha mipangilio."},
+  "BusinessSecurity": {"eyebrow": "Usalama na udhibiti", "title": "Muhtasari wa usalama", "description": "Ona jukumu lako, ruhusa, wadhibiti na shughuli zilizolindwa.", "loading": "Inapakia hali ya usalama…", "role": "Jukumu lako", "controllers": "Wadhibiti wa biashara", "permissions": "Ruhusa zinazotumika", "system": "Mfumo wa TEED", "audit": {"title": "Historia ya ukaguzi", "description": "Matukio ya hivi karibuni yaliyohifadhiwa na seva.", "tooltip": "Kagua mabadiliko na mwanachama aliyehusika.", "empty": "Hakuna matukio ya hivi karibuni."}, "control": {"title": "Udhibiti uliolindwa", "description": "Vitendo vikubwa vya biashara vinaweza kurejeshwa, vinakaguliwa na vinahitaji idhini huru ikiwa kuna mshirika.", "tooltip": "Kagua vitendo kama kuzima au kupanga kufuta biashara.", "protected": "Ulinzi wa mzunguko wa biashara", "available": "Mmiliki pekee anaweza kutenda mara moja. Ikiwa kuna mshirika hai, mmiliki au mshirika mwingine lazima aidhinishe ombi kwa kujitegemea.", "unavailable": "Jukumu lako haliwezi kuanzisha vitendo vikubwa vya biashara.", "scheduledFor": "Biashara hii itaondolewa kabisa baada ya {date} isipokuwa ufutaji ughairiwe.", "start": "Vitendo vinavyopatikana", "disable": "Zima biashara", "reactivate": "Washa biashara", "delete": "Panga kufuta", "cancelDeletion": "Ghairi kufuta", "approve": "Idhinisha", "reject": "Kataa", "requested": "Ombi limeundwa kwa idhini huru.", "completed": "Kitendo cha biashara kimekamilika.", "decided": "Uamuzi wa ombi umehifadhiwa.", "failed": "TEED imeshindwa kukamilisha kitendo hiki.", "actions": {"disable": "Zima biashara", "reactivate": "Washa biashara", "delete": "Panga kufuta biashara", "cancel_deletion": "Ghairi kufuta"}, "pending": "{count, plural, =0 {Hakuna maombi yanayosubiri} one {Ombi # linasubiri} other {Maombi # yanasubiri}}"}}
 }

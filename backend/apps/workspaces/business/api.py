@@ -3,6 +3,9 @@ from ..api import (
     BusinessDiscoveryAPIView,
     BusinessListCreateAPIView,
     BusinessOverviewAPIView,
+    BusinessProfileAPIView,
+    BusinessSecurityAPIView,
+    BusinessSettingsAPIView,
 )
 
 __all__ = [
@@ -10,4 +13,7 @@ __all__ = [
     "BusinessDiscoveryAPIView",
     "BusinessListCreateAPIView",
     "BusinessOverviewAPIView",
+    "BusinessProfileAPIView",
+    "BusinessSecurityAPIView",
+    "BusinessSettingsAPIView",
 ]

@@ -1,12 +1,23 @@
+from io import BytesIO
+from tempfile import TemporaryDirectory
+
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
+from PIL import Image
 from rest_framework import status
 from rest_framework.test import APITestCase
 
 from apps.identity.services import issue_token_pair
+from apps.notifications.models import UserNotification
 
-from ..models import Business, BusinessMembership
+from ..models import (
+    Business,
+    BusinessControlRequest,
+    BusinessInvitation,
+    BusinessMembership,
+)
 from ..policy import WorkspaceRole
-from ..services import create_business
+from ..services import create_business, create_control_request, decide_control_request
 from .factories import create_user
 
 
@@ -34,6 +45,7 @@ class WorkspaceAPITests(APITestCase):
         self.assertEqual(created.data["data"]["country_code"], "TZ")
         self.assertEqual(len(created.data["data"]["id"]), 36)
         self.assertEqual(created.data["data"]["public_handle"], "api-business")
+        self.assertIn("business_operations", created.data["data"]["capabilities"])
         listed = self.client.get(reverse("workspaces:business-list"))
         self.assertEqual(len(listed.data["data"]["businesses"]), 1)
         self.assertEqual(
@@ -53,12 +65,12 @@ class WorkspaceAPITests(APITestCase):
             user=self.owner,
             name="Afya Services",
             country_code="TZ",
-            workspace_type=Business.WorkspaceType.SERVICE_PROVIDER,
+            workspace_type=Business.WorkspaceType.SERVICE,
         )
         create_business(
             user=self.owner,
             name="Afya Personal",
-            workspace_type=Business.WorkspaceType.PERSONAL,
+            workspace_type=Business.WorkspaceType.PERSONAL_BRAND,
         )
         response = self.client.get(
             reverse("workspaces:business-discovery"), {"q": "afya"}
@@ -98,7 +110,7 @@ class WorkspaceAPITests(APITestCase):
         personal = create_business(
             user=self.owner,
             name="Private Space",
-            workspace_type=Business.WorkspaceType.PERSONAL,
+            workspace_type=Business.WorkspaceType.PERSONAL_BRAND,
         )
         self.authenticate(self.outsider)
         response = self.client.post(
@@ -139,6 +151,20 @@ class WorkspaceAPITests(APITestCase):
         self.assertEqual(detail.status_code, status.HTTP_404_NOT_FOUND)
         self.assertEqual(members.status_code, status.HTTP_404_NOT_FOUND)
 
+    def test_member_list_excludes_removed_members(self):
+        business = create_business(user=self.owner, name="Current Members")
+        removed = BusinessMembership.objects.create(
+            business=business,
+            user=self.outsider,
+            role=WorkspaceRole.MEMBER,
+            status=BusinessMembership.Status.REMOVED,
+        )
+        response = self.client.get(
+            reverse("workspaces:member-list", kwargs={"business_id": business.id})
+        )
+        member_ids = {item["id"] for item in response.data["data"]["members"]}
+        self.assertNotIn(str(removed.id), member_ids)
+
     def test_workspace_overview_returns_live_role_and_state(self):
         business = create_business(user=self.owner, name="Overview Business")
         response = self.client.get(
@@ -154,6 +180,235 @@ class WorkspaceAPITests(APITestCase):
         )
         self.assertEqual(response.data["data"]["state"]["active_member_count"], 1)
         self.assertEqual(response.data["data"]["state"]["pending_action_count"], 0)
+        self.assertEqual(
+            response.data["data"]["state"]["profile_completion_percentage"], 33
+        )
+
+    def test_workspace_type_change_to_personal_brand_rejects_other_members(self):
+        business = create_business(user=self.owner, name="Collaborative Business")
+        BusinessMembership.objects.create(
+            business=business,
+            user=self.outsider,
+            role=WorkspaceRole.MEMBER,
+        )
+        response = self.client.patch(
+            reverse("workspaces:business-profile", kwargs={"business_id": business.id}),
+            {"workspace_type": Business.WorkspaceType.PERSONAL_BRAND},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        business.refresh_from_db()
+        self.assertEqual(business.workspace_type, Business.WorkspaceType.BUSINESS)
+
+    def test_owner_can_manage_business_profile_and_brand(self):
+        business = create_business(user=self.owner, name="Managed Business")
+        response = self.client.patch(
+            reverse("workspaces:business-profile", kwargs={"business_id": business.id}),
+            {
+                "country_code": "TZ",
+                "business_category": "retail_commerce",
+                "operating_model": "hybrid",
+                "region": "Dar es Salaam",
+                "city": "Dar es Salaam",
+                "primary_brand_color": "#112233",
+                "secondary_brand_color": "#EE7722",
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            response.data["data"]["profile"]["primary_brand_color"], "#112233"
+        )
+        self.assertEqual(response.data["data"]["completion"]["percentage"], 100)
+
+    def test_owner_can_upload_business_logo_and_list_returns_it(self):
+        business = create_business(user=self.owner, name="Logo Business")
+        content = BytesIO()
+        Image.new("RGB", (16, 16), "navy").save(content, format="PNG")
+        logo = SimpleUploadedFile(
+            "logo.png", content.getvalue(), content_type="image/png"
+        )
+        with TemporaryDirectory() as media_root, self.settings(MEDIA_ROOT=media_root):
+            response = self.client.patch(
+                reverse(
+                    "workspaces:business-profile", kwargs={"business_id": business.id}
+                ),
+                {"logo": logo},
+                format="multipart",
+            )
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            self.assertIn(
+                "/media/businesses/", response.data["data"]["profile"]["logo_url"]
+            )
+            listed = self.client.get(reverse("workspaces:business-list"))
+            listed_business = listed.data["data"]["businesses"][0]
+            self.assertIn("/media/businesses/", listed_business["logo_url"])
+
+    def test_member_can_read_but_not_edit_business_profile(self):
+        business = create_business(user=self.owner, name="Visible Profile")
+        BusinessMembership.objects.create(
+            business=business,
+            user=self.outsider,
+            role=WorkspaceRole.MEMBER,
+        )
+        self.authenticate(self.outsider)
+        url = reverse(
+            "workspaces:business-profile", kwargs={"business_id": business.id}
+        )
+        self.assertEqual(self.client.get(url).status_code, status.HTTP_200_OK)
+        response = self.client.patch(
+            url, {"business_category": "retail_commerce"}, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_owner_can_update_workspace_settings(self):
+        business = create_business(user=self.owner, name="Settings Business")
+        response = self.client.patch(
+            reverse(
+                "workspaces:business-settings", kwargs={"business_id": business.id}
+            ),
+            {
+                "is_discoverable": False,
+                "language_code": "sw",
+                "timezone": "Africa/Nairobi",
+                "date_format": "YYYY-MM-DD",
+                "time_format": "12h",
+                "branding_enabled": False,
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(response.data["data"]["settings"]["is_discoverable"])
+        self.assertEqual(response.data["data"]["settings"]["language_code"], "sw")
+
+    def test_security_state_returns_controllers_permissions_and_audit(self):
+        business = create_business(user=self.owner, name="Secure Business")
+        response = self.client.get(
+            reverse("workspaces:business-security", kwargs={"business_id": business.id})
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data["data"]["controllers"]), 1)
+        self.assertIn("business.control", response.data["data"]["permissions"])
+        self.assertTrue(response.data["data"]["recent_events"])
+
+    def test_inactive_business_security_supports_independent_reactivation(self):
+        partner = create_user("api-partner@example.com")
+        business = create_business(user=self.owner, name="Recoverable Business")
+        BusinessMembership.objects.create(
+            business=business,
+            user=partner,
+            role=WorkspaceRole.PARTNER,
+        )
+        disabled = create_control_request(
+            actor=self.owner,
+            business_id=business.id,
+            action=BusinessControlRequest.Action.DISABLE,
+        )
+        decide_control_request(
+            actor=partner,
+            business_id=business.id,
+            control_request_id=disabled.id,
+            decision="approve",
+        )
+
+        security_url = reverse(
+            "workspaces:business-security", kwargs={"business_id": business.id}
+        )
+        security = self.client.get(security_url)
+        requested = self.client.post(
+            reverse(
+                "workspaces:control-request-create",
+                kwargs={"business_id": business.id},
+            ),
+            {"action": BusinessControlRequest.Action.REACTIVATE},
+            format="json",
+        )
+
+        self.assertEqual(security.status_code, status.HTTP_200_OK)
+        self.assertEqual(requested.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(requested.data["data"]["status"], "pending")
+        notification = UserNotification.objects.get(
+            user=partner,
+            template=UserNotification.Template.BUSINESS_CONTROL_REQUEST,
+            context__action=BusinessControlRequest.Action.REACTIVATE,
+        )
+        self.assertEqual(
+            notification.action_path,
+            f"/dashboard/workspaces/{business.id}/lifecycle",
+        )
+
+        self.authenticate(partner)
+        partner_security = self.client.get(security_url)
+        self.assertEqual(partner_security.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(partner_security.data["data"]["pending_controls"]), 1)
+        approved = self.client.post(
+            reverse(
+                "workspaces:control-request-decision",
+                kwargs={
+                    "business_id": business.id,
+                    "control_request_id": requested.data["data"]["id"],
+                },
+            ),
+            {"decision": "approve"},
+            format="json",
+        )
+        business.refresh_from_db()
+        self.assertEqual(approved.status_code, status.HTTP_200_OK)
+        self.assertEqual(business.status, Business.Status.ACTIVE)
+
+        deletion = create_control_request(
+            actor=partner,
+            business_id=business.id,
+            action=BusinessControlRequest.Action.DELETE,
+        )
+        decide_control_request(
+            actor=self.owner,
+            business_id=business.id,
+            control_request_id=deletion.id,
+            decision="approve",
+        )
+        cancellation = self.client.post(
+            reverse(
+                "workspaces:control-request-create",
+                kwargs={"business_id": business.id},
+            ),
+            {"action": BusinessControlRequest.Action.CANCEL_DELETION},
+            format="json",
+        )
+        self.assertEqual(cancellation.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(cancellation.data["data"]["status"], "pending")
+
+    def test_inactive_business_security_remains_hidden_from_member(self):
+        business = create_business(user=self.owner, name="Inactive Private Business")
+        BusinessMembership.objects.create(
+            business=business,
+            user=self.outsider,
+            role=WorkspaceRole.MEMBER,
+        )
+        business.status = Business.Status.DISABLED
+        business.save(update_fields=["status", "updated_at"])
+
+        self.authenticate(self.outsider)
+        response = self.client.get(
+            reverse("workspaces:business-security", kwargs={"business_id": business.id})
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_public_handle_change_is_explicit_and_cooled_down(self):
+        business = create_business(user=self.owner, name="Handle Business")
+        url = reverse(
+            "workspaces:business-profile", kwargs={"business_id": business.id}
+        )
+        first = self.client.patch(url, {"public_handle": "new-handle"}, format="json")
+        second = self.client.patch(
+            url, {"public_handle": "another-handle"}, format="json"
+        )
+        self.assertEqual(first.status_code, status.HTTP_200_OK)
+        self.assertEqual(second.status_code, status.HTTP_409_CONFLICT)
+        self.assertEqual(
+            second.data["errors"]["code"], "business_handle_change_cooldown"
+        )
 
     def test_workspace_overview_hides_management_counts_from_member(self):
         business = create_business(user=self.owner, name="Member Overview")
@@ -188,6 +443,14 @@ class WorkspaceAPITests(APITestCase):
             format="json",
         )
         self.assertEqual(requested.status_code, status.HTTP_201_CREATED)
+        notification = UserNotification.objects.get(
+            user=self.owner,
+            template=UserNotification.Template.WORKSPACE_ACCESS_REQUEST,
+        )
+        self.assertEqual(
+            notification.action_path,
+            f"/workspace/{business.id}/access-requests",
+        )
 
         self.authenticate(self.owner)
         decided = self.client.post(
@@ -208,4 +471,61 @@ class WorkspaceAPITests(APITestCase):
                 user=self.outsider,
                 role=WorkspaceRole.MEMBER,
             ).exists()
+        )
+
+    def test_owner_can_assign_partner_when_approving_access_request(self):
+        business = create_business(user=self.owner, name="Partner Request")
+        self.authenticate(self.outsider)
+        requested = self.client.post(
+            reverse("workspaces:access-request-create"),
+            {"business_id": str(business.id)},
+            format="json",
+        )
+
+        self.authenticate(self.owner)
+        decided = self.client.post(
+            reverse(
+                "workspaces:access-request-decision",
+                kwargs={
+                    "business_id": business.id,
+                    "request_id": requested.data["data"]["id"],
+                },
+            ),
+            {"decision": "approve", "role": WorkspaceRole.PARTNER},
+            format="json",
+        )
+
+        self.assertEqual(decided.status_code, status.HTTP_200_OK)
+        self.assertTrue(
+            BusinessMembership.objects.filter(
+                business=business,
+                user=self.outsider,
+                role=WorkspaceRole.PARTNER,
+            ).exists()
+        )
+
+    def test_owner_can_cancel_pending_invitation(self):
+        business = create_business(user=self.owner, name="Invitation Business")
+        created = self.client.post(
+            reverse(
+                "workspaces:invitation-list",
+                kwargs={"business_id": business.id},
+            ),
+            {"email": "future-member@example.com", "role": WorkspaceRole.MEMBER},
+            format="json",
+        )
+        response = self.client.post(
+            reverse(
+                "workspaces:invitation-cancel",
+                kwargs={
+                    "business_id": business.id,
+                    "invitation_id": created.data["data"]["id"],
+                },
+            ),
+            {},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            response.data["data"]["status"], BusinessInvitation.Status.CANCELLED
         )

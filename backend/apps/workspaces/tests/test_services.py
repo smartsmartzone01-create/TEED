@@ -1,9 +1,12 @@
+from datetime import timedelta
+
 from common.exceptions.modules import (
     PersonalWorkspaceMembershipRestricted,
     WorkspaceAccessRequestCooldown,
     WorkspaceAccessRequestPending,
     WorkspaceMembershipExists,
 )
+from django.core.management import call_command
 from django.test import TestCase
 from django.utils import timezone
 from rest_framework.exceptions import PermissionDenied, ValidationError
@@ -11,10 +14,12 @@ from rest_framework.exceptions import PermissionDenied, ValidationError
 from ..models import (
     Business,
     BusinessAccessRequest,
+    BusinessControlRequest,
     BusinessMembership,
     WorkspaceAuditEvent,
 )
 from ..policy import WorkspaceRole
+from ..selectors import user_businesses
 from ..services import (
     create_business,
     create_control_request,
@@ -22,6 +27,7 @@ from ..services import (
     decide_access_request,
     decide_control_request,
     request_access,
+    resolve_invitation,
     transfer_ownership,
     update_membership,
 )
@@ -68,6 +74,98 @@ class WorkspaceServiceTests(TestCase):
             ).exists()
         )
 
+    def test_membership_decisions_are_isolated_per_business(self):
+        second_business = create_business(
+            user=self.owner, name="Second Business", country_code="TZ"
+        )
+        access_request = request_access(user=self.member, business_id=self.business.id)
+        decide_access_request(
+            actor=self.owner,
+            business_id=self.business.id,
+            request_id=access_request.id,
+            decision="approve",
+            role=WorkspaceRole.MEMBER,
+        )
+
+        self.assertTrue(
+            BusinessMembership.objects.filter(
+                business=self.business,
+                user=self.member,
+                status=BusinessMembership.Status.ACTIVE,
+            ).exists()
+        )
+        self.assertFalse(
+            BusinessMembership.objects.filter(
+                business=second_business,
+                user=self.member,
+            ).exists()
+        )
+
+        membership = BusinessMembership.objects.get(
+            business=self.business, user=self.member
+        )
+        update_membership(
+            actor=self.owner,
+            business_id=self.business.id,
+            membership_id=membership.id,
+            status=BusinessMembership.Status.REMOVED,
+        )
+
+        membership.refresh_from_db()
+        self.assertEqual(membership.status, BusinessMembership.Status.REMOVED)
+        self.assertFalse(
+            BusinessMembership.objects.filter(
+                business=second_business,
+                user=self.member,
+            ).exists()
+        )
+
+    def test_removed_member_can_request_access_again_and_be_reactivated(self):
+        membership = BusinessMembership.objects.create(
+            business=self.business,
+            user=self.member,
+            role=WorkspaceRole.MEMBER,
+            status=BusinessMembership.Status.ACTIVE,
+        )
+        update_membership(
+            actor=self.owner,
+            business_id=self.business.id,
+            membership_id=membership.id,
+            status=BusinessMembership.Status.REMOVED,
+        )
+
+        access_request = request_access(user=self.member, business_id=self.business.id)
+        decide_access_request(
+            actor=self.owner,
+            business_id=self.business.id,
+            request_id=access_request.id,
+            decision="approve",
+            role=WorkspaceRole.MEMBER,
+        )
+
+        membership.refresh_from_db()
+        self.assertEqual(membership.status, BusinessMembership.Status.ACTIVE)
+        self.assertEqual(
+            BusinessMembership.objects.filter(
+                business=self.business, user=self.member
+            ).count(),
+            1,
+        )
+
+    def test_invitation_acceptance_closes_same_business_pending_request(self):
+        access_request = request_access(user=self.member, business_id=self.business.id)
+        invitation = create_invitation(
+            actor=self.owner,
+            business_id=self.business.id,
+            email=self.member.email,
+            role=WorkspaceRole.MEMBER,
+        )
+
+        resolve_invitation(user=self.member, invitation_id=invitation.id, accept=True)
+
+        access_request.refresh_from_db()
+        self.assertEqual(access_request.status, BusinessAccessRequest.Status.CANCELLED)
+
     def test_duplicate_pending_access_request_is_rejected(self):
         request_access(user=self.member, business_id=self.business.id)
         with self.assertRaises(WorkspaceAccessRequestPending):
@@ -76,6 +174,36 @@ class WorkspaceServiceTests(TestCase):
     def test_existing_member_cannot_request_access(self):
         with self.assertRaises(WorkspaceMembershipExists):
             request_access(user=self.owner, business_id=self.business.id)
+
+    def test_suspended_member_cannot_request_access(self):
+        BusinessMembership.objects.create(
+            business=self.business,
+            user=self.member,
+            role=WorkspaceRole.MEMBER,
+            status=BusinessMembership.Status.SUSPENDED,
+        )
+        with self.assertRaises(WorkspaceMembershipExists):
+            request_access(user=self.member, business_id=self.business.id)
+
+    def test_removed_member_stale_pending_request_is_replaced(self):
+        BusinessMembership.objects.create(
+            business=self.business,
+            user=self.member,
+            role=WorkspaceRole.MEMBER,
+            status=BusinessMembership.Status.REMOVED,
+        )
+        stale = BusinessAccessRequest.objects.create(
+            business=self.business,
+            user=self.member,
+            status=BusinessAccessRequest.Status.PENDING,
+        )
+
+        fresh = request_access(user=self.member, business_id=self.business.id)
+
+        stale.refresh_from_db()
+        self.assertEqual(stale.status, BusinessAccessRequest.Status.CANCELLED)
+        self.assertEqual(fresh.status, BusinessAccessRequest.Status.PENDING)
+        self.assertNotEqual(fresh.id, stale.id)
 
     def test_recently_rejected_request_observes_retry_cooldown(self):
         access_request = request_access(user=self.member, business_id=self.business.id)
@@ -91,7 +219,7 @@ class WorkspaceServiceTests(TestCase):
             user=self.owner,
             name="My private workspace",
             country_code="TZ",
-            workspace_type=Business.WorkspaceType.PERSONAL,
+            workspace_type=Business.WorkspaceType.PERSONAL_BRAND,
         )
 
         with self.assertRaises(PersonalWorkspaceMembershipRestricted):
@@ -138,13 +266,92 @@ class WorkspaceServiceTests(TestCase):
                 status=BusinessMembership.Status.REMOVED,
             )
 
-    def test_destructive_control_requires_another_controller(self):
-        with self.assertRaises(ValidationError):
-            create_control_request(
-                actor=self.owner,
-                business_id=self.business.id,
-                action="disable",
-            )
+    def test_sole_owner_controls_business_without_second_approval(self):
+        disabled = create_control_request(
+            actor=self.owner,
+            business_id=self.business.id,
+            action="disable",
+        )
+        self.business.refresh_from_db()
+        self.assertEqual(disabled.status, BusinessControlRequest.Status.APPROVED)
+        self.assertEqual(self.business.status, Business.Status.DISABLED)
+
+        reactivated = create_control_request(
+            actor=self.owner,
+            business_id=self.business.id,
+            action="reactivate",
+        )
+        self.business.refresh_from_db()
+        self.assertEqual(reactivated.status, BusinessControlRequest.Status.APPROVED)
+        self.assertEqual(self.business.status, Business.Status.ACTIVE)
+
+        deleted = create_control_request(
+            actor=self.owner,
+            business_id=self.business.id,
+            action="delete",
+        )
+        self.business.refresh_from_db()
+        self.assertEqual(deleted.status, BusinessControlRequest.Status.APPROVED)
+        self.assertEqual(self.business.status, Business.Status.DELETION_PENDING)
+        self.assertIsNotNone(self.business.deletion_scheduled_for)
+
+        restored = create_control_request(
+            actor=self.owner,
+            business_id=self.business.id,
+            action="cancel_deletion",
+        )
+        self.business.refresh_from_db()
+        self.assertEqual(restored.status, BusinessControlRequest.Status.APPROVED)
+        self.assertEqual(self.business.status, Business.Status.ACTIVE)
+        self.assertIsNone(self.business.deletion_scheduled_for)
+
+    def test_pending_deletion_remains_visible_only_to_controllers(self):
+        BusinessMembership.objects.create(
+            business=self.business,
+            user=self.member,
+            role=WorkspaceRole.MEMBER,
+            status=BusinessMembership.Status.ACTIVE,
+        )
+        create_control_request(
+            actor=self.owner,
+            business_id=self.business.id,
+            action="delete",
+        )
+
+        self.assertTrue(user_businesses(user=self.owner).exists())
+        self.assertFalse(user_businesses(user=self.member).exists())
+
+    def test_disabled_business_remains_visible_only_to_controllers(self):
+        BusinessMembership.objects.create(
+            business=self.business,
+            user=self.member,
+            role=WorkspaceRole.MEMBER,
+            status=BusinessMembership.Status.ACTIVE,
+        )
+        create_control_request(
+            actor=self.owner,
+            business_id=self.business.id,
+            action="disable",
+        )
+
+        self.assertTrue(user_businesses(user=self.owner).exists())
+        self.assertFalse(user_businesses(user=self.member).exists())
+
+    def test_expired_business_deletion_is_finalized_by_command(self):
+        self.business.status = Business.Status.DELETION_PENDING
+        self.business.deletion_scheduled_for = timezone.now() - timedelta(minutes=1)
+        self.business.save(
+            update_fields=["status", "deletion_scheduled_for", "updated_at"]
+        )
+
+        call_command("finalize_business_deletions", verbosity=0)
+
+        deleted = Business.all_objects.get(id=self.business.id)
+        membership = BusinessMembership.objects.get(
+            business_id=self.business.id, user=self.owner
+        )
+        self.assertIsNotNone(deleted.deleted_at)
+        self.assertEqual(membership.status, BusinessMembership.Status.REMOVED)
 
     def test_initiator_cannot_self_approve_business_disable(self):
         BusinessMembership.objects.create(

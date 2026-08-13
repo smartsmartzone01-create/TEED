@@ -4,10 +4,12 @@ import { createApiEnvelopeSchema } from "@/schemas/global/api";
 
 const notificationSchema = z.object({
   action_path: z.string(),
+  business_id: z.string().uuid().nullable(),
   category: z.enum(["account", "security", "system", "workspace"]),
   context: z.record(z.string(), z.union([z.string(), z.number()])),
   created_at: z.string(),
   expires_at: z.string().nullable(),
+  scope: z.enum(["personal", "membership", "workspace", "cross_business"]),
   id: z.string(),
   is_read: z.boolean(),
   read_at: z.string().nullable(),

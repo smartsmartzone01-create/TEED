@@ -66,10 +66,8 @@ function CreateBusinessForm() {
         <FormField description={t("fields.workspaceTypeHelp")} error={errors.workspaceType?.message} htmlFor="workspace-type" label={t("fields.workspaceType")} required>
           <Select id="workspace-type" invalid={Boolean(errors.workspaceType)} {...register("workspaceType")}>
             <option value="business">{t("types.business")}</option>
-            <option value="service_provider">{t("types.service_provider")}</option>
-            <option value="creator_brand">{t("types.creator_brand")}</option>
-            <option value="personal">{t("types.personal")}</option>
-            <option value="other">{t("types.other")}</option>
+            <option value="service">{t("types.service")}</option>
+            <option value="personal_brand">{t("types.personal_brand")}</option>
           </Select>
         </FormField>
         <Button className="w-full sm:w-auto" loading={isSubmitting} loadingLabel={t("creating")} type="submit"><Building2 className="size-4" />{t("submit")}</Button>

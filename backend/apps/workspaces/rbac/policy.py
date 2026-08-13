@@ -20,7 +20,11 @@ class WorkspacePermission(StrEnum):
 
 ROLE_PERMISSIONS = {
     WorkspaceRole.OWNER: frozenset(WorkspacePermission),
-    WorkspaceRole.PARTNER: frozenset(WorkspacePermission),
+    WorkspaceRole.PARTNER: frozenset(
+        permission
+        for permission in WorkspacePermission
+        if permission != WorkspacePermission.TRANSFER_OWNERSHIP
+    ),
     WorkspaceRole.ADMINISTRATOR: frozenset(
         {
             WorkspacePermission.ACCESS,

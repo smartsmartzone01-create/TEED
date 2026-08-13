@@ -2,6 +2,7 @@ from .authentication import login_email_user
 from .email_delivery import (
     enqueue_email_delivery,
     process_email_deliveries,
+    process_email_delivery,
     process_one_email_delivery,
 )
 from .email_verification import (
@@ -30,6 +31,7 @@ from .session import (
 __all__ = [
     "issue_email_verification_challenge",
     "enqueue_email_delivery",
+    "process_email_delivery",
     "process_email_deliveries",
     "process_one_email_delivery",
     "issue_token_pair",

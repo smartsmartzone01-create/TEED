@@ -26,15 +26,22 @@
     "collapseSidebar": "Collapse sidebar",
     "expandSidebar": "Expand sidebar",
     "availableAfterIntegration": "This destination will open after Workspace API integration.",
+    "accessEnded": "Your access to this Business has ended. TEED returned you to your dashboard.",
+    "workspaceUnavailable": "This Business is unavailable or you no longer have access.",
     "navigation": {
       "overview": "Overview",
       "business": "Business",
+      "membership": "Membership",
+      "profile": "Business profile",
+      "settingsSecurity": "Settings and security",
+      "settings": "Settings",
       "members": "Members",
       "invitations": "Invitations",
       "accessRequests": "Access requests",
       "roles": "Roles & access",
       "control": "Security & control"
-    }
+    },
+    "subnavigation": {"members": "Members", "invitations": "Invitations", "accessRequests": "Access requests", "roles": "Roles and permissions", "profileOverview": "Profile overview", "information": "Business information", "brand": "Brand and appearance", "operations": "Locations and operations", "settingsOverview": "Settings overview", "workspacePreferences": "Workspace preferences", "audit": "Security activity", "businessLifecycle": "Business lifecycle"}
   },
   "WorkspaceOverview": {
     "eyebrow": "TEED Workspace",
@@ -75,11 +82,33 @@
     "emptyHelp": "Create a Business, accept an invitation, or request access.",
     "openTooltip": "Open the {name} workspace.",
     "businessMeta": "{country} · {role}",
+    "scheduledDeletion": "Scheduled for removal after {date}",
+    "statuses": {"active": "Active", "disabled": "Disabled", "deletion_pending": "Scheduled for deletion"},
     "technical": {"summary": "Technical details", "copy": "Copy Business UUID", "copied": "Business UUID copied."},
     "invitationsTitle": "Pending invitations",
     "noInvitations": "You have no pending Business invitations.",
     "roles": {"owner": "Owner", "partner": "Partner", "administrator": "Administrator", "manager": "Manager", "member": "Member"},
     "invitation": {"title": "Business invitation", "details": "Business {businessId} · {role}", "accept": "Accept", "decline": "Decline", "acceptSuccess": "Invitation accepted.", "declineSuccess": "Invitation declined.", "decisionError": "TEED could not update this invitation."}
+  },
+  "BusinessLifecycleState": {
+    "eyebrow": "Business lifecycle",
+    "disabledTitle": "{name} is disabled",
+    "deletionTitle": "{name} is scheduled for deletion",
+    "disabledDescription": "This Business is not available for normal workspace operations. An owner or partner can request reactivation.",
+    "deletionDescription": "Normal Business operations have stopped. Owners and partners retain recovery access until the recovery period ends.",
+    "disabledNotice": "The Business remains stored and will stay on your Business selection page until it is reactivated.",
+    "recoveryWindow": "30-day recovery window",
+    "scheduledFor": "Recovery is available until {date}.",
+    "reactivate": "Reactivate Business",
+    "cancelDeletion": "Cancel deletion and restore",
+    "back": "Back to Business selection",
+    "restored": "The Business is active again.",
+    "approvalRequested": "Your recovery request was sent to another Business controller for approval.",
+    "awaitingApproval": "Your recovery request is waiting for another Business controller.",
+    "approveRecovery": "Approve recovery",
+    "rejectRecovery": "Reject recovery",
+    "decisionRecorded": "Your recovery decision was recorded.",
+    "failed": "TEED could not complete this recovery action."
   },
   "WorkspaceCreate": {
     "eyebrow": "Workspace setup",
@@ -87,7 +116,7 @@
     "description": "Enter three details. TEED creates a unique public handle, UUID workspace and fixed owner permissions automatically.",
     "fields": {"name": "Workspace name", "country": "Country", "workspaceType": "Workspace type", "workspaceTypeHelp": "Choose the description that best matches how you will use this workspace."},
     "countries": {"TZ": "Tanzania", "KE": "Kenya", "UG": "Uganda"},
-    "types": {"business": "Business", "service_provider": "Service provider", "creator_brand": "Creator or personal brand", "personal": "Personal", "other": "Other"},
+    "types": {"business": "Business workspace", "service": "Service workspace", "personal_brand": "Personal brand workspace"},
     "validation": {"name": "Enter a workspace name between 2 and 120 characters.", "country": "Select a supported country.", "workspaceType": "Select a workspace type."},
     "submit": "Create Business",
     "creating": "Creating…",
@@ -104,5 +133,36 @@
     "submit": "Send request",
     "sending": "Sending…",
     "success": "Business access request sent."
-  }
+  },
+  "WorkspaceAccessManagement": {
+    "eyebrow": "Workspace access",
+    "loading": "Loading current access state…",
+    "loadError": "TEED could not load this access information.",
+    "actionError": "TEED could not complete that access change.",
+    "readOnly": "Your role can view this area but cannot manage it.",
+    "collaborationUnavailable": "This Personal Brand workspace is single-user, so memberships, invitations and access requests do not apply.",
+    "members": {"title": "Members", "description": "Review everyone with workspace access and maintain eligible roles and membership state.", "updated": "Membership updated.", "suspend": "Suspend", "reactivate": "Reactivate", "remove": "Remove", "removeHelp": "Remove this member's access to the workspace."},
+    "invitations": {"title": "Invitations", "description": "Invite a registered email address using one fixed TEED role and review invitation state.", "email": "Email address", "role": "Role", "send": "Send invitation", "sent": "Invitation sent.", "cancel": "Cancel", "cancelled": "Invitation cancelled.", "empty": "No invitations have been created for this workspace."},
+    "access": {"title": "Access requests", "description": "Review people who asked to join this workspace and make an explicit decision."},
+    "requests": {"empty": "There are no pending access requests.", "role": "Role on approval", "approve": "Approve request", "reject": "Reject", "approved": "Access request approved.", "rejected": "Access request rejected."},
+    "roles": {"title": "Roles and access", "description": "TEED roles are fixed. Assigning a role automatically applies these backend-controlled permissions.", "yours": "Your role", "descriptions": {"owner": "Created the workspace and holds every workspace permission.", "partner": "Shares protected control with the owner, including independent approval duties.", "administrator": "Maintains the Business, members and invitations without protected lifecycle control.", "manager": "Operates within the workspace and may invite standard members.", "member": "Uses the workspace features made available to the Business."}},
+    "roleNames": {"owner": "Owner", "partner": "Partner", "administrator": "Administrator", "manager": "Manager", "member": "Member"},
+    "statuses": {"active": "Active", "pending": "Pending", "accepted": "Accepted", "declined": "Declined", "cancelled": "Cancelled", "expired": "Expired", "suspended": "Suspended", "removed": "Removed"},
+    "permissions": {"access": {"label": "Workspace access", "help": "Open and use the workspace."}, "business": {"label": "Manage Business", "help": "Update Business profile and settings."}, "members": {"label": "Manage members", "help": "Change eligible member roles and access state."}, "invitations": {"label": "Manage invitations", "help": "Invite eligible people to the workspace."}, "control": {"label": "Protected control", "help": "Initiate or approve protected lifecycle operations."}, "ownership": {"label": "Transfer ownership", "help": "Participate in protected ownership transfer."}}
+  },
+  "BusinessProfile": {
+    "eyebrow": "Business profile", "loading": "Loading Business profile…", "loadError": "TEED could not load the Business profile.", "save": "Save changes", "saved": "Business profile updated.", "saveError": "TEED could not update the Business profile.", "readOnly": "Your role can view this information but cannot change it.",
+    "overview": {"title": "Profile overview", "description": "Review profile completion and open the exact section you need.", "completion": "Profile completion", "missing": "Still needed: {fields}", "complete": "The Business profile is complete."},
+    "links": {"information": {"title": "Business information", "description": "Identity, public handle, workspace type and Business category.", "tooltip": "Review the public identity and policy classification used by this workspace."}, "brand": {"title": "Brand appearance", "description": "Logo and two workspace brand colors.", "tooltip": "Preview and control the Business-specific workspace accents."}, "operations": {"title": "Location and operations", "description": "Operating model and physical location.", "tooltip": "Maintain location details used for operations and future AI context."}},
+    "information": {"title": "Business information", "description": "Maintain the focused identity that members and TEED use for this Business."},
+    "brand": {"title": "Brand appearance", "description": "Choose two colors that personalize this workspace without changing safety colors.", "preview": "Workspace brand preview", "scope": "These colors affect workspace accents, progress and decorative highlights only."},
+    "operations": {"title": "Location and operations", "description": "Describe how and where this Business operates.", "notSet": "Not set", "physical": "Physical", "online": "Online", "hybrid": "Physical and online"},
+    "fields": {"name": "Business name", "handle": "Public handle", "workspaceType": "Workspace type", "country": "Country", "businessCategory": "Business category", "logo": "Business logo", "primaryColor": "Primary brand color", "secondaryColor": "Secondary brand color", "operatingModel": "Operating model", "region": "Region", "city": "City", "address": "Address"},
+    "types": {"business": "Business workspace", "service": "Service workspace", "personal_brand": "Personal brand workspace"},
+    "categories": {"notSet": "Select a Business category", "retail_commerce": "Retail and commerce", "food_hospitality": "Food and hospitality", "professional_services": "Professional services", "health_wellness": "Health and wellness", "education_training": "Education and training", "technology_digital": "Technology and digital", "creative_media": "Creative and media", "manufacturing_agriculture": "Manufacturing and agriculture", "nonprofit_community": "Nonprofit and community", "other": "Other"},
+    "handleNotice": "Changing the public handle is explicit, audited and subject to a security cooldown. Changing the Business name does not change it."
+  },
+  "WorkspaceAdministration": {"eyebrow": "Workspace administration", "title": "Settings and security", "description": "Review workspace preferences, effective access security, audit history and Business lifecycle controls from one place.", "loading": "Loading settings and security…", "state": {"role": "Your fixed role", "language": "Workspace language", "pending": "Pending controls"}, "links": {"preferences": {"title": "Workspace preferences", "description": "Language, timezone, formats, discoverability and branding behavior.", "tooltip": "Open the editable preferences that determine how this workspace behaves."}, "security": {"title": "Security overview", "description": "Effective permissions, controllers and current security state.", "tooltip": "Review the security and access state enforced for this Business."}, "audit": {"title": "Security activity", "description": "Server-recorded changes and responsible members.", "tooltip": "Review accountable activity recorded for this workspace."}, "lifecycle": {"title": "Business lifecycle", "description": "Disable, restore or schedule deletion through protected approval.", "tooltip": "Manage high-impact Business availability and deletion actions."}}},
+  "BusinessSettings": {"eyebrow": "Business preferences", "title": "Workspace settings", "description": "Control discoverability, brand activation and regional display preferences.", "loading": "Loading settings…", "loadError": "TEED could not load workspace settings.", "language": "Workspace language", "timezone": "Timezone", "dateFormat": "Date format", "timeFormat": "Time format", "discoverable": "Publicly discoverable", "discoverableHelp": "Allow eligible users to find this Business before requesting access.", "branding": "Use Business branding", "brandingHelp": "Apply the saved Business colors to this workspace.", "save": "Save settings", "saved": "Workspace settings updated.", "saveError": "TEED could not update workspace settings.", "readOnly": "Your role can view but cannot change these settings."},
+  "BusinessSecurity": {"eyebrow": "Security and control", "title": "Security overview", "description": "See your fixed role, effective permissions, controllers and protected activity.", "loading": "Loading security state…", "role": "Your fixed role", "controllers": "Business controllers", "permissions": "Effective permissions", "system": "TEED system", "audit": {"title": "Audit activity", "description": "Recent server-side events for accountability and investigation.", "tooltip": "Review recent changes and the member responsible for each recorded event.", "empty": "No recent audit activity."}, "control": {"title": "Protected controls", "description": "High-impact Business lifecycle actions are recoverable, audited and protected by independent approval when a partner exists.", "tooltip": "Review protected actions such as disabling or scheduling deletion of the Business.", "protected": "Recoverable lifecycle protection", "available": "A sole owner may act immediately. When an active partner exists, another owner or partner must independently approve the request.", "unavailable": "Your role cannot initiate protected Business lifecycle actions.", "scheduledFor": "This Business will disappear permanently after {date} unless deletion is cancelled.", "start": "Available lifecycle actions", "disable": "Disable Business", "reactivate": "Reactivate Business", "delete": "Schedule deletion", "cancelDeletion": "Cancel deletion", "approve": "Approve", "reject": "Reject", "requested": "Protected request created for independent approval.", "completed": "Business lifecycle action completed.", "decided": "Control request decision recorded.", "failed": "TEED could not complete this protected action.", "actions": {"disable": "Disable Business", "reactivate": "Reactivate Business", "delete": "Schedule Business deletion", "cancel_deletion": "Cancel deletion"}, "pending": "{count, plural, =0 {No pending control requests} one {# pending control request} other {# pending control requests}}"}}
 }

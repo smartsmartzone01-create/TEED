@@ -17,6 +17,14 @@ class WorkspacePolicyTests(SimpleTestCase):
             WorkspacePermission.CONTROL_BUSINESS,
             permissions_for_role(WorkspaceRole.ADMINISTRATOR),
         )
+        self.assertIn(
+            WorkspacePermission.TRANSFER_OWNERSHIP,
+            permissions_for_role(WorkspaceRole.OWNER),
+        )
+        self.assertNotIn(
+            WorkspacePermission.TRANSFER_OWNERSHIP,
+            permissions_for_role(WorkspaceRole.PARTNER),
+        )
 
     def test_unknown_role_has_no_permissions(self):
         self.assertEqual(permissions_for_role("custom-role"), frozenset())

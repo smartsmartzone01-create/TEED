@@ -2,7 +2,7 @@
 
 import { Globe2 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { useTransition } from "react";
+import { useState } from "react";
 
 import {
   DropdownMenu,
@@ -13,8 +13,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/global/primitives/dropdown-menu";
 import { Tooltip } from "@/components/global/primitives/tooltip";
-import { usePathname, useRouter } from "@/i18n/navigation";
 import type { AppLocale } from "@/i18n/routing";
+import { replaceDocumentLocale } from "@/lib/global/locale-navigation";
 import { useOptionalPreferences } from "@/providers/dashboard/preferences-provider";
 import { useNotification } from "@/providers/global/notification-provider";
 
@@ -25,24 +25,24 @@ type LanguageSwitcherProps = {
 
 function LanguageSwitcher({ contentClassName, showTooltip = true }: LanguageSwitcherProps) {
   const locale = useLocale() as AppLocale;
-  const pathname = usePathname();
-  const router = useRouter();
   const t = useTranslations("Language");
   const preferencesT = useTranslations("Preferences");
   const preferences = useOptionalPreferences();
   const { notify } = useNotification();
-  const [isPending, startTransition] = useTransition();
+  const [isPending, setIsPending] = useState(false);
 
   function changeLocale(nextLocale: string) {
     const selectedLocale = nextLocale as AppLocale;
     if (selectedLocale === locale) return;
+    setIsPending(true);
     if (preferences) {
       void preferences.update({ language: selectedLocale }).catch(() => {
+        setIsPending(false);
         notify({ message: preferencesT("saveError"), tone: "error" });
       });
       return;
     }
-    startTransition(() => router.replace(pathname, { locale: selectedLocale }));
+    replaceDocumentLocale(selectedLocale);
   }
 
   return (

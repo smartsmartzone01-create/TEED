@@ -1,5 +1,6 @@
 from datetime import timedelta
 
+from common.logging import get_logger
 from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
@@ -7,7 +8,11 @@ from django.utils.module_loading import import_string
 
 from ..email import DeliveryProviderError
 from ..models import EmailDelivery, IdentitySecurityEvent, User
-from ..repositories import claim_due_email_delivery, create_email_delivery
+from ..repositories import (
+    claim_due_email_delivery,
+    claim_email_delivery,
+    create_email_delivery,
+)
 from .email_delivery_crypto import (
     DeliveryPayloadInvalid,
     decrypt_delivery_payload,
@@ -18,6 +23,16 @@ from .security_event import (
     hash_identity_identifier,
     record_identity_security_event,
 )
+
+logger = get_logger(__name__)
+
+
+def _autoprocess_email_delivery(*, delivery_id) -> None:
+    if not process_email_delivery(delivery_id=delivery_id):
+        logger.warning(
+            "Immediate email delivery could not claim its outbox row: delivery_id=%s",
+            delivery_id,
+        )
 
 
 def enqueue_email_delivery(
@@ -51,7 +66,17 @@ def enqueue_email_delivery(
             metadata={"template": template},
         )
         if settings.EMAIL_DELIVERY_AUTOPROCESS:
-            transaction.on_commit(process_one_email_delivery)
+            logger.info(
+                "Email delivery queued for immediate processing: "
+                "delivery_id=%s template=%s",
+                delivery.id,
+                delivery.template,
+            )
+            transaction.on_commit(
+                lambda delivery_id=delivery.id: _autoprocess_email_delivery(
+                    delivery_id=delivery_id,
+                )
+            )
     return delivery
 
 
@@ -65,6 +90,29 @@ def _claim_one() -> EmailDelivery | None:
         delivery = claim_due_email_delivery(
             stale_before=timezone.now()
             - timedelta(seconds=settings.EMAIL_DELIVERY_LOCK_TIMEOUT_SECONDS)
+        )
+        if delivery is None:
+            return None
+        delivery.status = EmailDelivery.Status.PROCESSING
+        delivery.locked_at = timezone.now()
+        delivery.attempt_count += 1
+        delivery.save(
+            update_fields=[
+                "status",
+                "locked_at",
+                "attempt_count",
+                "updated_at",
+            ]
+        )
+        return delivery
+
+
+def _claim_by_id(*, delivery_id) -> EmailDelivery | None:
+    with transaction.atomic():
+        delivery = claim_email_delivery(
+            delivery_id=delivery_id,
+            stale_before=timezone.now()
+            - timedelta(seconds=settings.EMAIL_DELIVERY_LOCK_TIMEOUT_SECONDS),
         )
         if delivery is None:
             return None
@@ -109,6 +157,12 @@ def _finish_success(*, delivery, receipt):
             "template": delivery.template,
             "attempt": delivery.attempt_count,
         },
+    )
+    logger.info(
+        "Email delivery sent successfully: delivery_id=%s template=%s attempt=%s",
+        delivery.id,
+        delivery.template,
+        delivery.attempt_count,
     )
 
 
@@ -160,10 +214,18 @@ def _finish_failure(*, delivery, error_code, permanent=False):
             "reason": error_code,
         },
     )
+    logger.warning(
+        "Email delivery failed and was persisted for recovery: "
+        "delivery_id=%s template=%s attempt=%s reason=%s terminal=%s",
+        delivery.id,
+        delivery.template,
+        delivery.attempt_count,
+        error_code,
+        dead,
+    )
 
 
-def process_one_email_delivery() -> bool:
-    delivery = _claim_one()
+def _process_delivery(delivery) -> bool:
     if delivery is None:
         return False
     if delivery.expires_at <= timezone.now():
@@ -193,6 +255,11 @@ def process_one_email_delivery() -> bool:
             permanent=exc.permanent,
         )
     except Exception:
+        logger.exception(
+            "Unexpected email delivery error: delivery_id=%s template=%s",
+            delivery.id,
+            delivery.template,
+        )
         _finish_failure(
             delivery=delivery,
             error_code="delivery_internal_error",
@@ -200,6 +267,14 @@ def process_one_email_delivery() -> bool:
     else:
         _finish_success(delivery=delivery, receipt=receipt)
     return True
+
+
+def process_email_delivery(*, delivery_id) -> bool:
+    return _process_delivery(_claim_by_id(delivery_id=delivery_id))
+
+
+def process_one_email_delivery() -> bool:
+    return _process_delivery(_claim_one())
 
 
 def process_email_deliveries(*, limit: int) -> int:

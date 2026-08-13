@@ -22,6 +22,8 @@ from .workspaces import (
     WorkspaceAccessRequestCooldown,
     WorkspaceAccessRequestPending,
     WorkspaceBusinessNotFound,
+    WorkspaceHandleChangeCooldown,
+    WorkspaceHandleUnavailable,
     WorkspaceMembershipExists,
 )
 
@@ -48,4 +50,6 @@ __all__ = [
     "WorkspaceAccessRequestPending",
     "WorkspaceBusinessNotFound",
     "WorkspaceMembershipExists",
+    "WorkspaceHandleChangeCooldown",
+    "WorkspaceHandleUnavailable",
 ]

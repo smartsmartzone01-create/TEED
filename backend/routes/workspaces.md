@@ -13,6 +13,13 @@ All identifiers are UUIDs. All endpoints require an authenticated user with comp
 | `GET` | `businesses/discover/?q={identity}` | Search active discoverable Businesses by any non-empty name or public handle, or by exact UUID |
 | `GET` | `businesses/{business_id}/` | Read an active Business in the caller's workspace context |
 | `GET` | `businesses/{business_id}/overview/` | Read the Business, caller membership, permission-filtered pending counts, and active member count |
+| `GET/PATCH` | `businesses/{business_id}/profile/` | Read or update Business identity, logo, brand colors, location and operating details |
+| `GET/PATCH` | `businesses/{business_id}/settings/` | Read or update discoverability, branding and regional display preferences |
+| `GET` | `businesses/{business_id}/security/` | Read fixed permissions, controllers, pending controls and recent audit activity |
+
+Profile and settings reads are available to active members. Mutations require the fixed `business.manage` permission. Public-handle changes are explicit, unique, audited and subject to a configured cooldown; changing the Business name never changes its handle automatically. Converting a collaborative workspace to Personal Brand is blocked until every other active membership is removed.
+
+Business branding accepts two `#RRGGBB` colors. The frontend scopes them to workspace identity accents and never replaces semantic success, warning, error or destructive colors.
 
 ## Membership and fixed roles
 
@@ -29,6 +36,7 @@ Roles are `owner`, `partner`, `administrator`, `manager`, and `member`. Permissi
 | Method | Route | Purpose |
 |---|---|---|
 | `GET/POST` | `businesses/{business_id}/invitations/` | List or create invitations |
+| `POST` | `businesses/{business_id}/invitations/{invitation_id}/cancel/` | Cancel a pending invitation |
 | `GET` | `invitations/me/` | List pending invitations matching the caller's email |
 | `POST` | `invitations/{invitation_id}/accept/` | Accept and create membership atomically |
 | `POST` | `invitations/{invitation_id}/decline/` | Decline an invitation |
@@ -43,9 +51,11 @@ The same request endpoint supports a user without a Business from the personal d
 | `GET` | `businesses/{business_id}/access-requests/` | List pending requests |
 | `POST` | `businesses/{business_id}/access-requests/{request_id}/decision/` | Approve or reject |
 
-Discovery requires authentication and completed onboarding, is throttled, excludes Personal workspaces, and returns only UUID, name, public handle, country and workspace type. UUID remains the internal tenant identifier; the public handle is the user-facing discovery reference.
+Discovery requires authentication and completed onboarding, is throttled, excludes Personal Brand workspaces, and returns only UUID, name, public handle, country and workspace type. Business display names may repeat because legitimate organizations can share a name; UUID remains the internal tenant identifier and the unique public handle is the user-facing discovery reference.
 
-Workspace types are `business`, `service_provider`, `creator_brand`, `personal`, and `other`. Personal workspaces are single-user and reject invitations, access requests and member management.
+Workspace types are `business`, `service`, and `personal_brand`. They form a capability-policy layer beneath RBAC: roles decide what a member may do, while workspace type decides which product domains may exist. Personal Brand workspaces are single-user and reject invitations, access requests and member management.
+
+Every authenticated Business response includes backend-defined `capabilities`. Current capabilities distinguish Business operations, Service operations, Personal Brand tools, collaboration, social presence and future AI guidance. Billing may later consume the same entitlement boundary, but plan selection must not override authorization.
 
 ## Protected Business control
 
@@ -54,4 +64,6 @@ Workspace types are `business`, `service_provider`, `creator_brand`, `personal`,
 | `POST` | `businesses/{business_id}/control-requests/` | Request disable, reactivate, delete, or cancel-deletion |
 | `POST` | `businesses/{business_id}/control-requests/{control_request_id}/decision/` | Independently approve or reject |
 
-Business control requires an active Owner and Partner. The initiator cannot approve their own request. Approved deletion enters `deletion_pending`; it does not immediately destroy tenant data.
+A sole active Owner completes valid lifecycle actions immediately. If an active Partner exists, an independent Owner or Partner must approve; the initiator cannot approve their own request. Approved deletion enters recoverable `deletion_pending` for 30 days and never immediately destroys tenant data. During recovery, only active Owners and Partners retain visibility. Run `python manage.py finalize_business_deletions` from a scheduler to soft-delete expired Businesses and remove their memberships.
+
+Workspace-governance notifications are scoped to the Business UUID and link to `/workspace/{business_id}/...`. Membership and personal notifications remain dashboard-scoped. The backend validates action destinations so one Business cannot generate a link into another tenant.

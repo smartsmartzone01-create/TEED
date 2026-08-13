@@ -9,6 +9,7 @@ import type { z } from "zod";
 import { Button } from "@/components/global/primitives/button";
 import { FormField } from "@/components/global/primitives/form-field";
 import { Input } from "@/components/global/primitives/input";
+import { VerificationCodeInput } from "@/components/identity/verification-code-input";
 import { useApiErrorMessages } from "@/hooks/global/use-api-error-messages";
 import { Link, useRouter } from "@/i18n/navigation";
 import { firstFieldIssue } from "@/lib/global/api-errors";
@@ -223,12 +224,9 @@ function EmailVerificationForm({
           label={t("code")}
           required
         >
-          <Input
-            autoComplete="one-time-code"
+          <VerificationCodeInput
             id="verification-code"
-            inputMode="numeric"
             invalid={Boolean(errors.code)}
-            maxLength={6}
             placeholder={t("codePlaceholder")}
             {...register("code")}
           />

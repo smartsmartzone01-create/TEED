@@ -1,16 +1,20 @@
+from contextlib import redirect_stdout
 from datetime import timedelta
 from io import StringIO
 
 from django.core.management import call_command
 from django.db import transaction
-from django.test import TestCase, override_settings
+from django.test import TestCase, TransactionTestCase, override_settings
 from django.utils import timezone
 
 from ..email import DeliveryProviderError, DeliveryReceipt
 from ..models import EmailDelivery, IdentitySecurityEvent, User
 from ..services import (
     enqueue_email_delivery,
+    process_email_delivery,
     process_one_email_delivery,
+    register_email_user,
+    request_password_reset,
 )
 from ..services.email_delivery_crypto import decrypt_delivery_payload
 
@@ -103,6 +107,42 @@ class EmailDeliveryServiceTests(TestCase):
         self.assertIn("123456", SuccessfulProvider.messages[0].body)
 
     @override_settings(
+        EMAIL_DELIVERY_AUTOPROCESS=True,
+        EMAIL_DELIVERY_PROVIDER=(
+            "apps.identity.tests.test_email_delivery.SuccessfulProvider"
+        ),
+    )
+    def test_autoprocess_targets_new_delivery_instead_of_oldest_backlog(self):
+        oldest = self.enqueue(idempotency_key="oldest-pending")
+        with self.captureOnCommitCallbacks(execute=True):
+            requested = self.enqueue(
+                idempotency_key="requested-reset",
+                template=EmailDelivery.Template.PASSWORD_RESET,
+            )
+
+        oldest.refresh_from_db()
+        requested.refresh_from_db()
+        self.assertEqual(oldest.status, EmailDelivery.Status.PENDING)
+        self.assertEqual(requested.status, EmailDelivery.Status.SENT)
+        self.assertIn("password reset code", SuccessfulProvider.messages[0].body)
+
+    @override_settings(
+        EMAIL_DELIVERY_PROVIDER=(
+            "apps.identity.tests.test_email_delivery.SuccessfulProvider"
+        )
+    )
+    def test_specific_delivery_processor_claims_requested_job(self):
+        oldest = self.enqueue(idempotency_key="specific-oldest")
+        requested = self.enqueue(idempotency_key="specific-requested")
+
+        self.assertTrue(process_email_delivery(delivery_id=requested.id))
+
+        oldest.refresh_from_db()
+        requested.refresh_from_db()
+        self.assertEqual(oldest.status, EmailDelivery.Status.PENDING)
+        self.assertEqual(requested.status, EmailDelivery.Status.SENT)
+
+    @override_settings(
         EMAIL_DELIVERY_PROVIDER=(
             "apps.identity.tests.test_email_delivery.TemporaryFailureProvider"
         )
@@ -177,3 +217,35 @@ class EmailDeliveryServiceTests(TestCase):
 
         self.assertFalse(EmailDelivery.all_objects.filter(pk=old.pk).exists())
         self.assertTrue(EmailDelivery.all_objects.filter(pk=current.pk).exists())
+
+
+@override_settings(
+    EMAIL_BACKEND="django.core.mail.backends.console.EmailBackend",
+    EMAIL_DELIVERY_AUTOPROCESS=True,
+    EMAIL_DELIVERY_ENCRYPTION_KEY="",
+)
+class DevelopmentConsoleDeliveryTests(TransactionTestCase):
+    def test_initial_registration_prints_code_before_service_returns(self):
+        output = StringIO()
+
+        with redirect_stdout(output):
+            register_email_user(
+                email="console-registration@example.com",
+                password="Strong-Password-123!",
+            )
+
+        self.assertIn("verification code is", output.getvalue())
+
+    def test_eligible_password_reset_prints_code_before_service_returns(self):
+        user = User.objects.create_user(
+            email="console-reset@example.com",
+            password="Strong-Password-123!",
+        )
+        user.is_email_verified = True
+        user.save(update_fields=["is_email_verified", "updated_at"])
+        output = StringIO()
+
+        with redirect_stdout(output):
+            request_password_reset(email=user.email)
+
+        self.assertIn("password reset code is", output.getvalue())

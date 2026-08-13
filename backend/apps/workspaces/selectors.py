@@ -6,8 +6,11 @@ from django.utils import timezone
 from .models import (
     Business,
     BusinessAccessRequest,
+    BusinessControlRequest,
     BusinessInvitation,
     BusinessMembership,
+    BusinessProfile,
+    BusinessSettings,
 )
 
 
@@ -24,9 +27,22 @@ def active_membership(*, user, business_id):
 
 
 def user_businesses(*, user):
-    return BusinessMembership.objects.select_related("business").filter(
+    queryset = BusinessMembership.objects.select_related(
+        "business", "business__profile"
+    ).filter(
         user=user,
         status=BusinessMembership.Status.ACTIVE,
+        business__deleted_at__isnull=True,
+    )
+    return queryset.filter(
+        Q(business__status=Business.Status.ACTIVE)
+        | Q(
+            business__status__in=[
+                Business.Status.DISABLED,
+                Business.Status.DELETION_PENDING,
+            ],
+            role__in=["owner", "partner"],
+        )
     )
 
 
@@ -43,7 +59,7 @@ def discover_businesses(*, query):
         identity_query,
         is_discoverable=True,
         status=Business.Status.ACTIVE,
-    ).exclude(workspace_type=Business.WorkspaceType.PERSONAL)[:10]
+    ).exclude(workspace_type=Business.WorkspaceType.PERSONAL_BRAND)[:10]
 
 
 def workspace_overview_state(*, membership):
@@ -90,6 +106,9 @@ def workspace_overview_state(*, membership):
         )
         if count is not None
     ]
+    completion = business_profile_completion(business=business)
+    settings_record, _ = BusinessSettings.objects.get_or_create(business=business)
+    profile, _ = BusinessProfile.objects.get_or_create(business=business)
     return {
         "active_member_count": business.memberships.filter(
             status=BusinessMembership.Status.ACTIVE
@@ -98,6 +117,57 @@ def workspace_overview_state(*, membership):
         "pending_action_count": sum(visible_pending_counts),
         "pending_control_request_count": pending_control_requests,
         "pending_invitation_count": pending_invitations,
+        "profile_completion_percentage": completion["percentage"],
+        "profile_missing_fields": completion["missing_fields"],
+        "is_discoverable": business.is_discoverable,
+        "branding_enabled": settings_record.branding_enabled,
+        "brand_configured": bool(
+            profile.primary_brand_color and profile.secondary_brand_color
+        ),
+    }
+
+
+def business_profile_completion(*, business):
+    profile, _ = BusinessProfile.objects.get_or_create(business=business)
+    values = {
+        "name": business.name,
+        "country_code": business.country_code,
+        "workspace_type": business.workspace_type,
+        "business_category": profile.business_category,
+        "operating_model": profile.operating_model,
+        "city": profile.city,
+    }
+    missing_fields = [key for key, value in values.items() if not value]
+    completed = len(values) - len(missing_fields)
+    return {
+        "completed_fields": completed,
+        "missing_fields": missing_fields,
+        "percentage": round(completed / len(values) * 100),
+        "total_fields": len(values),
+    }
+
+
+def business_security_state(*, membership):
+    from .policy import permissions_for_role
+
+    business = membership.business
+    controllers = business.memberships.select_related("user").filter(
+        role__in=["owner", "partner"],
+        status=BusinessMembership.Status.ACTIVE,
+    )
+    pending_controls = business.control_requests.select_related(
+        "initiated_by", "resolved_by"
+    ).filter(
+        status=BusinessControlRequest.Status.PENDING,
+        expires_at__gt=timezone.now(),
+    )
+    return {
+        "controllers": controllers,
+        "permissions": sorted(
+            permission.value for permission in permissions_for_role(membership.role)
+        ),
+        "pending_controls": pending_controls,
+        "recent_events": business.audit_events.select_related("actor")[:20],
     }
 
 

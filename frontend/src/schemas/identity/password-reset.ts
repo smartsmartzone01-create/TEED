@@ -46,7 +46,7 @@ function createPasswordResetVerifySchema(
     code: z
       .string()
       .trim()
-      .regex(/^\d{4,12}$/, messages.code),
+      .regex(/^\d{6}$/, messages.code),
     email: z.email(messages.email),
   });
 }

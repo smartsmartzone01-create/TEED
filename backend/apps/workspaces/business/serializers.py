@@ -2,7 +2,11 @@ from ..serializers import (
     BusinessCreateSerializer,
     BusinessDiscoveryQuerySerializer,
     BusinessDiscoverySerializer,
+    BusinessProfileSerializer,
+    BusinessProfileUpdateSerializer,
     BusinessSerializer,
+    BusinessSettingsSerializer,
+    BusinessSettingsUpdateSerializer,
 )
 
 __all__ = [
@@ -10,4 +14,8 @@ __all__ = [
     "BusinessDiscoveryQuerySerializer",
     "BusinessDiscoverySerializer",
     "BusinessSerializer",
+    "BusinessProfileSerializer",
+    "BusinessProfileUpdateSerializer",
+    "BusinessSettingsSerializer",
+    "BusinessSettingsUpdateSerializer",
 ]

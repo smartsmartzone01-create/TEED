@@ -12,6 +12,7 @@
     "notificationsSoon": "Notification inbox is coming next",
     "logout": "Log out",
     "loggingOut": "Logging out…",
+    "subnavigation": {"workspaces": {"overview": "Workspace overview", "create": "Create Business", "requestAccess": "Request access"}},
     "navigation": {
       "overview": "Overview",
       "ai": "TEED AI",

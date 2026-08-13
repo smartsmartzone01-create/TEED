@@ -10,10 +10,11 @@ import { WorkspaceBusinessMenu } from "@/components/workspace/workspace-business
 import { WorkspaceMobileMenu } from "@/components/workspace/workspace-mobile-menu";
 
 type WorkspaceHeaderProps = {
+  businessId?: string | null;
   onOpenNavigation: () => void;
 };
 
-function WorkspaceHeader({ onOpenNavigation }: WorkspaceHeaderProps) {
+function WorkspaceHeader({ businessId, onOpenNavigation }: WorkspaceHeaderProps) {
   const t = useTranslations("WorkspaceShell");
 
   return (
@@ -39,7 +40,7 @@ function WorkspaceHeader({ onOpenNavigation }: WorkspaceHeaderProps) {
 
       <div className="flex shrink-0 items-center gap-1.5">
         <div className="hidden items-center gap-1.5 sm:flex">
-          <NotificationBell />
+          <NotificationBell businessId={businessId ?? undefined} href={businessId ? `/workspace/${businessId}/notifications` : "/dashboard/notifications"} />
           <LanguageSwitcher showTooltip />
           <ThemeSwitcher showTooltip />
         </div>

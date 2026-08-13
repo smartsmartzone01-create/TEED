@@ -20,6 +20,7 @@ import {
 import type {
   NotificationCategory,
   NotificationItem,
+  NotificationScope,
 } from "@/types/notifications/notifications";
 
 type ContextValue = {
@@ -29,6 +30,7 @@ type ContextValue = {
   loading: boolean;
   markAllRead: () => Promise<void>;
   markRead: (id: string) => Promise<void>;
+  loadUnreadCount: (scope?: NotificationScope, businessId?: string) => Promise<number>;
   page: number;
   refresh: () => Promise<void>;
   setCategory: (category: NotificationCategory | "all") => void;
@@ -37,6 +39,7 @@ type ContextValue = {
   totalPages: number;
   unreadCount: number;
   unreadOnly: boolean;
+  setContextFilter: (scope?: NotificationScope, businessId?: string) => void;
 };
 
 const NotificationsContext = createContext<ContextValue | null>(null);
@@ -51,6 +54,8 @@ function NotificationsProvider({ children }: { children: ReactNode }) {
   const [unreadOnly, setUnreadOnlyState] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const [scope, setScope] = useState<NotificationScope | undefined>();
+  const [businessId, setBusinessId] = useState<string | undefined>();
 
   const withToken = useCallback(async <T,>(operation: (token: string) => Promise<T>) => {
     if (!accessToken) throw new Error("Authentication required.");
@@ -73,7 +78,14 @@ function NotificationsProvider({ children }: { children: ReactNode }) {
     setError(null);
     try {
       const response = await withToken((token) =>
-        getNotifications(token, { category, page, unreadOnly }),
+        getNotifications(token, {
+          businessId,
+          category,
+          page,
+          scope,
+          surface: scope ? undefined : "dashboard",
+          unreadOnly,
+        }),
       );
       setItems(response.data?.notifications ?? []);
       setUnreadCount(response.data?.unread_count ?? 0);
@@ -83,7 +95,7 @@ function NotificationsProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }, [accessToken, category, page, unreadOnly, withToken]);
+  }, [accessToken, businessId, category, page, scope, unreadOnly, withToken]);
 
   useEffect(() => {
     const initial = window.setTimeout(() => void refresh(), 0);
@@ -99,13 +111,44 @@ function NotificationsProvider({ children }: { children: ReactNode }) {
     };
   }, [refresh]);
 
+  const setContextFilter = useCallback(
+    (nextScope?: NotificationScope, nextBusinessId?: string) => {
+      setScope(nextScope);
+      setBusinessId(nextBusinessId);
+      setPageState(1);
+    },
+    [],
+  );
+
+  const loadUnreadCount = useCallback(
+    async (nextScope?: NotificationScope, nextBusinessId?: string) => {
+      const response = await withToken((token) =>
+        getNotifications(token, {
+          businessId: nextBusinessId,
+          scope: nextScope,
+          surface: nextScope ? undefined : "dashboard",
+          unreadOnly: true,
+        }),
+      );
+      return response.data?.unread_count ?? 0;
+    },
+    [withToken],
+  );
+
   const value = useMemo<ContextValue>(() => ({
     category,
     error,
     items,
     loading,
+    loadUnreadCount,
     markAllRead: async () => {
-      await withToken(markAllNotificationsRead);
+      await withToken((token) =>
+        markAllNotificationsRead(token, {
+          businessId,
+          scope,
+          surface: scope ? undefined : "dashboard",
+        }),
+      );
       await refresh();
     },
     markRead: async (id) => {
@@ -125,10 +168,11 @@ function NotificationsProvider({ children }: { children: ReactNode }) {
       setUnreadOnlyState(next);
       setPageState(1);
     },
+    setContextFilter,
     totalPages,
     unreadCount,
     unreadOnly,
-  }), [category, error, items, loading, page, refresh, totalPages, unreadCount, unreadOnly, withToken]);
+  }), [businessId, category, error, items, loadUnreadCount, loading, page, refresh, scope, setContextFilter, totalPages, unreadCount, unreadOnly, withToken]);
 
   return <NotificationsContext.Provider value={value}>{children}</NotificationsContext.Provider>;
 }

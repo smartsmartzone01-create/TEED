@@ -10,4 +10,4 @@ All endpoints require an authenticated, onboarding-complete user. Mutation endpo
 
 The list accepts `page`, `page_size`, `category`, and `unread=true`. Supported categories are `security`, `account`, `workspace`, and `system`. Expired notifications are excluded.
 
-Notification action paths must be internal `/dashboard...` paths. The inbox never executes the domain action itself; it only links to the responsible module.
+Notification action paths must remain under the authenticated `/dashboard` or `/workspace` route roots. Similar-looking prefixes such as `/dashboard-attacker` and every absolute or external URL are rejected. The inbox never executes the domain action itself; it only links to the responsible module.

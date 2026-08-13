@@ -8,8 +8,12 @@ from .api import (
     BusinessDiscoveryAPIView,
     BusinessListCreateAPIView,
     BusinessOverviewAPIView,
+    BusinessProfileAPIView,
+    BusinessSecurityAPIView,
+    BusinessSettingsAPIView,
     ControlRequestCreateAPIView,
     ControlRequestDecisionAPIView,
+    InvitationCancelAPIView,
     InvitationDecisionAPIView,
     InvitationListCreateAPIView,
     MembershipDetailAPIView,
@@ -37,6 +41,21 @@ urlpatterns = [
         name="business-overview",
     ),
     path(
+        "businesses/<uuid:business_id>/profile/",
+        BusinessProfileAPIView.as_view(),
+        name="business-profile",
+    ),
+    path(
+        "businesses/<uuid:business_id>/settings/",
+        BusinessSettingsAPIView.as_view(),
+        name="business-settings",
+    ),
+    path(
+        "businesses/<uuid:business_id>/security/",
+        BusinessSecurityAPIView.as_view(),
+        name="business-security",
+    ),
+    path(
         "businesses/<uuid:business_id>/members/",
         MembershipListAPIView.as_view(),
         name="member-list",
@@ -50,6 +69,11 @@ urlpatterns = [
         "businesses/<uuid:business_id>/invitations/",
         InvitationListCreateAPIView.as_view(),
         name="invitation-list",
+    ),
+    path(
+        "businesses/<uuid:business_id>/invitations/<uuid:invitation_id>/cancel/",
+        InvitationCancelAPIView.as_view(),
+        name="invitation-cancel",
     ),
     path("invitations/me/", MyInvitationListAPIView.as_view(), name="my-invitations"),
     path(

@@ -12,7 +12,7 @@ import {
   type ReactNode,
 } from "react";
 
-import { usePathname, useRouter } from "@/i18n/navigation";
+import { replaceDocumentLocale } from "@/lib/global/locale-navigation";
 import { useIdentitySession } from "@/providers/identity/identity-session-provider";
 import { ApiClientError } from "@/services/global/api-client";
 import { getPreferences, updatePreferences } from "@/services/dashboard/preferences";
@@ -30,8 +30,6 @@ const PreferencesContext = createContext<PreferencesContextValue | null>(null);
 
 function PreferencesProvider({ children }: { children: ReactNode }) {
   const locale = useLocale();
-  const pathname = usePathname();
-  const router = useRouter();
   const { setTheme } = useTheme();
   const { accessToken, clearSession, refreshAccessToken, user } = useIdentitySession();
   const accountKey = user?.email ?? "anonymous";
@@ -61,9 +59,9 @@ function PreferencesProvider({ children }: { children: ReactNode }) {
     (next: UserPreferences) => {
       setTheme(next.appearance);
       document.documentElement.classList.toggle("reduce-motion", next.reduced_motion);
-      if (next.language !== locale) router.replace(pathname, { locale: next.language });
+      if (next.language !== locale) replaceDocumentLocale(next.language);
     },
-    [locale, pathname, router, setTheme],
+    [locale, setTheme],
   );
 
   const update = useCallback(

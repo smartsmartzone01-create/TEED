@@ -12,7 +12,8 @@ function WorkspaceEntry() {
 
   useEffect(() => {
     if (status !== "ready") return;
-    if (businesses[0]) router.replace(`/workspace/${businesses[0].id}`);
+    const activeBusiness = businesses.find((business) => business.status === "active");
+    if (activeBusiness) router.replace(`/workspace/${activeBusiness.id}`);
     else router.replace("/dashboard/workspaces");
   }, [businesses, router, status]);
 

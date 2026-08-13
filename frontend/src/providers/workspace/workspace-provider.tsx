@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -14,11 +15,25 @@ import { useIdentitySession } from "@/providers/identity/identity-session-provid
 import { ApiClientError } from "@/services/global/api-client";
 import {
   createBusiness as createBusinessRequest,
+  createBusinessControlRequest,
+  decideBusinessControlRequest,
   decideInvitation as decideInvitationRequest,
   getBusinesses,
   getMyInvitations,
+  getBusinessProfile,
+  getBusinessSecurity,
+  getBusinessSettings,
   discoverBusinesses as discoverBusinessesRequest,
   requestBusinessAccess as requestBusinessAccessRequest,
+  updateBusinessProfile,
+  updateBusinessSettings,
+  createWorkspaceInvitation,
+  cancelWorkspaceInvitation,
+  decideWorkspaceAccessRequest,
+  getWorkspaceAccessRequests,
+  getWorkspaceInvitations,
+  getWorkspaceMembers,
+  updateWorkspaceMember,
 } from "@/services/workspace/workspace";
 import type {
   CreateBusinessValues,
@@ -28,6 +43,15 @@ import type {
   WorkspaceBusinessListItem,
   WorkspaceInvitation,
   WorkspaceOverviewData,
+  BusinessProfileData,
+  BusinessProfileValues,
+  BusinessSecurityData,
+  BusinessSettingsData,
+  BusinessSettingsValues,
+  BusinessControlRequest,
+  AssignableWorkspaceRole,
+  WorkspaceAccessRequest,
+  WorkspaceMembership,
 } from "@/types/workspace/workspace";
 import { getWorkspaceOverview } from "@/services/workspace/workspace";
 
@@ -39,12 +63,27 @@ type WorkspaceContextValue = {
   error: ApiClientError | Error | null;
   invitations: WorkspaceInvitation[];
   loadOverview: (businessId: string, signal?: AbortSignal) => Promise<WorkspaceOverviewData>;
+  loadProfile: (businessId: string, signal?: AbortSignal) => Promise<BusinessProfileData>;
+  loadSecurity: (businessId: string, signal?: AbortSignal) => Promise<BusinessSecurityData>;
+  loadSettings: (businessId: string, signal?: AbortSignal) => Promise<BusinessSettingsData>;
   refresh: () => Promise<void>;
   requestAccess: (values: RequestBusinessAccessValues) => Promise<void>;
+  saveProfile: (businessId: string, values: Partial<BusinessProfileValues>) => Promise<BusinessProfileData>;
+  saveSettings: (businessId: string, values: BusinessSettingsValues) => Promise<BusinessSettingsData>;
+  createControl: (businessId: string, action: "cancel_deletion" | "delete" | "disable" | "reactivate") => Promise<BusinessControlRequest>;
+  decideControl: (businessId: string, requestId: string, decision: "approve" | "reject") => Promise<void>;
   status: "error" | "loading" | "ready";
+  loadMembers: (businessId: string, signal?: AbortSignal) => Promise<WorkspaceMembership[]>;
+  updateMember: (businessId: string, membershipId: string, values: { role?: string; status?: string }) => Promise<WorkspaceMembership>;
+  loadInvitations: (businessId: string, signal?: AbortSignal) => Promise<WorkspaceInvitation[]>;
+  inviteMember: (businessId: string, values: { email: string; role: string }) => Promise<WorkspaceInvitation>;
+  cancelInvitation: (businessId: string, invitationId: string) => Promise<WorkspaceInvitation>;
+  loadAccessRequests: (businessId: string, signal?: AbortSignal) => Promise<WorkspaceAccessRequest[]>;
+  decideAccessRequest: (businessId: string, requestId: string, values: { decision: "approve" | "reject"; role?: AssignableWorkspaceRole }) => Promise<void>;
 };
 
 const WorkspaceContext = createContext<WorkspaceContextValue | null>(null);
+const WORKSPACE_CHANNEL = "teed-workspace-state";
 
 function WorkspaceProvider({ children }: { children: ReactNode }) {
   const { accessToken, clearSession, refreshAccessToken } = useIdentitySession();
@@ -52,6 +91,21 @@ function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [invitations, setInvitations] = useState<WorkspaceInvitation[]>([]);
   const [error, setError] = useState<ApiClientError | Error | null>(null);
   const [loading, setLoading] = useState(true);
+  const hasLoaded = useRef(false);
+  const loadedAccessToken = useRef<string | null>(null);
+  const refreshInFlight = useRef<{
+    promise: Promise<void>;
+    sequence: number;
+    token: string;
+  } | null>(null);
+  const refreshSequence = useRef(0);
+
+  const broadcastChange = useCallback(() => {
+    if (typeof BroadcastChannel === "undefined") return;
+    const channel = new BroadcastChannel(WORKSPACE_CHANNEL);
+    channel.postMessage({ type: "refresh" });
+    channel.close();
+  }, []);
 
   const withToken = useCallback(
     async <T,>(operation: (token: string) => Promise<T>) => {
@@ -83,30 +137,63 @@ function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   const refresh = useCallback(async () => {
     if (!accessToken) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const [businessResponse, invitationResponse] = await Promise.all([
-        withToken((token) => getBusinesses(token)),
-        withToken((token) => getMyInvitations(token)),
-      ]);
-      setBusinesses(businessResponse.data?.businesses ?? []);
-      setInvitations(invitationResponse.data?.invitations ?? []);
-    } catch (requestError) {
-      setError(
-        requestError instanceof ApiClientError || requestError instanceof Error
-          ? requestError
-          : new Error("Workspace request failed."),
-      );
-    } finally {
-      setLoading(false);
+    if (refreshInFlight.current?.token === accessToken) {
+      return refreshInFlight.current.promise;
     }
+    const initialLoad = !hasLoaded.current || loadedAccessToken.current !== accessToken;
+    if (initialLoad) {
+      if (loadedAccessToken.current && loadedAccessToken.current !== accessToken) {
+        setBusinesses([]);
+        setInvitations([]);
+      }
+      setLoading(true);
+      setError(null);
+    }
+    const sequence = refreshSequence.current + 1;
+    refreshSequence.current = sequence;
+    const operation = (async () => {
+      try {
+        const [businessResponse, invitationResponse] = await Promise.all([
+          withToken((token) => getBusinesses(token)),
+          withToken((token) => getMyInvitations(token)),
+        ]);
+        const nextBusinesses = businessResponse.data?.businesses ?? [];
+        const nextInvitations = invitationResponse.data?.invitations ?? [];
+        setBusinesses((current) =>
+          JSON.stringify(current) === JSON.stringify(nextBusinesses) ? current : nextBusinesses,
+        );
+        setInvitations((current) =>
+          JSON.stringify(current) === JSON.stringify(nextInvitations) ? current : nextInvitations,
+        );
+        hasLoaded.current = true;
+        loadedAccessToken.current = accessToken;
+        setError(null);
+      } catch (requestError) {
+        if (initialLoad) {
+          setError(
+            requestError instanceof ApiClientError || requestError instanceof Error
+              ? requestError
+              : new Error("Workspace request failed."),
+          );
+        }
+      } finally {
+        if (initialLoad) setLoading(false);
+        if (refreshInFlight.current?.sequence === sequence) {
+          refreshInFlight.current = null;
+        }
+      }
+    })();
+    refreshInFlight.current = { promise: operation, sequence, token: accessToken };
+    return operation;
   }, [accessToken, withToken]);
 
   useEffect(() => {
     if (!accessToken) return;
     const initial = window.setTimeout(() => void refresh(), 0);
-    const interval = window.setInterval(() => void refresh(), 30_000);
+    const interval = window.setInterval(() => void refresh(), 10_000);
+    const channel = typeof BroadcastChannel === "undefined" ? null : new BroadcastChannel(WORKSPACE_CHANNEL);
+    const onWorkspaceChange = () => void refresh();
+    channel?.addEventListener("message", onWorkspaceChange);
     const onVisibility = () => {
       if (document.visibilityState === "visible") void refresh();
     };
@@ -114,6 +201,8 @@ function WorkspaceProvider({ children }: { children: ReactNode }) {
     return () => {
       window.clearTimeout(initial);
       window.clearInterval(interval);
+      channel?.removeEventListener("message", onWorkspaceChange);
+      channel?.close();
       document.removeEventListener("visibilitychange", onVisibility);
     };
   }, [accessToken, refresh]);
@@ -125,11 +214,27 @@ function WorkspaceProvider({ children }: { children: ReactNode }) {
         const response = await withToken((token) => createBusinessRequest(values, token));
         if (!response.data) throw new Error("Business creation response data missing.");
         await refresh();
+        broadcastChange();
+        return response.data;
+      },
+      createControl: async (businessId, action) => {
+        const response = await withToken((token) => createBusinessControlRequest(businessId, action, token));
+        if (!response.data) throw new Error("Business control response data missing.");
+        await refresh();
+        broadcastChange();
         return response.data;
       },
       decideInvitation: async (id, decision) => {
         await withToken((token) => decideInvitationRequest(id, decision, token));
         await refresh();
+        broadcastChange();
+      },
+      decideControl: async (businessId, requestId, decision) => {
+        await withToken((token) =>
+          decideBusinessControlRequest(businessId, requestId, decision, token),
+        );
+        await refresh();
+        broadcastChange();
       },
       discoverBusinesses: async (query, signal) => {
         const response = await withToken((token) =>
@@ -146,14 +251,85 @@ function WorkspaceProvider({ children }: { children: ReactNode }) {
         if (!response.data) throw new Error("Workspace overview response data missing.");
         return response.data;
       },
+      loadMembers: async (businessId, signal) => {
+        const response = await withToken((token) => getWorkspaceMembers(businessId, token, signal));
+        return response.data?.members ?? [];
+      },
+      updateMember: async (businessId, membershipId, values) => {
+        const response = await withToken((token) => updateWorkspaceMember(businessId, membershipId, values, token));
+        if (!response.data) throw new Error("Membership response data missing.");
+        await refresh();
+        broadcastChange();
+        return response.data;
+      },
+      loadInvitations: async (businessId, signal) => {
+        const response = await withToken((token) => getWorkspaceInvitations(businessId, token, signal));
+        return response.data?.invitations ?? [];
+      },
+      inviteMember: async (businessId, values) => {
+        const response = await withToken((token) => createWorkspaceInvitation(businessId, values, token));
+        if (!response.data) throw new Error("Invitation response data missing.");
+        return response.data;
+      },
+      cancelInvitation: async (businessId, invitationId) => {
+        const response = await withToken((token) => cancelWorkspaceInvitation(businessId, invitationId, token));
+        if (!response.data) throw new Error("Invitation response data missing.");
+        return response.data;
+      },
+      loadAccessRequests: async (businessId, signal) => {
+        const response = await withToken((token) => getWorkspaceAccessRequests(businessId, token, signal));
+        return response.data?.access_requests ?? [];
+      },
+      decideAccessRequest: async (businessId, requestId, values) => {
+        await withToken((token) => decideWorkspaceAccessRequest(businessId, requestId, values, token));
+        await refresh();
+        broadcastChange();
+      },
+      loadProfile: async (businessId, signal) => {
+        const response = await withToken((token) =>
+          getBusinessProfile(businessId, token, signal),
+        );
+        if (!response.data) throw new Error("Business profile response data missing.");
+        return response.data;
+      },
+      loadSecurity: async (businessId, signal) => {
+        const response = await withToken((token) =>
+          getBusinessSecurity(businessId, token, signal),
+        );
+        if (!response.data) throw new Error("Business security response data missing.");
+        return response.data;
+      },
+      loadSettings: async (businessId, signal) => {
+        const response = await withToken((token) =>
+          getBusinessSettings(businessId, token, signal),
+        );
+        if (!response.data) throw new Error("Business settings response data missing.");
+        return response.data;
+      },
       refresh,
       requestAccess: async (values) => {
         await withToken((token) => requestBusinessAccessRequest(values, token));
         await refresh();
+        broadcastChange();
+      },
+      saveProfile: async (businessId, values) => {
+        const response = await withToken((token) =>
+          updateBusinessProfile(businessId, values, token),
+        );
+        if (!response.data) throw new Error("Business profile response data missing.");
+        await refresh();
+        return response.data;
+      },
+      saveSettings: async (businessId, values) => {
+        const response = await withToken((token) =>
+          updateBusinessSettings(businessId, values, token),
+        );
+        if (!response.data) throw new Error("Business settings response data missing.");
+        return response.data;
       },
       status: loading ? "loading" : error ? "error" : "ready",
     }),
-    [businesses, error, invitations, loading, refresh, withToken],
+    [broadcastChange, businesses, error, invitations, loading, refresh, withToken],
   );
 
   return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>;

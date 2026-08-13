@@ -91,7 +91,7 @@ function normalizeApiFailure(
 
 function createNetworkError(error: unknown): NormalizedApiError {
   if (
-    error instanceof DOMException &&
+    error instanceof Error &&
     error.name === "AbortError"
   ) {
     return {

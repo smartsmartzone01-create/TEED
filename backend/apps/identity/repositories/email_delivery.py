@@ -31,3 +31,25 @@ def claim_due_email_delivery(*, stale_before) -> EmailDelivery | None:
         .order_by("next_attempt_at", "created_at")
         .first()
     )
+
+
+def claim_email_delivery(*, delivery_id, stale_before) -> EmailDelivery | None:
+    return (
+        EmailDelivery.objects.select_for_update(skip_locked=True)
+        .select_related("user")
+        .filter(id=delivery_id)
+        .filter(
+            Q(
+                status__in=[
+                    EmailDelivery.Status.PENDING,
+                    EmailDelivery.Status.RETRY,
+                ],
+                next_attempt_at__lte=timezone.now(),
+            )
+            | Q(
+                status=EmailDelivery.Status.PROCESSING,
+                locked_at__lte=stale_before,
+            )
+        )
+        .first()
+    )

@@ -2,21 +2,38 @@
 
 import { Bell } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { useEffect, useState } from "react";
 
 import { Tooltip } from "@/components/global/primitives/tooltip";
 import { Link } from "@/i18n/navigation";
 import { useNotifications } from "@/providers/notifications/notifications-provider";
 
-function NotificationBell() {
+function NotificationBell({
+  businessId,
+  href = "/dashboard/notifications",
+}: {
+  businessId?: string;
+  href?: string;
+}) {
   const t = useTranslations("NotificationInbox");
-  const { unreadCount } = useNotifications();
+  const { loadUnreadCount, unreadCount: personalUnreadCount } = useNotifications();
+  const [workspaceUnreadCount, setWorkspaceUnreadCount] = useState(0);
+  const unreadCount = businessId ? workspaceUnreadCount : personalUnreadCount;
+
+  useEffect(() => {
+    if (!businessId) return;
+    const refresh = () => void loadUnreadCount("workspace", businessId).then(setWorkspaceUnreadCount);
+    refresh();
+    const interval = window.setInterval(refresh, 10_000);
+    return () => window.clearInterval(interval);
+  }, [businessId, loadUnreadCount]);
 
   return (
     <Tooltip content={t("bellTooltip", { count: unreadCount })}>
       <Link
         aria-label={t("bellLabel", { count: unreadCount })}
         className="relative inline-flex size-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300 dark:hover:bg-slate-900"
-        href="/dashboard/notifications"
+        href={href as never}
       >
         <Bell className="size-4.5" />
         {unreadCount > 0 ? (
