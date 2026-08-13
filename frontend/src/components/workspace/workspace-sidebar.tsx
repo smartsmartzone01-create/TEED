@@ -57,7 +57,11 @@ function WorkspaceSidebar({ collapsed, mobileOpen, onCloseMobile, onToggleCollap
   const pathname = usePathname();
   const { businesses } = useWorkspace();
   const businessId = useMemo(() => pathname.match(/\/workspace\/([^/]+)/)?.[1] ?? null, [pathname]);
-  const commerceEnabled = businesses.find((business) => business.id === businessId)?.capabilities.includes("business_operations") ?? false;
+  const activeBusiness = businesses.find((business) => business.id === businessId);
+  const commerceEnabled = Boolean(
+    activeBusiness?.capabilities.includes("business_operations") &&
+    activeBusiness.membership.permissions.includes("commerce.view"),
+  );
   const activeGroup = groupForPath(pathname);
   const [accordion, setAccordion] = useState<{
     group: NavigationGroupKey | null;

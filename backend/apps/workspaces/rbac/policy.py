@@ -53,13 +53,7 @@ ROLE_PERMISSIONS = {
             WorkspacePermission.RECORD_SALES,
         }
     ),
-    WorkspaceRole.MEMBER: frozenset(
-        {
-            WorkspacePermission.ACCESS,
-            WorkspacePermission.VIEW_COMMERCE,
-            WorkspacePermission.RECORD_SALES,
-        }
-    ),
+    WorkspaceRole.MEMBER: frozenset({WorkspacePermission.ACCESS}),
 }
 
 PROTECTED_ROLES = frozenset({WorkspaceRole.OWNER, WorkspaceRole.PARTNER})

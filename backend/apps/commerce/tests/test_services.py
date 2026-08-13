@@ -178,14 +178,14 @@ class CommerceServiceTests(TestCase):
         self.assertEqual(second.quantity_remaining, 3)
         self.assertEqual(self.product.current_quantity, 3)
 
-    def test_member_business_pulse_hides_financial_costs(self):
-        member = User.objects.create_user(
-            email="member@example.com", password="Strong-Password-123!"
+    def test_manager_business_pulse_hides_financial_costs(self):
+        manager = User.objects.create_user(
+            email="manager@example.com", password="Strong-Password-123!"
         )
         BusinessMembership.objects.create(
-            business=self.business, user=member, role="member"
+            business=self.business, user=manager, role="manager"
         )
-        pulse = commerce_overview(user=member, business_id=self.business.id)["pulse"]
+        pulse = commerce_overview(user=manager, business_id=self.business.id)["pulse"]
         self.assertIsNone(pulse["cost_of_goods"])
         self.assertIsNone(pulse["gross_profit"])
         self.assertIsNone(pulse["stock_value"])

@@ -278,13 +278,13 @@ def record_return(*, actor, business_id, sale_id, items, **values):
             amount=amount,
             cost_total=cost_total,
         )
+        previously_returned = sale_item.returned_quantity
         sale_item.returned_quantity = F("returned_quantity") + quantity
         sale_item.save(update_fields=["returned_quantity", "updated_at"])
         if item["condition"] == "sellable":
             product = sale_item.product
             product.current_quantity = F("current_quantity") + quantity
             product.save(update_fields=["current_quantity", "updated_at"])
-            previously_returned = sale_item.returned_quantity
             remaining_return = quantity
             for allocation in sale_item.allocations.select_related("batch").order_by(
                 "-batch__received_at", "-batch__created_at"
@@ -295,9 +295,7 @@ def record_return(*, actor, business_id, sale_id, items, **values):
                 restored = min(remaining_return, restorable)
                 if restored <= 0:
                     continue
-                allocation.batch.quantity_remaining = (
-                    F("quantity_remaining") + restored
-                )
+                allocation.batch.quantity_remaining = F("quantity_remaining") + restored
                 allocation.batch.save(
                     update_fields=["quantity_remaining", "updated_at"]
                 )
@@ -384,15 +382,11 @@ def commerce_overview(*, user, business_id):
     )
     totals = sales.aggregate(revenue=Sum("total"), cost=Sum("cost_of_goods"))
     expense_total = expenses.aggregate(total=Sum("amount"))["total"] or Decimal("0")
-    return_totals = returns.aggregate(
-        revenue=Sum("amount"), cost=Sum("cost_total")
-    )
+    return_totals = returns.aggregate(revenue=Sum("amount"), cost=Sum("cost_total"))
     revenue = (totals["revenue"] or Decimal("0")) - (
         return_totals["revenue"] or Decimal("0")
     )
-    cost = (totals["cost"] or Decimal("0")) - (
-        return_totals["cost"] or Decimal("0")
-    )
+    cost = (totals["cost"] or Decimal("0")) - (return_totals["cost"] or Decimal("0"))
     products = Product.objects.filter(business=business, is_active=True)
     can_manage_finance = role_has_permission(
         membership.role, WorkspacePermission.MANAGE_FINANCE
@@ -410,18 +404,20 @@ def commerce_overview(*, user, business_id):
             "low_stock_count": products.filter(
                 current_quantity__lte=F("low_stock_threshold")
             ).count(),
-            "stock_value": financial_value(sum(
-                (
-                    p.current_quantity
-                    * (
-                        p.stock_batches.order_by("-received_at")
-                        .values_list("unit_cost", flat=True)
-                        .first()
-                        or Decimal("0")
+            "stock_value": financial_value(
+                sum(
+                    (
+                        p.current_quantity
+                        * (
+                            p.stock_batches.order_by("-received_at")
+                            .values_list("unit_cost", flat=True)
+                            .first()
+                            or Decimal("0")
+                        )
                     )
+                    for p in products
                 )
-                for p in products
-            )),
+            ),
             "confidence": (
                 "reliable"
                 if not products.filter(
