@@ -7,7 +7,12 @@ class WorkspacePolicyTests(SimpleTestCase):
     def test_fixed_roles_have_backend_owned_permissions(self):
         self.assertEqual(
             permissions_for_role(WorkspaceRole.MEMBER),
-            {WorkspacePermission.ACCESS},
+            {
+                WorkspacePermission.ACCESS,
+                WorkspacePermission.VIEW_COMMERCE,
+                WorkspacePermission.RECORD_SALES,
+                WorkspacePermission.EDIT_OWN_SALES,
+            },
         )
         self.assertIn(
             WorkspacePermission.CONTROL_BUSINESS,

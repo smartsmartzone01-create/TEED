@@ -16,7 +16,7 @@ const saleSchema = z.object({
   customer_name: z.string(), customer_phone: z.string(), subtotal: decimal, discount: decimal,
   total: decimal, cost_of_goods: decimal.optional(), gross_profit: decimal.optional(),
   payment_status: z.enum(["paid", "partial", "unpaid"]), sold_at: z.string(),
-  items: z.array(saleItemSchema),
+  items: z.array(saleItemSchema), recorded_by: z.string(), status: z.enum(["active", "voided"]),
 }).passthrough();
 const decisionSchema = z.object({
   id: z.string(), key: z.string(), severity: z.enum(["info", "attention", "urgent"]),

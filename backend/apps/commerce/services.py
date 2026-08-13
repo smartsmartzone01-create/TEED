@@ -1,8 +1,9 @@
 from datetime import timedelta
 from decimal import Decimal
+from zoneinfo import ZoneInfo
 
 from django.db import transaction
-from django.db.models import F, Sum
+from django.db.models import F, Max, Sum
 from django.utils import timezone
 from rest_framework.exceptions import PermissionDenied, ValidationError
 
@@ -22,6 +23,7 @@ from .models import (
     ReturnItem,
     Sale,
     SaleAllocation,
+    SaleAudit,
     SaleItem,
     SaleReturn,
     StockBatch,
@@ -144,12 +146,27 @@ def record_sale(*, actor, business_id, items, **values):
     membership = commerce_membership(
         user=actor, business_id=business_id, permission=WorkspacePermission.RECORD_SALES
     )
+    membership.business.__class__.objects.select_for_update().get(
+        pk=membership.business_id
+    )
+    sequence = (
+        Sale.objects.select_for_update()
+        .filter(business=membership.business)
+        .aggregate(value=Max("receipt_sequence"))["value"]
+        or 0
+    ) + 1
+    handle = (
+        "".join(
+            character
+            for character in membership.business.public_handle.upper()
+            if character.isalnum()
+        )[:8]
+        or "TEED"
+    )
     sale = Sale.objects.create(
         business=membership.business,
-        receipt_number=(
-            f"TEED-{timezone.now():%Y%m%d}-"
-            f"{str(timezone.now().timestamp()).replace('.', '')[-8:]}"
-        ),
+        receipt_sequence=sequence,
+        receipt_number=f"{handle}-{sequence:07d}",
         recorded_by=actor,
         **values,
     )
@@ -199,6 +216,163 @@ def record_sale(*, actor, business_id, items, **values):
     sale.total = max(Decimal("0"), subtotal - sale.discount)
     sale.cost_of_goods = total_cost
     sale.save(update_fields=["subtotal", "total", "cost_of_goods", "updated_at"])
+    refresh_decisions(business=membership.business)
+    return sale
+
+
+def _sale_snapshot(sale):
+    return {
+        "sale_type": sale.sale_type,
+        "customer_name": sale.customer_name,
+        "customer_phone": sale.customer_phone,
+        "discount": str(sale.discount),
+        "payment_status": sale.payment_status,
+        "sold_at": sale.sold_at.isoformat(),
+        "items": [
+            {
+                "product_id": str(item.product_id),
+                "quantity": str(item.quantity),
+                "unit_price": str(item.unit_price),
+            }
+            for item in sale.items.all()
+        ],
+    }
+
+
+def _can_edit_sale(*, membership, actor, sale):
+    if role_has_permission(membership.role, WorkspacePermission.EDIT_ANY_SALES):
+        return True
+    workspace_timezone = ZoneInfo(membership.business.settings.timezone)
+    return (
+        role_has_permission(membership.role, WorkspacePermission.EDIT_OWN_SALES)
+        and sale.recorded_by_id == actor.id
+        and timezone.localtime(sale.sold_at, workspace_timezone).date()
+        == timezone.localdate(timezone=workspace_timezone)
+    )
+
+
+@transaction.atomic
+def edit_sale(*, actor, business_id, sale_id, items, **values):
+    membership = commerce_membership(user=actor, business_id=business_id)
+    sale = (
+        Sale.objects.select_for_update()
+        .filter(
+            id=sale_id,
+            business=membership.business,
+            status=Sale.Status.ACTIVE,
+        )
+        .first()
+    )
+    if sale is None:
+        raise ValidationError({"sale_id": ["Active sale not found."]})
+    if not _can_edit_sale(membership=membership, actor=actor, sale=sale):
+        raise PermissionDenied("You can only edit your own sales recorded today.")
+    if sale.returns.exists():
+        raise ValidationError(
+            {"sale_id": ["A sale with a recorded return cannot be edited."]}
+        )
+    before = _sale_snapshot(sale)
+    for allocation in SaleAllocation.objects.select_related(
+        "batch", "sale_item__product"
+    ).filter(sale_item__sale=sale):
+        allocation.batch.quantity_remaining = (
+            F("quantity_remaining") + allocation.quantity
+        )
+        allocation.batch.save(update_fields=["quantity_remaining", "updated_at"])
+        product = allocation.sale_item.product
+        product.current_quantity = F("current_quantity") + allocation.quantity
+        product.save(update_fields=["current_quantity", "updated_at"])
+    sale.inventory_movements.all().delete()
+    sale.items.all().delete()
+    for key, value in values.items():
+        setattr(sale, key, value)
+    sale.save()
+    subtotal = Decimal("0")
+    total_cost = Decimal("0")
+    for item in items:
+        product = Product.objects.select_for_update().get(
+            id=item["product_id"], business=membership.business, is_active=True
+        )
+        quantity = item["quantity"]
+        unit_price = item.get("unit_price", product.selling_price)
+        sale_item = SaleItem.objects.create(
+            sale=sale,
+            product=product,
+            quantity=quantity,
+            unit_price=unit_price,
+            line_total=quantity * unit_price,
+        )
+        cost = _allocate_fifo(
+            product=product,
+            sale_item=sale_item,
+            quantity=quantity,
+            actor=actor,
+            sale=sale,
+        )
+        sale_item.cost_total = cost
+        sale_item.save(update_fields=["cost_total", "updated_at"])
+        product.current_quantity = F("current_quantity") - quantity
+        product.save(update_fields=["current_quantity", "updated_at"])
+        subtotal += sale_item.line_total
+        total_cost += cost
+    sale.subtotal = subtotal
+    sale.total = max(Decimal("0"), subtotal - sale.discount)
+    sale.cost_of_goods = total_cost
+    sale.save()
+    SaleAudit.objects.create(
+        sale=sale,
+        actor=actor,
+        action="edit",
+        before=before,
+        after=_sale_snapshot(sale),
+    )
+    refresh_decisions(business=membership.business)
+    return sale
+
+
+@transaction.atomic
+def void_sale(*, actor, business_id, sale_id, reason):
+    membership = commerce_membership(
+        user=actor,
+        business_id=business_id,
+        permission=WorkspacePermission.VOID_SALES,
+    )
+    sale = (
+        Sale.objects.select_for_update()
+        .filter(
+            id=sale_id,
+            business=membership.business,
+            status=Sale.Status.ACTIVE,
+        )
+        .first()
+    )
+    if sale is None:
+        raise ValidationError({"sale_id": ["Active sale not found."]})
+    if sale.returns.exists():
+        raise ValidationError({"sale_id": ["A sale with returns cannot be voided."]})
+    before = _sale_snapshot(sale)
+    for allocation in SaleAllocation.objects.select_related(
+        "batch", "sale_item__product"
+    ).filter(sale_item__sale=sale):
+        allocation.batch.quantity_remaining = (
+            F("quantity_remaining") + allocation.quantity
+        )
+        allocation.batch.save(update_fields=["quantity_remaining", "updated_at"])
+        product = allocation.sale_item.product
+        product.current_quantity = F("current_quantity") + allocation.quantity
+        product.save(update_fields=["current_quantity", "updated_at"])
+    sale.status = Sale.Status.VOIDED
+    sale.voided_at = timezone.now()
+    sale.voided_by = actor
+    sale.void_reason = reason
+    sale.save()
+    SaleAudit.objects.create(
+        sale=sale,
+        actor=actor,
+        action="void",
+        before=before,
+        after={"status": sale.status, "reason": reason},
+    )
     refresh_decisions(business=membership.business)
     return sale
 
@@ -374,7 +548,9 @@ def commerce_overview(*, user, business_id):
     business = membership.business
     refresh_decisions(business=business)
     today = timezone.localdate()
-    sales = Sale.objects.filter(business=business, sold_at__date=today)
+    sales = Sale.objects.filter(
+        business=business, sold_at__date=today, status=Sale.Status.ACTIVE
+    )
     expenses = Expense.objects.filter(business=business, incurred_at__date=today)
     returns = ReturnItem.objects.filter(
         return_record__sale__business=business,
@@ -391,8 +567,10 @@ def commerce_overview(*, user, business_id):
     can_manage_finance = role_has_permission(
         membership.role, WorkspacePermission.MANAGE_FINANCE
     )
+
     def financial_value(value):
         return value if can_manage_finance else None
+
     return {
         "pulse": {
             "revenue": revenue,

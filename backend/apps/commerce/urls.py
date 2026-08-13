@@ -7,7 +7,9 @@ from .api import (
     ExpenseListCreateAPIView,
     ProductListCreateAPIView,
     ReturnListCreateAPIView,
+    SaleDetailAPIView,
     SaleListCreateAPIView,
+    SaleVoidAPIView,
     StockBatchListCreateAPIView,
 )
 
@@ -37,6 +39,16 @@ urlpatterns = [
         "businesses/<uuid:business_id>/sales/",
         SaleListCreateAPIView.as_view(),
         name="sales",
+    ),
+    path(
+        "businesses/<uuid:business_id>/sales/<uuid:sale_id>/",
+        SaleDetailAPIView.as_view(),
+        name="sale-detail",
+    ),
+    path(
+        "businesses/<uuid:business_id>/sales/<uuid:sale_id>/void/",
+        SaleVoidAPIView.as_view(),
+        name="sale-void",
     ),
     path(
         "businesses/<uuid:business_id>/returns/",

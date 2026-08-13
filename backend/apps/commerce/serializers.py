@@ -98,6 +98,10 @@ class SaleCreateSerializer(serializers.Serializer):
     items = SaleItemInputSerializer(many=True, min_length=1)
 
 
+class SaleVoidSerializer(serializers.Serializer):
+    reason = serializers.CharField(min_length=3, max_length=240)
+
+
 class SaleItemSerializer(serializers.ModelSerializer):
     product_name = serializers.CharField(source="product.name", read_only=True)
 
@@ -124,6 +128,8 @@ class SaleSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "receipt_number",
+            "receipt_sequence",
+            "status",
             "sale_type",
             "customer_name",
             "customer_phone",
@@ -134,6 +140,9 @@ class SaleSerializer(serializers.ModelSerializer):
             "gross_profit",
             "payment_status",
             "sold_at",
+            "recorded_by",
+            "voided_at",
+            "void_reason",
             "items",
         ]
 

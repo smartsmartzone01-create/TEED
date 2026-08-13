@@ -18,6 +18,12 @@ function getSales(businessId: string, accessToken: string, signal?: AbortSignal)
 function createSale(businessId: string, accessToken: string, body: unknown) {
   return withCsrfRetry((csrfToken) => requestApi({ accessToken, body, csrfToken, method: "POST", path: `${base(businessId)}/sales/`, schema: saleResponseSchema }));
 }
+function updateSale(businessId: string, saleId: string, accessToken: string, body: unknown) {
+  return withCsrfRetry((csrfToken) => requestApi({ accessToken, body, csrfToken, method: "PATCH", path: `${base(businessId)}/sales/${saleId}/`, schema: saleResponseSchema }));
+}
+function voidSale(businessId: string, saleId: string, accessToken: string, reason: string) {
+  return withCsrfRetry((csrfToken) => requestApi({ accessToken, body: { reason }, csrfToken, method: "POST", path: `${base(businessId)}/sales/${saleId}/void/`, schema: saleResponseSchema }));
+}
 function commerceWrite(businessId: string, accessToken: string, section: string, body: unknown) {
   return withCsrfRetry((csrfToken) => requestApi({ accessToken, body, csrfToken, method: "POST", path: `${base(businessId)}/${section}/`, schema: genericResponseSchema }));
 }
@@ -25,4 +31,4 @@ function commerceRead(businessId: string, accessToken: string, section: string, 
   return requestApi({ accessToken, path: `${base(businessId)}/${section}/`, schema: genericResponseSchema, signal });
 }
 
-export { commerceRead, commerceWrite, createProduct, createSale, getCommerceOverview, getProducts, getSales };
+export { commerceRead, commerceWrite, createProduct, createSale, getCommerceOverview, getProducts, getSales, updateSale, voidSale };

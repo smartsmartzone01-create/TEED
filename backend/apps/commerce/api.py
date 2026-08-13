@@ -29,6 +29,7 @@ from .serializers import (
     ReturnSerializer,
     SaleCreateSerializer,
     SaleSerializer,
+    SaleVoidSerializer,
     StockBatchSerializer,
     StockReceiptSerializer,
 )
@@ -38,10 +39,12 @@ from .services import (
     commerce_overview,
     create_expense,
     create_product,
+    edit_sale,
     receive_stock,
     record_return,
     record_sale,
     set_budget,
+    void_sale,
 )
 
 
@@ -139,7 +142,7 @@ class SaleListCreateAPIView(CommerceBaseAPIView):
     def get(self, request, business_id):
         membership = commerce_membership(user=request.user, business_id=business_id)
         sales = Sale.objects.prefetch_related("items__product").filter(
-            business=membership.business
+            business=membership.business, status=Sale.Status.ACTIVE
         )[:100]
         return SuccessResponse(
             message="Sales retrieved successfully.",
@@ -168,6 +171,40 @@ class SaleListCreateAPIView(CommerceBaseAPIView):
             message="Sale recorded and inventory updated successfully.",
             data=SaleSerializer(sale).data,
             status_code=status.HTTP_201_CREATED,
+        )
+
+
+class SaleDetailAPIView(CommerceBaseAPIView):
+    @method_decorator(csrf_protect)
+    def patch(self, request, business_id, sale_id):
+        serializer = SaleCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        sale = edit_sale(
+            actor=request.user,
+            business_id=business_id,
+            sale_id=sale_id,
+            **serializer.validated_data,
+        )
+        sale = Sale.objects.prefetch_related("items__product").get(pk=sale.pk)
+        return SuccessResponse(
+            message="Sale corrected successfully.", data=SaleSerializer(sale).data
+        )
+
+
+class SaleVoidAPIView(CommerceBaseAPIView):
+    @method_decorator(csrf_protect)
+    def post(self, request, business_id, sale_id):
+        serializer = SaleVoidSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        sale = void_sale(
+            actor=request.user,
+            business_id=business_id,
+            sale_id=sale_id,
+            **serializer.validated_data,
+        )
+        return SuccessResponse(
+            message="Sale voided and archived successfully.",
+            data=SaleSerializer(sale).data,
         )
 
 

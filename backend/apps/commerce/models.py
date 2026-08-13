@@ -75,6 +75,10 @@ class StockBatch(BaseModel):
 
 
 class Sale(BaseModel):
+    class Status(models.TextChoices):
+        ACTIVE = "active", "Active"
+        VOIDED = "voided", "Voided and archived"
+
     class SaleType(models.TextChoices):
         RETAIL = "retail", "Retail"
         WHOLESALE = "wholesale", "Wholesale"
@@ -88,6 +92,10 @@ class Sale(BaseModel):
         "workspaces.Business", on_delete=models.PROTECT, related_name="sales"
     )
     receipt_number = models.CharField(max_length=40)
+    receipt_sequence = models.PositiveBigIntegerField()
+    status = models.CharField(
+        max_length=12, choices=Status.choices, default=Status.ACTIVE, db_index=True
+    )
     sale_type = models.CharField(
         max_length=16, choices=SaleType.choices, default=SaleType.RETAIL
     )
@@ -106,6 +114,15 @@ class Sale(BaseModel):
         on_delete=models.PROTECT,
         related_name="recorded_sales",
     )
+    voided_at = models.DateTimeField(null=True, blank=True)
+    voided_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="voided_sales",
+        null=True,
+        blank=True,
+    )
+    void_reason = models.CharField(max_length=240, blank=True, default="")
 
     class Meta:
         db_table = "commerce_sales"
@@ -113,8 +130,28 @@ class Sale(BaseModel):
         constraints = [
             models.UniqueConstraint(
                 fields=["business", "receipt_number"], name="commerce_receipt_unique"
-            )
+            ),
+            models.UniqueConstraint(
+                fields=["business", "receipt_sequence"],
+                name="commerce_receipt_sequence_unique",
+            ),
         ]
+
+
+class SaleAudit(BaseModel):
+    sale = models.ForeignKey(
+        Sale, on_delete=models.PROTECT, related_name="audit_events"
+    )
+    actor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    action = models.CharField(
+        max_length=16, choices=[("edit", "Edit"), ("void", "Void")]
+    )
+    before = models.JSONField(default=dict)
+    after = models.JSONField(default=dict)
+
+    class Meta:
+        db_table = "commerce_sale_audit"
+        ordering = ["-created_at"]
 
 
 class SaleItem(BaseModel):

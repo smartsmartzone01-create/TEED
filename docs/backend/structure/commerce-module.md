@@ -19,8 +19,14 @@ sales, returns, expenses, simple budgets, and practical operating results.
 
 The app uses fixed workspace roles. Owners and partners control every commerce operation.
 Administrators can manage commerce and finance. Managers can manage catalog, inventory,
-and sales. Members can view commerce and record sales. Cost, profit, expense, and stock-value
+and sales. Members can view commerce, record sales, and correct their own sales during the
+workspace-local business day. Owners, partners, and administrators may correct historical
+sales and void a sale without an approval workflow. Voiding archives the receipt, restores its
+FIFO allocations, and preserves an automatic audit event. Cost, profit, expense, and stock-value
 figures are withheld unless the role has the finance permission.
+
+Sales retain UUID primary keys for API relationships and use a sequential, business-prefixed
+receipt such as `KJ-0000001` for staff and customers.
 
 Commerce endpoints also require the `business_operations` workspace capability. Service and
 personal-brand workspaces cannot use the module merely by guessing its URL.

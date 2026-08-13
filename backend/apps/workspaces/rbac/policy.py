@@ -20,6 +20,9 @@ class WorkspacePermission(StrEnum):
     MANAGE_CATALOG = "commerce.catalog.manage"
     MANAGE_INVENTORY = "commerce.inventory.manage"
     RECORD_SALES = "commerce.sales.record"
+    EDIT_OWN_SALES = "commerce.sales.edit_own"
+    EDIT_ANY_SALES = "commerce.sales.edit_any"
+    VOID_SALES = "commerce.sales.void"
     MANAGE_FINANCE = "commerce.finance.manage"
 
 
@@ -40,6 +43,9 @@ ROLE_PERMISSIONS = {
             WorkspacePermission.MANAGE_CATALOG,
             WorkspacePermission.MANAGE_INVENTORY,
             WorkspacePermission.RECORD_SALES,
+            WorkspacePermission.EDIT_OWN_SALES,
+            WorkspacePermission.EDIT_ANY_SALES,
+            WorkspacePermission.VOID_SALES,
             WorkspacePermission.MANAGE_FINANCE,
         }
     ),
@@ -51,9 +57,18 @@ ROLE_PERMISSIONS = {
             WorkspacePermission.MANAGE_CATALOG,
             WorkspacePermission.MANAGE_INVENTORY,
             WorkspacePermission.RECORD_SALES,
+            WorkspacePermission.EDIT_OWN_SALES,
+            WorkspacePermission.EDIT_ANY_SALES,
         }
     ),
-    WorkspaceRole.MEMBER: frozenset({WorkspacePermission.ACCESS}),
+    WorkspaceRole.MEMBER: frozenset(
+        {
+            WorkspacePermission.ACCESS,
+            WorkspacePermission.VIEW_COMMERCE,
+            WorkspacePermission.RECORD_SALES,
+            WorkspacePermission.EDIT_OWN_SALES,
+        }
+    ),
 }
 
 PROTECTED_ROLES = frozenset({WorkspaceRole.OWNER, WorkspaceRole.PARTNER})

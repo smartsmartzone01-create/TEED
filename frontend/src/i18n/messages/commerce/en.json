@@ -13,11 +13,11 @@
     "pulse":{"revenue":"Net sales today","sales":"Sales today","lowStock":"Stock alerts","stockValue":"Stock value"},
     "decisions":{"title":"Decision Inbox","description":"Powered by Business Pulse—focused explanations and direct next actions, without waiting for AI.","clear":"Nothing urgent needs your attention right now."},
     "recentSales":"Recent sales","catalog":"Product catalog","movements":"Recent stock movements",
-    "forms":{"product":"Add product","stock":"Receive stock","sale":"Record sale","return":"Record return","expenses":"Record expense","budgets":"Set monthly budget"},
+    "forms":{"product":"Add product","stock":"Receive stock","sale":"Record sale","editSale":"Correct sale","return":"Record return","expenses":"Record expense","budgets":"Set monthly budget"},
     "fields":{"name":"Product name","sku":"SKU (optional)","variant":"Variant (optional)","price":"Selling price","unit":"Unit","lowStock":"Low-stock alert","quantity":"Quantity","unitCost":"Unit cost","additionalCost":"Additional batch cost","reference":"Reference","supplier":"Supplier","date":"Date and time","saleType":"Sale type","customer":"Customer name","phone":"Customer phone","product":"Product","discount":"Discount","payment":"Payment status","receipt":"Receipt","condition":"Condition","resolution":"Resolution","reason":"Reason","category":"Category","description":"Description","amount":"Amount","month":"Month","planned":"Planned amount"},
     "values":{"retail":"Retail","wholesale":"Wholesale","paid":"Paid","partial":"Partially paid","unpaid":"Unpaid","sellable":"Sellable","damaged":"Damaged","refund":"Refund","replacement":"Replacement","credit":"Store credit"},
-    "actions":{"saveProduct":"Save product","receiveStock":"Receive stock","recordSale":"Record sale","recordReturn":"Record return","addLine":"Add another product","save":"Save"},
-    "success":{"product":"Product saved.","stock":"Stock received and totals updated.","sale":"Sale recorded and inventory updated.","return":"Return recorded.","expenses":"Expense saved.","budgets":"Budget saved."},
+    "actions":{"saveProduct":"Save product","receiveStock":"Receive stock","recordSale":"Record sale","recordReturn":"Record return","addLine":"Add another product","save":"Save","edit":"Edit","void":"Void","cancel":"Cancel","saveCorrection":"Save correction","voidReason":"Why should this sale be voided and archived?"},
+    "success":{"product":"Product saved.","stock":"Stock received and totals updated.","sale":"Sale recorded and inventory updated.","saleEdited":"Sale corrected and inventory recalculated.","saleVoided":"Sale voided, archived, and stock restored.","return":"Return recorded.","expenses":"Expense saved.","budgets":"Budget saved."},
     "empty":{"sales":"No sales recorded today."},"errors":{"load":"Commerce data could not be loaded.","save":"The record could not be saved."}
   }
 }

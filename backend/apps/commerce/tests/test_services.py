@@ -12,9 +12,11 @@ from ..services import (
     commerce_overview,
     create_expense,
     create_product,
+    edit_sale,
     receive_stock,
     record_return,
     record_sale,
+    void_sale,
 )
 
 
@@ -96,6 +98,7 @@ class CommerceServiceTests(TestCase):
         self.assertEqual(sale.total, Decimal("250000"))
         self.assertEqual(sale.cost_of_goods, Decimal("165000"))
         self.assertEqual(SaleAllocation.objects.count(), 2)
+        self.assertEqual(sale.receipt_number, "KJCOMMER-0000001")
 
     def test_sale_rejects_insufficient_stock_without_partial_records(self):
         self.receive("2", "30000")
@@ -189,3 +192,60 @@ class CommerceServiceTests(TestCase):
         self.assertIsNone(pulse["cost_of_goods"])
         self.assertIsNone(pulse["gross_profit"])
         self.assertIsNone(pulse["stock_value"])
+
+    def test_member_can_edit_own_sale_today(self):
+        self.receive("10", "30000")
+        member = User.objects.create_user(
+            email="salesperson@example.com", password="Strong-Password-123!"
+        )
+        BusinessMembership.objects.create(
+            business=self.business, user=member, role="member"
+        )
+        sale = record_sale(
+            actor=member,
+            business_id=self.business.id,
+            sale_type="retail",
+            discount=0,
+            payment_status="paid",
+            sold_at=timezone.now(),
+            items=[{"product_id": self.product.id, "quantity": Decimal("2")}],
+        )
+        edit_sale(
+            actor=member,
+            business_id=self.business.id,
+            sale_id=sale.id,
+            sale_type="retail",
+            customer_name="Corrected customer",
+            customer_phone="",
+            discount=0,
+            payment_status="paid",
+            sold_at=timezone.now(),
+            items=[{"product_id": self.product.id, "quantity": Decimal("3")}],
+        )
+        self.product.refresh_from_db()
+        sale.refresh_from_db()
+        self.assertEqual(self.product.current_quantity, Decimal("7"))
+        self.assertEqual(sale.customer_name, "Corrected customer")
+        self.assertEqual(sale.audit_events.get().action, "edit")
+
+    def test_owner_voids_sale_and_stock_is_restored(self):
+        self.receive("5", "30000")
+        sale = record_sale(
+            actor=self.owner,
+            business_id=self.business.id,
+            sale_type="retail",
+            discount=0,
+            payment_status="paid",
+            sold_at=timezone.now(),
+            items=[{"product_id": self.product.id, "quantity": Decimal("2")}],
+        )
+        void_sale(
+            actor=self.owner,
+            business_id=self.business.id,
+            sale_id=sale.id,
+            reason="Duplicate receipt",
+        )
+        self.product.refresh_from_db()
+        sale.refresh_from_db()
+        self.assertEqual(self.product.current_quantity, Decimal("5"))
+        self.assertEqual(sale.status, "voided")
