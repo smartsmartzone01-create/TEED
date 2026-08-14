@@ -4,14 +4,26 @@ from django.db import models
 
 
 class Product(BaseModel):
+    class TrackingMode(models.TextChoices):
+        QUANTITY = "quantity", "Quantity"
+        INDIVIDUAL = "individual", "Individual items"
+
     business = models.ForeignKey(
         "workspaces.Business", on_delete=models.CASCADE, related_name="products"
     )
     name = models.CharField(max_length=120)
-    sku = models.CharField(max_length=64, blank=True, default="")
+    sku = models.CharField(max_length=64, blank=True, default="", editable=False)
+    barcode = models.CharField(max_length=80, blank=True, default="")
+    group = models.CharField(max_length=80, blank=True, default="")
+    brand = models.CharField(max_length=80, blank=True, default="")
     variant = models.CharField(max_length=120, blank=True, default="")
     unit = models.CharField(max_length=32, default="item")
-    selling_price = models.DecimalField(max_digits=14, decimal_places=2)
+    selling_price = models.DecimalField(
+        max_digits=14, decimal_places=2, null=True, blank=True
+    )
+    tracking_mode = models.CharField(
+        max_length=16, choices=TrackingMode.choices, default=TrackingMode.QUANTITY
+    )
     low_stock_threshold = models.DecimalField(
         max_digits=14, decimal_places=3, default=0
     )
@@ -27,8 +39,14 @@ class Product(BaseModel):
                 condition=~models.Q(sku=""),
                 name="commerce_business_sku_unique",
             ),
+            models.UniqueConstraint(
+                fields=["business", "barcode"],
+                condition=~models.Q(barcode=""),
+                name="commerce_business_barcode_unique",
+            ),
             models.CheckConstraint(
-                condition=models.Q(selling_price__gte=0),
+                condition=models.Q(selling_price__isnull=True)
+                | models.Q(selling_price__gte=0),
                 name="commerce_product_price_nonnegative",
             ),
             models.CheckConstraint(
@@ -38,14 +56,69 @@ class Product(BaseModel):
         ]
 
 
+class StockReceipt(BaseModel):
+    class Status(models.TextChoices):
+        DRAFT = "draft", "Draft"
+        RECEIVED = "received", "Received"
+        ARCHIVED = "archived", "Archived"
+
+    business = models.ForeignKey(
+        "workspaces.Business", on_delete=models.PROTECT, related_name="stock_receipts"
+    )
+    reference = models.CharField(max_length=40)
+    sequence = models.PositiveBigIntegerField()
+    status = models.CharField(
+        max_length=12, choices=Status.choices, default=Status.DRAFT, db_index=True
+    )
+    supplier_name = models.CharField(max_length=120, blank=True, default="")
+    supplier_reference = models.CharField(max_length=80, blank=True, default="")
+    additional_cost = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    notes = models.CharField(max_length=300, blank=True, default="")
+    received_at = models.DateTimeField(null=True, blank=True)
+    recorded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="recorded_stock_receipts",
+    )
+
+    class Meta:
+        db_table = "commerce_stock_receipts"
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["business", "reference"],
+                name="commerce_stock_receipt_reference_unique",
+            ),
+            models.UniqueConstraint(
+                fields=["business", "sequence"],
+                name="commerce_stock_receipt_sequence_unique",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(additional_cost__gte=0),
+                name="commerce_stock_receipt_cost_nonnegative",
+            ),
+        ]
+
+
 class StockBatch(BaseModel):
+    receipt = models.ForeignKey(
+        StockReceipt,
+        on_delete=models.PROTECT,
+        related_name="lines",
+        null=True,
+        blank=True,
+    )
     product = models.ForeignKey(
         Product, on_delete=models.PROTECT, related_name="stock_batches"
     )
     reference = models.CharField(max_length=64, blank=True, default="")
     quantity_received = models.DecimalField(max_digits=14, decimal_places=3)
     quantity_remaining = models.DecimalField(max_digits=14, decimal_places=3)
-    unit_cost = models.DecimalField(max_digits=14, decimal_places=2)
+    unit_cost = models.DecimalField(
+        max_digits=14, decimal_places=2, null=True, blank=True
+    )
+    received_unit = models.CharField(max_length=32, blank=True, default="")
+    conversion_to_base = models.DecimalField(max_digits=14, decimal_places=6, default=1)
     additional_cost = models.DecimalField(max_digits=14, decimal_places=2, default=0)
     received_at = models.DateTimeField()
     supplier_name = models.CharField(max_length=120, blank=True, default="")
@@ -68,8 +141,54 @@ class StockBatch(BaseModel):
                 name="commerce_batch_remaining_nonnegative",
             ),
             models.CheckConstraint(
-                condition=models.Q(unit_cost__gte=0),
+                condition=models.Q(unit_cost__isnull=True) | models.Q(unit_cost__gte=0),
                 name="commerce_batch_cost_nonnegative",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(conversion_to_base__gt=0),
+                name="commerce_batch_conversion_positive",
+            ),
+        ]
+
+
+class TrackedUnit(BaseModel):
+    class Status(models.TextChoices):
+        AVAILABLE = "available", "Available"
+        SOLD = "sold", "Sold"
+        DAMAGED = "damaged", "Damaged"
+        LOST = "lost", "Lost"
+
+    stock_line = models.ForeignKey(
+        StockBatch, on_delete=models.PROTECT, related_name="tracked_units"
+    )
+    product = models.ForeignKey(
+        Product, on_delete=models.PROTECT, related_name="tracked_units"
+    )
+    internal_serial = models.CharField(max_length=40)
+    imei = models.CharField(max_length=80, blank=True, default="")
+    serial_number = models.CharField(max_length=120, blank=True, default="")
+    condition = models.CharField(max_length=40, blank=True, default="")
+    status = models.CharField(
+        max_length=16, choices=Status.choices, default=Status.AVAILABLE, db_index=True
+    )
+
+    class Meta:
+        db_table = "commerce_tracked_units"
+        ordering = ["internal_serial"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["product", "internal_serial"],
+                name="commerce_product_internal_serial_unique",
+            ),
+            models.UniqueConstraint(
+                fields=["product", "imei"],
+                condition=~models.Q(imei=""),
+                name="commerce_product_imei_unique",
+            ),
+            models.UniqueConstraint(
+                fields=["product", "serial_number"],
+                condition=~models.Q(serial_number=""),
+                name="commerce_product_serial_unique",
             ),
         ]
 

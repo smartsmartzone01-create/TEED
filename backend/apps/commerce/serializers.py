@@ -12,6 +12,8 @@ from .models import (
     SaleItem,
     SaleReturn,
     StockBatch,
+    StockReceipt,
+    TrackedUnit,
 )
 
 
@@ -22,16 +24,118 @@ class ProductSerializer(serializers.ModelSerializer):
             "id",
             "name",
             "sku",
+            "barcode",
+            "group",
+            "brand",
             "variant",
             "unit",
             "selling_price",
+            "tracking_mode",
             "low_stock_threshold",
             "current_quantity",
             "is_active",
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["id", "current_quantity", "created_at", "updated_at"]
+        read_only_fields = ["id", "sku", "current_quantity", "created_at", "updated_at"]
+
+
+class TrackedUnitInputSerializer(serializers.Serializer):
+    imei = serializers.CharField(max_length=80, required=False, allow_blank=True)
+    serial_number = serializers.CharField(
+        max_length=120, required=False, allow_blank=True
+    )
+    condition = serializers.CharField(max_length=40, required=False, allow_blank=True)
+
+
+class StockLineInputSerializer(serializers.Serializer):
+    product_id = serializers.UUIDField(required=False)
+    item = ProductSerializer(required=False)
+    quantity_received = serializers.DecimalField(
+        max_digits=14, decimal_places=3, min_value=Decimal("0.001")
+    )
+    received_unit = serializers.CharField(max_length=32)
+    conversion_to_base = serializers.DecimalField(
+        max_digits=14, decimal_places=6, min_value=Decimal("0.000001"), default=1
+    )
+    unit_cost = serializers.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        min_value=Decimal("0"),
+        required=False,
+        allow_null=True,
+    )
+    tracked_units = TrackedUnitInputSerializer(many=True, required=False, default=list)
+
+    def validate(self, attrs):
+        if bool(attrs.get("product_id")) == bool(attrs.get("item")):
+            raise serializers.ValidationError(
+                "Choose an existing item or enter a new item, not both."
+            )
+        return attrs
+
+
+class StockReceiptCreateSerializer(serializers.Serializer):
+    status = serializers.ChoiceField(
+        choices=[StockReceipt.Status.DRAFT, StockReceipt.Status.RECEIVED],
+        default=StockReceipt.Status.RECEIVED,
+    )
+    supplier_name = serializers.CharField(
+        max_length=120, required=False, allow_blank=True
+    )
+    supplier_reference = serializers.CharField(
+        max_length=80, required=False, allow_blank=True
+    )
+    additional_cost = serializers.DecimalField(
+        max_digits=14, decimal_places=2, min_value=Decimal("0"), default=0
+    )
+    notes = serializers.CharField(max_length=300, required=False, allow_blank=True)
+    received_at = serializers.DateTimeField(required=False, allow_null=True)
+    lines = StockLineInputSerializer(many=True, min_length=1)
+
+    def validate(self, attrs):
+        if attrs["status"] == StockReceipt.Status.RECEIVED and not attrs.get(
+            "received_at"
+        ):
+            raise serializers.ValidationError(
+                {"received_at": "Enter the date received."}
+            )
+        return attrs
+
+
+class TrackedUnitSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TrackedUnit
+        fields = [
+            "id",
+            "internal_serial",
+            "imei",
+            "serial_number",
+            "condition",
+            "status",
+        ]
+
+
+class StockReceiptSerializer(serializers.ModelSerializer):
+    lines = serializers.SerializerMethodField()
+
+    class Meta:
+        model = StockReceipt
+        fields = [
+            "id",
+            "reference",
+            "status",
+            "supplier_name",
+            "supplier_reference",
+            "additional_cost",
+            "notes",
+            "received_at",
+            "created_at",
+            "lines",
+        ]
+
+    def get_lines(self, obj):
+        return StockBatchSerializer(obj.lines.all(), many=True).data
 
 
 class StockBatchSerializer(serializers.ModelSerializer):
@@ -46,15 +150,20 @@ class StockBatchSerializer(serializers.ModelSerializer):
             "reference",
             "quantity_received",
             "quantity_remaining",
+            "received_unit",
+            "conversion_to_base",
             "unit_cost",
             "additional_cost",
             "received_at",
             "supplier_name",
             "created_at",
+            "tracked_units",
         ]
 
+    tracked_units = TrackedUnitSerializer(many=True, read_only=True)
 
-class StockReceiptSerializer(serializers.Serializer):
+
+class LegacyStockReceiptSerializer(serializers.Serializer):
     product_id = serializers.UUIDField()
     reference = serializers.CharField(max_length=64, required=False, allow_blank=True)
     quantity_received = serializers.DecimalField(

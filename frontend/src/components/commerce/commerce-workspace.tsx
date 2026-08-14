@@ -53,6 +53,17 @@ type CommerceView =
   | "budgets";
 type Props = { businessId: string; view: CommerceView };
 type SaleLine = { product_id: string; quantity: string; unit_price: string };
+type StockLine = {
+  product_id: string;
+  name: string;
+  quantity: string;
+  unit: string;
+  conversion: string;
+  buyingPrice: string;
+  group: string;
+  trackingMode: "quantity" | "individual";
+  identifiers: string;
+};
 
 const nowLocal = () => {
   const date = new Date();
@@ -99,7 +110,12 @@ function CommerceWorkspace({ businessId, view }: Props) {
           );
         if (["inventory", "returns", "expenses", "budgets"].includes(view)) {
           setRecords(
-            (await commerceRead(businessId, accessToken, view, signal)).data ??
+            (await commerceRead(
+              businessId,
+              accessToken,
+              view === "inventory" ? "stock-receipts" : view,
+              signal,
+            )).data ??
               null,
           );
         }
@@ -332,8 +348,10 @@ function Products({
     event.preventDefault();
     if (!accessToken) return;
     const form = new FormData(event.currentTarget);
+    const body = Object.fromEntries(form);
+    if (!body.selling_price) delete body.selling_price;
     void submit(
-      () => createProduct(businessId, accessToken, Object.fromEntries(form)),
+      () => createProduct(businessId, accessToken, body),
       t("success.product"),
     );
     event.currentTarget.reset();
@@ -346,8 +364,8 @@ function Products({
           <Input name="name" required />
         </Label>
         <div className="grid grid-cols-2 gap-3">
-          <Label text={t("fields.sku")}>
-            <Input name="sku" />
+          <Label text={t("fields.group")}>
+            <Input name="group" />
           </Label>
           <Label text={t("fields.variant")}>
             <Input name="variant" />
@@ -358,7 +376,6 @@ function Products({
             <Input
               min="0"
               name="selling_price"
-              required
               step="0.01"
               type="number"
             />
@@ -402,94 +419,105 @@ function Inventory({
   submit: (op: () => Promise<unknown>, msg: string) => Promise<void>;
   t: T;
 }) {
+  const emptyLine = (): StockLine => ({
+    product_id: "", name: "", quantity: "1", unit: "item", conversion: "1",
+    buyingPrice: "", group: "", trackingMode: "quantity", identifiers: "",
+  });
+  const [lines, setLines] = useState<StockLine[]>([emptyLine()]);
   const onSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!accessToken) return;
-    const body = Object.fromEntries(new FormData(event.currentTarget));
-    body.received_at = new Date(String(body.received_at)).toISOString();
+    const values = Object.fromEntries(new FormData(event.currentTarget));
+    const receiptLines = lines.map((line) => {
+      const product = products.find((item) => item.id === line.product_id);
+      const payload: Record<string, unknown> = {
+        quantity_received: line.quantity,
+        received_unit: line.unit,
+        conversion_to_base: line.conversion || "1",
+      };
+      if (line.buyingPrice) payload.unit_cost = line.buyingPrice;
+      if (product) payload.product_id = product.id;
+      else payload.item = {
+        name: line.name,
+        unit: line.unit,
+        group: line.group,
+        tracking_mode: line.trackingMode,
+      };
+      if (line.trackingMode === "individual") {
+        payload.tracked_units = line.identifiers
+          .split(/[,\n]/)
+          .map((value) => value.trim())
+          .filter(Boolean)
+          .map((value) => ({ serial_number: value }));
+      }
+      return payload;
+    });
+    const body = {
+      status: "received",
+      supplier_name: values.supplier_name,
+      supplier_reference: values.supplier_reference,
+      additional_cost: values.additional_cost || "0",
+      notes: values.notes,
+      received_at: new Date(String(values.received_at)).toISOString(),
+      lines: receiptLines,
+    };
     void submit(
-      () => commerceWrite(businessId, accessToken, "inventory", body),
+      () => commerceWrite(businessId, accessToken, "stock-receipts", body),
       t("success.stock"),
     );
     event.currentTarget.reset();
+    setLines([emptyLine()]);
   };
-  const movements =
-    (
-      records as {
-        movements?: Array<{
-          id: string;
-          product_name: string;
-          kind: string;
-          quantity_delta: string;
-        }>;
-      } | null
-    )?.movements ?? [];
+  const receipts = (records as { receipts?: Array<{
+    id: string; reference: string; status: string; supplier_name: string;
+    lines: Array<{ id: string; product_name: string; quantity_remaining: string }>;
+  }> } | null)?.receipts ?? [];
   return (
-    <div className="grid gap-5 xl:grid-cols-[.8fr_1.2fr]">
+    <div className="grid gap-5 xl:grid-cols-[1.2fr_.8fr]">
       <form className={`${panel} grid gap-4`} onSubmit={onSubmit}>
         <h2 className="font-bold">{t("forms.stock")}</h2>
-        <ProductSelect products={products} />
-        <div className="grid grid-cols-2 gap-3">
-          <Label text={t("fields.quantity")}>
-            <Input
-              min="0.001"
-              name="quantity_received"
-              required
-              step="0.001"
-              type="number"
-            />
-          </Label>
-          <Label text={t("fields.unitCost")}>
-            <Input
-              min="0"
-              name="unit_cost"
-              required
-              step="0.01"
-              type="number"
-            />
-          </Label>
+        <div className="grid gap-3 sm:grid-cols-3">
+          <Label text={t("fields.supplier")}><Input name="supplier_name" /></Label>
+          <Label text={t("fields.reference")}><Input name="supplier_reference" /></Label>
+          <Label text={t("fields.date")}><Input defaultValue={nowLocal()} name="received_at" required type="datetime-local" /></Label>
         </div>
-        <Label text={t("fields.additionalCost")}>
-          <Input
-            defaultValue="0"
-            min="0"
-            name="additional_cost"
-            step="0.01"
-            type="number"
-          />
-        </Label>
-        <Label text={t("fields.reference")}>
-          <Input name="reference" />
-        </Label>
-        <Label text={t("fields.supplier")}>
-          <Input name="supplier_name" />
-        </Label>
-        <Label text={t("fields.date")}>
-          <Input
-            defaultValue={nowLocal()}
-            name="received_at"
-            required
-            type="datetime-local"
-          />
-        </Label>
+        {lines.map((line, index) => (
+          <div className="grid gap-3 rounded-xl bg-slate-50 p-4 dark:bg-slate-900" key={index}>
+            <Select value={line.product_id} onChange={(event) => {
+              const product = products.find((item) => item.id === event.target.value);
+              setLines((all) => all.map((item, i) => i === index ? {
+                ...item, product_id: event.target.value, name: product?.name ?? "",
+                unit: product?.unit ?? item.unit, trackingMode: product?.tracking_mode ?? item.trackingMode,
+              } : item));
+            }}>
+              <option value="">{t("actions.newItem")}</option>
+              {products.map((product) => <option key={product.id} value={product.id}>{product.name} · {product.sku}</option>)}
+            </Select>
+            {!line.product_id ? <div className="grid gap-3 sm:grid-cols-2">
+              <Label text={t("fields.name")}><Input required value={line.name} onChange={(e) => setLines((all) => all.map((x, i) => i === index ? {...x, name: e.target.value} : x))} /></Label>
+              <Label text={t("fields.group")}><Input value={line.group} onChange={(e) => setLines((all) => all.map((x, i) => i === index ? {...x, group: e.target.value} : x))} /></Label>
+            </div> : null}
+            <div className="grid gap-3 sm:grid-cols-4">
+              <Label text={t("fields.quantity")}><Input min="0.001" required step="0.001" type="number" value={line.quantity} onChange={(e) => setLines((all) => all.map((x, i) => i === index ? {...x, quantity: e.target.value} : x))} /></Label>
+              <Label text={t("fields.unit")}><Input required value={line.unit} onChange={(e) => setLines((all) => all.map((x, i) => i === index ? {...x, unit: e.target.value} : x))} /></Label>
+              <Label text={t("fields.conversion")}><Input min="0.000001" step="0.000001" type="number" value={line.conversion} onChange={(e) => setLines((all) => all.map((x, i) => i === index ? {...x, conversion: e.target.value} : x))} /></Label>
+              <Label text={t("fields.buyingPrice")}><Input min="0" step="0.01" type="number" value={line.buyingPrice} onChange={(e) => setLines((all) => all.map((x, i) => i === index ? {...x, buyingPrice: e.target.value} : x))} /></Label>
+            </div>
+            {!line.product_id ? <Label text={t("fields.tracking")}><Select value={line.trackingMode} onChange={(e) => setLines((all) => all.map((x, i) => i === index ? {...x, trackingMode: e.target.value as StockLine["trackingMode"]} : x))}><option value="quantity">{t("values.quantity")}</option><option value="individual">{t("values.individual")}</option></Select></Label> : null}
+            {line.trackingMode === "individual" ? <Label text={t("fields.identifiers")}><Input placeholder={t("fields.identifiersHelp")} value={line.identifiers} onChange={(e) => setLines((all) => all.map((x, i) => i === index ? {...x, identifiers: e.target.value} : x))} /></Label> : null}
+            {lines.length > 1 ? <Button type="button" variant="ghost" onClick={() => setLines((all) => all.filter((_, i) => i !== index))}>{t("actions.remove")}</Button> : null}
+          </div>
+        ))}
+        <Button type="button" variant="outline" onClick={() => setLines((all) => [...all, emptyLine()])}>{t("actions.addLine")}</Button>
+        <div className="grid gap-3 sm:grid-cols-2"><Label text={t("fields.additionalCost")}><Input defaultValue="0" min="0" name="additional_cost" step="0.01" type="number" /></Label><Label text={t("fields.notes")}><Input name="notes" /></Label></div>
         <Button disabled={busy} type="submit">
           {t("actions.receiveStock")}
         </Button>
       </form>
       <div className={panel}>
-        <h2 className="font-bold">{t("movements")}</h2>
+        <h2 className="font-bold">{t("receivedStock")}</h2>
         <div className="mt-4 space-y-2">
-          {movements.map((item) => (
-            <div
-              className="flex justify-between rounded-lg bg-slate-50 p-3 text-sm dark:bg-slate-900"
-              key={item.id}
-            >
-              <span>
-                {item.product_name} · {item.kind}
-              </span>
-              <strong>{item.quantity_delta}</strong>
-            </div>
-          ))}
+          {receipts.map((receipt) => <div className="rounded-lg bg-slate-50 p-3 text-sm dark:bg-slate-900" key={receipt.id}><div className="flex justify-between"><strong>{receipt.reference}</strong><span>{receipt.status}</span></div><p className="text-xs text-slate-500">{receipt.supplier_name || "—"} · {receipt.lines.length} {t("items")}</p></div>)}
         </div>
       </div>
     </div>

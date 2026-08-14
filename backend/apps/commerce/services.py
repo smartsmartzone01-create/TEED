@@ -29,6 +29,8 @@ from .models import (
     SaleItem,
     SaleReturn,
     StockBatch,
+    StockReceipt,
+    TrackedUnit,
 )
 
 
@@ -56,7 +58,170 @@ def create_product(*, actor, business_id, **values):
         business_id=business_id,
         permission=WorkspacePermission.MANAGE_CATALOG,
     )
-    return Product.objects.create(business=membership.business, **values)
+    membership.business.__class__.objects.select_for_update().get(
+        pk=membership.business_id
+    )
+    values.pop("sku", None)
+    next_number = Product.objects.filter(business=membership.business).count() + 1
+    while Product.objects.filter(
+        business=membership.business, sku=f"ITM-{next_number:06d}"
+    ).exists():
+        next_number += 1
+    return Product.objects.create(
+        business=membership.business, sku=f"ITM-{next_number:06d}", **values
+    )
+
+
+@transaction.atomic
+def create_stock_receipt(*, actor, business_id, lines, status="received", **values):
+    membership = commerce_membership(
+        user=actor,
+        business_id=business_id,
+        permission=WorkspacePermission.MANAGE_INVENTORY,
+    )
+    membership.business.__class__.objects.select_for_update().get(
+        pk=membership.business_id
+    )
+    sequence = (
+        StockReceipt.objects.select_for_update()
+        .filter(business=membership.business)
+        .aggregate(value=Max("sequence"))["value"]
+        or 0
+    ) + 1
+    receipt = StockReceipt.objects.create(
+        business=membership.business,
+        sequence=sequence,
+        reference=f"MZIGO-{sequence:06d}",
+        status=status,
+        recorded_by=actor,
+        **values,
+    )
+    for line in lines:
+        product_id = line.pop("product_id", None)
+        product_values = line.pop("item", None)
+        if product_id:
+            product = (
+                Product.objects.select_for_update()
+                .filter(id=product_id, business=membership.business, is_active=True)
+                .first()
+            )
+            if product is None:
+                raise ValidationError({"lines": ["Select an available item."]})
+        elif product_values:
+            product = create_product(
+                actor=actor, business_id=business_id, **product_values
+            )
+        else:
+            raise ValidationError({"lines": ["Each line needs an item."]})
+
+        quantity = line.pop("quantity_received")
+        conversion = line.pop("conversion_to_base", Decimal("1"))
+        base_quantity = quantity * conversion
+        identifiers = line.pop("tracked_units", [])
+        if product.tracking_mode == Product.TrackingMode.INDIVIDUAL:
+            if base_quantity != base_quantity.to_integral_value():
+                raise ValidationError(
+                    {"lines": [f"{product.name} must use a whole quantity."]}
+                )
+            if len(identifiers) > int(base_quantity):
+                raise ValidationError(
+                    {"lines": [f"Too many unit records for {product.name}."]}
+                )
+            identifiers.extend({} for _ in range(int(base_quantity) - len(identifiers)))
+        batch = StockBatch.objects.create(
+            receipt=receipt,
+            product=product,
+            reference=receipt.reference,
+            quantity_received=base_quantity,
+            quantity_remaining=base_quantity
+            if status == StockReceipt.Status.RECEIVED
+            else 0,
+            conversion_to_base=conversion,
+            received_unit=line.pop("received_unit", product.unit),
+            received_at=receipt.received_at or timezone.now(),
+            supplier_name=receipt.supplier_name,
+            recorded_by=actor,
+            **line,
+        )
+        for index, identifier in enumerate(identifiers, start=1):
+            TrackedUnit.objects.create(
+                stock_line=batch,
+                product=product,
+                internal_serial=f"UNIT-{str(batch.id).replace('-', '')[:8].upper()}-{index:04d}",
+                **identifier,
+            )
+        if status == StockReceipt.Status.RECEIVED:
+            product.current_quantity = F("current_quantity") + base_quantity
+            product.save(update_fields=["current_quantity", "updated_at"])
+            InventoryMovement.objects.create(
+                business=membership.business,
+                product=product,
+                batch=batch,
+                kind=InventoryMovement.Kind.RECEIPT,
+                quantity_delta=base_quantity,
+                occurred_at=batch.received_at,
+                reason=f"{receipt.reference} received.",
+                recorded_by=actor,
+            )
+    refresh_decisions(business=membership.business)
+    return receipt
+
+
+@transaction.atomic
+def receive_draft_stock(*, actor, business_id, receipt_id, received_at=None):
+    membership = commerce_membership(
+        user=actor,
+        business_id=business_id,
+        permission=WorkspacePermission.MANAGE_INVENTORY,
+    )
+    receipt = (
+        StockReceipt.objects.select_for_update()
+        .filter(id=receipt_id, business=membership.business)
+        .first()
+    )
+    if receipt is None or receipt.status != StockReceipt.Status.DRAFT:
+        raise ValidationError({"receipt": ["Select a draft stock receipt."]})
+    receipt.received_at = received_at or timezone.now()
+    receipt.status = StockReceipt.Status.RECEIVED
+    receipt.save(update_fields=["received_at", "status", "updated_at"])
+    for batch in receipt.lines.select_for_update().select_related("product"):
+        batch.received_at = receipt.received_at
+        batch.quantity_remaining = batch.quantity_received
+        batch.save(update_fields=["received_at", "quantity_remaining", "updated_at"])
+        Product.objects.filter(pk=batch.product_id).update(
+            current_quantity=F("current_quantity") + batch.quantity_received
+        )
+        InventoryMovement.objects.create(
+            business=membership.business,
+            product=batch.product,
+            batch=batch,
+            kind=InventoryMovement.Kind.RECEIPT,
+            quantity_delta=batch.quantity_received,
+            occurred_at=receipt.received_at,
+            reason=f"{receipt.reference} received.",
+            recorded_by=actor,
+        )
+    refresh_decisions(business=membership.business)
+    return receipt
+
+
+@transaction.atomic
+def archive_stock_receipt(*, actor, business_id, receipt_id):
+    membership = commerce_membership(
+        user=actor,
+        business_id=business_id,
+        permission=WorkspacePermission.MANAGE_INVENTORY,
+    )
+    receipt = (
+        StockReceipt.objects.select_for_update()
+        .filter(id=receipt_id, business=membership.business)
+        .first()
+    )
+    if receipt is None:
+        raise ValidationError({"receipt": ["Stock receipt not found."]})
+    receipt.status = StockReceipt.Status.ARCHIVED
+    receipt.save(update_fields=["status", "updated_at"])
+    return receipt
 
 
 @transaction.atomic
@@ -112,7 +277,7 @@ def _allocate_fifo(*, product, sale_item, quantity, actor, sale):
         allocated = min(remaining, batch.quantity_remaining)
         if allocated <= 0:
             continue
-        effective_unit_cost = batch.unit_cost + (
+        effective_unit_cost = (batch.unit_cost or Decimal("0")) + (
             batch.additional_cost / batch.quantity_received
         )
         SaleAllocation.objects.create(

@@ -11,10 +11,28 @@ from .api import (
     SaleListCreateAPIView,
     SaleVoidAPIView,
     StockBatchListCreateAPIView,
+    StockReceiptArchiveAPIView,
+    StockReceiptListCreateAPIView,
+    StockReceiptReceiveAPIView,
 )
 
 app_name = "commerce"
 urlpatterns = [
+    path(
+        "businesses/<uuid:business_id>/stock-receipts/",
+        StockReceiptListCreateAPIView.as_view(),
+        name="stock-receipts",
+    ),
+    path(
+        "businesses/<uuid:business_id>/stock-receipts/<uuid:receipt_id>/receive/",
+        StockReceiptReceiveAPIView.as_view(),
+        name="stock-receipt-receive",
+    ),
+    path(
+        "businesses/<uuid:business_id>/stock-receipts/<uuid:receipt_id>/archive/",
+        StockReceiptArchiveAPIView.as_view(),
+        name="stock-receipt-archive",
+    ),
     path(
         "businesses/<uuid:business_id>/overview/",
         CommerceOverviewAPIView.as_view(),

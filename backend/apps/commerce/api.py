@@ -1,5 +1,6 @@
 from common.responses import SuccessResponse
 from django.db.models import Sum
+from django.utils.dateparse import parse_datetime
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_protect
 from rest_framework import status
@@ -17,6 +18,7 @@ from .models import (
     Sale,
     SaleReturn,
     StockBatch,
+    StockReceipt,
 )
 from .serializers import (
     AdjustmentSerializer,
@@ -24,6 +26,7 @@ from .serializers import (
     DecisionSerializer,
     ExpenseSerializer,
     InventoryMovementSerializer,
+    LegacyStockReceiptSerializer,
     ProductSerializer,
     ReturnCreateSerializer,
     ReturnSerializer,
@@ -31,15 +34,19 @@ from .serializers import (
     SaleSerializer,
     SaleVoidSerializer,
     StockBatchSerializer,
+    StockReceiptCreateSerializer,
     StockReceiptSerializer,
 )
 from .services import (
     adjust_stock,
+    archive_stock_receipt,
     commerce_membership,
     commerce_overview,
     create_expense,
     create_product,
+    create_stock_receipt,
     edit_sale,
+    receive_draft_stock,
     receive_stock,
     record_return,
     record_sale,
@@ -111,7 +118,7 @@ class StockBatchListCreateAPIView(CommerceBaseAPIView):
 
     @method_decorator(csrf_protect)
     def post(self, request, business_id):
-        serializer = StockReceiptSerializer(data=request.data)
+        serializer = LegacyStockReceiptSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         batch = receive_stock(
             actor=request.user, business_id=business_id, **serializer.validated_data
@@ -120,6 +127,63 @@ class StockBatchListCreateAPIView(CommerceBaseAPIView):
             message="Stock received successfully.",
             data=StockBatchSerializer(batch).data,
             status_code=status.HTTP_201_CREATED,
+        )
+
+
+class StockReceiptListCreateAPIView(CommerceBaseAPIView):
+    def get(self, request, business_id):
+        membership = commerce_membership(user=request.user, business_id=business_id)
+        receipts = StockReceipt.objects.prefetch_related(
+            "lines__product", "lines__tracked_units"
+        ).filter(business=membership.business)
+        return SuccessResponse(
+            message="Stock received retrieved successfully.",
+            data={"receipts": StockReceiptSerializer(receipts, many=True).data},
+        )
+
+    @method_decorator(csrf_protect)
+    def post(self, request, business_id):
+        serializer = StockReceiptCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        receipt = create_stock_receipt(
+            actor=request.user, business_id=business_id, **serializer.validated_data
+        )
+        receipt = StockReceipt.objects.prefetch_related(
+            "lines__product", "lines__tracked_units"
+        ).get(pk=receipt.pk)
+        return SuccessResponse(
+            message="Stock received successfully.",
+            data=StockReceiptSerializer(receipt).data,
+            status_code=status.HTTP_201_CREATED,
+        )
+
+
+class StockReceiptReceiveAPIView(CommerceBaseAPIView):
+    @method_decorator(csrf_protect)
+    def post(self, request, business_id, receipt_id):
+        receipt = receive_draft_stock(
+            actor=request.user,
+            business_id=business_id,
+            receipt_id=receipt_id,
+            received_at=parse_datetime(request.data["received_at"])
+            if request.data.get("received_at")
+            else None,
+        )
+        return SuccessResponse(
+            message="Stock received successfully.",
+            data=StockReceiptSerializer(receipt).data,
+        )
+
+
+class StockReceiptArchiveAPIView(CommerceBaseAPIView):
+    @method_decorator(csrf_protect)
+    def post(self, request, business_id, receipt_id):
+        receipt = archive_stock_receipt(
+            actor=request.user, business_id=business_id, receipt_id=receipt_id
+        )
+        return SuccessResponse(
+            message="Stock receipt archived successfully.",
+            data=StockReceiptSerializer(receipt).data,
         )
 
 

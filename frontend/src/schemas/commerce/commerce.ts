@@ -3,8 +3,10 @@ import { createApiEnvelopeSchema } from "@/schemas/global/api";
 
 const decimal = z.union([z.string(), z.number()]).transform(String);
 const productSchema = z.object({
-  id: z.string(), name: z.string(), sku: z.string(), variant: z.string(), unit: z.string(),
-  selling_price: decimal, low_stock_threshold: decimal, current_quantity: decimal,
+  id: z.string(), name: z.string(), sku: z.string(), barcode: z.string(), group: z.string(),
+  brand: z.string(), variant: z.string(), unit: z.string(),
+  selling_price: decimal.nullable(), tracking_mode: z.enum(["quantity", "individual"]),
+  low_stock_threshold: decimal, current_quantity: decimal,
   is_active: z.boolean(),
 }).passthrough();
 const saleItemSchema = z.object({

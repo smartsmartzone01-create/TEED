@@ -7,12 +7,14 @@ from rest_framework.exceptions import PermissionDenied, ValidationError
 from apps.identity.models import User
 from apps.workspaces.models import Business, BusinessMembership
 
-from ..models import InventoryMovement, SaleAllocation
+from ..models import InventoryMovement, Product, SaleAllocation, TrackedUnit
 from ..services import (
     commerce_overview,
     create_expense,
     create_product,
+    create_stock_receipt,
     edit_sale,
+    receive_draft_stock,
     receive_stock,
     record_return,
     record_sale,
@@ -68,6 +70,86 @@ class CommerceServiceTests(TestCase):
         self.assertEqual(self.product.current_quantity, Decimal("50"))
         self.assertEqual(batch.quantity_remaining, Decimal("50"))
         self.assertEqual(InventoryMovement.objects.get().quantity_delta, Decimal("50"))
+
+    def test_one_stock_receipt_accepts_many_new_and_existing_items(self):
+        receipt = create_stock_receipt(
+            actor=self.owner,
+            business_id=self.business.id,
+            status="received",
+            received_at=timezone.now(),
+            supplier_name="Mixed supplier",
+            lines=[
+                {
+                    "product_id": self.product.id,
+                    "quantity_received": Decimal("5"),
+                    "received_unit": "pair",
+                    "unit_cost": Decimal("30000"),
+                },
+                {
+                    "item": {"name": "Sugar", "unit": "kg"},
+                    "quantity_received": Decimal("1"),
+                    "received_unit": "50 kg sack",
+                    "conversion_to_base": Decimal("50"),
+                },
+            ],
+        )
+        self.product.refresh_from_db()
+        sugar = Product.objects.get(name="Sugar")
+        self.assertEqual(receipt.reference, "MZIGO-000001")
+        self.assertEqual(receipt.lines.count(), 2)
+        self.assertEqual(self.product.current_quantity, Decimal("5"))
+        self.assertEqual(sugar.current_quantity, Decimal("50"))
+        self.assertTrue(sugar.sku.startswith("ITM-"))
+
+    def test_individual_items_receive_generated_internal_serials(self):
+        receipt = create_stock_receipt(
+            actor=self.owner,
+            business_id=self.business.id,
+            status="received",
+            received_at=timezone.now(),
+            lines=[
+                {
+                    "item": {
+                        "name": "iPhone 17",
+                        "unit": "piece",
+                        "tracking_mode": "individual",
+                    },
+                    "quantity_received": Decimal("2"),
+                    "received_unit": "piece",
+                    "tracked_units": [
+                        {"imei": "111111111111111"},
+                        {"serial_number": "PHONE-002"},
+                    ],
+                }
+            ],
+        )
+        units = TrackedUnit.objects.filter(stock_line__receipt=receipt)
+        self.assertEqual(units.count(), 2)
+        self.assertEqual(units.values("internal_serial").distinct().count(), 2)
+
+    def test_draft_stock_only_changes_availability_when_received(self):
+        receipt = create_stock_receipt(
+            actor=self.owner,
+            business_id=self.business.id,
+            status="draft",
+            lines=[
+                {
+                    "product_id": self.product.id,
+                    "quantity_received": Decimal("3"),
+                    "received_unit": "pair",
+                }
+            ],
+        )
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.current_quantity, Decimal("0"))
+        receive_draft_stock(
+            actor=self.owner,
+            business_id=self.business.id,
+            receipt_id=receipt.id,
+            received_at=timezone.now(),
+        )
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.current_quantity, Decimal("3"))
 
     def test_sale_allocates_fifo_across_batches_and_calculates_profit(self):
         first = self.receive("2", "30000")

@@ -42,7 +42,7 @@
       "roles": "Majukumu na ufikiaji",
       "control": "Usalama na udhibiti"
     },
-    "subnavigation": {"members": "Wanachama", "invitations": "Mialiko", "accessRequests": "Maombi ya ufikiaji", "roles": "Majukumu na ruhusa", "profileOverview": "Muhtasari wa wasifu", "information": "Taarifa za biashara", "brand": "Chapa na mwonekano", "operations": "Maeneo na uendeshaji", "settingsOverview": "Muhtasari wa mipangilio", "workspacePreferences": "Mapendeleo ya eneo la kazi", "audit": "Shughuli za usalama", "businessLifecycle": "Mzunguko wa biashara", "commerceOverview": "Mapigo ya Biashara", "products": "Bidhaa", "inventory": "Stoo", "sales": "Mauzo", "returns": "Marejesho", "expenses": "Matumizi", "budgets": "Bajeti"}
+    "subnavigation": {"members": "Wanachama", "invitations": "Mialiko", "accessRequests": "Maombi ya ufikiaji", "roles": "Majukumu na ruhusa", "profileOverview": "Muhtasari wa wasifu", "information": "Taarifa za biashara", "brand": "Chapa na mwonekano", "operations": "Maeneo na uendeshaji", "settingsOverview": "Muhtasari wa mipangilio", "workspacePreferences": "Mapendeleo ya eneo la kazi", "audit": "Shughuli za usalama", "businessLifecycle": "Mzunguko wa biashara", "commerceOverview": "Mapigo ya Biashara", "products": "Bidhaa zilizopo", "inventory": "Mzigo", "sales": "Mauzo", "returns": "Marejesho", "expenses": "Matumizi", "budgets": "Bajeti"}
   },
   "WorkspaceOverview": {
     "eyebrow": "Eneo la kazi la TEED",

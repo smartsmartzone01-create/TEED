@@ -9,12 +9,16 @@ from .models import (
     Sale,
     SaleReturn,
     StockBatch,
+    StockReceipt,
+    TrackedUnit,
 )
 
 admin.site.register(
     [
         Product,
         StockBatch,
+        StockReceipt,
+        TrackedUnit,
         InventoryMovement,
         Sale,
         SaleReturn,
