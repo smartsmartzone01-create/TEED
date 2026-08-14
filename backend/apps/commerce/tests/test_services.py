@@ -8,6 +8,7 @@ from apps.identity.models import User
 from apps.workspaces.models import Business, BusinessMembership
 
 from ..models import InventoryMovement, Product, SaleAllocation, TrackedUnit
+from ..serializers import StockReceiptCreateSerializer
 from ..services import (
     commerce_overview,
     create_expense,
@@ -78,19 +79,32 @@ class CommerceServiceTests(TestCase):
             status="received",
             received_at=timezone.now(),
             supplier_name="Mixed supplier",
-            lines=[
+            batches=[
                 {
-                    "product_id": self.product.id,
-                    "quantity_received": Decimal("5"),
-                    "received_unit": "pair",
-                    "unit_cost": Decimal("30000"),
-                },
-                {
-                    "item": {"name": "Sugar", "unit": "kg"},
-                    "quantity_received": Decimal("1"),
-                    "received_unit": "50 kg sack",
-                    "conversion_to_base": Decimal("50"),
-                },
+                    "name": "Mixed boxes",
+                    "groups": [
+                        {
+                            "name": "Shoes",
+                            "quantity": Decimal("5"),
+                            "unit": "pair",
+                            "buying_price": Decimal("30000"),
+                            "types": [
+                                {
+                                    "product_id": self.product.id,
+                                    "quantity_received": Decimal("5"),
+                                    "received_unit": "pair",
+                                }
+                            ],
+                        },
+                        {
+                            "name": "Sugar",
+                            "quantity": Decimal("1"),
+                            "unit": "50 kg sack",
+                            "base_unit": "kg",
+                            "conversion_to_base": Decimal("50"),
+                        },
+                    ],
+                }
             ],
         )
         self.product.refresh_from_db()
@@ -107,18 +121,30 @@ class CommerceServiceTests(TestCase):
             business_id=self.business.id,
             status="received",
             received_at=timezone.now(),
-            lines=[
+            batches=[
                 {
-                    "item": {
-                        "name": "iPhone 17",
-                        "unit": "piece",
-                        "tracking_mode": "individual",
-                    },
-                    "quantity_received": Decimal("2"),
-                    "received_unit": "piece",
-                    "tracked_units": [
-                        {"imei": "111111111111111"},
-                        {"serial_number": "PHONE-002"},
+                    "name": "Phone box",
+                    "groups": [
+                        {
+                            "name": "Phones",
+                            "quantity": Decimal("2"),
+                            "unit": "piece",
+                            "types": [
+                                {
+                                    "item": {
+                                        "name": "iPhone 17",
+                                        "unit": "piece",
+                                        "tracking_mode": "individual",
+                                    },
+                                    "quantity_received": Decimal("2"),
+                                    "received_unit": "piece",
+                                    "tracked_units": [
+                                        {"imei": "111111111111111"},
+                                        {"serial_number": "PHONE-002"},
+                                    ],
+                                }
+                            ],
+                        }
                     ],
                 }
             ],
@@ -132,11 +158,23 @@ class CommerceServiceTests(TestCase):
             actor=self.owner,
             business_id=self.business.id,
             status="draft",
-            lines=[
+            batches=[
                 {
-                    "product_id": self.product.id,
-                    "quantity_received": Decimal("3"),
-                    "received_unit": "pair",
+                    "name": "Shoe box",
+                    "groups": [
+                        {
+                            "name": "Shoes",
+                            "quantity": Decimal("3"),
+                            "unit": "pair",
+                            "types": [
+                                {
+                                    "product_id": self.product.id,
+                                    "quantity_received": Decimal("3"),
+                                    "received_unit": "pair",
+                                }
+                            ],
+                        }
+                    ],
                 }
             ],
         )
@@ -150,6 +188,84 @@ class CommerceServiceTests(TestCase):
         )
         self.product.refresh_from_db()
         self.assertEqual(self.product.current_quantity, Decimal("3"))
+
+    def test_batch_groups_create_types_after_groups(self):
+        receipt = create_stock_receipt(
+            actor=self.owner,
+            business_id=self.business.id,
+            status="received",
+            received_at=timezone.now(),
+            batches=[
+                {
+                    "name": "Clothing batch",
+                    "groups": [
+                        {
+                            "name": "Shoes",
+                            "quantity": Decimal("10"),
+                            "unit": "pair",
+                            "types": [
+                                {
+                                    "item": {"name": "Adidas", "unit": "pair"},
+                                    "quantity_received": Decimal("4"),
+                                    "received_unit": "pair",
+                                },
+                                {
+                                    "item": {"name": "Nike", "unit": "pair"},
+                                    "quantity_received": Decimal("6"),
+                                    "received_unit": "pair",
+                                },
+                            ],
+                        },
+                        {
+                            "name": "T-shirts",
+                            "quantity": Decimal("10"),
+                            "unit": "piece",
+                        },
+                        {
+                            "name": "Jeans",
+                            "quantity": Decimal("10"),
+                            "unit": "piece",
+                        },
+                    ],
+                }
+            ],
+        )
+        batch = receipt.batches.get()
+        self.assertEqual(batch.groups.count(), 3)
+        self.assertEqual(batch.groups.get(name="Shoes").type_lines.count(), 2)
+        self.assertEqual(receipt.lines.count(), 4)
+        self.assertEqual(
+            sum(receipt.lines.values_list("quantity_remaining", flat=True)),
+            Decimal("30"),
+        )
+
+    def test_type_quantities_must_equal_group_quantity(self):
+        serializer = StockReceiptCreateSerializer(
+            data={
+                "status": "received",
+                "received_at": timezone.now().isoformat(),
+                "batches": [
+                    {
+                        "name": "Shoe box",
+                        "groups": [
+                            {
+                                "name": "Shoes",
+                                "quantity": "10",
+                                "unit": "pair",
+                                "types": [
+                                    {
+                                        "item": {"name": "Nike", "unit": "pair"},
+                                        "quantity_received": "4",
+                                        "received_unit": "pair",
+                                    }
+                                ],
+                            }
+                        ],
+                    }
+                ],
+            }
+        )
+        self.assertFalse(serializer.is_valid())
 
     def test_sale_allocates_fifo_across_batches_and_calculates_profit(self):
         first = self.receive("2", "30000")

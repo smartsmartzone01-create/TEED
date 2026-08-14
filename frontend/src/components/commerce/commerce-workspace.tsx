@@ -26,7 +26,6 @@ import { isRequestCancelled } from "@/services/global/api-client";
 import {
   commerceRead,
   commerceWrite,
-  createProduct,
   createSale,
   getCommerceOverview,
   getProducts,
@@ -53,16 +52,30 @@ type CommerceView =
   | "budgets";
 type Props = { businessId: string; view: CommerceView };
 type SaleLine = { product_id: string; quantity: string; unit_price: string };
-type StockLine = {
-  product_id: string;
+type StockType = {
+  id: string;
+  productId: string;
+  name: string;
+  quantity: string;
+  trackingMode: "quantity" | "individual";
+  identifiers: string;
+};
+type StockGroup = {
+  id: string;
   name: string;
   quantity: string;
   unit: string;
+  baseUnit: string;
   conversion: string;
   buyingPrice: string;
-  group: string;
-  trackingMode: "quantity" | "individual";
-  identifiers: string;
+  sellingPrice: string;
+  types: StockType[];
+};
+type StockContainer = {
+  id: string;
+  name: string;
+  groups: StockGroup[];
+  selectedGroupId: string;
 };
 
 const nowLocal = () => {
@@ -180,14 +193,7 @@ function CommerceWorkspace({ businessId, view }: Props) {
         <Overview businessId={businessId} data={overview} t={t} />
       ) : null}
       {view === "products" ? (
-        <Products
-          accessToken={accessToken}
-          businessId={businessId}
-          busy={busy}
-          products={products}
-          submit={submit}
-          t={t}
-        />
+        <Products products={products} t={t} />
       ) : null}
       {view === "inventory" ? (
         <Inventory
@@ -329,74 +335,10 @@ function Overview({
   );
 }
 
-function Products({
-  accessToken,
-  businessId,
-  busy,
-  products,
-  submit,
-  t,
-}: {
-  accessToken: string | null;
-  businessId: string;
-  busy: boolean;
-  products: Product[];
-  submit: (op: () => Promise<unknown>, msg: string) => Promise<void>;
-  t: T;
-}) {
-  const onSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!accessToken) return;
-    const form = new FormData(event.currentTarget);
-    const body = Object.fromEntries(form);
-    if (!body.selling_price) delete body.selling_price;
-    void submit(
-      () => createProduct(businessId, accessToken, body),
-      t("success.product"),
-    );
-    event.currentTarget.reset();
-  };
+function Products({ products, t }: { products: Product[]; t: T }) {
   return (
-    <div className="grid gap-5 xl:grid-cols-[.8fr_1.2fr]">
-      <form className={`${panel} grid gap-4`} onSubmit={onSubmit}>
-        <h2 className="font-bold">{t("forms.product")}</h2>
-        <Label text={t("fields.name")}>
-          <Input name="name" required />
-        </Label>
-        <div className="grid grid-cols-2 gap-3">
-          <Label text={t("fields.group")}>
-            <Input name="group" />
-          </Label>
-          <Label text={t("fields.variant")}>
-            <Input name="variant" />
-          </Label>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <Label text={t("fields.price")}>
-            <Input
-              min="0"
-              name="selling_price"
-              step="0.01"
-              type="number"
-            />
-          </Label>
-          <Label text={t("fields.unit")}>
-            <Input defaultValue="item" name="unit" required />
-          </Label>
-        </div>
-        <Label text={t("fields.lowStock")}>
-          <Input
-            defaultValue="5"
-            min="0"
-            name="low_stock_threshold"
-            step="0.001"
-            type="number"
-          />
-        </Label>
-        <Button disabled={busy} type="submit">
-          {t("actions.saveProduct")}
-        </Button>
-      </form>
+    <div className="space-y-4">
+      <p className="text-sm text-slate-500">{t("availableItemsHelp")}</p>
       <ListProducts products={products} t={t} />
     </div>
   );
@@ -419,39 +361,38 @@ function Inventory({
   submit: (op: () => Promise<unknown>, msg: string) => Promise<void>;
   t: T;
 }) {
-  const emptyLine = (): StockLine => ({
-    product_id: "", name: "", quantity: "1", unit: "item", conversion: "1",
-    buyingPrice: "", group: "", trackingMode: "quantity", identifiers: "",
+  const newId = (prefix: string) =>
+    `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const emptyBatch = (name = "Batch 1"): StockContainer => ({
+    id: newId("batch"), name, groups: [], selectedGroupId: "",
   });
-  const [lines, setLines] = useState<StockLine[]>([emptyLine()]);
+  const emptyGroup = (): StockGroup => ({
+    id: newId("group"), name: "", quantity: "1", unit: "item", baseUnit: "",
+    conversion: "1", buyingPrice: "", sellingPrice: "", types: [],
+  });
+  const emptyType = (): StockType => ({
+    id: newId("type"), productId: "", name: "", quantity: "1",
+    trackingMode: "quantity", identifiers: "",
+  });
+  const [batches, setBatches] = useState<StockContainer[]>(() => [emptyBatch()]);
+
+  const updateBatch = (batchId: string, change: (batch: StockContainer) => StockContainer) =>
+    setBatches((all) => all.map((batch) => batch.id === batchId ? change(batch) : batch));
+  const updateGroup = (batchId: string, groupId: string, change: (group: StockGroup) => StockGroup) =>
+    updateBatch(batchId, (batch) => ({
+      ...batch,
+      groups: batch.groups.map((group) => group.id === groupId ? change(group) : group),
+    }));
+  const addType = (batch: StockContainer) => {
+    if (!batch.selectedGroupId) return;
+    updateGroup(batch.id, batch.selectedGroupId, (group) => ({
+      ...group, types: [...group.types, emptyType()],
+    }));
+  };
   const onSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!accessToken) return;
     const values = Object.fromEntries(new FormData(event.currentTarget));
-    const receiptLines = lines.map((line) => {
-      const product = products.find((item) => item.id === line.product_id);
-      const payload: Record<string, unknown> = {
-        quantity_received: line.quantity,
-        received_unit: line.unit,
-        conversion_to_base: line.conversion || "1",
-      };
-      if (line.buyingPrice) payload.unit_cost = line.buyingPrice;
-      if (product) payload.product_id = product.id;
-      else payload.item = {
-        name: line.name,
-        unit: line.unit,
-        group: line.group,
-        tracking_mode: line.trackingMode,
-      };
-      if (line.trackingMode === "individual") {
-        payload.tracked_units = line.identifiers
-          .split(/[,\n]/)
-          .map((value) => value.trim())
-          .filter(Boolean)
-          .map((value) => ({ serial_number: value }));
-      }
-      return payload;
-    });
     const body = {
       status: "received",
       supplier_name: values.supplier_name,
@@ -459,19 +400,53 @@ function Inventory({
       additional_cost: values.additional_cost || "0",
       notes: values.notes,
       received_at: new Date(String(values.received_at)).toISOString(),
-      lines: receiptLines,
+      batches: batches.map((batch) => ({
+        name: batch.name,
+        groups: batch.groups.map((group) => ({
+          name: group.name,
+          quantity: group.quantity,
+          unit: group.unit,
+          base_unit: group.baseUnit,
+          conversion_to_base: group.conversion || "1",
+          ...(group.buyingPrice ? { buying_price: group.buyingPrice } : {}),
+          ...(group.sellingPrice ? { selling_price: group.sellingPrice } : {}),
+          types: group.types.map((type) => ({
+            ...(type.productId
+              ? { product_id: type.productId }
+              : { item: {
+                  name: type.name,
+                  unit: group.baseUnit || group.unit,
+                  tracking_mode: type.trackingMode,
+                } }),
+            quantity_received: type.quantity,
+            received_unit: group.unit,
+            conversion_to_base: group.conversion || "1",
+            tracked_units: type.trackingMode === "individual"
+              ? type.identifiers.split(/[,\n]/).map((value) => value.trim())
+                  .filter(Boolean).map((value) => ({ serial_number: value }))
+              : [],
+          })),
+        })),
+      })),
     };
     void submit(
       () => commerceWrite(businessId, accessToken, "stock-receipts", body),
       t("success.stock"),
     );
     event.currentTarget.reset();
-    setLines([emptyLine()]);
+    setBatches([emptyBatch()]);
   };
   const receipts = (records as { receipts?: Array<{
     id: string; reference: string; status: string; supplier_name: string;
-    lines: Array<{ id: string; product_name: string; quantity_remaining: string }>;
+    batches: Array<{ id: string; name: string; groups: Array<{ id: string }> }>;
   }> } | null)?.receipts ?? [];
+  const hasInvalidGroupBalance = batches.some((batch) =>
+    !batch.groups.length || batch.groups.some((group) =>
+      group.types.length > 0 && group.types.reduce(
+        (total, type) => total + Number(type.quantity || 0), 0,
+      ) !== Number(group.quantity || 0),
+    ),
+  );
   return (
     <div className="grid gap-5 xl:grid-cols-[1.2fr_.8fr]">
       <form className={`${panel} grid gap-4`} onSubmit={onSubmit}>
@@ -481,43 +456,63 @@ function Inventory({
           <Label text={t("fields.reference")}><Input name="supplier_reference" /></Label>
           <Label text={t("fields.date")}><Input defaultValue={nowLocal()} name="received_at" required type="datetime-local" /></Label>
         </div>
-        {lines.map((line, index) => (
-          <div className="grid gap-3 rounded-xl bg-slate-50 p-4 dark:bg-slate-900" key={index}>
-            <Select value={line.product_id} onChange={(event) => {
-              const product = products.find((item) => item.id === event.target.value);
-              setLines((all) => all.map((item, i) => i === index ? {
-                ...item, product_id: event.target.value, name: product?.name ?? "",
-                unit: product?.unit ?? item.unit, trackingMode: product?.tracking_mode ?? item.trackingMode,
-              } : item));
-            }}>
-              <option value="">{t("actions.newItem")}</option>
-              {products.map((product) => <option key={product.id} value={product.id}>{product.name} · {product.sku}</option>)}
-            </Select>
-            {!line.product_id ? <div className="grid gap-3 sm:grid-cols-2">
-              <Label text={t("fields.name")}><Input required value={line.name} onChange={(e) => setLines((all) => all.map((x, i) => i === index ? {...x, name: e.target.value} : x))} /></Label>
-              <Label text={t("fields.group")}><Input value={line.group} onChange={(e) => setLines((all) => all.map((x, i) => i === index ? {...x, group: e.target.value} : x))} /></Label>
-            </div> : null}
-            <div className="grid gap-3 sm:grid-cols-4">
-              <Label text={t("fields.quantity")}><Input min="0.001" required step="0.001" type="number" value={line.quantity} onChange={(e) => setLines((all) => all.map((x, i) => i === index ? {...x, quantity: e.target.value} : x))} /></Label>
-              <Label text={t("fields.unit")}><Input required value={line.unit} onChange={(e) => setLines((all) => all.map((x, i) => i === index ? {...x, unit: e.target.value} : x))} /></Label>
-              <Label text={t("fields.conversion")}><Input min="0.000001" step="0.000001" type="number" value={line.conversion} onChange={(e) => setLines((all) => all.map((x, i) => i === index ? {...x, conversion: e.target.value} : x))} /></Label>
-              <Label text={t("fields.buyingPrice")}><Input min="0" step="0.01" type="number" value={line.buyingPrice} onChange={(e) => setLines((all) => all.map((x, i) => i === index ? {...x, buyingPrice: e.target.value} : x))} /></Label>
+        {batches.map((batch, batchIndex) => (
+          <div className="grid gap-4 rounded-xl border border-slate-200 p-4 dark:border-slate-800" key={batch.id}>
+            <div className="flex items-end gap-3">
+              <Label text={t("fields.batchName")}><Input required value={batch.name} onChange={(e) => updateBatch(batch.id, (item) => ({...item, name: e.target.value}))} /></Label>
+              {batches.length > 1 ? <Button type="button" variant="ghost" onClick={() => setBatches((all) => all.filter((item) => item.id !== batch.id))}>{t("actions.removeBatch")}</Button> : null}
             </div>
-            {!line.product_id ? <Label text={t("fields.tracking")}><Select value={line.trackingMode} onChange={(e) => setLines((all) => all.map((x, i) => i === index ? {...x, trackingMode: e.target.value as StockLine["trackingMode"]} : x))}><option value="quantity">{t("values.quantity")}</option><option value="individual">{t("values.individual")}</option></Select></Label> : null}
-            {line.trackingMode === "individual" ? <Label text={t("fields.identifiers")}><Input placeholder={t("fields.identifiersHelp")} value={line.identifiers} onChange={(e) => setLines((all) => all.map((x, i) => i === index ? {...x, identifiers: e.target.value} : x))} /></Label> : null}
-            {lines.length > 1 ? <Button type="button" variant="ghost" onClick={() => setLines((all) => all.filter((_, i) => i !== index))}>{t("actions.remove")}</Button> : null}
+            <h3 className="font-semibold">{t("groupsTitle")}</h3>
+            {batch.groups.map((group) => (
+              <div className="grid gap-3 rounded-xl bg-slate-50 p-4 dark:bg-slate-900" key={group.id}>
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <Label text={t("fields.groupName")}><Input required value={group.name} onChange={(e) => updateGroup(batch.id, group.id, (item) => ({...item, name: e.target.value}))} /></Label>
+                  <Label text={t("fields.quantity")}><Input min="0.001" required step="0.001" type="number" value={group.quantity} onChange={(e) => updateGroup(batch.id, group.id, (item) => ({...item, quantity: e.target.value}))} /></Label>
+                  <Label text={t("fields.unit")}><Input required value={group.unit} onChange={(e) => updateGroup(batch.id, group.id, (item) => ({...item, unit: e.target.value}))} /></Label>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-4">
+                  <Label text={t("fields.buyingPrice")}><Input min="0" step="0.01" type="number" value={group.buyingPrice} onChange={(e) => updateGroup(batch.id, group.id, (item) => ({...item, buyingPrice: e.target.value}))} /></Label>
+                  <Label text={t("fields.price")}><Input min="0" step="0.01" type="number" value={group.sellingPrice} onChange={(e) => updateGroup(batch.id, group.id, (item) => ({...item, sellingPrice: e.target.value}))} /></Label>
+                  <Label text={t("fields.baseUnit")}><Input value={group.baseUnit} onChange={(e) => updateGroup(batch.id, group.id, (item) => ({...item, baseUnit: e.target.value}))} /></Label>
+                  <Label text={t("fields.conversion")}><Input min="0.000001" step="0.000001" type="number" value={group.conversion} onChange={(e) => updateGroup(batch.id, group.id, (item) => ({...item, conversion: e.target.value}))} /></Label>
+                </div>
+                {group.types.map((type) => (
+                  <div className="grid gap-3 border-l-2 border-orange-400 pl-3" key={type.id}>
+                    <div className="grid gap-3 sm:grid-cols-3">
+                      <Select value={type.productId} onChange={(e) => {
+                        const product = products.find((item) => item.id === e.target.value);
+                        updateGroup(batch.id, group.id, (item) => ({...item, types: item.types.map((entry) => entry.id === type.id ? {...entry, productId: e.target.value, name: product?.name ?? entry.name, trackingMode: product?.tracking_mode ?? entry.trackingMode} : entry)}));
+                      }}><option value="">{t("actions.newType")}</option>{products.map((product) => <option key={product.id} value={product.id}>{product.name} · {product.sku}</option>)}</Select>
+                      {!type.productId ? <Input placeholder={t("fields.typeName")} required value={type.name} onChange={(e) => updateGroup(batch.id, group.id, (item) => ({...item, types: item.types.map((entry) => entry.id === type.id ? {...entry, name: e.target.value} : entry)}))} /> : <span className="self-center text-sm">{type.name}</span>}
+                      <Input min="0.001" placeholder={t("fields.quantity")} required step="0.001" type="number" value={type.quantity} onChange={(e) => updateGroup(batch.id, group.id, (item) => ({...item, types: item.types.map((entry) => entry.id === type.id ? {...entry, quantity: e.target.value} : entry)}))} />
+                    </div>
+                    {!type.productId ? <Select value={type.trackingMode} onChange={(e) => updateGroup(batch.id, group.id, (item) => ({...item, types: item.types.map((entry) => entry.id === type.id ? {...entry, trackingMode: e.target.value as StockType["trackingMode"]} : entry)}))}><option value="quantity">{t("values.quantity")}</option><option value="individual">{t("values.individual")}</option></Select> : null}
+                    {type.trackingMode === "individual" ? <Input placeholder={t("fields.identifiersHelp")} value={type.identifiers} onChange={(e) => updateGroup(batch.id, group.id, (item) => ({...item, types: item.types.map((entry) => entry.id === type.id ? {...entry, identifiers: e.target.value} : entry)}))} /> : null}
+                    <Button type="button" variant="ghost" onClick={() => updateGroup(batch.id, group.id, (item) => ({...item, types: item.types.filter((entry) => entry.id !== type.id)}))}>{t("actions.removeType")}</Button>
+                  </div>
+                ))}
+                {group.types.length ? <p className="text-xs text-slate-500">{t("typeBalance", {recorded: group.types.reduce((total, type) => total + Number(type.quantity || 0), 0), group: Number(group.quantity || 0)})}</p> : null}
+                <Button type="button" variant="ghost" onClick={() => updateBatch(batch.id, (item) => ({...item, groups: item.groups.filter((entry) => entry.id !== group.id), selectedGroupId: item.selectedGroupId === group.id ? "" : item.selectedGroupId}))}>{t("actions.removeGroup")}</Button>
+              </div>
+            ))}
+            <Button type="button" variant="outline" onClick={() => updateBatch(batch.id, (item) => ({...item, groups: [...item.groups, emptyGroup()]}))}>{t("actions.addGroup")}</Button>
+            {batch.groups.length ? <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
+              <Select value={batch.selectedGroupId} onChange={(e) => updateBatch(batch.id, (item) => ({...item, selectedGroupId: e.target.value}))}><option value="">{t("fields.chooseGroup")}</option>{batch.groups.map((group) => <option key={group.id} value={group.id}>{group.name || t("fields.unnamedGroup")}</option>)}</Select>
+              <Button type="button" variant="outline" disabled={!batch.selectedGroupId} onClick={() => addType(batch)}>{t("actions.addType")}</Button>
+            </div> : null}
+            <p className="text-xs text-slate-500">{t("batchPosition", {number: batchIndex + 1})}</p>
           </div>
         ))}
-        <Button type="button" variant="outline" onClick={() => setLines((all) => [...all, emptyLine()])}>{t("actions.addLine")}</Button>
+        <Button type="button" variant="outline" onClick={() => setBatches((all) => [...all, emptyBatch(`Batch ${all.length + 1}`)])}>{t("actions.addBatch")}</Button>
         <div className="grid gap-3 sm:grid-cols-2"><Label text={t("fields.additionalCost")}><Input defaultValue="0" min="0" name="additional_cost" step="0.01" type="number" /></Label><Label text={t("fields.notes")}><Input name="notes" /></Label></div>
-        <Button disabled={busy} type="submit">
+        <Button disabled={busy || hasInvalidGroupBalance} type="submit">
           {t("actions.receiveStock")}
         </Button>
       </form>
       <div className={panel}>
         <h2 className="font-bold">{t("receivedStock")}</h2>
         <div className="mt-4 space-y-2">
-          {receipts.map((receipt) => <div className="rounded-lg bg-slate-50 p-3 text-sm dark:bg-slate-900" key={receipt.id}><div className="flex justify-between"><strong>{receipt.reference}</strong><span>{receipt.status}</span></div><p className="text-xs text-slate-500">{receipt.supplier_name || "—"} · {receipt.lines.length} {t("items")}</p></div>)}
+          {receipts.map((receipt) => <div className="rounded-lg bg-slate-50 p-3 text-sm dark:bg-slate-900" key={receipt.id}><div className="flex justify-between"><strong>{receipt.reference}</strong><span>{receipt.status}</span></div><p className="text-xs text-slate-500">{receipt.supplier_name || "—"} · {receipt.batches.length} {t("batches")}</p></div>)}
         </div>
       </div>
     </div>
@@ -945,18 +940,6 @@ function Label({ children, text }: { children: ReactNode; text: string }) {
       {text}
       {children}
     </label>
-  );
-}
-function ProductSelect({ products }: { products: Product[] }) {
-  return (
-    <Select name="product_id" required>
-      <option value="">Select product</option>
-      {products.map((p) => (
-        <option key={p.id} value={p.id}>
-          {p.name}
-        </option>
-      ))}
-    </Select>
   );
 }
 function ListProducts({ products, t }: { products: Product[]; t: T }) {

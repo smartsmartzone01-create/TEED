@@ -9,6 +9,8 @@ from .models import (
     Sale,
     SaleReturn,
     StockBatch,
+    StockContainer,
+    StockGroup,
     StockReceipt,
     TrackedUnit,
 )
@@ -17,6 +19,8 @@ admin.site.register(
     [
         Product,
         StockBatch,
+        StockContainer,
+        StockGroup,
         StockReceipt,
         TrackedUnit,
         InventoryMovement,

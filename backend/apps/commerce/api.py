@@ -134,7 +134,10 @@ class StockReceiptListCreateAPIView(CommerceBaseAPIView):
     def get(self, request, business_id):
         membership = commerce_membership(user=request.user, business_id=business_id)
         receipts = StockReceipt.objects.prefetch_related(
-            "lines__product", "lines__tracked_units"
+            "lines__product",
+            "lines__tracked_units",
+            "batches__groups__type_lines__product",
+            "batches__groups__type_lines__tracked_units",
         ).filter(business=membership.business)
         return SuccessResponse(
             message="Stock received retrieved successfully.",
@@ -149,7 +152,10 @@ class StockReceiptListCreateAPIView(CommerceBaseAPIView):
             actor=request.user, business_id=business_id, **serializer.validated_data
         )
         receipt = StockReceipt.objects.prefetch_related(
-            "lines__product", "lines__tracked_units"
+            "lines__product",
+            "lines__tracked_units",
+            "batches__groups__type_lines__product",
+            "batches__groups__type_lines__tracked_units",
         ).get(pk=receipt.pk)
         return SuccessResponse(
             message="Stock received successfully.",

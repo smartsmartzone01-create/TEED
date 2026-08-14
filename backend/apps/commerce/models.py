@@ -100,11 +100,87 @@ class StockReceipt(BaseModel):
         ]
 
 
+class StockContainer(BaseModel):
+    """A user-defined batch or box inside one stock receipt."""
+
+    receipt = models.ForeignKey(
+        StockReceipt, on_delete=models.PROTECT, related_name="batches"
+    )
+    name = models.CharField(max_length=120)
+    notes = models.CharField(max_length=240, blank=True, default="")
+    position = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        db_table = "commerce_stock_containers"
+        ordering = ["position", "created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["receipt", "name"],
+                name="commerce_receipt_batch_name_unique",
+            )
+        ]
+
+
+class StockGroup(BaseModel):
+    """A quantity declared before the user optionally divides it into types."""
+
+    batch = models.ForeignKey(
+        StockContainer, on_delete=models.PROTECT, related_name="groups"
+    )
+    name = models.CharField(max_length=120)
+    quantity = models.DecimalField(max_digits=14, decimal_places=3)
+    unit = models.CharField(max_length=32)
+    base_unit = models.CharField(max_length=32, blank=True, default="")
+    conversion_to_base = models.DecimalField(max_digits=14, decimal_places=6, default=1)
+    buying_price = models.DecimalField(
+        max_digits=14, decimal_places=2, null=True, blank=True
+    )
+    selling_price = models.DecimalField(
+        max_digits=14, decimal_places=2, null=True, blank=True
+    )
+    position = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        db_table = "commerce_stock_groups"
+        ordering = ["position", "created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["batch", "name"],
+                name="commerce_batch_group_name_unique",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(quantity__gt=0),
+                name="commerce_stock_group_quantity_positive",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(conversion_to_base__gt=0),
+                name="commerce_stock_group_conversion_positive",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(buying_price__isnull=True)
+                | models.Q(buying_price__gte=0),
+                name="commerce_stock_group_buying_price_nonnegative",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(selling_price__isnull=True)
+                | models.Q(selling_price__gte=0),
+                name="commerce_stock_group_selling_price_nonnegative",
+            ),
+        ]
+
+
 class StockBatch(BaseModel):
     receipt = models.ForeignKey(
         StockReceipt,
         on_delete=models.PROTECT,
         related_name="lines",
+        null=True,
+        blank=True,
+    )
+    stock_group = models.ForeignKey(
+        StockGroup,
+        on_delete=models.PROTECT,
+        related_name="type_lines",
         null=True,
         blank=True,
     )

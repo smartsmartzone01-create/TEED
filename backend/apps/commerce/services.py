@@ -29,6 +29,8 @@ from .models import (
     SaleItem,
     SaleReturn,
     StockBatch,
+    StockContainer,
+    StockGroup,
     StockReceipt,
     TrackedUnit,
 )
@@ -72,8 +74,89 @@ def create_product(*, actor, business_id, **values):
     )
 
 
+def _create_stock_type_line(*, actor, membership, receipt, stock_group, line, status):
+    product_id = line.pop("product_id", None)
+    product_values = line.pop("item", None)
+    if product_id:
+        product = (
+            Product.objects.select_for_update()
+            .filter(id=product_id, business=membership.business, is_active=True)
+            .first()
+        )
+        if product is None:
+            raise ValidationError({"batches": ["Select an available item."]})
+    elif product_values:
+        product_values.setdefault("group", stock_group.name)
+        product_values.setdefault("unit", stock_group.base_unit or stock_group.unit)
+        if (
+            "selling_price" not in product_values
+            and stock_group.selling_price is not None
+        ):
+            product_values["selling_price"] = stock_group.selling_price
+        product = create_product(
+            actor=actor, business_id=membership.business_id, **product_values
+        )
+    else:
+        raise ValidationError({"batches": ["Each type needs an item."]})
+
+    quantity = line.pop("quantity_received")
+    conversion = line.pop("conversion_to_base", stock_group.conversion_to_base)
+    base_quantity = quantity * conversion
+    identifiers = line.pop("tracked_units", [])
+    if product.tracking_mode == Product.TrackingMode.INDIVIDUAL:
+        if base_quantity != base_quantity.to_integral_value():
+            raise ValidationError(
+                {"batches": [f"{product.name} must use a whole quantity."]}
+            )
+        if len(identifiers) > int(base_quantity):
+            raise ValidationError(
+                {"batches": [f"Too many unit records for {product.name}."]}
+            )
+        identifiers.extend({} for _ in range(int(base_quantity) - len(identifiers)))
+    unit_cost = line.pop("unit_cost", None)
+    batch = StockBatch.objects.create(
+        receipt=receipt,
+        stock_group=stock_group,
+        product=product,
+        reference=receipt.reference,
+        quantity_received=base_quantity,
+        quantity_remaining=base_quantity
+        if status == StockReceipt.Status.RECEIVED
+        else 0,
+        conversion_to_base=conversion,
+        received_unit=line.pop("received_unit", stock_group.unit),
+        unit_cost=unit_cost if unit_cost is not None else stock_group.buying_price,
+        received_at=receipt.received_at or timezone.now(),
+        supplier_name=receipt.supplier_name,
+        recorded_by=actor,
+        **line,
+    )
+    for index, identifier in enumerate(identifiers, start=1):
+        TrackedUnit.objects.create(
+            stock_line=batch,
+            product=product,
+            internal_serial=f"UNIT-{str(batch.id).replace('-', '')[:8].upper()}-{index:04d}",
+            **identifier,
+        )
+    if status == StockReceipt.Status.RECEIVED:
+        Product.objects.filter(pk=product.pk).update(
+            current_quantity=F("current_quantity") + base_quantity
+        )
+        InventoryMovement.objects.create(
+            business=membership.business,
+            product=product,
+            batch=batch,
+            kind=InventoryMovement.Kind.RECEIPT,
+            quantity_delta=base_quantity,
+            occurred_at=batch.received_at,
+            reason=f"{receipt.reference} received.",
+            recorded_by=actor,
+        )
+    return batch
+
+
 @transaction.atomic
-def create_stock_receipt(*, actor, business_id, lines, status="received", **values):
+def create_stock_receipt(*, actor, business_id, batches, status="received", **values):
     membership = commerce_membership(
         user=actor,
         business_id=business_id,
@@ -96,73 +179,40 @@ def create_stock_receipt(*, actor, business_id, lines, status="received", **valu
         recorded_by=actor,
         **values,
     )
-    for line in lines:
-        product_id = line.pop("product_id", None)
-        product_values = line.pop("item", None)
-        if product_id:
-            product = (
-                Product.objects.select_for_update()
-                .filter(id=product_id, business=membership.business, is_active=True)
-                .first()
-            )
-            if product is None:
-                raise ValidationError({"lines": ["Select an available item."]})
-        elif product_values:
-            product = create_product(
-                actor=actor, business_id=business_id, **product_values
-            )
-        else:
-            raise ValidationError({"lines": ["Each line needs an item."]})
-
-        quantity = line.pop("quantity_received")
-        conversion = line.pop("conversion_to_base", Decimal("1"))
-        base_quantity = quantity * conversion
-        identifiers = line.pop("tracked_units", [])
-        if product.tracking_mode == Product.TrackingMode.INDIVIDUAL:
-            if base_quantity != base_quantity.to_integral_value():
-                raise ValidationError(
-                    {"lines": [f"{product.name} must use a whole quantity."]}
-                )
-            if len(identifiers) > int(base_quantity):
-                raise ValidationError(
-                    {"lines": [f"Too many unit records for {product.name}."]}
-                )
-            identifiers.extend({} for _ in range(int(base_quantity) - len(identifiers)))
-        batch = StockBatch.objects.create(
-            receipt=receipt,
-            product=product,
-            reference=receipt.reference,
-            quantity_received=base_quantity,
-            quantity_remaining=base_quantity
-            if status == StockReceipt.Status.RECEIVED
-            else 0,
-            conversion_to_base=conversion,
-            received_unit=line.pop("received_unit", product.unit),
-            received_at=receipt.received_at or timezone.now(),
-            supplier_name=receipt.supplier_name,
-            recorded_by=actor,
-            **line,
+    for batch_position, batch_values in enumerate(batches):
+        groups = batch_values.pop("groups")
+        container = StockContainer.objects.create(
+            receipt=receipt, position=batch_position, **batch_values
         )
-        for index, identifier in enumerate(identifiers, start=1):
-            TrackedUnit.objects.create(
-                stock_line=batch,
-                product=product,
-                internal_serial=f"UNIT-{str(batch.id).replace('-', '')[:8].upper()}-{index:04d}",
-                **identifier,
+        for group_position, group_values in enumerate(groups):
+            types = group_values.pop("types", [])
+            stock_group = StockGroup.objects.create(
+                batch=container, position=group_position, **group_values
             )
-        if status == StockReceipt.Status.RECEIVED:
-            product.current_quantity = F("current_quantity") + base_quantity
-            product.save(update_fields=["current_quantity", "updated_at"])
-            InventoryMovement.objects.create(
-                business=membership.business,
-                product=product,
-                batch=batch,
-                kind=InventoryMovement.Kind.RECEIPT,
-                quantity_delta=base_quantity,
-                occurred_at=batch.received_at,
-                reason=f"{receipt.reference} received.",
-                recorded_by=actor,
-            )
+            if not types:
+                types = [
+                    {
+                        "item": {
+                            "name": stock_group.name,
+                            "group": stock_group.name,
+                            "unit": stock_group.base_unit or stock_group.unit,
+                            "selling_price": stock_group.selling_price,
+                        },
+                        "quantity_received": stock_group.quantity,
+                        "received_unit": stock_group.unit,
+                        "conversion_to_base": stock_group.conversion_to_base,
+                        "unit_cost": stock_group.buying_price,
+                    }
+                ]
+            for line in types:
+                _create_stock_type_line(
+                    actor=actor,
+                    membership=membership,
+                    receipt=receipt,
+                    stock_group=stock_group,
+                    line=line,
+                    status=status,
+                )
     refresh_decisions(business=membership.business)
     return receipt
 

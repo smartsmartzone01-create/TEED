@@ -12,6 +12,8 @@ from .models import (
     SaleItem,
     SaleReturn,
     StockBatch,
+    StockContainer,
+    StockGroup,
     StockReceipt,
     TrackedUnit,
 )
@@ -54,9 +56,12 @@ class StockLineInputSerializer(serializers.Serializer):
     quantity_received = serializers.DecimalField(
         max_digits=14, decimal_places=3, min_value=Decimal("0.001")
     )
-    received_unit = serializers.CharField(max_length=32)
+    received_unit = serializers.CharField(max_length=32, required=False)
     conversion_to_base = serializers.DecimalField(
-        max_digits=14, decimal_places=6, min_value=Decimal("0.000001"), default=1
+        max_digits=14,
+        decimal_places=6,
+        min_value=Decimal("0.000001"),
+        required=False,
     )
     unit_cost = serializers.DecimalField(
         max_digits=14,
@@ -75,6 +80,49 @@ class StockLineInputSerializer(serializers.Serializer):
         return attrs
 
 
+class StockGroupInputSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=120)
+    quantity = serializers.DecimalField(
+        max_digits=14, decimal_places=3, min_value=Decimal("0.001")
+    )
+    unit = serializers.CharField(max_length=32)
+    base_unit = serializers.CharField(max_length=32, required=False, allow_blank=True)
+    conversion_to_base = serializers.DecimalField(
+        max_digits=14, decimal_places=6, min_value=Decimal("0.000001"), default=1
+    )
+    buying_price = serializers.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        min_value=Decimal("0"),
+        required=False,
+        allow_null=True,
+    )
+    selling_price = serializers.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        min_value=Decimal("0"),
+        required=False,
+        allow_null=True,
+    )
+    types = StockLineInputSerializer(many=True, required=False, default=list)
+
+    def validate(self, attrs):
+        types = attrs.get("types", [])
+        if types:
+            total = sum(item["quantity_received"] for item in types)
+            if total != attrs["quantity"]:
+                raise serializers.ValidationError(
+                    "Type quantities must equal the group quantity."
+                )
+        return attrs
+
+
+class StockContainerInputSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=120)
+    notes = serializers.CharField(max_length=240, required=False, allow_blank=True)
+    groups = StockGroupInputSerializer(many=True, min_length=1)
+
+
 class StockReceiptCreateSerializer(serializers.Serializer):
     status = serializers.ChoiceField(
         choices=[StockReceipt.Status.DRAFT, StockReceipt.Status.RECEIVED],
@@ -91,7 +139,7 @@ class StockReceiptCreateSerializer(serializers.Serializer):
     )
     notes = serializers.CharField(max_length=300, required=False, allow_blank=True)
     received_at = serializers.DateTimeField(required=False, allow_null=True)
-    lines = StockLineInputSerializer(many=True, min_length=1)
+    batches = StockContainerInputSerializer(many=True, min_length=1)
 
     def validate(self, attrs):
         if attrs["status"] == StockReceipt.Status.RECEIVED and not attrs.get(
@@ -118,6 +166,7 @@ class TrackedUnitSerializer(serializers.ModelSerializer):
 
 class StockReceiptSerializer(serializers.ModelSerializer):
     lines = serializers.SerializerMethodField()
+    batches = serializers.SerializerMethodField()
 
     class Meta:
         model = StockReceipt
@@ -131,11 +180,15 @@ class StockReceiptSerializer(serializers.ModelSerializer):
             "notes",
             "received_at",
             "created_at",
+            "batches",
             "lines",
         ]
 
     def get_lines(self, obj):
         return StockBatchSerializer(obj.lines.all(), many=True).data
+
+    def get_batches(self, obj):
+        return StockContainerSerializer(obj.batches.all(), many=True).data
 
 
 class StockBatchSerializer(serializers.ModelSerializer):
@@ -161,6 +214,35 @@ class StockBatchSerializer(serializers.ModelSerializer):
         ]
 
     tracked_units = TrackedUnitSerializer(many=True, read_only=True)
+
+
+class StockGroupSerializer(serializers.ModelSerializer):
+    types = serializers.SerializerMethodField()
+
+    class Meta:
+        model = StockGroup
+        fields = [
+            "id",
+            "name",
+            "quantity",
+            "unit",
+            "base_unit",
+            "conversion_to_base",
+            "buying_price",
+            "selling_price",
+            "types",
+        ]
+
+    def get_types(self, obj):
+        return StockBatchSerializer(obj.type_lines.all(), many=True).data
+
+
+class StockContainerSerializer(serializers.ModelSerializer):
+    groups = StockGroupSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = StockContainer
+        fields = ["id", "name", "notes", "groups"]
 
 
 class LegacyStockReceiptSerializer(serializers.Serializer):
