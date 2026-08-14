@@ -166,7 +166,11 @@ class StockReceiptListCreateAPIView(CommerceBaseAPIView):
             "batches__groups__type_lines__tracked_units",
         ).get(pk=receipt.pk)
         return SuccessResponse(
-            message="Stock received successfully.",
+            message=(
+                "Stock draft saved successfully."
+                if receipt.status == StockReceipt.Status.DRAFT
+                else "Stock received successfully."
+            ),
             data=StockReceiptSerializer(receipt).data,
             status_code=status.HTTP_201_CREATED,
         )

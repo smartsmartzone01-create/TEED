@@ -199,6 +199,11 @@ class StockBatch(BaseModel):
     product = models.ForeignKey(
         Product, on_delete=models.PROTECT, related_name="stock_batches"
     )
+    tracking_mode = models.CharField(
+        max_length=16,
+        choices=Product.TrackingMode.choices,
+        default=Product.TrackingMode.QUANTITY,
+    )
     reference = models.CharField(max_length=64, blank=True, default="")
     quantity_received = models.DecimalField(max_digits=14, decimal_places=3)
     quantity_remaining = models.DecimalField(max_digits=14, decimal_places=3)

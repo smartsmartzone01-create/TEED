@@ -67,6 +67,9 @@ class TrackedUnitInputSerializer(serializers.Serializer):
 class StockLineInputSerializer(serializers.Serializer):
     product_id = serializers.UUIDField(required=False)
     item = ProductSerializer(required=False)
+    tracking_mode = serializers.ChoiceField(
+        choices=Product.TrackingMode.choices, required=False
+    )
     quantity_received = serializers.DecimalField(
         max_digits=14, decimal_places=3, min_value=Decimal("0.001")
     )
@@ -123,16 +126,6 @@ class StockGroupInputSerializer(serializers.Serializer):
     )
     types = StockLineInputSerializer(many=True, required=False, default=list)
 
-    def validate(self, attrs):
-        types = attrs.get("types", [])
-        if types:
-            total = sum(item["quantity_received"] for item in types)
-            if total != attrs["quantity"]:
-                raise serializers.ValidationError(
-                    "Type quantities must equal the group quantity."
-                )
-        return attrs
-
 
 class StockContainerInputSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=120)
@@ -159,6 +152,20 @@ class StockReceiptCreateSerializer(serializers.Serializer):
     batches = StockContainerInputSerializer(many=True, min_length=1)
 
     def validate(self, attrs):
+        if attrs["status"] == StockReceipt.Status.RECEIVED:
+            for batch in attrs["batches"]:
+                for group in batch["groups"]:
+                    types = group.get("types", [])
+                    if (
+                        types
+                        and sum(item["quantity_received"] for item in types)
+                        != group["quantity"]
+                    ):
+                        raise serializers.ValidationError(
+                            {
+                                "batches": "Product quantities must equal the group quantity."
+                            }
+                        )
         if attrs["status"] == StockReceipt.Status.RECEIVED and not attrs.get(
             "received_at"
         ):
@@ -239,6 +246,7 @@ class StockBatchSerializer(serializers.ModelSerializer):
             "id",
             "product",
             "product_name",
+            "tracking_mode",
             "reference",
             "quantity_received",
             "quantity_remaining",

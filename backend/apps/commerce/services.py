@@ -105,7 +105,8 @@ def _create_stock_type_line(*, actor, membership, receipt, stock_group, line, st
     conversion = line.pop("conversion_to_base", stock_group.conversion_to_base)
     base_quantity = quantity * conversion
     identifiers = line.pop("tracked_units", [])
-    if product.tracking_mode == Product.TrackingMode.INDIVIDUAL:
+    tracking_mode = line.pop("tracking_mode", product.tracking_mode)
+    if tracking_mode == Product.TrackingMode.INDIVIDUAL:
         if base_quantity != base_quantity.to_integral_value():
             raise ValidationError(
                 {"batches": [f"{product.name} must use a whole quantity."]}
@@ -114,12 +115,22 @@ def _create_stock_type_line(*, actor, membership, receipt, stock_group, line, st
             raise ValidationError(
                 {"batches": [f"Too many unit records for {product.name}."]}
             )
-        identifiers.extend({} for _ in range(int(base_quantity) - len(identifiers)))
+        if status == StockReceipt.Status.RECEIVED and len(identifiers) != int(
+            base_quantity
+        ):
+            raise ValidationError(
+                {
+                    "batches": [
+                        f"Record all {int(base_quantity)} units for {product.name}."
+                    ]
+                }
+            )
     unit_cost = line.pop("unit_cost", None)
     batch = StockBatch.objects.create(
         receipt=receipt,
         stock_group=stock_group,
         product=product,
+        tracking_mode=tracking_mode,
         reference=receipt.reference,
         quantity_received=base_quantity,
         quantity_remaining=base_quantity
@@ -289,6 +300,16 @@ def receive_draft_stock(*, actor, business_id, receipt_id, received_at=None):
     if receipt is None or receipt.status != StockReceipt.Status.DRAFT:
         raise ValidationError({"receipt": ["Select a draft stock receipt."]})
     receipt.received_at = received_at or timezone.now()
+    incomplete = [
+        batch.product.name
+        for batch in receipt.lines.prefetch_related("tracked_units")
+        if batch.tracking_mode == Product.TrackingMode.INDIVIDUAL
+        and batch.tracked_units.count() != int(batch.quantity_received)
+    ]
+    if incomplete:
+        raise ValidationError(
+            {"batches": [f"Finish recording every unit for {', '.join(incomplete)}."]}
+        )
     receipt.status = StockReceipt.Status.RECEIVED
     receipt.save(update_fields=["received_at", "status", "updated_at"])
     for batch in receipt.lines.select_for_update().select_related("product"):

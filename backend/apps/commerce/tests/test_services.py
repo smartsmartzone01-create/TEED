@@ -281,6 +281,83 @@ class CommerceServiceTests(TestCase):
         self.product.refresh_from_db()
         self.assertEqual(self.product.current_quantity, Decimal("3"))
 
+    def test_incomplete_individual_stock_stays_draft_and_cannot_be_received(self):
+        receipt = create_stock_receipt(
+            actor=self.owner,
+            business_id=self.business.id,
+            status="draft",
+            batches=[
+                {
+                    "name": "Phone batch",
+                    "groups": [
+                        {
+                            "name": "Phones",
+                            "quantity": Decimal("3"),
+                            "unit": "piece",
+                            "types": [
+                                {
+                                    "item": {
+                                        "name": "Used iPhone 15",
+                                        "unit": "piece",
+                                        "tracking_mode": "individual",
+                                    },
+                                    "tracking_mode": "individual",
+                                    "quantity_received": Decimal("3"),
+                                    "tracked_units": [
+                                        {
+                                            "identifiers": [
+                                                {"kind": "imei", "value": "ONE"}
+                                            ]
+                                        }
+                                    ],
+                                }
+                            ],
+                        }
+                    ],
+                }
+            ],
+        )
+        line = receipt.lines.get()
+        self.assertEqual(receipt.status, "draft")
+        self.assertEqual(line.tracking_mode, "individual")
+        self.assertEqual(line.tracked_units.count(), 1)
+        with self.assertRaises(ValidationError):
+            receive_draft_stock(
+                actor=self.owner,
+                business_id=self.business.id,
+                receipt_id=receipt.id,
+            )
+
+    def test_existing_product_can_use_different_tracking_per_stock_line(self):
+        receipt = create_stock_receipt(
+            actor=self.owner,
+            business_id=self.business.id,
+            status="received",
+            received_at=timezone.now(),
+            batches=[
+                {
+                    "name": "Shoe batch",
+                    "groups": [
+                        {
+                            "name": "Shoes",
+                            "quantity": Decimal("1"),
+                            "unit": "pair",
+                            "types": [
+                                {
+                                    "product_id": self.product.id,
+                                    "tracking_mode": "individual",
+                                    "quantity_received": Decimal("1"),
+                                    "tracked_units": [{}],
+                                }
+                            ],
+                        }
+                    ],
+                }
+            ],
+        )
+        self.assertEqual(receipt.lines.get().tracking_mode, "individual")
+        self.assertEqual(self.product.tracking_mode, "quantity")
+
     def test_batch_groups_create_types_after_groups(self):
         receipt = create_stock_receipt(
             actor=self.owner,
