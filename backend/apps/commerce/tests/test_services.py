@@ -7,7 +7,14 @@ from rest_framework.exceptions import PermissionDenied, ValidationError
 from apps.identity.models import User
 from apps.workspaces.models import Business, BusinessMembership
 
-from ..models import InventoryMovement, Product, SaleAllocation, TrackedUnit
+from ..models import (
+    InventoryMovement,
+    Product,
+    SaleAllocation,
+    TrackedUnit,
+    TrackedUnitIdentifier,
+    UnitDefinition,
+)
 from ..serializers import StockReceiptCreateSerializer
 from ..services import (
     commerce_overview,
@@ -152,6 +159,91 @@ class CommerceServiceTests(TestCase):
         units = TrackedUnit.objects.filter(stock_line__receipt=receipt)
         self.assertEqual(units.count(), 2)
         self.assertEqual(units.values("internal_serial").distinct().count(), 2)
+
+    def test_individual_item_details_and_identifier_are_saved(self):
+        receipt = create_stock_receipt(
+            actor=self.owner,
+            business_id=self.business.id,
+            status="received",
+            received_at=timezone.now(),
+            batches=[
+                {
+                    "name": "Phone box",
+                    "groups": [
+                        {
+                            "name": "Phones",
+                            "quantity": Decimal("1"),
+                            "unit": "piece",
+                            "types": [
+                                {
+                                    "item": {
+                                        "name": "iPhone",
+                                        "unit": "piece",
+                                        "tracking_mode": "individual",
+                                    },
+                                    "quantity_received": Decimal("1"),
+                                    "tracked_units": [
+                                        {
+                                            "model_name": "iPhone 17",
+                                            "brand": "Apple",
+                                            "color": "Black",
+                                            "capacity": "256 GB",
+                                            "identifiers": [
+                                                {
+                                                    "kind": "imei",
+                                                    "value": "356789012345678",
+                                                }
+                                            ],
+                                        }
+                                    ],
+                                }
+                            ],
+                        }
+                    ],
+                }
+            ],
+        )
+        unit = TrackedUnit.objects.get(stock_line__receipt=receipt)
+        self.assertEqual(unit.internal_serial[:5], "UNIT-")
+        self.assertEqual(unit.model_name, "iPhone 17")
+        self.assertEqual(unit.brand, "Apple")
+        self.assertEqual(unit.color, "Black")
+        self.assertEqual(unit.capacity, "256 GB")
+        self.assertTrue(
+            TrackedUnitIdentifier.objects.filter(
+                unit=unit, kind="imei", value="356789012345678"
+            ).exists()
+        )
+
+    def test_custom_unit_is_saved_for_future_stock_receipts(self):
+        receipt = create_stock_receipt(
+            actor=self.owner,
+            business_id=self.business.id,
+            status="received",
+            received_at=timezone.now(),
+            batches=[
+                {
+                    "name": "Fabric",
+                    "groups": [
+                        {
+                            "name": "Kitenge",
+                            "quantity": Decimal("2"),
+                            "unit": "bolt",
+                            "custom_unit_name": "bolt",
+                            "base_unit": "meter",
+                            "conversion_to_base": Decimal("30"),
+                        }
+                    ],
+                }
+            ],
+        )
+        unit = UnitDefinition.objects.get(business=self.business, name="bolt")
+        group = receipt.batches.get().groups.get()
+        self.assertTrue(unit.code.startswith("UNITDEF-"))
+        self.assertEqual(unit.conversion_to_base, Decimal("30"))
+        self.assertEqual(group.unit, "bolt")
+        self.assertEqual(group.code, "GRP-001")
+        self.assertEqual(group.batch.code, "BAT-001")
 
     def test_draft_stock_only_changes_availability_when_received(self):
         receipt = create_stock_receipt(

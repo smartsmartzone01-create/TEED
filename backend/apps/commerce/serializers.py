@@ -16,6 +16,8 @@ from .models import (
     StockGroup,
     StockReceipt,
     TrackedUnit,
+    TrackedUnitIdentifier,
+    UnitDefinition,
 )
 
 
@@ -42,12 +44,24 @@ class ProductSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "sku", "current_quantity", "created_at", "updated_at"]
 
 
+class TrackedIdentifierInputSerializer(serializers.Serializer):
+    kind = serializers.ChoiceField(choices=TrackedUnitIdentifier.Kind.choices)
+    value = serializers.CharField(max_length=160)
+
+
 class TrackedUnitInputSerializer(serializers.Serializer):
+    model_name = serializers.CharField(max_length=120, required=False, allow_blank=True)
+    brand = serializers.CharField(max_length=80, required=False, allow_blank=True)
+    color = serializers.CharField(max_length=60, required=False, allow_blank=True)
+    capacity = serializers.CharField(max_length=80, required=False, allow_blank=True)
     imei = serializers.CharField(max_length=80, required=False, allow_blank=True)
     serial_number = serializers.CharField(
         max_length=120, required=False, allow_blank=True
     )
     condition = serializers.CharField(max_length=40, required=False, allow_blank=True)
+    identifiers = TrackedIdentifierInputSerializer(
+        many=True, required=False, default=list
+    )
 
 
 class StockLineInputSerializer(serializers.Serializer):
@@ -87,6 +101,9 @@ class StockGroupInputSerializer(serializers.Serializer):
     )
     unit = serializers.CharField(max_length=32)
     base_unit = serializers.CharField(max_length=32, required=False, allow_blank=True)
+    custom_unit_name = serializers.CharField(
+        max_length=32, required=False, allow_blank=True, write_only=True
+    )
     conversion_to_base = serializers.DecimalField(
         max_digits=14, decimal_places=6, min_value=Decimal("0.000001"), default=1
     )
@@ -152,16 +169,38 @@ class StockReceiptCreateSerializer(serializers.Serializer):
 
 
 class TrackedUnitSerializer(serializers.ModelSerializer):
+    identifiers = serializers.SerializerMethodField()
+
     class Meta:
         model = TrackedUnit
         fields = [
             "id",
             "internal_serial",
+            "model_name",
+            "brand",
+            "color",
+            "capacity",
             "imei",
             "serial_number",
             "condition",
             "status",
+            "identifiers",
         ]
+
+    def get_identifiers(self, obj):
+        return TrackedUnitIdentifierSerializer(obj.identifiers.all(), many=True).data
+
+
+class TrackedUnitIdentifierSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TrackedUnitIdentifier
+        fields = ["id", "kind", "value"]
+
+
+class UnitDefinitionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UnitDefinition
+        fields = ["id", "code", "name", "base_unit", "conversion_to_base"]
 
 
 class StockReceiptSerializer(serializers.ModelSerializer):
@@ -223,6 +262,7 @@ class StockGroupSerializer(serializers.ModelSerializer):
         model = StockGroup
         fields = [
             "id",
+            "code",
             "name",
             "quantity",
             "unit",
@@ -242,7 +282,7 @@ class StockContainerSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = StockContainer
-        fields = ["id", "name", "notes", "groups"]
+        fields = ["id", "code", "name", "notes", "groups"]
 
 
 class LegacyStockReceiptSerializer(serializers.Serializer):

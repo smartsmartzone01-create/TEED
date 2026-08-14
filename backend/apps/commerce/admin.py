@@ -13,6 +13,8 @@ from .models import (
     StockGroup,
     StockReceipt,
     TrackedUnit,
+    TrackedUnitIdentifier,
+    UnitDefinition,
 )
 
 admin.site.register(
@@ -23,6 +25,8 @@ admin.site.register(
         StockGroup,
         StockReceipt,
         TrackedUnit,
+        TrackedUnitIdentifier,
+        UnitDefinition,
         InventoryMovement,
         Sale,
         SaleReturn,

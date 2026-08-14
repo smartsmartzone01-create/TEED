@@ -33,6 +33,8 @@ from .models import (
     StockGroup,
     StockReceipt,
     TrackedUnit,
+    TrackedUnitIdentifier,
+    UnitDefinition,
 )
 
 
@@ -132,11 +134,36 @@ def _create_stock_type_line(*, actor, membership, receipt, stock_group, line, st
         **line,
     )
     for index, identifier in enumerate(identifiers, start=1):
-        TrackedUnit.objects.create(
+        external_identifiers = identifier.pop("identifiers", [])
+        legacy_imei = identifier.pop("imei", "")
+        legacy_serial = identifier.pop("serial_number", "")
+        unit = TrackedUnit.objects.create(
             stock_line=batch,
             product=product,
             internal_serial=f"UNIT-{str(batch.id).replace('-', '')[:8].upper()}-{index:04d}",
+            imei=next(
+                (
+                    item["value"]
+                    for item in external_identifiers
+                    if item["kind"] == "imei"
+                ),
+                legacy_imei,
+            ),
+            serial_number=next(
+                (
+                    item["value"]
+                    for item in external_identifiers
+                    if item["kind"] == "serial"
+                ),
+                legacy_serial,
+            ),
             **identifier,
+        )
+        TrackedUnitIdentifier.objects.bulk_create(
+            [
+                TrackedUnitIdentifier(unit=unit, **external_identifier)
+                for external_identifier in external_identifiers
+            ]
         )
     if status == StockReceipt.Status.RECEIVED:
         Product.objects.filter(pk=product.pk).update(
@@ -182,12 +209,42 @@ def create_stock_receipt(*, actor, business_id, batches, status="received", **va
     for batch_position, batch_values in enumerate(batches):
         groups = batch_values.pop("groups")
         container = StockContainer.objects.create(
-            receipt=receipt, position=batch_position, **batch_values
+            receipt=receipt,
+            code=f"BAT-{batch_position + 1:03d}",
+            position=batch_position,
+            **batch_values,
         )
         for group_position, group_values in enumerate(groups):
             types = group_values.pop("types", [])
+            custom_unit_name = group_values.pop("custom_unit_name", "").strip()
+            if custom_unit_name:
+                unit_definition = UnitDefinition.objects.filter(
+                    business=membership.business, name__iexact=custom_unit_name
+                ).first()
+                if unit_definition is None:
+                    unit_number = (
+                        UnitDefinition.objects.filter(
+                            business=membership.business
+                        ).count()
+                        + 1
+                    )
+                    unit_definition = UnitDefinition.objects.create(
+                        business=membership.business,
+                        code=f"UNITDEF-{unit_number:06d}",
+                        name=custom_unit_name,
+                        base_unit=group_values.get("base_unit", ""),
+                        conversion_to_base=group_values.get(
+                            "conversion_to_base", Decimal("1")
+                        ),
+                    )
+                group_values["unit"] = unit_definition.name
+                group_values["base_unit"] = unit_definition.base_unit
+                group_values["conversion_to_base"] = unit_definition.conversion_to_base
             stock_group = StockGroup.objects.create(
-                batch=container, position=group_position, **group_values
+                batch=container,
+                code=f"GRP-{group_position + 1:03d}",
+                position=group_position,
+                **group_values,
             )
             if not types:
                 types = [

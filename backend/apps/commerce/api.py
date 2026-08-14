@@ -19,6 +19,7 @@ from .models import (
     SaleReturn,
     StockBatch,
     StockReceipt,
+    UnitDefinition,
 )
 from .serializers import (
     AdjustmentSerializer,
@@ -36,6 +37,7 @@ from .serializers import (
     StockBatchSerializer,
     StockReceiptCreateSerializer,
     StockReceiptSerializer,
+    UnitDefinitionSerializer,
 )
 from .services import (
     adjust_stock,
@@ -141,7 +143,13 @@ class StockReceiptListCreateAPIView(CommerceBaseAPIView):
         ).filter(business=membership.business)
         return SuccessResponse(
             message="Stock received retrieved successfully.",
-            data={"receipts": StockReceiptSerializer(receipts, many=True).data},
+            data={
+                "receipts": StockReceiptSerializer(receipts, many=True).data,
+                "units": UnitDefinitionSerializer(
+                    UnitDefinition.objects.filter(business=membership.business),
+                    many=True,
+                ).data,
+            },
         )
 
     @method_decorator(csrf_protect)

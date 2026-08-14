@@ -106,6 +106,7 @@ class StockContainer(BaseModel):
     receipt = models.ForeignKey(
         StockReceipt, on_delete=models.PROTECT, related_name="batches"
     )
+    code = models.CharField(max_length=40, blank=True, default="")
     name = models.CharField(max_length=120)
     notes = models.CharField(max_length=240, blank=True, default="")
     position = models.PositiveIntegerField(default=0)
@@ -117,7 +118,12 @@ class StockContainer(BaseModel):
             models.UniqueConstraint(
                 fields=["receipt", "name"],
                 name="commerce_receipt_batch_name_unique",
-            )
+            ),
+            models.UniqueConstraint(
+                fields=["receipt", "code"],
+                condition=~models.Q(code=""),
+                name="commerce_receipt_batch_code_unique",
+            ),
         ]
 
 
@@ -127,6 +133,7 @@ class StockGroup(BaseModel):
     batch = models.ForeignKey(
         StockContainer, on_delete=models.PROTECT, related_name="groups"
     )
+    code = models.CharField(max_length=40, blank=True, default="")
     name = models.CharField(max_length=120)
     quantity = models.DecimalField(max_digits=14, decimal_places=3)
     unit = models.CharField(max_length=32)
@@ -147,6 +154,11 @@ class StockGroup(BaseModel):
             models.UniqueConstraint(
                 fields=["batch", "name"],
                 name="commerce_batch_group_name_unique",
+            ),
+            models.UniqueConstraint(
+                fields=["batch", "code"],
+                condition=~models.Q(code=""),
+                name="commerce_batch_group_code_unique",
             ),
             models.CheckConstraint(
                 condition=models.Q(quantity__gt=0),
@@ -241,6 +253,10 @@ class TrackedUnit(BaseModel):
         Product, on_delete=models.PROTECT, related_name="tracked_units"
     )
     internal_serial = models.CharField(max_length=40)
+    model_name = models.CharField(max_length=120, blank=True, default="")
+    brand = models.CharField(max_length=80, blank=True, default="")
+    color = models.CharField(max_length=60, blank=True, default="")
+    capacity = models.CharField(max_length=80, blank=True, default="")
     imei = models.CharField(max_length=80, blank=True, default="")
     serial_number = models.CharField(max_length=120, blank=True, default="")
     condition = models.CharField(max_length=40, blank=True, default="")
@@ -265,6 +281,57 @@ class TrackedUnit(BaseModel):
                 fields=["product", "serial_number"],
                 condition=~models.Q(serial_number=""),
                 name="commerce_product_serial_unique",
+            ),
+        ]
+
+
+class TrackedUnitIdentifier(BaseModel):
+    class Kind(models.TextChoices):
+        IMEI = "imei", "IMEI"
+        SERIAL = "serial", "Serial number"
+        CHASSIS = "chassis", "Chassis or VIN"
+        BARCODE = "barcode", "Barcode"
+        ENGINE = "engine", "Engine number"
+        REGISTRATION = "registration", "Registration number"
+
+    unit = models.ForeignKey(
+        TrackedUnit, on_delete=models.CASCADE, related_name="identifiers"
+    )
+    kind = models.CharField(max_length=20, choices=Kind.choices)
+    value = models.CharField(max_length=160)
+
+    class Meta:
+        db_table = "commerce_tracked_unit_identifiers"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["unit", "kind", "value"],
+                name="commerce_unit_identifier_unique",
+            )
+        ]
+
+
+class UnitDefinition(BaseModel):
+    business = models.ForeignKey(
+        "workspaces.Business", on_delete=models.CASCADE, related_name="commerce_units"
+    )
+    code = models.CharField(max_length=40)
+    name = models.CharField(max_length=32)
+    base_unit = models.CharField(max_length=32, blank=True, default="")
+    conversion_to_base = models.DecimalField(max_digits=14, decimal_places=6, default=1)
+
+    class Meta:
+        db_table = "commerce_unit_definitions"
+        ordering = ["name"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["business", "code"], name="commerce_business_unit_code_unique"
+            ),
+            models.UniqueConstraint(
+                fields=["business", "name"], name="commerce_business_unit_name_unique"
+            ),
+            models.CheckConstraint(
+                condition=models.Q(conversion_to_base__gt=0),
+                name="commerce_unit_conversion_positive",
             ),
         ]
 
