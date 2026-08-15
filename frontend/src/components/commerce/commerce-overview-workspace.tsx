@@ -53,6 +53,31 @@ function CommerceOverviewWorkspace({ businessId }: { businessId: string }) {
     return () => window.clearTimeout(initial);
   }, [load]);
 
+  const states = data
+    ? [
+        {
+          icon: CircleDollarSign,
+          label: t("pulse.revenue"),
+          value: money(data.pulse.revenue),
+        },
+        {
+          icon: ReceiptText,
+          label: t("pulse.sales"),
+          value: String(data.pulse.sales_count),
+        },
+        {
+          icon: Boxes,
+          label: t("pulse.availableSkus"),
+          value: String(data.pulse.available_skus),
+        },
+        {
+          icon: PackageX,
+          label: t("pulse.soldOutSkus"),
+          value: String(data.pulse.sold_out_skus),
+        },
+      ]
+    : [];
+
   return (
     <section className="w-full space-y-4 px-2 py-4 sm:px-3 lg:px-4">
       <header className="border-b border-slate-200 pb-4 dark:border-slate-800">
@@ -70,24 +95,16 @@ function CommerceOverviewWorkspace({ businessId }: { businessId: string }) {
       {data ? (
         <>
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            {[
-              [CircleDollarSign, t("pulse.revenue"), money(data.pulse.revenue)],
-              [ReceiptText, t("pulse.sales"), String(data.pulse.sales_count)],
-              [Boxes, t("pulse.availableSkus"), String(data.pulse.available_skus)],
-              [PackageX, t("pulse.soldOutSkus"), String(data.pulse.sold_out_skus)],
-            ].map(([Icon, label, value]) => {
-              const IconComponent = Icon as typeof Boxes;
-              return (
-                <div
-                  className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950"
-                  key={String(label)}
-                >
-                  <IconComponent className="size-4 text-slate-500" />
-                  <p className="mt-3 text-xs font-medium text-slate-500">{String(label)}</p>
-                  <p className="mt-1 text-xl font-semibold">{String(value)}</p>
-                </div>
-              );
-            })}
+            {states.map(({ icon: Icon, label, value }) => (
+              <div
+                className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950"
+                key={label}
+              >
+                <Icon className="size-4 text-slate-500" />
+                <p className="mt-3 text-xs font-medium text-slate-500">{label}</p>
+                <p className="mt-1 text-xl font-semibold">{value}</p>
+              </div>
+            ))}
           </div>
 
           <div className="grid gap-4 xl:grid-cols-2">
