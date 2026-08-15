@@ -7,7 +7,15 @@ from django.utils import timezone
 from apps.workspaces.policy import WorkspacePermission, role_has_permission
 
 from .api import CommerceBaseAPIView
-from .models import Expense, Product, ReturnItem, Sale, SaleReturn, StockReceipt
+from .models import (
+    Expense,
+    InventoryMovement,
+    Product,
+    ReturnItem,
+    Sale,
+    SaleReturn,
+    StockReceipt,
+)
 from .serializers import ProductSerializer, ReturnSerializer, SaleSerializer
 from .services import commerce_membership
 from .stock_polish import PolishedStockReceiptSerializer
@@ -31,7 +39,9 @@ class CommerceOverviewPolishAPIView(CommerceBaseAPIView):
         )
         totals = today_sales.aggregate(revenue=Sum("total"), cost=Sum("cost_of_goods"))
         expense_total = expenses.aggregate(total=Sum("amount"))["total"] or Decimal("0")
-        return_totals = returns_today.aggregate(revenue=Sum("amount"), cost=Sum("cost_total"))
+        return_totals = returns_today.aggregate(
+            revenue=Sum("amount"), cost=Sum("cost_total")
+        )
         revenue = (totals["revenue"] or Decimal("0")) - (
             return_totals["revenue"] or Decimal("0")
         )
@@ -41,7 +51,7 @@ class CommerceOverviewPolishAPIView(CommerceBaseAPIView):
 
         products = Product.objects.filter(business=business, is_active=True)
         stocked_products = products.filter(
-            movements__kind="receipt",
+            movements__kind=InventoryMovement.Kind.RECEIPT,
         ).distinct()
         sold_out_products = stocked_products.filter(current_quantity=0)
         available_products = products.filter(current_quantity__gt=0)
