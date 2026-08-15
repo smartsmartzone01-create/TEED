@@ -6,10 +6,18 @@ from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 
 from apps.identity.models import User
+from apps.notifications.models import UserNotification
 from apps.workspaces.models import Business, BusinessMembership
 
 from ..models import InventoryMovement, StockReceipt, StockReceiptAudit
+from ..operations_polish import (
+    active_catalog_products,
+    archive_draft_stock_receipt,
+    current_stock_receipts,
+    set_catalog_product_active,
+)
 from ..services import create_product, create_stock_receipt, record_sale
+from ..signals import _notify_stock_attention
 from ..stock_polish import (
     AvailabilityProductSerializer,
     PolishedStockReceiptCreateSerializer,
@@ -46,11 +54,11 @@ class StockPolishTests(TestCase):
             is_active=True,
         )
 
-    def create_receipt(self, quantity=Decimal("4")):
+    def create_receipt(self, quantity=Decimal("4"), status="received"):
         return create_stock_receipt(
             actor=self.owner,
             business_id=self.business.id,
-            status="received",
+            status=status,
             received_at=timezone.now(),
             catalog_items=[{"key": "shoes", "product_id": self.product.id}],
             batches=[
@@ -65,6 +73,25 @@ class StockPolishTests(TestCase):
                         }
                     ],
                     "groups": [],
+                }
+            ],
+        )
+
+    def sell(self, quantity):
+        return record_sale(
+            actor=self.owner,
+            business_id=self.business.id,
+            sale_type="retail",
+            customer_name="",
+            customer_phone="",
+            discount=Decimal("0"),
+            payment_status="paid",
+            sold_at=timezone.now(),
+            items=[
+                {
+                    "product_id": self.product.id,
+                    "quantity": quantity,
+                    "unit_price": Decimal("100000"),
                 }
             ],
         )
@@ -125,23 +152,7 @@ class StockPolishTests(TestCase):
     def test_quantity_cannot_be_reduced_below_stock_already_used(self):
         receipt = self.create_receipt(Decimal("4"))
         line = receipt.lines.get()
-        record_sale(
-            actor=self.owner,
-            business_id=self.business.id,
-            sale_type="retail",
-            customer_name="",
-            customer_phone="",
-            discount=Decimal("0"),
-            payment_status="paid",
-            sold_at=timezone.now(),
-            items=[
-                {
-                    "product_id": self.product.id,
-                    "quantity": Decimal("3"),
-                    "unit_price": Decimal("100000"),
-                }
-            ],
-        )
+        self.sell(Decimal("3"))
 
         with self.assertRaises(ValidationError):
             correct_stock_receipt(
@@ -153,23 +164,7 @@ class StockPolishTests(TestCase):
 
     def test_sale_reduces_live_available_quantity(self):
         self.create_receipt(Decimal("4"))
-        record_sale(
-            actor=self.owner,
-            business_id=self.business.id,
-            sale_type="retail",
-            customer_name="",
-            customer_phone="",
-            discount=Decimal("0"),
-            payment_status="paid",
-            sold_at=timezone.now(),
-            items=[
-                {
-                    "product_id": self.product.id,
-                    "quantity": Decimal("1"),
-                    "unit_price": Decimal("100000"),
-                }
-            ],
-        )
+        self.sell(Decimal("1"))
         self.product.refresh_from_db()
         self.assertEqual(self.product.current_quantity, Decimal("3"))
         self.assertEqual(
@@ -192,3 +187,106 @@ class StockPolishTests(TestCase):
                 lines=[{"id": line.id, "quantity": Decimal("3")}],
             )
         self.assertIn("48-hour", str(error.exception))
+
+    def test_zero_stock_sku_stays_reusable_until_explicitly_archived(self):
+        self.assertEqual(self.product.current_quantity, Decimal("0"))
+        self.assertTrue(
+            active_catalog_products(business=self.business)
+            .filter(pk=self.product.pk)
+            .exists()
+        )
+
+        set_catalog_product_active(
+            actor=self.owner,
+            business_id=self.business.id,
+            product_id=self.product.id,
+            is_active=False,
+        )
+        self.product.refresh_from_db()
+        self.assertFalse(self.product.is_active)
+        self.assertFalse(
+            active_catalog_products(business=self.business)
+            .filter(pk=self.product.pk)
+            .exists()
+        )
+
+        set_catalog_product_active(
+            actor=self.owner,
+            business_id=self.business.id,
+            product_id=self.product.id,
+            is_active=True,
+        )
+        self.product.refresh_from_db()
+        self.assertTrue(self.product.is_active)
+        self.assertTrue(
+            active_catalog_products(business=self.business)
+            .filter(pk=self.product.pk)
+            .exists()
+        )
+
+    def test_product_with_available_stock_cannot_be_archived(self):
+        self.create_receipt(Decimal("2"))
+        with self.assertRaises(ValidationError):
+            set_catalog_product_active(
+                actor=self.owner,
+                business_id=self.business.id,
+                product_id=self.product.id,
+                is_active=False,
+            )
+
+    def test_draft_stock_can_be_archived_and_leaves_current_stock(self):
+        receipt = self.create_receipt(Decimal("2"), status="draft")
+        self.assertTrue(
+            current_stock_receipts(business=self.business)
+            .filter(pk=receipt.pk)
+            .exists()
+        )
+
+        archive_draft_stock_receipt(
+            actor=self.owner,
+            business_id=self.business.id,
+            receipt_id=receipt.id,
+        )
+        receipt.refresh_from_db()
+        self.assertEqual(receipt.status, StockReceipt.Status.ARCHIVED)
+        self.assertFalse(
+            current_stock_receipts(business=self.business)
+            .filter(pk=receipt.pk)
+            .exists()
+        )
+
+    def test_received_stock_cannot_be_archived(self):
+        receipt = self.create_receipt(Decimal("2"))
+        with self.assertRaises(ValidationError) as error:
+            archive_draft_stock_receipt(
+                actor=self.owner,
+                business_id=self.business.id,
+                receipt_id=receipt.id,
+            )
+        self.assertIn("cannot be removed", str(error.exception))
+
+    def test_low_stock_attention_uses_business_notifications(self):
+        self.create_receipt(Decimal("4"))
+        self.sell(Decimal("3"))
+        self.product.refresh_from_db()
+        _notify_stock_attention(product_id=self.product.id)
+
+        notification = UserNotification.objects.get(
+            template=UserNotification.Template.COMMERCE_LOW_STOCK
+        )
+        self.assertEqual(notification.business_id, self.business.id)
+        self.assertEqual(notification.context["item_name"], "Nike shoes")
+        self.assertEqual(notification.context["quantity"], "1")
+
+    def test_sold_out_attention_uses_business_notifications(self):
+        self.create_receipt(Decimal("2"))
+        self.sell(Decimal("2"))
+        self.product.refresh_from_db()
+        _notify_stock_attention(product_id=self.product.id)
+
+        notification = UserNotification.objects.get(
+            template=UserNotification.Template.COMMERCE_SOLD_OUT
+        )
+        self.assertEqual(notification.business_id, self.business.id)
+        self.assertEqual(notification.context["sku"], self.product.sku)
+        self.assertEqual(notification.context["quantity"], "0")
