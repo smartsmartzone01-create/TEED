@@ -11,14 +11,14 @@ from apps.workspaces.models import Business, BusinessMembership
 
 from ..catalog.services import active_catalog_products, set_catalog_product_active
 from ..inventory.services import archive_draft_stock_receipt, current_stock_receipts
-from ..models import InventoryMovement, StockReceipt, StockReceiptAudit
-from ..services import create_product, create_stock_receipt, record_sale
-from ..signals import notify_stock_attention
-from ..stock_polish import (
+from ..inventory.stock import (
     AvailabilityProductSerializer,
     PolishedStockReceiptCreateSerializer,
     correct_stock_receipt,
 )
+from ..models import InventoryMovement, StockReceipt, StockReceiptAudit
+from ..services import create_product, create_stock_receipt, record_sale
+from ..signals import notify_stock_attention
 
 
 class StockPolishTests(TestCase):
