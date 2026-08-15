@@ -5,28 +5,31 @@ from .api import (
     BudgetListCreateAPIView,
     CommerceOverviewAPIView,
     ExpenseListCreateAPIView,
-    ProductListCreateAPIView,
     ReturnListCreateAPIView,
     SaleDetailAPIView,
     SaleListCreateAPIView,
     SaleVoidAPIView,
     StockBatchListCreateAPIView,
     StockReceiptArchiveAPIView,
-    StockReceiptDetailAPIView,
-    StockReceiptListCreateAPIView,
     StockReceiptReceiveAPIView,
+)
+from .stock_polish import (
+    ProductDetailPolishAPIView,
+    ProductListCreatePolishAPIView,
+    StockReceiptDetailPolishAPIView,
+    StockReceiptListCreatePolishAPIView,
 )
 
 app_name = "commerce"
 urlpatterns = [
     path(
         "businesses/<uuid:business_id>/stock-receipts/",
-        StockReceiptListCreateAPIView.as_view(),
+        StockReceiptListCreatePolishAPIView.as_view(),
         name="stock-receipts",
     ),
     path(
         "businesses/<uuid:business_id>/stock-receipts/<uuid:receipt_id>/",
-        StockReceiptDetailAPIView.as_view(),
+        StockReceiptDetailPolishAPIView.as_view(),
         name="stock-receipt-detail",
     ),
     path(
@@ -46,8 +49,13 @@ urlpatterns = [
     ),
     path(
         "businesses/<uuid:business_id>/products/",
-        ProductListCreateAPIView.as_view(),
+        ProductListCreatePolishAPIView.as_view(),
         name="products",
+    ),
+    path(
+        "businesses/<uuid:business_id>/products/<uuid:product_id>/",
+        ProductDetailPolishAPIView.as_view(),
+        name="product-detail",
     ),
     path(
         "businesses/<uuid:business_id>/inventory/",
