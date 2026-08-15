@@ -17,7 +17,7 @@ from ..operations_polish import (
     set_catalog_product_active,
 )
 from ..services import create_product, create_stock_receipt, record_sale
-from ..signals import _notify_stock_attention
+from ..signals import notify_stock_attention
 from ..stock_polish import (
     AvailabilityProductSerializer,
     PolishedStockReceiptCreateSerializer,
@@ -269,7 +269,7 @@ class StockPolishTests(TestCase):
         self.create_receipt(Decimal("4"))
         self.sell(Decimal("3"))
         self.product.refresh_from_db()
-        _notify_stock_attention(product_id=self.product.id)
+        notify_stock_attention(product_id=self.product.id)
 
         notification = UserNotification.objects.get(
             template=UserNotification.Template.COMMERCE_LOW_STOCK
@@ -282,7 +282,7 @@ class StockPolishTests(TestCase):
         self.create_receipt(Decimal("2"))
         self.sell(Decimal("2"))
         self.product.refresh_from_db()
-        _notify_stock_attention(product_id=self.product.id)
+        notify_stock_attention(product_id=self.product.id)
 
         notification = UserNotification.objects.get(
             template=UserNotification.Template.COMMERCE_SOLD_OUT
