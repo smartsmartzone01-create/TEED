@@ -18,6 +18,18 @@ from .stock_polish import (
 )
 
 
+def active_catalog_products(*, business):
+    return Product.objects.filter(business=business, is_active=True)
+
+
+def current_stock_receipts(*, business):
+    return StockReceipt.objects.filter(
+        business=business,
+        parent_receipt__isnull=True,
+        status__in=[StockReceipt.Status.DRAFT, StockReceipt.Status.RECEIVED],
+    )
+
+
 @transaction.atomic
 def archive_draft_stock_receipt(*, actor, business_id, receipt_id):
     membership = commerce_membership(
@@ -46,10 +58,7 @@ class ActiveProductListCreatePolishAPIView(ProductListCreatePolishAPIView):
 
     def get(self, request, business_id):
         membership = commerce_membership(user=request.user, business_id=business_id)
-        products = Product.objects.filter(
-            business=membership.business,
-            is_active=True,
-        )
+        products = active_catalog_products(business=membership.business)
         return SuccessResponse(
             message="Products retrieved successfully.",
             data={"products": AvailabilityProductSerializer(products, many=True).data},
@@ -61,7 +70,7 @@ class ActiveStockReceiptListCreatePolishAPIView(StockReceiptListCreatePolishAPIV
 
     def get(self, request, business_id):
         membership = commerce_membership(user=request.user, business_id=business_id)
-        receipts = StockReceipt.objects.prefetch_related(
+        receipts = current_stock_receipts(business=membership.business).prefetch_related(
             "lines__product",
             "lines__tracked_units",
             "batches__groups__type_lines__product",
@@ -70,10 +79,6 @@ class ActiveStockReceiptListCreatePolishAPIView(StockReceiptListCreatePolishAPIV
             "late_deliveries__lines__tracked_units",
             "late_deliveries__batches__groups__type_lines__product",
             "late_deliveries__batches__groups__type_lines__tracked_units",
-        ).filter(
-            business=membership.business,
-            parent_receipt__isnull=True,
-            status__in=[StockReceipt.Status.DRAFT, StockReceipt.Status.RECEIVED],
         )
         return SuccessResponse(
             message="Stock received retrieved successfully.",
