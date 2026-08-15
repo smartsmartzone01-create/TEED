@@ -134,13 +134,6 @@ class StockGroupInputSerializer(serializers.Serializer):
         required=False,
         allow_null=True,
     )
-    selling_price = serializers.DecimalField(
-        max_digits=14,
-        decimal_places=2,
-        min_value=Decimal("0"),
-        required=False,
-        allow_null=True,
-    )
     types = StockLineInputSerializer(many=True, required=False, default=list)
 
 
@@ -159,6 +152,7 @@ class StockContainerInputSerializer(serializers.Serializer):
 
 
 class StockReceiptCreateSerializer(serializers.Serializer):
+    parent_receipt_id = serializers.UUIDField(required=False, allow_null=True)
     catalog_items = CatalogItemInputSerializer(many=True, required=False, default=list)
     status = serializers.ChoiceField(
         choices=[StockReceipt.Status.DRAFT, StockReceipt.Status.RECEIVED],
@@ -222,6 +216,25 @@ class StockReceiptCreateSerializer(serializers.Serializer):
         return attrs
 
 
+class StockBatchNameUpdateSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    name = serializers.CharField(max_length=120)
+
+
+class StockReceiptUpdateSerializer(serializers.Serializer):
+    supplier_name = serializers.CharField(
+        max_length=120, required=False, allow_blank=True
+    )
+    additional_cost = serializers.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        min_value=Decimal("0"),
+        required=False,
+    )
+    notes = serializers.CharField(max_length=300, required=False, allow_blank=True)
+    batches = StockBatchNameUpdateSerializer(many=True, required=False)
+
+
 class TrackedUnitSerializer(serializers.ModelSerializer):
     identifiers = serializers.SerializerMethodField()
 
@@ -260,11 +273,16 @@ class UnitDefinitionSerializer(serializers.ModelSerializer):
 class StockReceiptSerializer(serializers.ModelSerializer):
     lines = serializers.SerializerMethodField()
     batches = serializers.SerializerMethodField()
+    late_deliveries = serializers.SerializerMethodField()
+    product_type_count = serializers.SerializerMethodField()
+    quantities_by_unit = serializers.SerializerMethodField()
+    total_buying_value = serializers.SerializerMethodField()
 
     class Meta:
         model = StockReceipt
         fields = [
             "id",
+            "parent_receipt",
             "reference",
             "status",
             "supplier_name",
@@ -275,6 +293,10 @@ class StockReceiptSerializer(serializers.ModelSerializer):
             "created_at",
             "batches",
             "lines",
+            "late_deliveries",
+            "product_type_count",
+            "quantities_by_unit",
+            "total_buying_value",
         ]
 
     def get_lines(self, obj):
@@ -283,16 +305,51 @@ class StockReceiptSerializer(serializers.ModelSerializer):
     def get_batches(self, obj):
         return StockContainerSerializer(obj.batches.all(), many=True).data
 
+    def get_late_deliveries(self, obj):
+        if not self.context.get("include_late_deliveries", True):
+            return []
+        return StockReceiptSerializer(
+            obj.late_deliveries.all(),
+            many=True,
+            context={**self.context, "include_late_deliveries": False},
+        ).data
+
+    def get_product_type_count(self, obj):
+        return len({line.product_id for line in obj.lines.all()})
+
+    def get_quantities_by_unit(self, obj):
+        quantities = {}
+        for line in obj.lines.all():
+            conversion = line.conversion_to_base or Decimal("1")
+            quantity = line.quantity_received / conversion
+            unit = line.received_unit or line.product.unit
+            quantities[unit] = quantities.get(unit, Decimal("0")) + quantity
+        return [
+            {"unit": unit, "quantity": format(quantity.normalize(), "f")}
+            for unit, quantity in sorted(quantities.items())
+        ]
+
+    def get_total_buying_value(self, obj):
+        return str(
+            sum(
+                (
+                    line.quantity_received * (line.unit_cost or Decimal("0"))
+                    for line in obj.lines.all()
+                ),
+                Decimal("0"),
+            ).quantize(Decimal("0.01"))
+        )
+
 
 class StockBatchSerializer(serializers.ModelSerializer):
     product_name = serializers.CharField(source="product.name", read_only=True)
     product_sku = serializers.CharField(source="product.sku", read_only=True)
-    selling_price = serializers.DecimalField(
-        source="product.selling_price",
-        max_digits=14,
-        decimal_places=2,
-        read_only=True,
-    )
+    received_unit_cost = serializers.SerializerMethodField()
+
+    def get_received_unit_cost(self, obj):
+        if obj.unit_cost is None:
+            return None
+        return str((obj.unit_cost * obj.conversion_to_base).quantize(Decimal("0.01")))
 
     class Meta:
         model = StockBatch
@@ -301,7 +358,6 @@ class StockBatchSerializer(serializers.ModelSerializer):
             "product",
             "product_name",
             "product_sku",
-            "selling_price",
             "tracking_mode",
             "reference",
             "quantity_received",
@@ -309,6 +365,7 @@ class StockBatchSerializer(serializers.ModelSerializer):
             "received_unit",
             "conversion_to_base",
             "unit_cost",
+            "received_unit_cost",
             "additional_cost",
             "received_at",
             "supplier_name",
@@ -333,7 +390,6 @@ class StockGroupSerializer(serializers.ModelSerializer):
             "base_unit",
             "conversion_to_base",
             "buying_price",
-            "selling_price",
             "types",
         ]
 

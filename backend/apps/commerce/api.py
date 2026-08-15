@@ -37,6 +37,7 @@ from .serializers import (
     StockBatchSerializer,
     StockReceiptCreateSerializer,
     StockReceiptSerializer,
+    StockReceiptUpdateSerializer,
     UnitDefinitionSerializer,
 )
 from .services import (
@@ -53,6 +54,7 @@ from .services import (
     record_return,
     record_sale,
     set_budget,
+    update_stock_receipt_details,
     void_sale,
 )
 
@@ -140,7 +142,11 @@ class StockReceiptListCreateAPIView(CommerceBaseAPIView):
             "lines__tracked_units",
             "batches__groups__type_lines__product",
             "batches__groups__type_lines__tracked_units",
-        ).filter(business=membership.business)
+            "late_deliveries__lines__product",
+            "late_deliveries__lines__tracked_units",
+            "late_deliveries__batches__groups__type_lines__product",
+            "late_deliveries__batches__groups__type_lines__tracked_units",
+        ).filter(business=membership.business, parent_receipt__isnull=True)
         return SuccessResponse(
             message="Stock received retrieved successfully.",
             data={
@@ -173,6 +179,23 @@ class StockReceiptListCreateAPIView(CommerceBaseAPIView):
             ),
             data=StockReceiptSerializer(receipt).data,
             status_code=status.HTTP_201_CREATED,
+        )
+
+
+class StockReceiptDetailAPIView(CommerceBaseAPIView):
+    @method_decorator(csrf_protect)
+    def patch(self, request, business_id, receipt_id):
+        serializer = StockReceiptUpdateSerializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        receipt = update_stock_receipt_details(
+            actor=request.user,
+            business_id=business_id,
+            receipt_id=receipt_id,
+            **serializer.validated_data,
+        )
+        return SuccessResponse(
+            message="Stock details updated successfully.",
+            data=StockReceiptSerializer(receipt).data,
         )
 
 

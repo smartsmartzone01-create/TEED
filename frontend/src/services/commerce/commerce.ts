@@ -27,8 +27,11 @@ function voidSale(businessId: string, saleId: string, accessToken: string, reaso
 function commerceWrite(businessId: string, accessToken: string, section: string, body: unknown) {
   return withCsrfRetry((csrfToken) => requestApi({ accessToken, body, csrfToken, method: "POST", path: `${base(businessId)}/${section}/`, schema: genericResponseSchema }));
 }
+function commercePatch(businessId: string, accessToken: string, section: string, body: unknown) {
+  return withCsrfRetry((csrfToken) => requestApi({ accessToken, body, csrfToken, method: "PATCH", path: `${base(businessId)}/${section}/`, schema: genericResponseSchema }));
+}
 function commerceRead(businessId: string, accessToken: string, section: string, signal?: AbortSignal) {
   return requestApi({ accessToken, path: `${base(businessId)}/${section}/`, schema: genericResponseSchema, signal });
 }
 
-export { commerceRead, commerceWrite, createProduct, createSale, getCommerceOverview, getProducts, getSales, updateSale, voidSale };
+export { commercePatch, commerceRead, commerceWrite, createProduct, createSale, getCommerceOverview, getProducts, getSales, updateSale, voidSale };

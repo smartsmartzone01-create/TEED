@@ -25,6 +25,7 @@ import { Link } from "@/i18n/navigation";
 import { isRequestCancelled } from "@/services/global/api-client";
 import {
   commerceRead,
+  commercePatch,
   commerceWrite,
   createProduct,
   createSale,
@@ -78,7 +79,6 @@ type ProductIdentity = {
   variant: string;
   unit: string;
   customUnit: string;
-  sellingPrice: string;
   saved: boolean;
 };
 type StockType = {
@@ -103,7 +103,6 @@ type StockGroup = {
   baseUnit: string;
   conversion: string;
   buyingPrice: string;
-  sellingPrice: string;
   types: StockType[];
   saved: boolean;
   contentMode: "unset" | "quantity" | "individual";
@@ -120,7 +119,7 @@ const identifierOptions: IdentifierKind[] = [
 type StockContainer = {
   id: string;
   name: string;
-  recordingMode: "direct" | "grouped";
+  recordingMode: "unset" | "direct" | "grouped";
   detailsSaved: boolean;
   identities: ProductIdentity[];
   identityDraft: ProductIdentity;
@@ -140,12 +139,13 @@ type SavedStockLine = {
   id: string;
   product_name: string;
   product_sku: string;
-  selling_price: string;
   tracking_mode: string;
   quantity_received: string;
   quantity_remaining: string;
   received_unit: string;
+  conversion_to_base: string;
   unit_cost: string;
+  received_unit_cost: string | null;
   tracked_units: SavedTrackedUnit[];
 };
 type SavedStockReceipt = {
@@ -156,6 +156,11 @@ type SavedStockReceipt = {
   supplier_reference: string;
   received_at: string;
   additional_cost: string;
+  parent_receipt: string | null;
+  product_type_count: number;
+  quantities_by_unit: Array<{ unit: string; quantity: string }>;
+  total_buying_value: string;
+  late_deliveries: SavedStockReceipt[];
   batches: Array<{
     id: string;
     name: string;
@@ -165,7 +170,6 @@ type SavedStockReceipt = {
       quantity: string;
       unit: string;
       buying_price: string | null;
-      selling_price: string | null;
       types: SavedStockLine[];
     }>;
   }>;
@@ -463,16 +467,16 @@ function Inventory({
     `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
   const emptyIdentity = (): ProductIdentity => ({
     id: newId("identity"), productId: "", sku: "", name: "", brand: "", variant: "",
-    unit: "piece", customUnit: "", sellingPrice: "", saved: false,
+    unit: "piece", customUnit: "", saved: false,
   });
   const emptyBatch = (name = "Batch 1"): StockContainer => ({
-    id: newId("batch"), name, recordingMode: "direct", detailsSaved: false,
+    id: newId("batch"), name, recordingMode: "unset", detailsSaved: false,
     identities: [], identityDraft: emptyIdentity(), identitiesSaved: false,
     groups: [],
   });
   const emptyGroup = (): StockGroup => ({
     id: newId("group"), name: "", quantity: "1", unit: "piece", customUnitName: "", baseUnit: "",
-    conversion: "1", buyingPrice: "", sellingPrice: "", types: [], saved: false,
+    conversion: "1", buyingPrice: "", types: [], saved: false,
     contentMode: "unset",
   });
   const emptyUnit = (): IndividualUnit => ({
@@ -486,10 +490,13 @@ function Inventory({
   const [batches, setBatches] = useState<StockContainer[]>(() => [emptyBatch()]);
   const [receiptDetailsSaved, setReceiptDetailsSaved] = useState(false);
   const [receiptDetails, setReceiptDetails] = useState({
-    supplier: "", reference: "", receivedAt: nowLocal(),
+    supplier: "", receivedAt: nowLocal(),
   });
   const [identityError, setIdentityError] = useState("");
   const [savedReceipt, setSavedReceipt] = useState<SavedStockReceipt | null>(null);
+  const [lateDeliveryParent, setLateDeliveryParent] = useState<SavedStockReceipt | null>(null);
+  const [editingReceiptId, setEditingReceiptId] = useState("");
+  const [receiptEdit, setReceiptEdit] = useState({ supplier: "", stockExpense: "", batchNames: [] as Array<{id: string; name: string}> });
   const identityUnit = (identity: ProductIdentity) =>
     identity.unit === "other" ? identity.customUnit : identity.unit;
 
@@ -537,7 +544,6 @@ function Inventory({
           brand: identity.brand,
           variant: identity.variant,
           unit: identityUnit(identity),
-          ...(identity.sellingPrice ? { selling_price: identity.sellingPrice } : {}),
         });
         const product = response.data;
         if (!product) return;
@@ -625,8 +631,8 @@ function Inventory({
     });
     const body = {
       status: hasIncompleteStock ? "draft" : "received",
+      ...(lateDeliveryParent ? { parent_receipt_id: lateDeliveryParent.id } : {}),
       supplier_name: receiptDetails.supplier,
-      supplier_reference: receiptDetails.reference,
       additional_cost: values.additional_cost || "0",
       notes: values.notes,
       received_at: new Date(receiptDetails.receivedAt).toISOString(),
@@ -639,7 +645,6 @@ function Inventory({
               brand: identity.brand,
               variant: identity.variant,
               unit: identityUnit(identity),
-              ...(identity.sellingPrice ? { selling_price: identity.sellingPrice } : {}),
             } }),
       }))),
       batches: batches.map((batch) => ({
@@ -655,7 +660,6 @@ function Inventory({
           base_unit: group.baseUnit,
           conversion_to_base: group.conversion || "1",
           ...(group.buyingPrice ? { buying_price: group.buyingPrice } : {}),
-          ...(group.sellingPrice ? { selling_price: group.sellingPrice } : {}),
           types: group.types.map((type) => stockLine(type, group)),
         })) : [],
       })),
@@ -672,14 +676,48 @@ function Inventory({
     setSavedReceipt(null);
     setBatches([emptyBatch()]);
     setReceiptDetailsSaved(false);
-    setReceiptDetails({ supplier: "", reference: "", receivedAt: nowLocal() });
+    setReceiptDetails({ supplier: "", receivedAt: nowLocal() });
     setIdentityError("");
+    setLateDeliveryParent(null);
   };
-  const receipts = (records as { receipts?: Array<{
-    id: string; reference: string; status: string; supplier_name: string;
-    batches: Array<{ id: string; name: string; groups: Array<{ id: string }> }>;
-  }> } | null)?.receipts ?? [];
+  const receipts = (records as { receipts?: SavedStockReceipt[] } | null)?.receipts ?? [];
   const savedUnits = (records as { units?: Array<{ id: string; name: string }> } | null)?.units ?? [];
+  const beginReceiptEdit = (receipt: SavedStockReceipt) => {
+    setEditingReceiptId(receipt.id);
+    setReceiptEdit({
+      supplier: receipt.supplier_name,
+      stockExpense: receipt.additional_cost,
+      batchNames: receipt.batches.map((batch) => ({id: batch.id, name: batch.name})),
+    });
+  };
+  const saveReceiptEdit = async (receiptId: string) => {
+    const saved = await submit(
+      () => commercePatch(
+        businessId,
+        accessToken!,
+        `stock-receipts/${receiptId}`,
+        {
+          supplier_name: receiptEdit.supplier,
+          additional_cost: receiptEdit.stockExpense || "0",
+          batches: receiptEdit.batchNames,
+        },
+      ),
+      t("success.stockEdited"),
+    );
+    if (saved) setEditingReceiptId("");
+  };
+  const startLateDelivery = (receipt: SavedStockReceipt) => {
+    if (receipt.status !== "received") return;
+    setLateDeliveryParent(receipt);
+    setSavedReceipt(null);
+    setBatches(receipt.batches.length
+      ? receipt.batches.map((batch) => emptyBatch(batch.name))
+      : [emptyBatch()]);
+    setReceiptDetailsSaved(false);
+    setReceiptDetails({supplier: receipt.supplier_name, receivedAt: nowLocal()});
+    setIdentityError("");
+    window.scrollTo({top: 0, behavior: "smooth"});
+  };
   const hasIncompleteStock = batches.some((batch) =>
     !receiptDetailsSaved || !batch.detailsSaved || !batch.identitiesSaved || !batch.identities.length ||
     !batch.groups.length || batch.groups.some((group) =>
@@ -700,19 +738,20 @@ function Inventory({
     <div className="grid gap-5 xl:grid-cols-[1.2fr_.8fr]">
       <form className={`${panel} grid gap-4`} onSubmit={onSubmit}>
         <h2 className="font-bold">{t("forms.stock")}</h2>
-        {!receiptDetailsSaved ? <div className="grid gap-3"><div className="grid gap-3 sm:grid-cols-2"><Label text={t("fields.supplier")}><Input value={receiptDetails.supplier} onChange={(e) => setReceiptDetails((current) => ({...current, supplier: e.target.value}))} /></Label><Label text={t("fields.reference")}><Input value={receiptDetails.reference} onChange={(e) => setReceiptDetails((current) => ({...current, reference: e.target.value}))} /></Label><Label text={t("fields.date")}><Input required type="datetime-local" value={receiptDetails.receivedAt} onChange={(e) => setReceiptDetails((current) => ({...current, receivedAt: e.target.value}))} /></Label></div><Button type="button" onClick={() => setReceiptDetailsSaved(Boolean(receiptDetails.receivedAt))}>{t("actions.enter")}</Button></div> : <div className="flex items-center justify-between rounded-xl bg-slate-50 p-3 dark:bg-slate-900"><span>{receiptDetails.supplier || t("fields.supplierNotEntered")} · {new Date(receiptDetails.receivedAt).toLocaleDateString()}</span><Button type="button" variant="ghost" onClick={() => setReceiptDetailsSaved(false)}>{t("actions.edit")}</Button></div>}
+        {lateDeliveryParent ? <div className="rounded-xl border border-orange-200 bg-orange-50 p-3 text-sm dark:border-orange-900 dark:bg-orange-950">{t("lateDeliveryFor", {reference: lateDeliveryParent.reference})}</div> : null}
+        {!receiptDetailsSaved ? <div className="grid gap-3"><div className="grid gap-3 sm:grid-cols-2"><Label text={t("fields.supplier")}><Input value={receiptDetails.supplier} onChange={(e) => setReceiptDetails((current) => ({...current, supplier: e.target.value}))} /></Label><Label text={t("fields.date")}><Input required type="datetime-local" value={receiptDetails.receivedAt} onChange={(e) => setReceiptDetails((current) => ({...current, receivedAt: e.target.value}))} /></Label></div><Button type="button" onClick={() => setReceiptDetailsSaved(Boolean(receiptDetails.receivedAt))}>{t("actions.enter")}</Button></div> : <div className="flex items-center justify-between rounded-xl bg-slate-50 p-3 dark:bg-slate-900"><span>{receiptDetails.supplier || t("fields.supplierNotEntered")} · {new Date(receiptDetails.receivedAt).toLocaleDateString()}</span><Button type="button" variant="ghost" onClick={() => setReceiptDetailsSaved(false)}>{t("actions.edit")}</Button></div>}
         {receiptDetailsSaved ? <>
         {batches.map((batch, batchIndex) => (
           <div className="grid gap-4 rounded-xl border border-slate-200 p-4 dark:border-slate-800" key={batch.id}>
             {!batch.detailsSaved ? <div className="grid gap-3"><div className="flex items-end gap-3"><Label text={t("fields.batchName")}><Input required value={batch.name} onChange={(e) => updateBatch(batch.id, (item) => ({...item, name: e.target.value}))} /></Label>{batches.length > 1 ? <Button type="button" variant="ghost" onClick={() => setBatches((all) => all.filter((item) => item.id !== batch.id))}>{t("actions.removeBatch")}</Button> : null}</div><Button type="button" onClick={() => updateBatch(batch.id, (item) => ({...item, detailsSaved: Boolean(item.name.trim())}))}>{t("actions.enter")}</Button></div> : <div className="flex items-center justify-between rounded-lg bg-slate-50 p-3 dark:bg-slate-900"><div><strong>{batch.name}</strong><p className="text-xs text-slate-500">{t("batchPosition", {number: batchIndex + 1})}</p></div><Button type="button" variant="ghost" onClick={() => updateBatch(batch.id, (item) => ({...item, detailsSaved: false}))}>{t("actions.edit")}</Button></div>}
             {batch.detailsSaved ? <>
-            {!batch.identitiesSaved ? <section className="grid gap-3 rounded-xl border border-orange-200 p-3 dark:border-orange-900"><div><h3 className="font-semibold">{t("identitiesTitle")}</h3><p className="text-xs text-slate-500">{t("identitiesHelp")}</p></div>{batch.identities.length ? <div className="flex flex-wrap gap-2">{batch.identities.map((identity) => <span className="rounded-full bg-orange-50 px-3 py-1 text-xs dark:bg-orange-950" key={identity.id}>{identity.name} · {identityUnit(identity)}{identity.sku ? ` · ${identity.sku}` : ""}</span>)}</div> : null}<div className="grid gap-3 sm:grid-cols-2"><Label text={t("fields.product")}><Select value={batch.identityDraft.productId} onChange={(e) => { const product = products.find((item) => item.id === e.target.value); updateBatch(batch.id, (item) => ({...item, identityDraft: {...item.identityDraft, productId: e.target.value, sku: product?.sku ?? "", name: product?.name ?? "", brand: product?.brand ?? "", variant: product?.variant ?? "", unit: product?.unit ?? "piece", customUnit: "", sellingPrice: product?.selling_price ?? ""}})); }}><option value="">{t("actions.newItem")}</option>{products.map((product) => <option key={product.id} value={product.id}>{product.name} · {product.sku} · {product.unit}</option>)}</Select></Label><Label text={t("fields.name")}><Input disabled={Boolean(batch.identityDraft.productId)} required value={batch.identityDraft.name} onChange={(e) => updateBatch(batch.id, (item) => ({...item, identityDraft: {...item.identityDraft, name: e.target.value}}))} /></Label>{!batch.identityDraft.productId ? <><Label text={t("fields.brandOptional")}><Input value={batch.identityDraft.brand} onChange={(e) => updateBatch(batch.id, (item) => ({...item, identityDraft: {...item.identityDraft, brand: e.target.value}}))} /></Label><Label text={t("fields.variant")}><Input value={batch.identityDraft.variant} onChange={(e) => updateBatch(batch.id, (item) => ({...item, identityDraft: {...item.identityDraft, variant: e.target.value}}))} /></Label></> : null}<Label text={t("fields.baseUnitRequired")}><Select disabled={Boolean(batch.identityDraft.productId)} value={batch.identityDraft.unit} onChange={(e) => updateBatch(batch.id, (item) => ({...item, identityDraft: {...item.identityDraft, unit: e.target.value}}))}>{unitOptions.map((unit) => <option key={unit} value={unit}>{t(`units.${unit}`)}</option>)}{savedUnits.map((unit) => <option key={unit.id} value={unit.name}>{unit.name}</option>)}<option value="other">{t("units.other")}</option></Select></Label>{batch.identityDraft.unit === "other" ? <Label text={t("fields.customUnit")}><Input required value={batch.identityDraft.customUnit} onChange={(e) => updateBatch(batch.id, (item) => ({...item, identityDraft: {...item.identityDraft, customUnit: e.target.value}}))} /></Label> : null}<Label text={t("fields.price")}><Input disabled={Boolean(batch.identityDraft.productId)} min="0" step="0.01" type="number" value={batch.identityDraft.sellingPrice} onChange={(e) => updateBatch(batch.id, (item) => ({...item, identityDraft: {...item.identityDraft, sellingPrice: e.target.value}}))} /></Label></div>{identityError ? <p className="text-sm text-red-600">{identityError}</p> : null}<div className="grid gap-2 sm:grid-cols-2"><Button type="button" variant="outline" onClick={() => saveIdentity(batch.id)}>{t("actions.enter")}</Button><Button disabled={!batch.identities.length} type="button" onClick={() => updateBatch(batch.id, (item) => ({...item, identitiesSaved: true}))}>{t("actions.finishIdentities")}</Button></div></section> : <div className="flex items-center justify-between rounded-lg bg-orange-50 p-3 dark:bg-orange-950"><span>{t("identityCount", {count: batch.identities.length})}</span><Button type="button" variant="ghost" onClick={() => updateBatch(batch.id, (item) => ({...item, identitiesSaved: false}))}>{t("actions.edit")}</Button></div>}
+            {!batch.identitiesSaved ? <section className="grid gap-3 rounded-xl border border-orange-200 p-3 dark:border-orange-900"><div><h3 className="font-semibold">{t("identitiesTitle")}</h3><p className="text-xs text-slate-500">{t("identitiesHelp")}</p></div>{batch.identities.length ? <div className="flex flex-wrap gap-2">{batch.identities.map((identity) => <span className="rounded-full bg-orange-50 px-3 py-1 text-xs dark:bg-orange-950" key={identity.id}>{identity.name} · {identityUnit(identity)}{identity.sku ? ` · ${identity.sku}` : ""}</span>)}</div> : null}<div className="grid gap-3 sm:grid-cols-2"><Label text={t("fields.product")}><Select value={batch.identityDraft.productId} onChange={(e) => { const product = products.find((item) => item.id === e.target.value); updateBatch(batch.id, (item) => ({...item, identityDraft: {...item.identityDraft, productId: e.target.value, sku: product?.sku ?? "", name: product?.name ?? "", brand: product?.brand ?? "", variant: product?.variant ?? "", unit: product?.unit ?? "piece", customUnit: ""}})); }}><option value="">{t("actions.newItem")}</option>{products.map((product) => <option key={product.id} value={product.id}>{product.name} · {product.sku} · {product.unit}</option>)}</Select></Label><Label text={t("fields.name")}><Input disabled={Boolean(batch.identityDraft.productId)} required value={batch.identityDraft.name} onChange={(e) => updateBatch(batch.id, (item) => ({...item, identityDraft: {...item.identityDraft, name: e.target.value}}))} /></Label>{!batch.identityDraft.productId ? <><Label text={t("fields.brandOptional")}><Input value={batch.identityDraft.brand} onChange={(e) => updateBatch(batch.id, (item) => ({...item, identityDraft: {...item.identityDraft, brand: e.target.value}}))} /></Label><Label text={t("fields.variant")}><Input value={batch.identityDraft.variant} onChange={(e) => updateBatch(batch.id, (item) => ({...item, identityDraft: {...item.identityDraft, variant: e.target.value}}))} /></Label></> : null}<Label text={t("fields.baseUnitRequired")}><Select disabled={Boolean(batch.identityDraft.productId)} value={batch.identityDraft.unit} onChange={(e) => updateBatch(batch.id, (item) => ({...item, identityDraft: {...item.identityDraft, unit: e.target.value}}))}>{unitOptions.map((unit) => <option key={unit} value={unit}>{t(`units.${unit}`)}</option>)}{savedUnits.map((unit) => <option key={unit.id} value={unit.name}>{unit.name}</option>)}<option value="other">{t("units.other")}</option></Select></Label>{batch.identityDraft.unit === "other" ? <Label text={t("fields.customUnit")}><Input required value={batch.identityDraft.customUnit} onChange={(e) => updateBatch(batch.id, (item) => ({...item, identityDraft: {...item.identityDraft, customUnit: e.target.value}}))} /></Label> : null}</div>{identityError ? <p className="text-sm text-red-600">{identityError}</p> : null}<div className="grid gap-2 sm:grid-cols-2"><Button type="button" variant="outline" onClick={() => saveIdentity(batch.id)}>{t("actions.enter")}</Button><Button disabled={!batch.identities.length} type="button" onClick={() => updateBatch(batch.id, (item) => ({...item, identitiesSaved: true}))}>{t("actions.finishIdentities")}</Button></div></section> : <div className="flex items-center justify-between rounded-lg bg-orange-50 p-3 dark:bg-orange-950"><span>{t("identityCount", {count: batch.identities.length})}</span><Button type="button" variant="ghost" onClick={() => updateBatch(batch.id, (item) => ({...item, identitiesSaved: false}))}>{t("actions.edit")}</Button></div>}
             {batch.identitiesSaved ? <>
-            <Label text={t("fields.recordingMode")}><Select value={batch.recordingMode} onChange={(e) => updateBatch(batch.id, (item) => ({...item, recordingMode: e.target.value as StockContainer["recordingMode"], groups: []}))}><option value="direct">{t("values.direct")}</option><option value="grouped">{t("values.grouped")}</option></Select></Label>
-            <h3 className="font-semibold">{batch.recordingMode === "direct" ? t("productsInBatch") : t("groupsTitle")}</h3>
+            {batch.recordingMode === "unset" ? <section className="grid gap-3"><h3 className="font-semibold">{t("fields.recordingMode")}</h3><div className="grid gap-3 sm:grid-cols-2"><Button type="button" variant="outline" onClick={() => updateBatch(batch.id, (item) => ({...item, recordingMode: "direct"}))}>{t("values.direct")}</Button><Button type="button" variant="outline" onClick={() => updateBatch(batch.id, (item) => ({...item, recordingMode: "grouped"}))}>{t("values.grouped")}</Button></div></section> : <div className="flex items-center justify-between rounded-lg border border-slate-200 p-3 dark:border-slate-700"><strong>{batch.recordingMode === "direct" ? t("values.direct") : t("values.grouped")}</strong>{!batch.groups.length ? <Button type="button" variant="ghost" onClick={() => updateBatch(batch.id, (item) => ({...item, recordingMode: "unset"}))}>{t("actions.change")}</Button> : null}</div>}
+            {batch.recordingMode !== "unset" ? <h3 className="font-semibold">{batch.recordingMode === "direct" ? t("productsInBatch") : t("groupsTitle")}</h3> : null}
             {batch.groups.map((group) => (
               <div className="grid gap-3 rounded-xl bg-slate-50 p-4 dark:bg-slate-900" key={group.id}>
-                {!group.saved || batch.recordingMode === "direct" ? <>
+                {!group.saved ? <>
                 <div className="grid gap-3 sm:grid-cols-2">
                   {batch.recordingMode === "grouped" ? <Label text={t("fields.groupName")}><Input required value={group.name} onChange={(e) => updateGroup(batch.id, group.id, (item) => ({...item, name: e.target.value}))} /></Label> : null}
                   <Label text={t("fields.quantity")}><Input min="0.001" required step="0.001" type="number" value={group.quantity} onChange={(e) => updateGroup(batch.id, group.id, (item) => ({...item, quantity: e.target.value, types: batch.recordingMode === "direct" ? item.types.map((type) => ({...type, quantity: e.target.value})) : item.types}))} /></Label>
@@ -721,12 +760,11 @@ function Inventory({
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <Label text={t("fields.buyingPrice")}><Input min="0" step="0.01" type="number" value={group.buyingPrice} onChange={(e) => updateGroup(batch.id, group.id, (item) => ({...item, buyingPrice: e.target.value}))} /></Label>
-                  <Label text={t("fields.price")}><Input min="0" step="0.01" type="number" value={group.sellingPrice} onChange={(e) => updateGroup(batch.id, group.id, (item) => ({...item, sellingPrice: e.target.value}))} /></Label>
                   <Label text={t("fields.baseUnit")}><Input value={group.baseUnit} onChange={(e) => updateGroup(batch.id, group.id, (item) => ({...item, baseUnit: e.target.value}))} /></Label>
                   <Label text={t("fields.conversion")}><Input min="0.000001" step="0.000001" type="number" value={group.conversion} onChange={(e) => updateGroup(batch.id, group.id, (item) => ({...item, conversion: e.target.value}))} /></Label>
                 </div>
                 {batch.recordingMode === "grouped" ? <Button type="button" onClick={() => updateGroup(batch.id, group.id, (item) => ({...item, saved: Boolean(item.name.trim() && Number(item.quantity) > 0)}))}>{t("actions.enter")}</Button> : null}
-                </> : <div className="flex items-center justify-between rounded-lg border border-slate-200 p-3 dark:border-slate-700"><span><strong>{group.name}</strong> · {group.quantity} {group.unit}</span><Button type="button" variant="ghost" onClick={() => updateGroup(batch.id, group.id, (item) => ({...item, saved: false}))}>{t("actions.edit")}</Button></div>}
+                </> : <div className="flex items-center justify-between rounded-lg border border-slate-200 p-3 dark:border-slate-700"><span><strong>{batch.recordingMode === "direct" ? group.types[0]?.name : group.name}</strong> · {group.quantity} {group.unit}</span><Button type="button" variant="ghost" onClick={() => updateGroup(batch.id, group.id, (item) => ({...item, saved: false}))}>{t("actions.edit")}</Button></div>}
                 {batch.recordingMode === "grouped" && group.saved && group.contentMode === "unset" ? <div className="grid gap-2 sm:grid-cols-2"><Button type="button" variant="outline" onClick={() => chooseGroupContent(batch.id, group.id, "quantity")}>{t("actions.recordQuantity")}</Button><Button type="button" variant="outline" onClick={() => chooseGroupContent(batch.id, group.id, "individual")}>{t("actions.recordIndividuals")}</Button></div> : null}
                 {(batch.recordingMode === "direct" || group.contentMode !== "unset") ? <>
                 {group.types.map((type) => (
@@ -739,7 +777,7 @@ function Inventory({
                     </div> : null}
                     {batch.recordingMode === "direct" ? <Select value={type.trackingMode} onChange={(e) => updateGroup(batch.id, group.id, (item) => ({...item, types: item.types.map((entry) => entry.id === type.id ? {...entry, trackingMode: e.target.value as StockType["trackingMode"], units: []} : entry)}))}><option value="quantity">{t("values.quantity")}</option><option value="individual">{t("values.individual")}</option></Select> : null}
                     {batch.recordingMode === "grouped" && group.contentMode === "individual" ? <><div className="grid gap-3 sm:grid-cols-2"><Label text={t("fields.modelName")}><Input value={type.unitDraft.modelName} onChange={(e) => updateUnitDraft(batch.id, group.id, type.id, {modelName: e.target.value})} /></Label><Label text={t("fields.brand")}><Input value={type.unitDraft.brand} onChange={(e) => updateUnitDraft(batch.id, group.id, type.id, {brand: e.target.value})} /></Label><Label text={t("fields.color")}><Input value={type.unitDraft.color} onChange={(e) => updateUnitDraft(batch.id, group.id, type.id, {color: e.target.value})} /></Label><Label text={t("fields.capacity")}><Input value={type.unitDraft.capacity} onChange={(e) => updateUnitDraft(batch.id, group.id, type.id, {capacity: e.target.value})} /></Label><Label text={t("fields.identifierType")}><Select value={type.unitDraft.identifierType} onChange={(e) => updateUnitDraft(batch.id, group.id, type.id, {identifierType: e.target.value as IdentifierKind})}>{identifierOptions.map((kind) => <option key={kind} value={kind}>{t(`identifierTypes.${kind}`)}</option>)}</Select></Label><Label text={t("fields.identifierNumber")}><Input value={type.unitDraft.identifierValue} onChange={(e) => updateUnitDraft(batch.id, group.id, type.id, {identifierValue: e.target.value})} /></Label></div><Label text={t("fields.chooseIdentity")}><Select required value={type.identityId} onChange={(e) => chooseTypeIdentity(batch, group, type, e.target.value)}><option value="">{t("fields.chooseIdentity")}</option>{batch.identities.map((identity) => <option key={identity.id} value={identity.id}>{identity.name} · {identity.sku}</option>)}</Select></Label></> : null}
-                    <Button type="button" onClick={() => updateGroup(batch.id, group.id, (item) => ({...item, types: item.types.map((entry) => entry.id === type.id ? {...entry, quantity: group.contentMode === "quantity" ? group.quantity : entry.quantity, saved: Boolean(entry.identityId), units: group.contentMode === "individual" && entry.identityId ? [entry.unitDraft] : entry.units} : entry)}))}>{t("actions.enter")}</Button>
+                    <Button type="button" onClick={() => updateGroup(batch.id, group.id, (item) => ({...item, saved: batch.recordingMode === "direct" ? Boolean(type.identityId) : item.saved, types: item.types.map((entry) => entry.id === type.id ? {...entry, quantity: group.contentMode === "quantity" ? group.quantity : entry.quantity, saved: Boolean(entry.identityId), units: group.contentMode === "individual" && entry.identityId ? [entry.unitDraft] : entry.units} : entry)}))}>{t("actions.enter")}</Button>
                     </> : <div className="flex items-start justify-between gap-3 rounded-lg bg-white p-3 dark:bg-slate-950"><div>{batch.recordingMode === "grouped" && group.contentMode === "individual" ? <><strong>{type.units[0]?.modelName || t("individualItem", {number: group.types.findIndex((entry) => entry.id === type.id) + 1})}</strong><p className="text-xs text-slate-500">{[type.units[0]?.brand, type.units[0]?.color, type.units[0]?.capacity, type.units[0]?.identifierValue].filter(Boolean).join(" · ") || t("noIndividualDetails")}</p></> : <span><strong>{type.name}</strong> · {type.quantity} {identityUnit(batch.identities.find((identity) => identity.id === type.identityId)!)}</span>}</div><Button type="button" variant="ghost" onClick={() => updateGroup(batch.id, group.id, (item) => ({...item, types: item.types.map((entry) => entry.id === type.id ? {...entry, saved: false} : entry)}))}>{t("actions.edit")}</Button></div>}
                     {batch.recordingMode === "direct" && type.saved && type.trackingMode === "individual" ? <div className="space-y-3 rounded-lg border border-slate-200 p-3 dark:border-slate-700"><p className="text-sm font-semibold">{t("unitProgress", {recorded: type.units.length, total: Math.floor(Number(type.quantity) || 0)})}</p>{type.units.length ? <div className="flex flex-wrap gap-2">{type.units.map((unit, unitIndex) => <span className="rounded-full bg-slate-100 px-3 py-1 text-xs dark:bg-slate-800" key={unit.id}>{unitIndex + 1}. {unit.modelName || type.name}{unit.identifierValue ? ` · ${unit.identifierValue}` : ""}</span>)}</div> : null}{type.units.length < Math.floor(Number(type.quantity) || 0) ? <><div className="grid gap-3 sm:grid-cols-2"><Label text={t("fields.modelName")}><Input value={type.unitDraft.modelName} onChange={(e) => updateUnitDraft(batch.id, group.id, type.id, {modelName: e.target.value})} /></Label><Label text={t("fields.brand")}><Input value={type.unitDraft.brand} onChange={(e) => updateUnitDraft(batch.id, group.id, type.id, {brand: e.target.value})} /></Label><Label text={t("fields.color")}><Input value={type.unitDraft.color} onChange={(e) => updateUnitDraft(batch.id, group.id, type.id, {color: e.target.value})} /></Label><Label text={t("fields.capacity")}><Input value={type.unitDraft.capacity} onChange={(e) => updateUnitDraft(batch.id, group.id, type.id, {capacity: e.target.value})} /></Label><Label text={t("fields.identifierType")}><Select value={type.unitDraft.identifierType} onChange={(e) => updateUnitDraft(batch.id, group.id, type.id, {identifierType: e.target.value as IdentifierKind})}>{identifierOptions.map((kind) => <option key={kind} value={kind}>{t(`identifierTypes.${kind}`)}</option>)}</Select></Label><Label text={t("fields.identifierNumber")}><Input value={type.unitDraft.identifierValue} onChange={(e) => updateUnitDraft(batch.id, group.id, type.id, {identifierValue: e.target.value})} /></Label></div><Button type="button" variant="outline" onClick={() => saveUnit(batch.id, group.id, type.id)}>{t("actions.saveAndAdd")}</Button></> : <p className="text-sm text-emerald-600">{t("allUnitsRecorded")}</p>}</div> : null}
                     <Button type="button" variant="ghost" onClick={() => batch.recordingMode === "direct" ? updateBatch(batch.id, (item) => ({...item, groups: item.groups.filter((entry) => entry.id !== group.id)})) : updateGroup(batch.id, group.id, (item) => ({...item, types: item.types.filter((entry) => entry.id !== type.id)}))}>{batch.recordingMode === "direct" ? t("actions.remove") : t("actions.removeType")}</Button>
@@ -751,21 +789,21 @@ function Inventory({
                 </> : null}
               </div>
             ))}
-            <Button type="button" variant="outline" onClick={() => batch.recordingMode === "direct" ? addDirectProduct(batch) : updateBatch(batch.id, (item) => ({...item, groups: [...item.groups, emptyGroup()]}))}>{batch.recordingMode === "direct" ? t("actions.addProduct") : t("actions.addGroup")}</Button>
+            {batch.recordingMode !== "unset" ? <Button type="button" variant="outline" onClick={() => batch.recordingMode === "direct" ? addDirectProduct(batch) : updateBatch(batch.id, (item) => ({...item, groups: [...item.groups, emptyGroup()]}))}>{batch.recordingMode === "direct" ? (batch.groups.length ? t("actions.addAnotherProduct") : t("actions.recordDirectProduct")) : t("actions.addGroup")}</Button> : null}
             </> : null}
             </> : null}
             <p className="text-xs text-slate-500">{t("batchPosition", {number: batchIndex + 1})}</p>
           </div>
         ))}
         <Button type="button" variant="outline" onClick={() => setBatches((all) => [...all, emptyBatch(`Batch ${all.length + 1}`)])}>{t("actions.addBatch")}</Button>
-        <div className="grid gap-3 sm:grid-cols-2"><Label text={t("fields.additionalCost")}><Input defaultValue="0" min="0" name="additional_cost" step="0.01" type="number" /></Label><Label text={t("fields.notes")}><Input name="notes" /></Label></div>
+        <div className="grid gap-3 sm:grid-cols-2"><Label text={t("fields.stockExpense")}><Input defaultValue="0" min="0" name="additional_cost" step="0.01" type="number" /></Label><Label text={t("fields.notes")}><Input name="notes" /></Label></div>
         <div className="sticky bottom-3 z-10 rounded-xl border border-slate-200 bg-white/95 p-3 shadow-lg backdrop-blur dark:border-slate-700 dark:bg-slate-950/95"><Button disabled={busy || batches.some((batch) => !batch.groups.length)} type="submit">{hasIncompleteStock ? t("actions.saveDraft") : t("actions.finishStock")}</Button></div>
         </> : null}
       </form>
       <div className={panel}>
         <h2 className="font-bold">{t("receivedStock")}</h2>
-        <div className="mt-4 space-y-2">
-          {receipts.map((receipt) => <div className="rounded-lg bg-slate-50 p-3 text-sm dark:bg-slate-900" key={receipt.id}><div className="flex justify-between"><strong>{receipt.reference}</strong><span>{receipt.status}</span></div><p className="text-xs text-slate-500">{receipt.supplier_name || "—"} · {receipt.batches.length} {t("batches")}</p></div>)}
+        <div className="mt-4 space-y-3">
+          {receipts.map((receipt) => <article className="grid gap-3 rounded-xl bg-slate-50 p-4 text-sm dark:bg-slate-900" key={receipt.id}><div className="flex flex-wrap justify-between gap-2"><div><strong>{receipt.reference}</strong><p>{receipt.batches.map((batch) => batch.name).join(" · ")}</p></div><span>{receipt.status}</span></div><p className="text-xs text-slate-500">{receipt.supplier_name || t("fields.supplierNotEntered")} · {receipt.product_type_count} {t("productTypes")}</p><p className="text-xs text-slate-500">{receipt.quantities_by_unit.map((item) => `${item.quantity} ${item.unit}`).join(" · ") || "—"}</p><div className="grid gap-2 sm:grid-cols-2"><div><span className="text-xs text-slate-500">{t("savedReceipt.buyingValue")}</span><p className="font-semibold">{receipt.total_buying_value}</p></div><div><span className="text-xs text-slate-500">{t("fields.stockExpense")}</span><p className="font-semibold">{receipt.additional_cost}</p></div></div>{editingReceiptId === receipt.id ? <div className="grid gap-3 rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-950"><div className="grid gap-3 sm:grid-cols-2"><Label text={t("fields.supplier")}><Input value={receiptEdit.supplier} onChange={(e) => setReceiptEdit((current) => ({...current, supplier: e.target.value}))} /></Label><Label text={t("fields.stockExpense")}><Input min="0" step="0.01" type="number" value={receiptEdit.stockExpense} onChange={(e) => setReceiptEdit((current) => ({...current, stockExpense: e.target.value}))} /></Label>{receiptEdit.batchNames.map((batch, index) => <Label key={batch.id} text={t("batchNameNumber", {number: index + 1})}><Input value={batch.name} onChange={(e) => setReceiptEdit((current) => ({...current, batchNames: current.batchNames.map((item) => item.id === batch.id ? {...item, name: e.target.value} : item)}))} /></Label>)}</div><div className="grid gap-2 sm:grid-cols-2"><Button type="button" onClick={() => void saveReceiptEdit(receipt.id)}>{t("actions.save")}</Button><Button type="button" variant="ghost" onClick={() => setEditingReceiptId("")}>{t("actions.cancel")}</Button></div></div> : <div className="grid gap-2 sm:grid-cols-2"><Button type="button" variant="outline" onClick={() => beginReceiptEdit(receipt)}>{t("actions.editStock")}</Button><Button type="button" variant="outline" onClick={() => startLateDelivery(receipt)}>{t("actions.addLateDelivery")}</Button></div>}{receipt.late_deliveries.length ? <div className="grid gap-2 border-l-2 border-orange-400 pl-3"><strong>{t("lateDeliveries")}</strong>{receipt.late_deliveries.map((delivery) => <div className="rounded-lg bg-white p-2 dark:bg-slate-950" key={delivery.id}><div className="flex justify-between"><span>{delivery.reference}</span><span>{new Date(delivery.received_at).toLocaleDateString()}</span></div><p className="text-xs text-slate-500">{delivery.quantities_by_unit.map((item) => `${item.quantity} ${item.unit}`).join(" · ")}</p></div>)}</div> : null}</article>)}
         </div>
       </div>
     </div>
@@ -785,9 +823,9 @@ function SavedReceiptSummary({
     <div className="grid gap-2 rounded-lg border border-slate-200 p-3 dark:border-slate-700" key={line.id}>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div><strong>{line.product_name}</strong><p className="text-xs text-slate-500">{line.product_sku}</p></div>
-        <span className="text-sm">{line.quantity_remaining} / {line.quantity_received} {line.received_unit}</span>
+        <span className="text-sm">{Number(line.quantity_remaining) / Number(line.conversion_to_base || 1)} / {Number(line.quantity_received) / Number(line.conversion_to_base || 1)} {line.received_unit}</span>
       </div>
-      <p className="text-xs text-slate-500">{t("fields.buyingPrice")}: {line.unit_cost || "—"} · {t("fields.price")}: {line.selling_price || "—"}</p>
+      <p className="text-xs text-slate-500">{t("fields.buyingPrice")}: {line.received_unit_cost || "—"}</p>
       {line.tracked_units.length ? <div className="grid gap-2 sm:grid-cols-2">{line.tracked_units.map((unit) => <div className="rounded-lg bg-slate-50 p-2 text-sm dark:bg-slate-900" key={unit.id}><strong>{unit.model_name || line.product_name}</strong><p className="text-xs text-slate-500">{[unit.brand, unit.color, unit.capacity, unit.internal_serial, ...unit.identifiers.map((identifier) => `${identifier.kind}: ${identifier.value}`)].filter(Boolean).join(" · ")}</p></div>)}</div> : null}
     </div>
   );
@@ -798,10 +836,10 @@ function SavedReceiptSummary({
         <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{receipt.reference} · {receipt.supplier_name || t("fields.supplierNotEntered")} · {new Date(receipt.received_at).toLocaleDateString()}</p>
       </div>
       <div className="grid gap-4">
-        {receipt.batches.map((batch) => <article className="grid gap-3 rounded-xl border border-slate-200 p-4 dark:border-slate-800" key={batch.id}><h3 className="font-bold">{batch.name}</h3>{batch.groups.map((group) => <section className="grid gap-2 rounded-xl bg-slate-50 p-3 dark:bg-slate-900" key={group.id}><div className="flex flex-wrap justify-between gap-2"><strong>{group.name}</strong><span className="text-sm">{group.quantity} {group.unit}</span></div><p className="text-xs text-slate-500">{t("fields.buyingPrice")}: {group.buying_price || "—"} · {t("fields.price")}: {group.selling_price || "—"}</p>{group.types.map(renderLine)}</section>)}</article>)}
+        {receipt.batches.map((batch) => <article className="grid gap-3 rounded-xl border border-slate-200 p-4 dark:border-slate-800" key={batch.id}><h3 className="font-bold">{batch.name}</h3>{batch.groups.map((group) => <section className="grid gap-2 rounded-xl bg-slate-50 p-3 dark:bg-slate-900" key={group.id}><div className="flex flex-wrap justify-between gap-2"><strong>{group.name}</strong><span className="text-sm">{group.quantity} {group.unit}</span></div><p className="text-xs text-slate-500">{t("fields.buyingPrice")}: {group.buying_price || "—"}</p>{group.types.map(renderLine)}</section>)}</article>)}
         {receipt.lines.length ? <section className="grid gap-3"><h3 className="font-bold">{t("savedReceipt.available")}</h3>{receipt.lines.map(renderLine)}</section> : null}
       </div>
-      <div className="grid gap-2 sm:grid-cols-2"><div className="rounded-lg bg-slate-50 p-3 text-sm dark:bg-slate-900"><span className="text-slate-500">{t("fields.additionalCost")}</span><p className="font-semibold">{receipt.additional_cost}</p></div><div className="rounded-lg bg-slate-50 p-3 text-sm dark:bg-slate-900"><span className="text-slate-500">{t("savedReceipt.status")}</span><p className="font-semibold">{receipt.status}</p></div></div>
+      <div className="grid gap-2 sm:grid-cols-3"><div className="rounded-lg bg-slate-50 p-3 text-sm dark:bg-slate-900"><span className="text-slate-500">{t("savedReceipt.buyingValue")}</span><p className="font-semibold">{receipt.total_buying_value}</p></div><div className="rounded-lg bg-slate-50 p-3 text-sm dark:bg-slate-900"><span className="text-slate-500">{t("fields.stockExpense")}</span><p className="font-semibold">{receipt.additional_cost}</p></div><div className="rounded-lg bg-slate-50 p-3 text-sm dark:bg-slate-900"><span className="text-slate-500">{t("savedReceipt.status")}</span><p className="font-semibold">{receipt.status}</p></div></div>
       <Button type="button" onClick={startAnother}>{t("actions.recordAnotherStock")}</Button>
     </section>
   );
@@ -1248,7 +1286,6 @@ function ListProducts({ products, t }: { products: Product[]; t: T }) {
             </div>
             <div className="text-right">
               <strong>{p.current_quantity}</strong>
-              <p className="text-xs text-slate-500">{money(p.selling_price)}</p>
             </div>
           </div>
         ))}

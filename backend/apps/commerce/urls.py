@@ -12,6 +12,7 @@ from .api import (
     SaleVoidAPIView,
     StockBatchListCreateAPIView,
     StockReceiptArchiveAPIView,
+    StockReceiptDetailAPIView,
     StockReceiptListCreateAPIView,
     StockReceiptReceiveAPIView,
 )
@@ -22,6 +23,11 @@ urlpatterns = [
         "businesses/<uuid:business_id>/stock-receipts/",
         StockReceiptListCreateAPIView.as_view(),
         name="stock-receipts",
+    ),
+    path(
+        "businesses/<uuid:business_id>/stock-receipts/<uuid:receipt_id>/",
+        StockReceiptDetailAPIView.as_view(),
+        name="stock-receipt-detail",
     ),
     path(
         "businesses/<uuid:business_id>/stock-receipts/<uuid:receipt_id>/receive/",

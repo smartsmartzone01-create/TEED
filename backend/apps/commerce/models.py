@@ -65,6 +65,13 @@ class StockReceipt(BaseModel):
     business = models.ForeignKey(
         "workspaces.Business", on_delete=models.PROTECT, related_name="stock_receipts"
     )
+    parent_receipt = models.ForeignKey(
+        "self",
+        on_delete=models.PROTECT,
+        related_name="late_deliveries",
+        null=True,
+        blank=True,
+    )
     reference = models.CharField(max_length=40)
     sequence = models.PositiveBigIntegerField()
     status = models.CharField(
@@ -125,6 +132,26 @@ class StockContainer(BaseModel):
                 name="commerce_receipt_batch_code_unique",
             ),
         ]
+
+
+class StockReceiptAudit(BaseModel):
+    receipt = models.ForeignKey(
+        StockReceipt, on_delete=models.PROTECT, related_name="audit_events"
+    )
+    actor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    action = models.CharField(
+        max_length=24,
+        choices=[
+            ("edit_details", "Edit details"),
+            ("late_delivery", "Late delivery"),
+        ],
+    )
+    before = models.JSONField(default=dict)
+    after = models.JSONField(default=dict)
+
+    class Meta:
+        db_table = "commerce_stock_receipt_audit"
+        ordering = ["-created_at"]
 
 
 class StockGroup(BaseModel):
@@ -542,6 +569,13 @@ class ReturnItem(BaseModel):
 class Expense(BaseModel):
     business = models.ForeignKey(
         "workspaces.Business", on_delete=models.PROTECT, related_name="expenses"
+    )
+    stock_receipt = models.OneToOneField(
+        StockReceipt,
+        on_delete=models.PROTECT,
+        related_name="stock_expense",
+        null=True,
+        blank=True,
     )
     category = models.CharField(max_length=48)
     description = models.CharField(max_length=160)

@@ -32,6 +32,7 @@ from .models import (
     StockContainer,
     StockGroup,
     StockReceipt,
+    StockReceiptAudit,
     TrackedUnit,
     TrackedUnitIdentifier,
     UnitDefinition,
@@ -102,12 +103,6 @@ def _create_stock_type_line(
             "unit",
             (stock_group.base_unit or stock_group.unit) if stock_group else "piece",
         )
-        if (
-            "selling_price" not in product_values
-            and stock_group
-            and stock_group.selling_price is not None
-        ):
-            product_values["selling_price"] = stock_group.selling_price
         product = create_product(
             actor=actor, business_id=membership.business_id, **product_values
         )
@@ -140,7 +135,12 @@ def _create_stock_type_line(
                     ]
                 }
             )
-    unit_cost = line.pop("unit_cost", None)
+    received_unit_cost = line.pop("unit_cost", None)
+    if received_unit_cost is None and stock_group:
+        received_unit_cost = stock_group.buying_price
+    unit_cost = (
+        received_unit_cost / conversion if received_unit_cost is not None else None
+    )
     batch = StockBatch.objects.create(
         receipt=receipt,
         stock_group=stock_group,
@@ -155,13 +155,7 @@ def _create_stock_type_line(
         received_unit=line.pop(
             "received_unit", stock_group.unit if stock_group else product.unit
         ),
-        unit_cost=(
-            unit_cost
-            if unit_cost is not None
-            else stock_group.buying_price
-            if stock_group
-            else None
-        ),
+        unit_cost=unit_cost,
         received_at=receipt.received_at or timezone.now(),
         supplier_name=receipt.supplier_name,
         recorded_by=actor,
@@ -216,9 +210,35 @@ def _create_stock_type_line(
     return batch
 
 
+def _sync_stock_expense(*, receipt, actor):
+    if receipt.status != StockReceipt.Status.RECEIVED:
+        return
+    if receipt.additional_cost <= 0:
+        Expense.objects.filter(stock_receipt=receipt).delete()
+        return
+    Expense.objects.update_or_create(
+        stock_receipt=receipt,
+        defaults={
+            "business": receipt.business,
+            "category": "stock_expense",
+            "description": f"Stock expenses for {receipt.reference}",
+            "amount": receipt.additional_cost,
+            "incurred_at": receipt.received_at or receipt.created_at,
+            "recorded_by": actor,
+        },
+    )
+
+
 @transaction.atomic
 def create_stock_receipt(
-    *, actor, business_id, batches, catalog_items=None, status="received", **values
+    *,
+    actor,
+    business_id,
+    batches,
+    catalog_items=None,
+    status="received",
+    parent_receipt_id=None,
+    **values,
 ):
     membership = commerce_membership(
         user=actor,
@@ -234,8 +254,22 @@ def create_stock_receipt(
         .aggregate(value=Max("sequence"))["value"]
         or 0
     ) + 1
+    parent_receipt = None
+    if parent_receipt_id:
+        parent_receipt = StockReceipt.objects.filter(
+            id=parent_receipt_id,
+            business=membership.business,
+            status=StockReceipt.Status.RECEIVED,
+        ).first()
+        if parent_receipt is None:
+            raise ValidationError(
+                {"parent_receipt_id": ["Select received stock for this delivery."]}
+            )
+        if parent_receipt.parent_receipt_id:
+            parent_receipt = parent_receipt.parent_receipt
     receipt = StockReceipt.objects.create(
         business=membership.business,
+        parent_receipt=parent_receipt,
         sequence=sequence,
         reference=f"MZIGO-{sequence:06d}",
         status=status,
@@ -342,6 +376,19 @@ def create_stock_receipt(
                     status=status,
                     catalog_products=catalog_products,
                 )
+    if status == StockReceipt.Status.RECEIVED:
+        _sync_stock_expense(receipt=receipt, actor=actor)
+    if parent_receipt:
+        StockReceiptAudit.objects.create(
+            receipt=parent_receipt,
+            actor=actor,
+            action="late_delivery",
+            before={},
+            after={
+                "delivery": receipt.reference,
+                "received_at": str(receipt.received_at),
+            },
+        )
     refresh_decisions(business=membership.business)
     return receipt
 
@@ -408,6 +455,74 @@ def receive_draft_stock(*, actor, business_id, receipt_id, received_at=None):
             reason=f"{receipt.reference} received.",
             recorded_by=actor,
         )
+    _sync_stock_expense(receipt=receipt, actor=actor)
+    refresh_decisions(business=membership.business)
+    return receipt
+
+
+@transaction.atomic
+def update_stock_receipt_details(
+    *, actor, business_id, receipt_id, batches=None, **values
+):
+    membership = commerce_membership(
+        user=actor,
+        business_id=business_id,
+        permission=WorkspacePermission.MANAGE_INVENTORY,
+    )
+    receipt = (
+        StockReceipt.objects.select_for_update()
+        .filter(id=receipt_id, business=membership.business)
+        .first()
+    )
+    if receipt is None:
+        raise ValidationError({"receipt": ["Stock receipt not found."]})
+    before = {
+        "supplier_name": receipt.supplier_name,
+        "additional_cost": str(receipt.additional_cost),
+        "notes": receipt.notes,
+        "batches": [
+            {"id": str(batch.id), "name": batch.name} for batch in receipt.batches.all()
+        ],
+    }
+    for field, value in values.items():
+        setattr(receipt, field, value)
+    receipt.save(
+        update_fields=[*values.keys(), "updated_at"] if values else ["updated_at"]
+    )
+    if batches is not None:
+        names = [item["name"].strip() for item in batches]
+        if len(names) != len(set(name.casefold() for name in names)):
+            raise ValidationError({"batches": ["Batch names must be different."]})
+        existing = {str(batch.id): batch for batch in receipt.batches.all()}
+        selected = []
+        for item in batches:
+            batch = existing.get(str(item["id"]))
+            if batch is None:
+                raise ValidationError({"batches": ["Select a batch from this stock."]})
+            selected.append((batch, item["name"].strip()))
+        for batch, _name in selected:
+            batch.name = f"EDIT-{str(batch.id)[:8]}"
+            batch.save(update_fields=["name", "updated_at"])
+        for batch, name in selected:
+            batch.name = name
+            batch.save(update_fields=["name", "updated_at"])
+    if receipt.status == StockReceipt.Status.RECEIVED:
+        _sync_stock_expense(receipt=receipt, actor=actor)
+    after = {
+        "supplier_name": receipt.supplier_name,
+        "additional_cost": str(receipt.additional_cost),
+        "notes": receipt.notes,
+        "batches": [
+            {"id": str(batch.id), "name": batch.name} for batch in receipt.batches.all()
+        ],
+    }
+    StockReceiptAudit.objects.create(
+        receipt=receipt,
+        actor=actor,
+        action="edit_details",
+        before=before,
+        after=after,
+    )
     refresh_decisions(business=membership.business)
     return receipt
 

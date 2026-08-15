@@ -8,6 +8,7 @@ from apps.identity.models import User
 from apps.workspaces.models import Business, BusinessMembership
 
 from ..models import (
+    Expense,
     InventoryMovement,
     Product,
     SaleAllocation,
@@ -15,7 +16,11 @@ from ..models import (
     TrackedUnitIdentifier,
     UnitDefinition,
 )
-from ..serializers import StockBatchSerializer, StockReceiptCreateSerializer
+from ..serializers import (
+    StockBatchSerializer,
+    StockReceiptCreateSerializer,
+    StockReceiptSerializer,
+)
 from ..services import (
     commerce_overview,
     create_expense,
@@ -26,6 +31,7 @@ from ..services import (
     receive_stock,
     record_return,
     record_sale,
+    update_stock_receipt_details,
     void_sale,
 )
 
@@ -79,15 +85,148 @@ class CommerceServiceTests(TestCase):
         self.assertEqual(batch.quantity_remaining, Decimal("50"))
         self.assertEqual(InventoryMovement.objects.get().quantity_delta, Decimal("50"))
 
-    def test_saved_receipt_response_includes_item_code_prices_and_availability(self):
+    def test_saved_receipt_response_includes_item_code_and_availability(self):
         batch = self.receive("50", "30000")
 
         line = StockBatchSerializer(batch).data
 
         self.assertEqual(line["product_name"], "Shoes")
         self.assertEqual(line["product_sku"], self.product.sku)
-        self.assertEqual(Decimal(line["selling_price"]), Decimal("50000"))
         self.assertEqual(Decimal(line["quantity_remaining"]), Decimal("50"))
+
+    def test_stock_expense_is_recorded_as_business_expense(self):
+        receipt = create_stock_receipt(
+            actor=self.owner,
+            business_id=self.business.id,
+            status="received",
+            received_at=timezone.now(),
+            additional_cost=Decimal("100000"),
+            catalog_items=[{"key": "charger", "product_id": self.product.id}],
+            batches=[
+                {
+                    "name": "Accessories",
+                    "products": [
+                        {
+                            "catalog_key": "charger",
+                            "quantity_received": Decimal("10"),
+                            "received_unit": "pair",
+                            "unit_cost": Decimal("50000"),
+                        }
+                    ],
+                    "groups": [],
+                }
+            ],
+        )
+
+        expense = Expense.objects.get(stock_receipt=receipt)
+        self.assertEqual(expense.category, "stock_expense")
+        self.assertEqual(expense.amount, Decimal("100000"))
+        self.assertEqual(receipt.lines.get().unit_cost, Decimal("50000"))
+
+    def test_buying_price_is_converted_to_base_unit_for_fifo(self):
+        receipt = create_stock_receipt(
+            actor=self.owner,
+            business_id=self.business.id,
+            status="received",
+            received_at=timezone.now(),
+            catalog_items=[{"key": "sugar", "product_id": self.product.id}],
+            batches=[
+                {
+                    "name": "Sugar sacks",
+                    "products": [
+                        {
+                            "catalog_key": "sugar",
+                            "quantity_received": Decimal("1"),
+                            "received_unit": "sack",
+                            "conversion_to_base": Decimal("50"),
+                            "unit_cost": Decimal("100000"),
+                        }
+                    ],
+                    "groups": [],
+                }
+            ],
+        )
+
+        line = receipt.lines.get()
+        self.assertEqual(line.quantity_received, Decimal("50"))
+        self.assertEqual(line.unit_cost, Decimal("2000"))
+
+    def test_late_delivery_stays_linked_and_keeps_its_real_date(self):
+        first_date = timezone.now()
+        original = create_stock_receipt(
+            actor=self.owner,
+            business_id=self.business.id,
+            status="received",
+            received_at=first_date,
+            catalog_items=[{"key": "shoes", "product_id": self.product.id}],
+            batches=[
+                {
+                    "name": "Imported shoes",
+                    "products": [
+                        {"catalog_key": "shoes", "quantity_received": Decimal("6")}
+                    ],
+                    "groups": [],
+                }
+            ],
+        )
+        later_date = first_date + timezone.timedelta(days=4)
+        delivery = create_stock_receipt(
+            actor=self.owner,
+            business_id=self.business.id,
+            parent_receipt_id=original.id,
+            status="received",
+            received_at=later_date,
+            catalog_items=[{"key": "shoes", "product_id": self.product.id}],
+            batches=[
+                {
+                    "name": "Imported shoes",
+                    "products": [
+                        {"catalog_key": "shoes", "quantity_received": Decimal("4")}
+                    ],
+                    "groups": [],
+                }
+            ],
+        )
+
+        self.assertEqual(delivery.parent_receipt, original)
+        self.assertEqual(delivery.lines.get().received_at, later_date)
+        data = StockReceiptSerializer(original).data
+        self.assertEqual(len(data["late_deliveries"]), 1)
+        self.assertEqual(data["product_type_count"], 1)
+        self.assertEqual(data["quantities_by_unit"][0]["quantity"], "6")
+
+    def test_received_stock_details_are_edited_with_an_audit_record(self):
+        receipt = create_stock_receipt(
+            actor=self.owner,
+            business_id=self.business.id,
+            status="received",
+            received_at=timezone.now(),
+            catalog_items=[{"key": "shoes", "product_id": self.product.id}],
+            batches=[
+                {
+                    "name": "Old name",
+                    "products": [
+                        {"catalog_key": "shoes", "quantity_received": Decimal("2")}
+                    ],
+                    "groups": [],
+                }
+            ],
+        )
+        batch = receipt.batches.get()
+
+        update_stock_receipt_details(
+            actor=self.owner,
+            business_id=self.business.id,
+            receipt_id=receipt.id,
+            supplier_name="Kajo",
+            batches=[{"id": batch.id, "name": "Accessories"}],
+        )
+
+        receipt.refresh_from_db()
+        batch.refresh_from_db()
+        self.assertEqual(receipt.supplier_name, "Kajo")
+        self.assertEqual(batch.name, "Accessories")
+        self.assertEqual(receipt.audit_events.get().action, "edit_details")
 
     def test_one_stock_receipt_accepts_many_new_and_existing_items(self):
         receipt = create_stock_receipt(
