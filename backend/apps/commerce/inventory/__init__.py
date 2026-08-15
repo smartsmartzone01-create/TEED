@@ -1,0 +1,1 @@
+"""Commerce inventory domain."""
