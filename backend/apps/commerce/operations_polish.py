@@ -13,6 +13,7 @@ from .services import commerce_membership
 from .stock_polish import (
     AvailabilityProductSerializer,
     PolishedStockReceiptSerializer,
+    ProductDetailPolishAPIView,
     ProductListCreatePolishAPIView,
     StockReceiptListCreatePolishAPIView,
 )
@@ -28,6 +29,29 @@ def current_stock_receipts(*, business):
         parent_receipt__isnull=True,
         status__in=[StockReceipt.Status.DRAFT, StockReceipt.Status.RECEIVED],
     )
+
+
+@transaction.atomic
+def set_catalog_product_active(*, actor, business_id, product_id, is_active):
+    membership = commerce_membership(
+        user=actor,
+        business_id=business_id,
+        permission=WorkspacePermission.MANAGE_CATALOG,
+    )
+    product = (
+        Product.objects.select_for_update()
+        .filter(id=product_id, business=membership.business)
+        .first()
+    )
+    if product is None:
+        raise ValidationError({"product": ["Item not found."]})
+    if not is_active and product.current_quantity > 0:
+        raise ValidationError(
+            {"is_active": ["An item with available stock cannot be archived."]}
+        )
+    product.is_active = is_active
+    product.save(update_fields=["is_active", "updated_at"])
+    return product
 
 
 @transaction.atomic
@@ -63,6 +87,28 @@ class ActiveProductListCreatePolishAPIView(ProductListCreatePolishAPIView):
             message="Products retrieved successfully.",
             data={"products": AvailabilityProductSerializer(products, many=True).data},
         )
+
+
+class ProductDetailOperationsPolishAPIView(ProductDetailPolishAPIView):
+    """Keep catalog archive/reactivation rules explicit and reusable."""
+
+    @method_decorator(csrf_protect)
+    def patch(self, request, business_id, product_id):
+        if set(request.data) == {"is_active"}:
+            is_active = request.data.get("is_active")
+            if not isinstance(is_active, bool):
+                raise ValidationError({"is_active": ["Enter true or false."]})
+            product = set_catalog_product_active(
+                actor=request.user,
+                business_id=business_id,
+                product_id=product_id,
+                is_active=is_active,
+            )
+            return SuccessResponse(
+                message="Catalog item status updated successfully.",
+                data=AvailabilityProductSerializer(product).data,
+            )
+        return super().patch(request, business_id, product_id)
 
 
 class ActiveStockReceiptListCreatePolishAPIView(StockReceiptListCreatePolishAPIView):
