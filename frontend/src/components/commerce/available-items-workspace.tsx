@@ -1,7 +1,7 @@
 "use client";
 
-import { ChevronDown, ChevronUp, CircleHelp } from "lucide-react";
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { Archive, ChevronDown, ChevronUp, CircleHelp } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/global/primitives/button";
@@ -81,6 +81,16 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
   const [editingId, setEditingId] = useState("");
   const [draft, setDraft] = useState<EditDraft | null>(null);
   const [busy, setBusy] = useState(false);
+  const [showEmpty, setShowEmpty] = useState(false);
+
+  const availableProducts = useMemo(
+    () => products.filter((product) => Number(product.current_quantity) > 0),
+    [products],
+  );
+  const emptyProducts = useMemo(
+    () => products.filter((product) => Number(product.current_quantity) === 0),
+    [products],
+  );
 
   const load = useCallback(async () => {
     if (!accessToken) return;
@@ -156,6 +166,172 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
     }
   };
 
+  const archiveEmptyProduct = async (product: Product) => {
+    if (!accessToken || Number(product.current_quantity) !== 0) return;
+    if (!window.confirm(t("messages.archiveItemConfirm", { name: product.name }))) {
+      return;
+    }
+
+    setBusy(true);
+    try {
+      await commercePatch(businessId, accessToken, `products/${product.id}`, {
+        is_active: false,
+      });
+      notify({ message: t("success.itemArchived"), tone: "success" });
+      if (editingId === product.id) {
+        setEditingId("");
+        setDraft(null);
+      }
+      await load();
+    } catch (reason) {
+      notify({
+        message: reason instanceof Error ? reason.message : t("errors.save"),
+        tone: "error",
+      });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const renderProduct = (product: Product) => {
+    const expanded = editingId === product.id && draft;
+    return (
+      <article className="bg-white p-4 dark:bg-slate-950" key={product.id}>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+              <strong className="text-sm">{product.name}</strong>
+              <span className="text-xs text-slate-400">{product.sku}</span>
+            </div>
+            {product.brand || product.variant ? (
+              <p className="mt-1 text-xs text-slate-500">
+                {[product.brand, product.variant].filter(Boolean).join(" · ")}
+              </p>
+            ) : null}
+            <p className="mt-1 text-xs text-slate-500">
+              {product.tracking_mode === "individual"
+                ? t("values.individual")
+                : t("values.quantity")}
+              {product.barcode ? ` · ${product.barcode}` : ""}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="text-right">
+              <strong className="text-base">
+                {displayQuantity(product.current_quantity, product.unit)}
+              </strong>
+              <span className="ml-1 text-xs text-slate-500">{product.unit}</span>
+            </div>
+            <Tooltip content={t("tooltips.correctItem")}>
+              <Button
+                onClick={() => toggleEdit(product)}
+                size="small"
+                type="button"
+                variant="ghost"
+              >
+                {t("actions.correctItem")}
+                {expanded ? (
+                  <ChevronUp className="ml-1 size-4" />
+                ) : (
+                  <ChevronDown className="ml-1 size-4" />
+                )}
+              </Button>
+            </Tooltip>
+          </div>
+        </div>
+
+        {expanded ? (
+          <form
+            className="mt-4 grid gap-3 border-t border-slate-200 pt-4 dark:border-slate-800"
+            onSubmit={(event) => void save(event, product)}
+          >
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className={field}>
+                {t("fields.name")}
+                <Input
+                  value={draft.name}
+                  onChange={(event) =>
+                    setDraft({ ...draft, name: event.target.value })
+                  }
+                />
+              </label>
+              <label className={field}>
+                {t("fields.brandOptional")}
+                <Input
+                  value={draft.brand}
+                  onChange={(event) =>
+                    setDraft({ ...draft, brand: event.target.value })
+                  }
+                />
+              </label>
+              <label className={field}>
+                {t("fields.variant")}
+                <Input
+                  value={draft.variant}
+                  onChange={(event) =>
+                    setDraft({ ...draft, variant: event.target.value })
+                  }
+                />
+              </label>
+              <label className={field}>
+                {t("fields.barcode")}
+                <Input
+                  value={draft.barcode}
+                  onChange={(event) =>
+                    setDraft({ ...draft, barcode: event.target.value })
+                  }
+                />
+              </label>
+              <label className={field}>
+                <span className="flex items-center gap-1">
+                  {t("fields.unit")}
+                  <Tooltip content={t("tooltips.unitCorrection")}>
+                    <span
+                      className="inline-flex cursor-help text-slate-400"
+                      tabIndex={0}
+                    >
+                      <CircleHelp className="size-3.5" />
+                    </span>
+                  </Tooltip>
+                </span>
+                <Select
+                  value={draft.unit}
+                  onChange={(event) =>
+                    setDraft({ ...draft, unit: event.target.value })
+                  }
+                >
+                  {unitOptions.map((unit) => (
+                    <option key={unit} value={unit}>
+                      {t(`units.${unit}`)}
+                    </option>
+                  ))}
+                </Select>
+              </label>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <Button disabled={busy} size="small" type="submit">
+                {t("actions.saveCorrection")}
+              </Button>
+              <Button
+                onClick={() => {
+                  setEditingId("");
+                  setDraft(null);
+                }}
+                size="small"
+                type="button"
+                variant="ghost"
+              >
+                {t("actions.cancel")}
+              </Button>
+            </div>
+          </form>
+        ) : null}
+      </article>
+    );
+  };
+
   return (
     <section className="w-full space-y-4 px-2 py-4 sm:px-3 lg:px-4">
       <header className="border-b border-slate-200 pb-4 dark:border-slate-800">
@@ -171,152 +347,66 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
       </header>
 
       <div className="rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950">
-        <div className="border-b border-slate-200 px-4 py-3 dark:border-slate-800">
+        <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-3 dark:border-slate-800">
           <h2 className="font-semibold">{t("catalog")}</h2>
+          {emptyProducts.length ? (
+            <Tooltip content={t("tooltips.reviewEmptyItems")}>
+              <Button
+                onClick={() => setShowEmpty((current) => !current)}
+                size="small"
+                type="button"
+                variant="ghost"
+              >
+                {t("actions.reviewEmptyItems", { count: emptyProducts.length })}
+                {showEmpty ? (
+                  <ChevronUp className="ml-1 size-4" />
+                ) : (
+                  <ChevronDown className="ml-1 size-4" />
+                )}
+              </Button>
+            </Tooltip>
+          ) : null}
         </div>
 
         <div className="divide-y divide-slate-200 dark:divide-slate-800">
-          {products.map((product) => {
-            const expanded = editingId === product.id && draft;
-            return (
-              <article className="bg-white p-4 dark:bg-slate-950" key={product.id}>
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                      <strong className="text-sm">{product.name}</strong>
-                      <span className="text-xs text-slate-400">{product.sku}</span>
-                    </div>
-                    {product.brand || product.variant ? (
-                      <p className="mt-1 text-xs text-slate-500">
-                        {[product.brand, product.variant].filter(Boolean).join(" · ")}
-                      </p>
-                    ) : null}
-                    <p className="mt-1 text-xs text-slate-500">
-                      {product.tracking_mode === "individual"
-                        ? t("values.individual")
-                        : t("values.quantity")}
-                      {product.barcode ? ` · ${product.barcode}` : ""}
-                    </p>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <div className="text-right">
-                      <strong className="text-base">
-                        {displayQuantity(product.current_quantity, product.unit)}
-                      </strong>
-                      <span className="ml-1 text-xs text-slate-500">
-                        {product.unit}
-                      </span>
-                    </div>
-                    <Tooltip content={t("tooltips.correctItem")}>
-                      <Button
-                        onClick={() => toggleEdit(product)}
-                        size="small"
-                        type="button"
-                        variant="ghost"
-                      >
-                        {t("actions.correctItem")}
-                        {expanded ? (
-                          <ChevronUp className="ml-1 size-4" />
-                        ) : (
-                          <ChevronDown className="ml-1 size-4" />
-                        )}
-                      </Button>
-                    </Tooltip>
-                  </div>
-                </div>
-
-                {expanded ? (
-                  <form
-                    className="mt-4 grid gap-3 border-t border-slate-200 pt-4 dark:border-slate-800"
-                    onSubmit={(event) => void save(event, product)}
-                  >
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <label className={field}>
-                        {t("fields.name")}
-                        <Input
-                          value={draft.name}
-                          onChange={(event) =>
-                            setDraft({ ...draft, name: event.target.value })
-                          }
-                        />
-                      </label>
-                      <label className={field}>
-                        {t("fields.brandOptional")}
-                        <Input
-                          value={draft.brand}
-                          onChange={(event) =>
-                            setDraft({ ...draft, brand: event.target.value })
-                          }
-                        />
-                      </label>
-                      <label className={field}>
-                        {t("fields.variant")}
-                        <Input
-                          value={draft.variant}
-                          onChange={(event) =>
-                            setDraft({ ...draft, variant: event.target.value })
-                          }
-                        />
-                      </label>
-                      <label className={field}>
-                        {t("fields.barcode")}
-                        <Input
-                          value={draft.barcode}
-                          onChange={(event) =>
-                            setDraft({ ...draft, barcode: event.target.value })
-                          }
-                        />
-                      </label>
-                      <label className={field}>
-                        <span className="flex items-center gap-1">
-                          {t("fields.unit")}
-                          <Tooltip content={t("tooltips.unitCorrection")}>
-                            <span
-                              className="inline-flex cursor-help text-slate-400"
-                              tabIndex={0}
-                            >
-                              <CircleHelp className="size-3.5" />
-                            </span>
-                          </Tooltip>
-                        </span>
-                        <Select
-                          value={draft.unit}
-                          onChange={(event) =>
-                            setDraft({ ...draft, unit: event.target.value })
-                          }
-                        >
-                          {unitOptions.map((unit) => (
-                            <option key={unit} value={unit}>
-                              {t(`units.${unit}`)}
-                            </option>
-                          ))}
-                        </Select>
-                      </label>
-                    </div>
-
-                    <div className="flex flex-wrap gap-2">
-                      <Button disabled={busy} size="small" type="submit">
-                        {t("actions.saveCorrection")}
-                      </Button>
-                      <Button
-                        onClick={() => {
-                          setEditingId("");
-                          setDraft(null);
-                        }}
-                        size="small"
-                        type="button"
-                        variant="ghost"
-                      >
-                        {t("actions.cancel")}
-                      </Button>
-                    </div>
-                  </form>
-                ) : null}
-              </article>
-            );
-          })}
+          {availableProducts.map(renderProduct)}
+          {!availableProducts.length ? (
+            <p className="p-4 text-sm text-slate-500">{t("empty.availableItems")}</p>
+          ) : null}
         </div>
+
+        {showEmpty && emptyProducts.length ? (
+          <div className="border-t border-slate-200 dark:border-slate-800">
+            <div className="px-4 py-3 text-xs font-semibold text-slate-500">
+              {t("emptyItemsTitle")}
+            </div>
+            <div className="divide-y divide-slate-200 dark:divide-slate-800">
+              {emptyProducts.map((product) => (
+                <div
+                  className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm"
+                  key={product.id}
+                >
+                  <div>
+                    <strong>{product.name}</strong>
+                    <p className="mt-1 text-xs text-slate-500">{product.sku}</p>
+                  </div>
+                  <Tooltip content={t("tooltips.archiveEmptyItem")}>
+                    <Button
+                      disabled={busy}
+                      onClick={() => void archiveEmptyProduct(product)}
+                      size="small"
+                      type="button"
+                      variant="ghost"
+                    >
+                      <Archive className="size-4" />
+                      {t("actions.archiveItem")}
+                    </Button>
+                  </Tooltip>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
       </div>
     </section>
   );
