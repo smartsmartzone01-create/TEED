@@ -3,28 +3,28 @@ from django.urls import path
 from .api import (
     AdjustmentCreateAPIView,
     BudgetListCreateAPIView,
-    CommerceOverviewAPIView,
     ExpenseListCreateAPIView,
     ReturnListCreateAPIView,
     SaleDetailAPIView,
     SaleListCreateAPIView,
     SaleVoidAPIView,
     StockBatchListCreateAPIView,
-    StockReceiptArchiveAPIView,
     StockReceiptReceiveAPIView,
 )
-from .stock_polish import (
-    ProductDetailPolishAPIView,
-    ProductListCreatePolishAPIView,
-    StockReceiptListCreatePolishAPIView,
+from .operations_polish import (
+    ActiveProductListCreatePolishAPIView,
+    ActiveStockReceiptListCreatePolishAPIView,
+    GuardedStockReceiptArchiveAPIView,
 )
+from .overview_polish import CommerceOverviewPolishAPIView
+from .stock_polish import ProductDetailPolishAPIView
 from .stock_polish_detail import GuardedStockReceiptDetailAPIView
 
 app_name = "commerce"
 urlpatterns = [
     path(
         "businesses/<uuid:business_id>/stock-receipts/",
-        StockReceiptListCreatePolishAPIView.as_view(),
+        ActiveStockReceiptListCreatePolishAPIView.as_view(),
         name="stock-receipts",
     ),
     path(
@@ -39,17 +39,17 @@ urlpatterns = [
     ),
     path(
         "businesses/<uuid:business_id>/stock-receipts/<uuid:receipt_id>/archive/",
-        StockReceiptArchiveAPIView.as_view(),
+        GuardedStockReceiptArchiveAPIView.as_view(),
         name="stock-receipt-archive",
     ),
     path(
         "businesses/<uuid:business_id>/overview/",
-        CommerceOverviewAPIView.as_view(),
+        CommerceOverviewPolishAPIView.as_view(),
         name="overview",
     ),
     path(
         "businesses/<uuid:business_id>/products/",
-        ProductListCreatePolishAPIView.as_view(),
+        ActiveProductListCreatePolishAPIView.as_view(),
         name="products",
     ),
     path(
