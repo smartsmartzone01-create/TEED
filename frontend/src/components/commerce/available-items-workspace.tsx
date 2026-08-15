@@ -196,7 +196,20 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
   const renderProduct = (product: Product) => {
     const expanded = editingId === product.id && draft;
     return (
-      <article className="bg-white p-4 dark:bg-slate-950" key={product.id}>
+      <article
+        className="bg-white p-4 transition-colors hover:bg-slate-50/70 dark:bg-slate-950 dark:hover:bg-slate-900/40"
+        key={product.id}
+        style={
+          expanded
+            ? {
+                borderInlineStartColor:
+                  "var(--workspace-primary, var(--brand-navy))",
+                borderInlineStartStyle: "solid",
+                borderInlineStartWidth: 3,
+              }
+            : undefined
+        }
+      >
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -218,7 +231,10 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
 
           <div className="flex items-center gap-3">
             <div className="text-right">
-              <strong className="text-base">
+              <strong
+                className="text-base"
+                style={{ color: "var(--workspace-primary, var(--brand-navy))" }}
+              >
                 {displayQuantity(product.current_quantity, product.unit)}
               </strong>
               <span className="ml-1 text-xs text-slate-500">{product.unit}</span>
@@ -335,7 +351,10 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
   return (
     <section className="w-full space-y-4 px-2 py-4 sm:px-3 lg:px-4">
       <header className="border-b border-slate-200 pb-4 dark:border-slate-800">
-        <p className="text-xs font-bold uppercase tracking-[0.18em] text-orange-600">
+        <p
+          className="text-xs font-bold uppercase tracking-[0.18em]"
+          style={{ color: "var(--workspace-secondary, var(--brand-orange))" }}
+        >
           {t("eyebrow")}
         </p>
         <h1 className="mt-1 text-2xl font-bold text-slate-950 dark:text-white">
