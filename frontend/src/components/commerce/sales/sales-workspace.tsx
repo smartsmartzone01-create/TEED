@@ -1,4 +1,4 @@
-import { CommerceWorkspace } from "@/components/commerce/commerce-workspace";
+import { CommerceWorkspace } from "@/components/commerce/legacy/commerce-workspace";
 
 function SalesWorkspace({ businessId }: { businessId: string }) {
   return <CommerceWorkspace businessId={businessId} view="sales" />;
