@@ -209,7 +209,15 @@ function StockReceiptCorrectionDropdown({
   };
 
   return (
-    <div className="sm:col-span-2">
+    <div className="grid gap-2 sm:col-span-2">
+      {receipt.correction_open ? (
+        <Tooltip content={t("tooltips.correctionOpen")}>
+          <span className="w-fit cursor-help text-xs font-medium text-emerald-700 dark:text-emerald-300">
+            {t("correctionOpen")}
+          </span>
+        </Tooltip>
+      ) : null}
+
       <Tooltip
         content={
           receipt.correction_open
@@ -233,7 +241,7 @@ function StockReceiptCorrectionDropdown({
       </Tooltip>
 
       {open ? (
-        <div className="mt-3 grid gap-3 border-t border-slate-200 pt-3 dark:border-slate-800">
+        <div className="grid gap-3 border-t border-slate-200 pt-3 dark:border-slate-800">
           <Select
             aria-label={t("fields.product")}
             onChange={(event) => chooseLine(event.target.value)}
