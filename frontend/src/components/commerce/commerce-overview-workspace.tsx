@@ -81,7 +81,10 @@ function CommerceOverviewWorkspace({ businessId }: { businessId: string }) {
   return (
     <section className="w-full space-y-4 px-2 py-4 sm:px-3 lg:px-4">
       <header className="border-b border-slate-200 pb-4 dark:border-slate-800">
-        <p className="text-xs font-bold uppercase tracking-[0.18em] text-orange-600">
+        <p
+          className="text-xs font-bold uppercase tracking-[0.18em]"
+          style={{ color: "var(--workspace-secondary, var(--brand-orange))" }}
+        >
           {t("eyebrow")}
         </p>
         <h1 className="mt-1 text-2xl font-bold text-slate-950 dark:text-white">
@@ -95,16 +98,23 @@ function CommerceOverviewWorkspace({ businessId }: { businessId: string }) {
       {data ? (
         <>
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            {states.map(({ icon: Icon, label, value }) => (
-              <div
-                className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950"
-                key={label}
-              >
-                <Icon className="size-4 text-slate-500" />
-                <p className="mt-3 text-xs font-medium text-slate-500">{label}</p>
-                <p className="mt-1 text-xl font-semibold">{value}</p>
-              </div>
-            ))}
+            {states.map(({ icon: Icon, label, value }, index) => {
+              const accent =
+                index % 2 === 0
+                  ? "var(--workspace-primary, var(--brand-navy))"
+                  : "var(--workspace-secondary, var(--brand-orange))";
+              return (
+                <div
+                  className="rounded-xl border border-t-[3px] border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950"
+                  key={label}
+                  style={{ borderTopColor: accent }}
+                >
+                  <Icon className="size-4" style={{ color: accent }} />
+                  <p className="mt-3 text-xs font-medium text-slate-500">{label}</p>
+                  <p className="mt-1 text-xl font-semibold">{value}</p>
+                </div>
+              );
+            })}
           </div>
 
           <div className="grid gap-4 xl:grid-cols-2">
