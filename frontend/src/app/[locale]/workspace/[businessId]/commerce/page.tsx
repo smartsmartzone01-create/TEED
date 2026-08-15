@@ -1,14 +1,15 @@
+import { CommerceOverviewWorkspace } from "@/components/commerce/commerce-overview-workspace";
 import { CommercePageShell } from "@/components/commerce/commerce-page-shell";
-import { CommerceWorkspace } from "@/components/commerce/commerce-workspace";
 
 export default async function Page({
   params,
 }: {
   params: Promise<{ businessId: string }>;
 }) {
+  const { businessId } = await params;
   return (
     <CommercePageShell>
-      <CommerceWorkspace businessId={(await params).businessId} view="overview" />
+      <CommerceOverviewWorkspace businessId={businessId} />
     </CommercePageShell>
   );
 }
