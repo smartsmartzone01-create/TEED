@@ -95,7 +95,10 @@ function StockCorrectionsPanel({ businessId }: { businessId: string }) {
             );
             if (!article) continue;
 
-            article.hidden = !showAll && index >= 5;
+            const hiddenByLimit = !showAll && index >= 5;
+            article.hidden = hiddenByLimit;
+            if (hiddenByLimit) article.dataset.commerceStockHidden = "true";
+            else delete article.dataset.commerceStockHidden;
 
             let mount = article.querySelector<HTMLElement>(
               `[data-commerce-correction-root="${receipt.id}"]`,
@@ -155,9 +158,10 @@ function StockCorrectionsPanel({ businessId }: { businessId: string }) {
       observer.disconnect();
       window.cancelAnimationFrame(frame);
       for (const article of document.querySelectorAll<HTMLElement>(
-        "article[hidden]",
+        "[data-commerce-stock-hidden]",
       )) {
         article.hidden = false;
+        delete article.dataset.commerceStockHidden;
       }
       for (const mount of document.querySelectorAll(
         "[data-commerce-correction-root], [data-commerce-stock-view-more-root]",
