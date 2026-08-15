@@ -13,58 +13,31 @@ from rest_framework.exceptions import ValidationError
 from apps.workspaces.policy import WorkspacePermission
 
 from .api import CommerceBaseAPIView
-from .models import (
-    InventoryMovement,
-    Product,
-    StockBatch,
-    StockReceipt,
-    StockReceiptAudit,
-    UnitDefinition,
-)
-from .serializers import (
-    ProductSerializer,
-    StockReceiptCreateSerializer,
-    StockReceiptSerializer,
-    UnitDefinitionSerializer,
-)
-from .services import (
-    _sync_stock_expense,
-    commerce_membership,
-    create_product,
-    create_stock_receipt,
-    refresh_decisions,
-)
+from .models import InventoryMovement, Product, StockBatch, StockReceipt, StockReceiptAudit, UnitDefinition
+from .serializers import ProductSerializer, StockReceiptCreateSerializer, StockReceiptSerializer, UnitDefinitionSerializer
+from .services import _sync_stock_expense, commerce_membership, create_product, create_stock_receipt, refresh_decisions
 
 CORRECTION_WINDOW = timedelta(hours=48)
 COUNTABLE_UNITS = {
-    "piece",
-    "pair",
-    "packet",
-    "box",
-    "carton",
-    "crate",
-    "bottle",
-    "can",
-    "bag",
-    "sack",
-    "bundle",
-    "set",
-    "dozen",
-    "roll",
+    "piece", "pair", "packet", "box", "carton", "crate", "bottle", "can",
+    "bag", "sack", "bundle", "set", "dozen", "roll",
 }
 
 
 def _normalized_decimal(value):
     value = Decimal(value)
-    return format(value.quantize(Decimal("1")), "f") if value == value.to_integral_value() else format(value.normalize(), "f")
+    if value == value.to_integral_value():
+        return format(value.quantize(Decimal("1")), "f")
+    return format(value.normalize(), "f")
 
 
 def _is_countable(unit):
     return (unit or "").strip().casefold() in COUNTABLE_UNITS
 
 
-def _require_whole_quantity(*, quantity, unit, field="quantity"):
-    if _is_countable(unit) and Decimal(quantity) != Decimal(quantity).to_integral_value():
+def _require_whole_quantity(*, quantity, unit, field):
+    quantity = Decimal(quantity)
+    if _is_countable(unit) and quantity != quantity.to_integral_value():
         raise ValidationError(
             {field: [f"{unit.title()} is a countable unit. Enter a whole number, for example 2 instead of 2.5."]}
         )
@@ -107,64 +80,46 @@ class PolishedStockReceiptSerializer(StockReceiptSerializer):
         return obj.status == StockReceipt.Status.RECEIVED and timezone.now() <= _correction_deadline(obj)
 
     def get_correction_deadline(self, obj):
-        if obj.status != StockReceipt.Status.RECEIVED:
-            return None
-        return _correction_deadline(obj)
+        return _correction_deadline(obj) if obj.status == StockReceipt.Status.RECEIVED else None
 
 
 class PolishedStockReceiptCreateSerializer(StockReceiptCreateSerializer):
     def validate(self, attrs):
         attrs = super().validate(attrs)
         business_id = self.context.get("business_id")
-        known_units = {}
-        catalog_items = attrs.get("catalog_items", [])
-        product_ids = [item["product_id"] for item in catalog_items if item.get("product_id")]
-        products = Product.objects.filter(id__in=product_ids, business_id=business_id)
-        product_units = {product.id: product.unit for product in products}
-        for item in catalog_items:
-            if item.get("product_id"):
-                known_units[item["key"]] = product_units.get(item["product_id"], "")
-            else:
-                known_units[item["key"]] = item.get("item", {}).get("unit", "")
+        catalog_units = {}
+        product_ids = [
+            item["product_id"] for item in attrs.get("catalog_items", []) if item.get("product_id")
+        ]
+        existing_units = dict(
+            Product.objects.filter(id__in=product_ids, business_id=business_id).values_list("id", "unit")
+        )
+        for item in attrs.get("catalog_items", []):
+            catalog_units[item["key"]] = (
+                existing_units.get(item.get("product_id"), "")
+                if item.get("product_id")
+                else item.get("item", {}).get("unit", "")
+            )
 
         for batch_index, batch in enumerate(attrs["batches"], start=1):
             for group_index, group in enumerate(batch.get("groups", []), start=1):
-                _require_whole_quantity(
-                    quantity=group["quantity"],
-                    unit=group["unit"],
-                    field="batches",
-                )
+                if _is_countable(group["unit"]) and group["quantity"] != group["quantity"].to_integral_value():
+                    raise ValidationError(
+                        {"batches": [f"Batch {batch_index}, group {group_index}: {group['unit']} requires a whole quantity."]}
+                    )
                 for type_index, line in enumerate(group.get("types", []), start=1):
                     unit = line.get("received_unit") or group["unit"]
-                    try:
-                        _require_whole_quantity(
-                            quantity=line["quantity_received"], unit=unit, field="batches"
-                        )
-                    except ValidationError:
+                    if _is_countable(unit) and line["quantity_received"] != line["quantity_received"].to_integral_value():
                         raise ValidationError(
-                            {
-                                "batches": [
-                                    f"Batch {batch_index}, group {group_index}, product {type_index}: {unit} requires a whole quantity."
-                                ]
-                            }
+                            {"batches": [f"Batch {batch_index}, group {group_index}, product {type_index}: {unit} requires a whole quantity."]}
                         )
             for line_index, line in enumerate(batch.get("products", []), start=1):
-                unit = line.get("received_unit") or known_units.get(line.get("catalog_key"), "")
+                unit = line.get("received_unit") or catalog_units.get(line.get("catalog_key"), "")
                 if not unit and line.get("product_id"):
-                    unit = Product.objects.filter(
-                        id=line["product_id"], business_id=business_id
-                    ).values_list("unit", flat=True).first() or ""
-                try:
-                    _require_whole_quantity(
-                        quantity=line["quantity_received"], unit=unit, field="batches"
-                    )
-                except ValidationError:
+                    unit = Product.objects.filter(id=line["product_id"], business_id=business_id).values_list("unit", flat=True).first() or ""
+                if _is_countable(unit) and line["quantity_received"] != line["quantity_received"].to_integral_value():
                     raise ValidationError(
-                        {
-                            "batches": [
-                                f"Batch {batch_index}, product {line_index}: {unit} requires a whole quantity."
-                            ]
-                        }
+                        {"batches": [f"Batch {batch_index}, product {line_index}: {unit} requires a whole quantity."]}
                     )
         return attrs
 
@@ -173,25 +128,14 @@ class ProductCorrectionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = [
-            "name",
-            "barcode",
-            "group",
-            "brand",
-            "variant",
-            "unit",
-            "selling_price",
-            "tracking_mode",
-            "low_stock_threshold",
-            "is_active",
+            "name", "barcode", "group", "brand", "variant", "unit", "selling_price",
+            "tracking_mode", "low_stock_threshold", "is_active",
         ]
-        extra_kwargs = {field: {"required": False} for field in fields}
 
 
 class StockLineCorrectionSerializer(serializers.Serializer):
     id = serializers.UUIDField()
-    quantity = serializers.DecimalField(
-        max_digits=14, decimal_places=3, min_value=Decimal("0.001"), required=False
-    )
+    quantity = serializers.DecimalField(max_digits=14, decimal_places=3, min_value=Decimal("0.001"), required=False)
     unit = serializers.CharField(max_length=32, required=False)
     name = serializers.CharField(max_length=120, required=False)
     brand = serializers.CharField(max_length=80, required=False, allow_blank=True)
@@ -201,9 +145,7 @@ class StockLineCorrectionSerializer(serializers.Serializer):
 
 class StockReceiptCorrectionSerializer(serializers.Serializer):
     supplier_name = serializers.CharField(max_length=120, required=False, allow_blank=True)
-    additional_cost = serializers.DecimalField(
-        max_digits=14, decimal_places=2, min_value=Decimal("0"), required=False
-    )
+    additional_cost = serializers.DecimalField(max_digits=14, decimal_places=2, min_value=Decimal("0"), required=False)
     notes = serializers.CharField(max_length=300, required=False, allow_blank=True)
     lines = StockLineCorrectionSerializer(many=True, required=False)
 
@@ -211,9 +153,7 @@ class StockReceiptCorrectionSerializer(serializers.Serializer):
 @transaction.atomic
 def correct_stock_receipt(*, actor, business_id, receipt_id, lines=None, **values):
     membership = commerce_membership(
-        user=actor,
-        business_id=business_id,
-        permission=WorkspacePermission.MANAGE_INVENTORY,
+        user=actor, business_id=business_id, permission=WorkspacePermission.MANAGE_INVENTORY
     )
     receipt = (
         StockReceipt.objects.select_for_update()
@@ -252,69 +192,58 @@ def correct_stock_receipt(*, actor, business_id, receipt_id, lines=None, **value
         old_remaining = line.quantity_remaining
         old_unit = line.received_unit or product.unit
         consumed = max(Decimal("0"), old_received - old_remaining)
-        before_line = {
-            "id": str(line.id),
-            "product": product.name,
-            "quantity_received": str(old_received),
-            "quantity_remaining": str(old_remaining),
-            "unit": old_unit,
-            "brand": product.brand,
-            "variant": product.variant,
-            "barcode": product.barcode,
-        }
-        before["lines"].append(before_line)
+        before["lines"].append(
+            {
+                "id": str(line.id),
+                "product": product.name,
+                "quantity_received": str(old_received),
+                "quantity_remaining": str(old_remaining),
+                "unit": old_unit,
+                "brand": product.brand,
+                "variant": product.variant,
+                "barcode": product.barcode,
+            }
+        )
 
+        product_fields = []
         for field in ["name", "brand", "variant", "barcode"]:
             if field in correction:
                 setattr(product, field, correction[field])
+                product_fields.append(field)
 
         new_unit = correction.get("unit", old_unit).strip()
-        unit_changed = new_unit.casefold() != old_unit.casefold()
-        if unit_changed:
+        if new_unit.casefold() != old_unit.casefold():
             if line.stock_group_id:
-                raise ValidationError(
-                    {"lines": [f"{product.name}: grouped stock units cannot be rewritten from the item line. Correct the group or use a governed inventory correction."]}
-                )
+                raise ValidationError({"lines": [f"{product.name}: grouped stock units cannot be rewritten from one item line."]})
             if consumed > 0 or line.movements.exclude(kind=InventoryMovement.Kind.RECEIPT).exists():
-                raise ValidationError(
-                    {"lines": [f"{product.name}: the unit cannot be changed because this stock already has sales, returns, or adjustments."]}
-                )
+                raise ValidationError({"lines": [f"{product.name}: the unit cannot be changed because this stock already has dependent activity."]})
             if product.stock_batches.exclude(pk=line.pk).exists():
-                raise ValidationError(
-                    {"lines": [f"{product.name}: the unit is used by other stock receipts. Correcting it here would rewrite older history."]}
-                )
+                raise ValidationError({"lines": [f"{product.name}: the unit is already used by other stock receipts."]})
             if line.conversion_to_base != Decimal("1"):
-                raise ValidationError(
-                    {"lines": [f"{product.name}: converted units require a governed correction rather than a direct unit rename."]}
-                )
+                raise ValidationError({"lines": [f"{product.name}: converted units require a governed inventory correction."]})
             line.received_unit = new_unit
             product.unit = new_unit
+            product_fields.append("unit")
 
-        quantity_in_received_unit = correction.get("quantity")
-        if quantity_in_received_unit is not None:
-            _require_whole_quantity(
-                quantity=quantity_in_received_unit, unit=new_unit, field="lines"
-            )
-            new_received = quantity_in_received_unit * line.conversion_to_base
+        if product_fields:
+            product.save(update_fields=[*set(product_fields), "updated_at"])
+
+        quantity = correction.get("quantity")
+        if quantity is not None:
+            _require_whole_quantity(quantity=quantity, unit=new_unit, field="lines")
+            new_received = quantity * line.conversion_to_base
             if line.tracking_mode == Product.TrackingMode.INDIVIDUAL:
                 if new_received != new_received.to_integral_value():
                     raise ValidationError({"lines": [f"{product.name}: individual items require a whole quantity."]})
                 tracked_count = line.tracked_units.count()
                 if tracked_count != int(new_received):
-                    raise ValidationError(
-                        {"lines": [f"{product.name}: quantity must match the {tracked_count} individual item records already saved."]}
-                    )
+                    raise ValidationError({"lines": [f"{product.name}: quantity must match the {tracked_count} individual item records already saved."]})
             if new_received < consumed:
-                raise ValidationError(
-                    {"lines": [f"{product.name}: quantity cannot be reduced below {consumed}, because that amount has already left available stock."]}
-                )
+                raise ValidationError({"lines": [f"{product.name}: quantity cannot be reduced below {consumed}, because that amount has already left available stock."]})
             if line.stock_group_id:
-                siblings = line.stock_group.type_lines.exclude(pk=line.pk)
-                if siblings.exists():
-                    raise ValidationError(
-                        {"lines": [f"{product.name}: this grouped quantity shares a declared group total. Correct the complete group instead of one product line."]}
-                    )
-                line.stock_group.quantity = quantity_in_received_unit
+                if line.stock_group.type_lines.exclude(pk=line.pk).exists():
+                    raise ValidationError({"lines": [f"{product.name}: correct the complete group rather than one product line."]})
+                line.stock_group.quantity = quantity
                 line.stock_group.save(update_fields=["quantity", "updated_at"])
 
             delta = new_received - old_received
@@ -324,9 +253,7 @@ def correct_stock_receipt(*, actor, business_id, receipt_id, lines=None, **value
                 if line.quantity_remaining < 0:
                     raise ValidationError({"lines": [f"{product.name}: this correction would create negative available stock."]})
                 if delta:
-                    Product.objects.filter(pk=product.pk).update(
-                        current_quantity=F("current_quantity") + delta
-                    )
+                    Product.objects.filter(pk=product.pk).update(current_quantity=F("current_quantity") + delta)
                     InventoryMovement.objects.create(
                         business=membership.business,
                         product=product,
@@ -340,7 +267,6 @@ def correct_stock_receipt(*, actor, business_id, receipt_id, lines=None, **value
             else:
                 line.quantity_remaining = Decimal("0")
 
-        product.save()
         line.save()
         product.refresh_from_db()
         after["lines"].append(
@@ -358,7 +284,6 @@ def correct_stock_receipt(*, actor, business_id, receipt_id, lines=None, **value
 
     if receipt.status == StockReceipt.Status.RECEIVED:
         _sync_stock_expense(receipt=receipt, actor=actor)
-
     after.update(
         {
             "supplier_name": receipt.supplier_name,
@@ -368,11 +293,7 @@ def correct_stock_receipt(*, actor, business_id, receipt_id, lines=None, **value
     )
     if values or lines:
         StockReceiptAudit.objects.create(
-            receipt=receipt,
-            actor=actor,
-            action="edit_details",
-            before=before,
-            after=after,
+            receipt=receipt, actor=actor, action="edit_details", before=before, after=after
         )
     refresh_decisions(business=membership.business)
     return receipt
@@ -405,9 +326,7 @@ class ProductDetailPolishAPIView(CommerceBaseAPIView):
     @method_decorator(csrf_protect)
     def patch(self, request, business_id, product_id):
         membership = commerce_membership(
-            user=request.user,
-            business_id=business_id,
-            permission=WorkspacePermission.MANAGE_CATALOG,
+            user=request.user, business_id=business_id, permission=WorkspacePermission.MANAGE_CATALOG
         )
         product = Product.objects.filter(id=product_id, business=membership.business).first()
         if product is None:
@@ -422,9 +341,7 @@ class ProductDetailPolishAPIView(CommerceBaseAPIView):
                 {"unit": ["This item already has stock history. Correct its unit from the original stock receipt while that receipt is inside its 48-hour correction window."]}
             )
         if serializer.validated_data.get("is_active") is False and product.current_quantity > 0:
-            raise ValidationError(
-                {"is_active": ["An item with available stock cannot be archived. Correct or use the remaining stock first."]}
-            )
+            raise ValidationError({"is_active": ["An item with available stock cannot be archived."]})
         product = serializer.save()
         return SuccessResponse(
             message="Available item corrected successfully.",
@@ -471,11 +388,7 @@ class StockReceiptListCreatePolishAPIView(CommerceBaseAPIView):
             "batches__groups__type_lines__tracked_units",
         ).get(pk=receipt.pk)
         return SuccessResponse(
-            message=(
-                "Stock draft saved successfully."
-                if receipt.status == StockReceipt.Status.DRAFT
-                else "Stock received successfully."
-            ),
+            message="Stock draft saved successfully." if receipt.status == StockReceipt.Status.DRAFT else "Stock received successfully.",
             data=PolishedStockReceiptSerializer(receipt).data,
             status_code=status.HTTP_201_CREATED,
         )
@@ -487,10 +400,7 @@ class StockReceiptDetailPolishAPIView(CommerceBaseAPIView):
         serializer = StockReceiptCorrectionSerializer(data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         receipt = correct_stock_receipt(
-            actor=request.user,
-            business_id=business_id,
-            receipt_id=receipt_id,
-            **serializer.validated_data,
+            actor=request.user, business_id=business_id, receipt_id=receipt_id, **serializer.validated_data
         )
         return SuccessResponse(
             message="Stock correction saved successfully.",
