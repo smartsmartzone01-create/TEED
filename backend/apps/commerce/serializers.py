@@ -64,7 +64,21 @@ class TrackedUnitInputSerializer(serializers.Serializer):
     )
 
 
+class CatalogItemInputSerializer(serializers.Serializer):
+    key = serializers.CharField(max_length=80)
+    product_id = serializers.UUIDField(required=False)
+    item = ProductSerializer(required=False)
+
+    def validate(self, attrs):
+        if bool(attrs.get("product_id")) == bool(attrs.get("item")):
+            raise serializers.ValidationError(
+                "Choose an existing product or enter a new product identification."
+            )
+        return attrs
+
+
 class StockLineInputSerializer(serializers.Serializer):
+    catalog_key = serializers.CharField(max_length=80, required=False)
     product_id = serializers.UUIDField(required=False)
     item = ProductSerializer(required=False)
     tracking_mode = serializers.ChoiceField(
@@ -90,9 +104,12 @@ class StockLineInputSerializer(serializers.Serializer):
     tracked_units = TrackedUnitInputSerializer(many=True, required=False, default=list)
 
     def validate(self, attrs):
-        if bool(attrs.get("product_id")) == bool(attrs.get("item")):
+        choices = sum(
+            bool(attrs.get(field)) for field in ["catalog_key", "product_id", "item"]
+        )
+        if choices != 1:
             raise serializers.ValidationError(
-                "Choose an existing item or enter a new item, not both."
+                "Allocate exactly one product identification to this stock entry."
             )
         return attrs
 
@@ -130,10 +147,19 @@ class StockGroupInputSerializer(serializers.Serializer):
 class StockContainerInputSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=120)
     notes = serializers.CharField(max_length=240, required=False, allow_blank=True)
-    groups = StockGroupInputSerializer(many=True, min_length=1)
+    products = StockLineInputSerializer(many=True, required=False, default=list)
+    groups = StockGroupInputSerializer(many=True, required=False, default=list)
+
+    def validate(self, attrs):
+        if not attrs["products"] and not attrs["groups"]:
+            raise serializers.ValidationError(
+                "Record at least one direct product or one product group."
+            )
+        return attrs
 
 
 class StockReceiptCreateSerializer(serializers.Serializer):
+    catalog_items = CatalogItemInputSerializer(many=True, required=False, default=list)
     status = serializers.ChoiceField(
         choices=[StockReceipt.Status.DRAFT, StockReceipt.Status.RECEIVED],
         default=StockReceipt.Status.RECEIVED,
@@ -152,6 +178,27 @@ class StockReceiptCreateSerializer(serializers.Serializer):
     batches = StockContainerInputSerializer(many=True, min_length=1)
 
     def validate(self, attrs):
+        catalog_keys = [item["key"] for item in attrs["catalog_items"]]
+        if len(catalog_keys) != len(set(catalog_keys)):
+            raise serializers.ValidationError(
+                {"catalog_items": "Product identification keys must be unique."}
+            )
+        known_keys = set(catalog_keys)
+        for batch in attrs["batches"]:
+            lines = list(batch["products"])
+            for group in batch["groups"]:
+                lines.extend(group.get("types", []))
+            missing = [
+                line["catalog_key"]
+                for line in lines
+                if line.get("catalog_key") and line["catalog_key"] not in known_keys
+            ]
+            if missing:
+                raise serializers.ValidationError(
+                    {
+                        "catalog_items": "A stock entry uses an unknown product identification."
+                    }
+                )
         if attrs["status"] == StockReceipt.Status.RECEIVED:
             for batch in attrs["batches"]:
                 for group in batch["groups"]:

@@ -109,6 +109,14 @@ class CommerceServiceTests(TestCase):
                             "unit": "50 kg sack",
                             "base_unit": "kg",
                             "conversion_to_base": Decimal("50"),
+                            "types": [
+                                {
+                                    "item": {"name": "Sugar", "unit": "kg"},
+                                    "quantity_received": Decimal("1"),
+                                    "received_unit": "50 kg sack",
+                                    "conversion_to_base": Decimal("50"),
+                                }
+                            ],
                         },
                     ],
                 }
@@ -232,6 +240,14 @@ class CommerceServiceTests(TestCase):
                             "custom_unit_name": "bolt",
                             "base_unit": "meter",
                             "conversion_to_base": Decimal("30"),
+                            "types": [
+                                {
+                                    "item": {"name": "Kitenge", "unit": "meter"},
+                                    "quantity_received": Decimal("2"),
+                                    "received_unit": "bolt",
+                                    "conversion_to_base": Decimal("30"),
+                                }
+                            ],
                         }
                     ],
                 }
@@ -358,6 +374,84 @@ class CommerceServiceTests(TestCase):
         self.assertEqual(receipt.lines.get().tracking_mode, "individual")
         self.assertEqual(self.product.tracking_mode, "quantity")
 
+    def test_batch_catalog_allocates_one_identity_to_direct_and_grouped_stock(self):
+        receipt = create_stock_receipt(
+            actor=self.owner,
+            business_id=self.business.id,
+            status="received",
+            received_at=timezone.now(),
+            catalog_items=[{"key": "iphone", "product_id": self.product.id}],
+            batches=[
+                {
+                    "name": "Direct phones",
+                    "products": [
+                        {
+                            "catalog_key": "iphone",
+                            "quantity_received": Decimal("2"),
+                            "received_unit": "pair",
+                        }
+                    ],
+                    "groups": [],
+                },
+                {
+                    "name": "Grouped phones",
+                    "products": [],
+                    "groups": [
+                        {
+                            "name": "Shoes",
+                            "quantity": Decimal("3"),
+                            "unit": "pair",
+                            "types": [
+                                {
+                                    "catalog_key": "iphone",
+                                    "quantity_received": Decimal("3"),
+                                }
+                            ],
+                        }
+                    ],
+                },
+            ],
+        )
+        self.assertEqual(receipt.lines.count(), 2)
+        self.assertEqual(receipt.lines.filter(stock_group__isnull=True).count(), 1)
+        self.assertEqual(
+            set(receipt.lines.values_list("product_id", flat=True)), {self.product.id}
+        )
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.current_quantity, Decimal("5"))
+
+    def test_new_catalog_identity_keeps_its_base_unit_for_calculation(self):
+        receipt = create_stock_receipt(
+            actor=self.owner,
+            business_id=self.business.id,
+            status="received",
+            received_at=timezone.now(),
+            catalog_items=[
+                {
+                    "key": "nails",
+                    "item": {"name": "Nails", "unit": "kilogram"},
+                }
+            ],
+            batches=[
+                {
+                    "name": "Hardware",
+                    "products": [
+                        {
+                            "catalog_key": "nails",
+                            "quantity_received": Decimal("100"),
+                            "received_unit": "kilogram",
+                        }
+                    ],
+                    "groups": [],
+                }
+            ],
+        )
+        nails = Product.objects.get(name="Nails")
+        self.assertEqual(nails.unit, "kilogram")
+        self.assertTrue(nails.sku.startswith("ITM-"))
+        self.assertEqual(receipt.lines.get().quantity_received, Decimal("100"))
+        self.assertEqual(nails.current_quantity, Decimal("100"))
+
     def test_batch_groups_create_types_after_groups(self):
         receipt = create_stock_receipt(
             actor=self.owner,
@@ -389,11 +483,23 @@ class CommerceServiceTests(TestCase):
                             "name": "T-shirts",
                             "quantity": Decimal("10"),
                             "unit": "piece",
+                            "types": [
+                                {
+                                    "item": {"name": "T-shirts", "unit": "piece"},
+                                    "quantity_received": Decimal("10"),
+                                }
+                            ],
                         },
                         {
                             "name": "Jeans",
                             "quantity": Decimal("10"),
                             "unit": "piece",
+                            "types": [
+                                {
+                                    "item": {"name": "Jeans", "unit": "piece"},
+                                    "quantity_received": Decimal("10"),
+                                }
+                            ],
                         },
                     ],
                 }
@@ -435,6 +541,34 @@ class CommerceServiceTests(TestCase):
             }
         )
         self.assertFalse(serializer.is_valid())
+
+    def test_catalog_identification_payload_accepts_direct_stock(self):
+        serializer = StockReceiptCreateSerializer(
+            data={
+                "status": "received",
+                "received_at": timezone.now().isoformat(),
+                "catalog_items": [
+                    {
+                        "key": "nails",
+                        "item": {"name": "Nails", "unit": "kilogram"},
+                    }
+                ],
+                "batches": [
+                    {
+                        "name": "Hardware",
+                        "products": [
+                            {
+                                "catalog_key": "nails",
+                                "quantity_received": "100",
+                                "received_unit": "kilogram",
+                            }
+                        ],
+                        "groups": [],
+                    }
+                ],
+            }
+        )
+        self.assertTrue(serializer.is_valid(), serializer.errors)
 
     def test_sale_allocates_fifo_across_batches_and_calculates_profit(self):
         first = self.receive("2", "30000")

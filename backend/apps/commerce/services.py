@@ -76,8 +76,17 @@ def create_product(*, actor, business_id, **values):
     )
 
 
-def _create_stock_type_line(*, actor, membership, receipt, stock_group, line, status):
+def _create_stock_type_line(
+    *, actor, membership, receipt, stock_group, line, status, catalog_products=None
+):
+    catalog_key = line.pop("catalog_key", None)
     product_id = line.pop("product_id", None)
+    if catalog_key:
+        product_id = (catalog_products or {}).get(catalog_key)
+        if product_id is None:
+            raise ValidationError(
+                {"catalog_items": ["Select a product identification from this batch."]}
+            )
     product_values = line.pop("item", None)
     if product_id:
         product = (
@@ -88,10 +97,14 @@ def _create_stock_type_line(*, actor, membership, receipt, stock_group, line, st
         if product is None:
             raise ValidationError({"batches": ["Select an available item."]})
     elif product_values:
-        product_values.setdefault("group", stock_group.name)
-        product_values.setdefault("unit", stock_group.base_unit or stock_group.unit)
+        product_values.setdefault("group", stock_group.name if stock_group else "")
+        product_values.setdefault(
+            "unit",
+            (stock_group.base_unit or stock_group.unit) if stock_group else "piece",
+        )
         if (
             "selling_price" not in product_values
+            and stock_group
             and stock_group.selling_price is not None
         ):
             product_values["selling_price"] = stock_group.selling_price
@@ -102,7 +115,9 @@ def _create_stock_type_line(*, actor, membership, receipt, stock_group, line, st
         raise ValidationError({"batches": ["Each type needs an item."]})
 
     quantity = line.pop("quantity_received")
-    conversion = line.pop("conversion_to_base", stock_group.conversion_to_base)
+    conversion = line.pop(
+        "conversion_to_base", stock_group.conversion_to_base if stock_group else 1
+    )
     base_quantity = quantity * conversion
     identifiers = line.pop("tracked_units", [])
     tracking_mode = line.pop("tracking_mode", product.tracking_mode)
@@ -137,8 +152,16 @@ def _create_stock_type_line(*, actor, membership, receipt, stock_group, line, st
         if status == StockReceipt.Status.RECEIVED
         else 0,
         conversion_to_base=conversion,
-        received_unit=line.pop("received_unit", stock_group.unit),
-        unit_cost=unit_cost if unit_cost is not None else stock_group.buying_price,
+        received_unit=line.pop(
+            "received_unit", stock_group.unit if stock_group else product.unit
+        ),
+        unit_cost=(
+            unit_cost
+            if unit_cost is not None
+            else stock_group.buying_price
+            if stock_group
+            else None
+        ),
         received_at=receipt.received_at or timezone.now(),
         supplier_name=receipt.supplier_name,
         recorded_by=actor,
@@ -194,7 +217,9 @@ def _create_stock_type_line(*, actor, membership, receipt, stock_group, line, st
 
 
 @transaction.atomic
-def create_stock_receipt(*, actor, business_id, batches, status="received", **values):
+def create_stock_receipt(
+    *, actor, business_id, batches, catalog_items=None, status="received", **values
+):
     membership = commerce_membership(
         user=actor,
         business_id=business_id,
@@ -217,14 +242,54 @@ def create_stock_receipt(*, actor, business_id, batches, status="received", **va
         recorded_by=actor,
         **values,
     )
+    catalog_products = {}
+    for catalog_item in catalog_items or []:
+        key = catalog_item["key"]
+        product_id = catalog_item.get("product_id")
+        if product_id:
+            product = Product.objects.filter(
+                id=product_id, business=membership.business, is_active=True
+            ).first()
+            if product is None:
+                raise ValidationError(
+                    {"catalog_items": ["Select an available product identification."]}
+                )
+        else:
+            product_values = catalog_item["item"]
+            product = Product.objects.filter(
+                business=membership.business,
+                name__iexact=product_values["name"],
+                brand__iexact=product_values.get("brand", ""),
+                variant__iexact=product_values.get("variant", ""),
+                unit=product_values["unit"],
+                is_active=True,
+            ).first()
+            if product is None:
+                product = create_product(
+                    actor=actor,
+                    business_id=membership.business_id,
+                    **product_values,
+                )
+        catalog_products[key] = product.id
     for batch_position, batch_values in enumerate(batches):
-        groups = batch_values.pop("groups")
+        groups = batch_values.pop("groups", [])
+        direct_products = batch_values.pop("products", [])
         container = StockContainer.objects.create(
             receipt=receipt,
             code=f"BAT-{batch_position + 1:03d}",
             position=batch_position,
             **batch_values,
         )
+        for line in direct_products:
+            _create_stock_type_line(
+                actor=actor,
+                membership=membership,
+                receipt=receipt,
+                stock_group=None,
+                line=line,
+                status=status,
+                catalog_products=catalog_products,
+            )
         for group_position, group_values in enumerate(groups):
             types = group_values.pop("types", [])
             custom_unit_name = group_values.pop("custom_unit_name", "").strip()
@@ -258,20 +323,15 @@ def create_stock_receipt(*, actor, business_id, batches, status="received", **va
                 **group_values,
             )
             if not types:
-                types = [
-                    {
-                        "item": {
-                            "name": stock_group.name,
-                            "group": stock_group.name,
-                            "unit": stock_group.base_unit or stock_group.unit,
-                            "selling_price": stock_group.selling_price,
-                        },
-                        "quantity_received": stock_group.quantity,
-                        "received_unit": stock_group.unit,
-                        "conversion_to_base": stock_group.conversion_to_base,
-                        "unit_cost": stock_group.buying_price,
-                    }
-                ]
+                if status == StockReceipt.Status.RECEIVED:
+                    raise ValidationError(
+                        {
+                            "batches": [
+                                f"Allocate a product identification to {stock_group.name}."
+                            ]
+                        }
+                    )
+                continue
             for line in types:
                 _create_stock_type_line(
                     actor=actor,
@@ -280,6 +340,7 @@ def create_stock_receipt(*, actor, business_id, batches, status="received", **va
                     stock_group=stock_group,
                     line=line,
                     status=status,
+                    catalog_products=catalog_products,
                 )
     refresh_decisions(business=membership.business)
     return receipt
@@ -299,6 +360,24 @@ def receive_draft_stock(*, actor, business_id, receipt_id, received_at=None):
     )
     if receipt is None or receipt.status != StockReceipt.Status.DRAFT:
         raise ValidationError({"receipt": ["Select a draft stock receipt."]})
+    incomplete_groups = [
+        group.name
+        for container in receipt.batches.prefetch_related("groups__type_lines")
+        for group in container.groups.all()
+        if not group.type_lines.exists()
+        or sum(
+            (line.quantity_received for line in group.type_lines.all()), Decimal("0")
+        )
+        != group.quantity * group.conversion_to_base
+    ]
+    if incomplete_groups:
+        raise ValidationError(
+            {
+                "batches": [
+                    f"Finish allocating products in {', '.join(incomplete_groups)}."
+                ]
+            }
+        )
     receipt.received_at = received_at or timezone.now()
     incomplete = [
         batch.product.name
