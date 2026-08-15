@@ -18,7 +18,7 @@ def _quantity_text(value):
     return format(value.normalize(), "f")
 
 
-def _notify_stock_attention(*, product_id):
+def notify_stock_attention(*, product_id):
     product = (
         Product.objects.select_related("business")
         .filter(id=product_id, is_active=True)
@@ -87,4 +87,4 @@ def queue_stock_attention_notification(sender, instance, created, **kwargs):
     if not created:
         return
     product_id = instance.product_id
-    transaction.on_commit(lambda: _notify_stock_attention(product_id=product_id))
+    transaction.on_commit(lambda: notify_stock_attention(product_id=product_id))
