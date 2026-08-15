@@ -1,14 +1,6 @@
-import { CommercePageShell } from "@/components/commerce/commerce-page-shell";
-import { CommerceWorkspace } from "@/components/commerce/commerce-workspace";
+import { ExpensesWorkspace } from "@/components/commerce/finance/expenses-workspace";
+import { CommercePageShell } from "@/components/commerce/shared/commerce-page-shell";
 
-export default async function Page({
-  params,
-}: {
-  params: Promise<{ businessId: string }>;
-}) {
-  return (
-    <CommercePageShell>
-      <CommerceWorkspace businessId={(await params).businessId} view="expenses" />
-    </CommercePageShell>
-  );
+export default async function Page({ params }: { params: Promise<{ businessId: string }> }) {
+  return <CommercePageShell><ExpensesWorkspace businessId={(await params).businessId} /></CommercePageShell>;
 }
