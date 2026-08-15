@@ -1,7 +1,7 @@
 "use client";
 
-import { CircleHelp, ChevronDown, ChevronUp } from "lucide-react";
-import { useEffect, useState, type FormEvent } from "react";
+import { ChevronDown, ChevronUp, CircleHelp } from "lucide-react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/global/primitives/button";
@@ -82,7 +82,7 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
   const [draft, setDraft] = useState<EditDraft | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     if (!accessToken) return;
     try {
       const response = await getProducts(businessId, accessToken);
@@ -93,12 +93,12 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
         tone: "error",
       });
     }
-  };
+  }, [accessToken, businessId, notify, t]);
 
   useEffect(() => {
-    void load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [accessToken, businessId]);
+    const timeout = window.setTimeout(() => void load(), 0);
+    return () => window.clearTimeout(timeout);
+  }, [load]);
 
   const toggleEdit = (product: Product) => {
     if (editingId === product.id) {
