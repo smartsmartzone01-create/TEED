@@ -5,7 +5,7 @@
     "description": "Ujumbe muhimu wa akaunti na viungo salama vya kufungua sehemu ya TEED inayohusika na kila hatua.",
     "workspaceEyebrow": "Eneo la kazi la biashara",
     "workspaceTitle": "Arifa za biashara",
-    "workspaceDescription": "Ujumbe wa utawala na udhibiti wa biashara hii pekee.",
+    "workspaceDescription": "Taarifa na hatua muhimu za biashara hii pekee.",
     "bellLabel": "Fungua arifa, {count} hazijasomwa",
     "bellTooltip": "Arifa ambazo hazijasomwa: {count}",
     "refreshTooltip": "Kagua arifa mpya sasa.",
@@ -19,7 +19,7 @@
     "actionFailed": "Hatua ya arifa imeshindikana.",
     "retry": "Jaribu tena",
     "emptyTitle": "Umesoma arifa zote",
-    "emptyDescription": "Ujumbe mpya wa akaunti, usalama, eneo la kazi na mfumo utaonekana hapa.",
+    "emptyDescription": "Ujumbe mpya wa akaunti, usalama, eneo la kazi, biashara na mfumo utaonekana hapa.",
     "paginationLabel": "Kurasa za arifa",
     "previous": "Iliyotangulia",
     "next": "Inayofuata",
@@ -35,6 +35,8 @@
       "workspace_membership_changed": {"title":"Uanachama umebadilishwa","message":"Uanachama wako katika {workspace_name} sasa ni {status}. Jukumu lako ni {role}."},
       "business_control_request": {"title":"Idhini ya udhibiti inahitajika","message":"{action, select, delete {Ombi la kupanga kufutwa kwa {workspace_name} linahitaji uamuzi wako.} disable {Ombi la kuzima {workspace_name} linahitaji uamuzi wako.} reactivate {Ombi la kuwasha tena {workspace_name} linahitaji uamuzi wako.} cancel_deletion {Ombi la kughairi kufutwa kwa {workspace_name} linahitaji uamuzi wako.} other {Kitendo kilicholindwa cha {workspace_name} kinahitaji uamuzi wako.}}"},
       "business_control_decision": {"title":"Mzunguko wa biashara umebadilishwa","message":"{decision, select, approve {{action, select, delete {{workspace_name} sasa imepangwa kufutwa. Unaweza kughairi ufutaji wakati wa kipindi cha kurejesha.} disable {{workspace_name} sasa imezimwa.} reactivate {{workspace_name} imerudi kutumika.} cancel_deletion {Ufutaji wa {workspace_name} umeghairiwa na biashara imerudi kutumika.} other {Ombi la mzunguko wa {workspace_name} limeidhinishwa.}}} reject {Ombi la {action} kwa {workspace_name} limekataliwa. Hakuna mabadiliko yaliyofanyika.} other {Ombi la mzunguko wa {workspace_name} limeamuliwa.}}"},
+      "commerce_sold_out": {"title":"Bidhaa imeisha","message":"{item_name} ({sku}) imeisha. Rekodi mzigo mpya ili ipatikane tena."},
+      "commerce_low_stock": {"title":"Stock imepungua","message":"{item_name} imebaki {quantity} {unit}. Kiwango chako cha tahadhari ni {threshold}."},
       "system_announcement": {"title":"Taarifa ya TEED","message":"Taarifa muhimu ya akaunti ya TEED inapatikana."},
       "default": {"title":"Arifa ya akaunti","message":"Taarifa muhimu inapatikana kwa akaunti yako."}
     }
