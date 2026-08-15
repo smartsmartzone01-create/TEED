@@ -15,9 +15,9 @@ from .operations_polish import (
     ActiveProductListCreatePolishAPIView,
     ActiveStockReceiptListCreatePolishAPIView,
     GuardedStockReceiptArchiveAPIView,
+    ProductDetailOperationsPolishAPIView,
 )
 from .overview_polish import CommerceOverviewPolishAPIView
-from .stock_polish import ProductDetailPolishAPIView
 from .stock_polish_detail import GuardedStockReceiptDetailAPIView
 
 app_name = "commerce"
@@ -54,7 +54,7 @@ urlpatterns = [
     ),
     path(
         "businesses/<uuid:business_id>/products/<uuid:product_id>/",
-        ProductDetailPolishAPIView.as_view(),
+        ProductDetailOperationsPolishAPIView.as_view(),
         name="product-detail",
     ),
     path(
