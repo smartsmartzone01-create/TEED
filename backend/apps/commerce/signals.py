@@ -31,15 +31,23 @@ def _notify_stock_attention(*, product_id):
     if latest_movement is None:
         return
 
+    current_quantity = product.current_quantity
+    previous_quantity = current_quantity - latest_movement.quantity_delta
     template = None
-    if product.current_quantity == 0 and product.movements.filter(
-        kind=InventoryMovement.Kind.RECEIPT
-    ).exists():
+    if (
+        current_quantity == 0
+        and previous_quantity > 0
+        and product.movements.filter(kind=InventoryMovement.Kind.RECEIPT).exists()
+    ):
         template = UserNotification.Template.COMMERCE_SOLD_OUT
     elif (
-        product.current_quantity > 0
+        current_quantity > 0
         and product.low_stock_threshold > 0
-        and product.current_quantity <= product.low_stock_threshold
+        and current_quantity <= product.low_stock_threshold
+        and (
+            previous_quantity > product.low_stock_threshold
+            or previous_quantity <= 0
+        )
     ):
         template = UserNotification.Template.COMMERCE_LOW_STOCK
     if template is None:
@@ -49,7 +57,7 @@ def _notify_stock_attention(*, product_id):
     context = {
         "item_name": product.name,
         "sku": product.sku,
-        "quantity": _quantity_text(product.current_quantity),
+        "quantity": _quantity_text(current_quantity),
         "unit": product.unit,
         "threshold": _quantity_text(product.low_stock_threshold),
     }
