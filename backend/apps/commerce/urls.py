@@ -16,9 +16,9 @@ from .api import (
 from .stock_polish import (
     ProductDetailPolishAPIView,
     ProductListCreatePolishAPIView,
-    StockReceiptDetailPolishAPIView,
     StockReceiptListCreatePolishAPIView,
 )
+from .stock_polish_detail import GuardedStockReceiptDetailAPIView
 
 app_name = "commerce"
 urlpatterns = [
@@ -29,7 +29,7 @@ urlpatterns = [
     ),
     path(
         "businesses/<uuid:business_id>/stock-receipts/<uuid:receipt_id>/",
-        StockReceiptDetailPolishAPIView.as_view(),
+        GuardedStockReceiptDetailAPIView.as_view(),
         name="stock-receipt-detail",
     ),
     path(
