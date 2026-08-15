@@ -19,6 +19,11 @@ type Sale = {
   sold_at: string; items: SaleItem[]; recorded_by: string; status: "active" | "voided";
 };
 
+type Decision = {
+  id: string; key: string; severity: "info" | "attention" | "urgent";
+  title: string; explanation: string; action_path: string;
+};
+
 type CommercePulse = {
   revenue: string; cost_of_goods: string | null; gross_profit: string | null;
   operating_result: string | null; expenses: string | null; sales_count: number;
@@ -41,6 +46,7 @@ type ReturnOverview = {
 
 type CommerceOverview = {
   pulse: CommercePulse;
+  decisions: Decision[];
   recent_sales: Sale[];
   recent_stock: StockOverview[];
   recent_returns: ReturnOverview[];
@@ -50,6 +56,7 @@ type CommerceOverview = {
 export type {
   CommerceOverview,
   CommercePulse,
+  Decision,
   Product,
   ReturnOverview,
   Sale,
