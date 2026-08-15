@@ -26,7 +26,9 @@ class GuardedStockReceiptDetailAPIView(CommerceBaseAPIView):
         _assert_receipt_editable(receipt)
 
         if "lines" in request.data:
-            serializer = StockReceiptCorrectionSerializer(data=request.data, partial=True)
+            serializer = StockReceiptCorrectionSerializer(
+                data=request.data, partial=True
+            )
             serializer.is_valid(raise_exception=True)
             receipt = correct_stock_receipt(
                 actor=request.user,
