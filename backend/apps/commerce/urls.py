@@ -1,24 +1,21 @@
 from django.urls import path
 
-from .api import (
+from .catalog.api import (
+    ActiveProductListCreatePolishAPIView,
+    ProductDetailOperationsPolishAPIView,
+)
+from .finance.api import BudgetListCreateAPIView, ExpenseListCreateAPIView
+from .inventory.api import (
+    ActiveStockReceiptListCreatePolishAPIView,
     AdjustmentCreateAPIView,
-    BudgetListCreateAPIView,
-    ExpenseListCreateAPIView,
-    ReturnListCreateAPIView,
-    SaleDetailAPIView,
-    SaleListCreateAPIView,
-    SaleVoidAPIView,
+    GuardedStockReceiptArchiveAPIView,
+    GuardedStockReceiptDetailAPIView,
     StockBatchListCreateAPIView,
     StockReceiptReceiveAPIView,
 )
-from .operations_polish import (
-    ActiveProductListCreatePolishAPIView,
-    ActiveStockReceiptListCreatePolishAPIView,
-    GuardedStockReceiptArchiveAPIView,
-    ProductDetailOperationsPolishAPIView,
-)
-from .overview_polish import CommerceOverviewPolishAPIView
-from .stock_polish_detail import GuardedStockReceiptDetailAPIView
+from .overview.api import CommerceOverviewPolishAPIView
+from .returns.api import ReturnListCreateAPIView
+from .sales.api import SaleDetailAPIView, SaleListCreateAPIView, SaleVoidAPIView
 
 app_name = "commerce"
 urlpatterns = [
