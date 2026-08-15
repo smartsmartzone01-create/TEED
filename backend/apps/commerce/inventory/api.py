@@ -4,14 +4,15 @@ from django.views.decorators.csrf import csrf_protect
 
 from ..api import (
     AdjustmentCreateAPIView,
+    CommerceBaseAPIView,
     StockBatchListCreateAPIView,
     StockReceiptReceiveAPIView,
 )
+from ..catalog.models import UnitDefinition
 from ..serializers import UnitDefinitionSerializer
 from ..services import commerce_membership
 from ..stock_polish import PolishedStockReceiptSerializer, StockReceiptListCreatePolishAPIView
 from ..stock_polish_detail import GuardedStockReceiptDetailAPIView
-from ..catalog.models import UnitDefinition
 from .services import archive_draft_stock_receipt, current_stock_receipts
 
 
@@ -42,5 +43,27 @@ class ActiveStockReceiptListCreatePolishAPIView(StockReceiptListCreatePolishAPIV
         )
 
 
-class GuardedStockReceiptArchiveAPIView:
-    pass
+class GuardedStockReceiptArchiveAPIView(CommerceBaseAPIView):
+    """Only draft stock can leave the active workspace through archiving."""
+
+    @method_decorator(csrf_protect)
+    def post(self, request, business_id, receipt_id):
+        receipt = archive_draft_stock_receipt(
+            actor=request.user,
+            business_id=business_id,
+            receipt_id=receipt_id,
+        )
+        return SuccessResponse(
+            message="Draft stock archived successfully.",
+            data=PolishedStockReceiptSerializer(receipt).data,
+        )
+
+
+__all__ = [
+    "ActiveStockReceiptListCreatePolishAPIView",
+    "AdjustmentCreateAPIView",
+    "GuardedStockReceiptArchiveAPIView",
+    "GuardedStockReceiptDetailAPIView",
+    "StockBatchListCreateAPIView",
+    "StockReceiptReceiveAPIView",
+]
