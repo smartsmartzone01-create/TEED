@@ -5,7 +5,7 @@
     "description": "Important account messages and safe links to the TEED area where each action belongs.",
     "workspaceEyebrow": "Business workspace",
     "workspaceTitle": "Business notifications",
-    "workspaceDescription": "Governance and control messages for this Business only.",
+    "workspaceDescription": "Important updates and actions for this Business only.",
     "bellLabel": "Open notifications, {count} unread",
     "bellTooltip": "{count, plural, =0 {No unread notifications} one {# unread notification} other {# unread notifications}}",
     "refreshTooltip": "Check for new notifications now.",
@@ -19,7 +19,7 @@
     "actionFailed": "The notification action failed.",
     "retry": "Try again",
     "emptyTitle": "You are all caught up",
-    "emptyDescription": "New account, security, workspace, and system messages will appear here.",
+    "emptyDescription": "New account, security, workspace, commerce, and system messages will appear here.",
     "paginationLabel": "Notification pages",
     "previous": "Previous",
     "next": "Next",
@@ -35,6 +35,8 @@
       "workspace_membership_changed": {"title":"Membership changed","message":"Your membership in {workspace_name} is now {status}. Your assigned role is {role}."},
       "business_control_request": {"title":"Business control approval required","message":"{action, select, delete {A request to schedule {workspace_name} for deletion requires your decision.} disable {A request to disable {workspace_name} requires your decision.} reactivate {A request to reactivate {workspace_name} requires your decision.} cancel_deletion {A request to cancel deletion of {workspace_name} requires your decision.} other {A protected lifecycle action for {workspace_name} requires your decision.}}"},
       "business_control_decision": {"title":"Business lifecycle updated","message":"{decision, select, approve {{action, select, delete {{workspace_name} is now scheduled for deletion. You may cancel deletion during the recovery period.} disable {{workspace_name} is now disabled.} reactivate {{workspace_name} is active again.} cancel_deletion {Deletion of {workspace_name} was cancelled and the Business is active again.} other {The lifecycle request for {workspace_name} was approved.}}} reject {The {action} request for {workspace_name} was rejected. No lifecycle change was applied.} other {The lifecycle request for {workspace_name} was decided.}}"},
+      "commerce_sold_out": {"title":"Item sold out","message":"{item_name} ({sku}) is sold out. Record new stock to make it available again."},
+      "commerce_low_stock": {"title":"Low stock","message":"{item_name} has {quantity} {unit} remaining. Your alert level is {threshold}."},
       "system_announcement": {"title":"TEED update","message":"An important TEED account update is available."},
       "default": {"title":"Account notification","message":"An important update is available for your account."}
     }
