@@ -6,13 +6,13 @@ from rest_framework.exceptions import ValidationError
 from apps.workspaces.policy import WorkspacePermission
 
 from ..api import CommerceBaseAPIView
-from ..serializers import UnitDefinitionSerializer
-from ..services import commerce_membership
-from ..stock_polish import (
+from ..inventory.stock import (
     AvailabilityProductSerializer,
     ProductCorrectionSerializer,
     ProductListCreatePolishAPIView,
 )
+from ..serializers import UnitDefinitionSerializer
+from ..services import commerce_membership
 from .models import Product, UnitDefinition
 from .services import active_catalog_products, set_catalog_product_active
 
