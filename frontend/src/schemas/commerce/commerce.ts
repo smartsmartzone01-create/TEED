@@ -20,6 +20,10 @@ const saleSchema = z.object({
   payment_status: z.enum(["paid", "partial", "unpaid"]), sold_at: z.string(),
   items: z.array(saleItemSchema), recorded_by: z.string(), status: z.enum(["active", "voided"]),
 }).passthrough();
+const decisionSchema = z.object({
+  id: z.string(), key: z.string(), severity: z.enum(["info", "attention", "urgent"]),
+  title: z.string(), explanation: z.string(), action_path: z.string(),
+}).passthrough();
 const stockOverviewSchema = z.object({
   id: z.string(), reference: z.string(), status: z.string(), supplier_name: z.string(),
   received_at: z.string().nullable(), product_type_count: z.number(),
@@ -40,6 +44,7 @@ const pulseSchema = z.object({
 
 const overviewResponseSchema = createApiEnvelopeSchema(z.object({
   pulse: pulseSchema,
+  decisions: z.array(decisionSchema).default([]),
   recent_sales: z.array(saleSchema),
   recent_stock: z.array(stockOverviewSchema),
   recent_returns: z.array(returnOverviewSchema),
