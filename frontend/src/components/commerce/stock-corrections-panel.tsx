@@ -95,6 +95,20 @@ function StockCorrectionsPanel({ businessId }: { businessId: string }) {
             );
             if (!article) continue;
 
+            article.dataset.commerceReceiptCard = "true";
+            article.classList.add(
+              "border",
+              "border-slate-200",
+              "shadow-sm",
+              "dark:border-slate-800",
+            );
+            article.style.borderInlineStartColor =
+              index % 2 === 0
+                ? "var(--workspace-primary, var(--brand-navy))"
+                : "var(--workspace-secondary, var(--brand-orange))";
+            article.style.borderInlineStartStyle = "solid";
+            article.style.borderInlineStartWidth = "3px";
+
             const hiddenByLimit = !showAll && index >= 5;
             article.hidden = hiddenByLimit;
             if (hiddenByLimit) article.dataset.commerceStockHidden = "true";
@@ -162,6 +176,20 @@ function StockCorrectionsPanel({ businessId }: { businessId: string }) {
       )) {
         article.hidden = false;
         delete article.dataset.commerceStockHidden;
+      }
+      for (const article of document.querySelectorAll<HTMLElement>(
+        "[data-commerce-receipt-card]",
+      )) {
+        article.classList.remove(
+          "border",
+          "border-slate-200",
+          "shadow-sm",
+          "dark:border-slate-800",
+        );
+        article.style.removeProperty("border-inline-start-color");
+        article.style.removeProperty("border-inline-start-style");
+        article.style.removeProperty("border-inline-start-width");
+        delete article.dataset.commerceReceiptCard;
       }
       for (const mount of document.querySelectorAll(
         "[data-commerce-correction-root], [data-commerce-stock-view-more-root]",
