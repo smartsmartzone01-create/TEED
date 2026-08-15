@@ -1,2 +1,5 @@
-import { CommerceWorkspace } from "@/components/commerce/commerce-workspace";
-export default async function Page({ params }: { params: Promise<{ businessId: string }> }) { return <CommerceWorkspace businessId={(await params).businessId} view="products" />; }
+import { AvailableItemsWorkspace } from "@/components/commerce/available-items-workspace";
+
+export default async function Page({ params }: { params: Promise<{ businessId: string }> }) {
+  return <AvailableItemsWorkspace businessId={(await params).businessId} />;
+}
