@@ -11,9 +11,9 @@ from ..api import (
 from ..catalog.models import UnitDefinition
 from ..serializers import UnitDefinitionSerializer
 from ..services import commerce_membership
-from ..stock_polish import PolishedStockReceiptSerializer, StockReceiptListCreatePolishAPIView
-from ..stock_polish_detail import GuardedStockReceiptDetailAPIView
+from .detail import GuardedStockReceiptDetailAPIView
 from .services import archive_draft_stock_receipt, current_stock_receipts
+from .stock import PolishedStockReceiptSerializer, StockReceiptListCreatePolishAPIView
 
 
 class ActiveStockReceiptListCreatePolishAPIView(StockReceiptListCreatePolishAPIView):
