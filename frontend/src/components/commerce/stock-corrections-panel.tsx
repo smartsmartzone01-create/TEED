@@ -63,6 +63,10 @@ function StockCorrectionsPanel({ businessId }: { businessId: string }) {
   }, [accessToken, businessId, notify, t]);
 
   useEffect(() => {
+    // Temporary bridge: this component loads the data needed to portal the
+    // correction control into receipt cards owned by commerce-workspace.tsx.
+    // Remove this exemption when inventory is extracted into its own component.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void load();
   }, [load]);
 
@@ -109,6 +113,9 @@ function StockCorrectionsPanel({ businessId }: { businessId: string }) {
           }
         }
 
+        // Temporary DOM bridge. The state represents portal mount points that
+        // are discovered after the existing receipt cards render.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setTargets((current) => {
           const unchanged =
             current.length === nextTargets.length &&
