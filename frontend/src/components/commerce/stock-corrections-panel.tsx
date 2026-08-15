@@ -67,11 +67,6 @@ function StockCorrectionsPanel({ businessId }: { businessId: string }) {
   }, [load]);
 
   useEffect(() => {
-    if (!receipts.length) {
-      setTargets([]);
-      return;
-    }
-
     let frame = 0;
     const scan = () => {
       window.cancelAnimationFrame(frame);
@@ -80,36 +75,38 @@ function StockCorrectionsPanel({ businessId }: { businessId: string }) {
           (node) => node.textContent?.trim() === t("receivedStock"),
         );
         const receivedPanel = heading?.parentElement;
-        if (!receivedPanel) return;
 
         const nextTargets: Target[] = [];
-        for (const receipt of receipts) {
-          const article = Array.from(
-            receivedPanel.querySelectorAll<HTMLElement>("article"),
-          ).find(
-            (node) =>
-              node.querySelector("strong")?.textContent?.trim() ===
-              receipt.reference,
-          );
-          if (!article) continue;
-
-          let mount = article.querySelector<HTMLElement>(
-            `[data-commerce-correction-root="${receipt.id}"]`,
-          );
-          if (!mount) {
-            mount = document.createElement("div");
-            mount.dataset.commerceCorrectionRoot = receipt.id;
-
-            const editButton = Array.from(
-              article.querySelectorAll<HTMLButtonElement>("button"),
+        if (receivedPanel) {
+          for (const receipt of receipts) {
+            const article = Array.from(
+              receivedPanel.querySelectorAll<HTMLElement>("article"),
             ).find(
-              (button) => button.textContent?.trim() === t("actions.editStock"),
+              (node) =>
+                node.querySelector("strong")?.textContent?.trim() ===
+                receipt.reference,
             );
-            const actionRow = editButton?.parentElement;
-            if (actionRow) actionRow.insertAdjacentElement("afterend", mount);
-            else article.appendChild(mount);
+            if (!article) continue;
+
+            let mount = article.querySelector<HTMLElement>(
+              `[data-commerce-correction-root="${receipt.id}"]`,
+            );
+            if (!mount) {
+              mount = document.createElement("div");
+              mount.dataset.commerceCorrectionRoot = receipt.id;
+
+              const editButton = Array.from(
+                article.querySelectorAll<HTMLButtonElement>("button"),
+              ).find(
+                (button) =>
+                  button.textContent?.trim() === t("actions.editStock"),
+              );
+              const actionRow = editButton?.parentElement;
+              if (actionRow) actionRow.insertAdjacentElement("afterend", mount);
+              else article.appendChild(mount);
+            }
+            nextTargets.push({ receipt, element: mount });
           }
-          nextTargets.push({ receipt, element: mount });
         }
 
         setTargets((current) => {
