@@ -13,7 +13,7 @@ from .services import commerce_membership
 from .stock_polish import (
     AvailabilityProductSerializer,
     PolishedStockReceiptSerializer,
-    ProductDetailPolishAPIView,
+    ProductCorrectionSerializer,
     ProductListCreatePolishAPIView,
     StockReceiptListCreatePolishAPIView,
 )
@@ -89,8 +89,8 @@ class ActiveProductListCreatePolishAPIView(ProductListCreatePolishAPIView):
         )
 
 
-class ProductDetailOperationsPolishAPIView(ProductDetailPolishAPIView):
-    """Keep catalog archive/reactivation rules explicit and reusable."""
+class ProductDetailOperationsPolishAPIView(CommerceBaseAPIView):
+    """Correct metadata while keeping catalog archive rules explicit."""
 
     @method_decorator(csrf_protect)
     def patch(self, request, business_id, product_id):
@@ -108,7 +108,46 @@ class ProductDetailOperationsPolishAPIView(ProductDetailPolishAPIView):
                 message="Catalog item status updated successfully.",
                 data=AvailabilityProductSerializer(product).data,
             )
-        return super().patch(request, business_id, product_id)
+
+        membership = commerce_membership(
+            user=request.user,
+            business_id=business_id,
+            permission=WorkspacePermission.MANAGE_CATALOG,
+        )
+        product = Product.objects.filter(
+            id=product_id, business=membership.business
+        ).first()
+        if product is None:
+            raise ValidationError({"product": ["Item not found."]})
+        serializer = ProductCorrectionSerializer(product, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        new_unit = serializer.validated_data.get("unit", product.unit)
+        if new_unit.casefold() != product.unit.casefold() and (
+            product.stock_batches.exists()
+            or product.movements.exists()
+            or product.sale_items.exists()
+        ):
+            raise ValidationError(
+                {
+                    "unit": [
+                        "This item already has stock history. Correct its unit from the "
+                        "original stock receipt while that receipt is inside its 48-hour "
+                        "correction window."
+                    ]
+                }
+            )
+        if (
+            serializer.validated_data.get("is_active") is False
+            and product.current_quantity > 0
+        ):
+            raise ValidationError(
+                {"is_active": ["An item with available stock cannot be archived."]}
+            )
+        product = serializer.save()
+        return SuccessResponse(
+            message="Available item corrected successfully.",
+            data=AvailabilityProductSerializer(product).data,
+        )
 
 
 class ActiveStockReceiptListCreatePolishAPIView(StockReceiptListCreatePolishAPIView):
