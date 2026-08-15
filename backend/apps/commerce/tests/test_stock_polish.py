@@ -9,13 +9,9 @@ from apps.identity.models import User
 from apps.notifications.models import UserNotification
 from apps.workspaces.models import Business, BusinessMembership
 
+from ..catalog.services import active_catalog_products, set_catalog_product_active
+from ..inventory.services import archive_draft_stock_receipt, current_stock_receipts
 from ..models import InventoryMovement, StockReceipt, StockReceiptAudit
-from ..operations_polish import (
-    active_catalog_products,
-    archive_draft_stock_receipt,
-    current_stock_receipts,
-    set_catalog_product_active,
-)
 from ..services import create_product, create_stock_receipt, record_sale
 from ..signals import notify_stock_attention
 from ..stock_polish import (
