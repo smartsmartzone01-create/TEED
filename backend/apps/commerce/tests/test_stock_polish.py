@@ -80,9 +80,7 @@ class StockPolishTests(TestCase):
             data={
                 "status": "received",
                 "received_at": timezone.now(),
-                "catalog_items": [
-                    {"key": "shoes", "product_id": str(self.product.id)}
-                ],
+                "catalog_items": [{"key": "shoes", "product_id": str(self.product.id)}],
                 "batches": [
                     {
                         "name": "Shoes",
