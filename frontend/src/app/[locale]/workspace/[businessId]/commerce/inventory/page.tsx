@@ -1,19 +1,6 @@
-import { CommercePageShell } from "@/components/commerce/commerce-page-shell";
-import { CommerceWorkspace } from "@/components/commerce/commerce-workspace";
-import { StockCorrectionsPanel } from "@/components/commerce/stock-corrections-panel";
-import { StockRecordingValidationGuard } from "@/components/commerce/stock-recording-validation-guard";
+import { CommercePageShell } from "@/components/commerce/shared/commerce-page-shell";
+import { StockWorkspace } from "@/components/commerce/stock/stock-workspace";
 
-export default async function Page({
-  params,
-}: {
-  params: Promise<{ businessId: string }>;
-}) {
-  const { businessId } = await params;
-  return (
-    <CommercePageShell>
-      <StockRecordingValidationGuard />
-      <CommerceWorkspace businessId={businessId} view="inventory" />
-      <StockCorrectionsPanel businessId={businessId} />
-    </CommercePageShell>
-  );
+export default async function Page({ params }: { params: Promise<{ businessId: string }> }) {
+  return <CommercePageShell><StockWorkspace businessId={(await params).businessId} /></CommercePageShell>;
 }
