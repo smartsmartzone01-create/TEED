@@ -286,6 +286,13 @@ class StockReceiptSerializer(serializers.ModelSerializer):
 
 class StockBatchSerializer(serializers.ModelSerializer):
     product_name = serializers.CharField(source="product.name", read_only=True)
+    product_sku = serializers.CharField(source="product.sku", read_only=True)
+    selling_price = serializers.DecimalField(
+        source="product.selling_price",
+        max_digits=14,
+        decimal_places=2,
+        read_only=True,
+    )
 
     class Meta:
         model = StockBatch
@@ -293,6 +300,8 @@ class StockBatchSerializer(serializers.ModelSerializer):
             "id",
             "product",
             "product_name",
+            "product_sku",
+            "selling_price",
             "tracking_mode",
             "reference",
             "quantity_received",

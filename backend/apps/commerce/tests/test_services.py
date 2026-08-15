@@ -15,7 +15,7 @@ from ..models import (
     TrackedUnitIdentifier,
     UnitDefinition,
 )
-from ..serializers import StockReceiptCreateSerializer
+from ..serializers import StockBatchSerializer, StockReceiptCreateSerializer
 from ..services import (
     commerce_overview,
     create_expense,
@@ -78,6 +78,16 @@ class CommerceServiceTests(TestCase):
         self.assertEqual(self.product.current_quantity, Decimal("50"))
         self.assertEqual(batch.quantity_remaining, Decimal("50"))
         self.assertEqual(InventoryMovement.objects.get().quantity_delta, Decimal("50"))
+
+    def test_saved_receipt_response_includes_item_code_prices_and_availability(self):
+        batch = self.receive("50", "30000")
+
+        line = StockBatchSerializer(batch).data
+
+        self.assertEqual(line["product_name"], "Shoes")
+        self.assertEqual(line["product_sku"], self.product.sku)
+        self.assertEqual(Decimal(line["selling_price"]), Decimal("50000"))
+        self.assertEqual(Decimal(line["quantity_remaining"]), Decimal("50"))
 
     def test_one_stock_receipt_accepts_many_new_and_existing_items(self):
         receipt = create_stock_receipt(
