@@ -1,5 +1,5 @@
-import { CommerceOverviewWorkspace } from "@/components/commerce/commerce-overview-workspace";
-import { CommercePageShell } from "@/components/commerce/commerce-page-shell";
+import { CommerceOverviewWorkspace } from "@/components/commerce/overview/commerce-overview-workspace";
+import { CommercePageShell } from "@/components/commerce/shared/commerce-page-shell";
 
 export default async function Page({
   params,
