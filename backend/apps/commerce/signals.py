@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.db import transaction
 from django.db.models.signals import post_save
 from django.dispatch import receiver
@@ -12,7 +14,7 @@ from .models import InventoryMovement, Product
 
 def _quantity_text(value):
     if value == value.to_integral_value():
-        return format(value.quantize(1), "f")
+        return format(value.quantize(Decimal("1")), "f")
     return format(value.normalize(), "f")
 
 
