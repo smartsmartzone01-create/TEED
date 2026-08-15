@@ -123,7 +123,7 @@ function StockReceiptCorrectionDropdown({
 
   const toggle = () => {
     if (!receipt.correction_open) {
-      notify({ message: t("messages.correctionClosed"), tone: "warning" });
+      notify({ message: t("messages.correctionClosed"), tone: "info" });
       return;
     }
     setOpen((current) => !current);
