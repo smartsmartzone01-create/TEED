@@ -1,4 +1,5 @@
 from common.responses import SuccessResponse
+from django.db import transaction
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_protect
 from rest_framework.exceptions import ValidationError
@@ -8,13 +9,36 @@ from apps.workspaces.policy import WorkspacePermission
 from .api import CommerceBaseAPIView
 from .models import Product, StockReceipt, UnitDefinition
 from .serializers import UnitDefinitionSerializer
-from .services import archive_stock_receipt, commerce_membership
+from .services import commerce_membership
 from .stock_polish import (
     AvailabilityProductSerializer,
     PolishedStockReceiptSerializer,
     ProductListCreatePolishAPIView,
     StockReceiptListCreatePolishAPIView,
 )
+
+
+@transaction.atomic
+def archive_draft_stock_receipt(*, actor, business_id, receipt_id):
+    membership = commerce_membership(
+        user=actor,
+        business_id=business_id,
+        permission=WorkspacePermission.MANAGE_INVENTORY,
+    )
+    receipt = (
+        StockReceipt.objects.select_for_update()
+        .filter(id=receipt_id, business=membership.business)
+        .first()
+    )
+    if receipt is None:
+        raise ValidationError({"receipt": ["Stock receipt not found."]})
+    if receipt.status != StockReceipt.Status.DRAFT:
+        raise ValidationError(
+            {"receipt": ["Received stock cannot be removed or archived."]}
+        )
+    receipt.status = StockReceipt.Status.ARCHIVED
+    receipt.save(update_fields=["status", "updated_at"])
+    return receipt
 
 
 class ActiveProductListCreatePolishAPIView(ProductListCreatePolishAPIView):
@@ -68,22 +92,7 @@ class GuardedStockReceiptArchiveAPIView(CommerceBaseAPIView):
 
     @method_decorator(csrf_protect)
     def post(self, request, business_id, receipt_id):
-        membership = commerce_membership(
-            user=request.user,
-            business_id=business_id,
-            permission=WorkspacePermission.MANAGE_INVENTORY,
-        )
-        receipt = StockReceipt.objects.filter(
-            id=receipt_id,
-            business=membership.business,
-        ).first()
-        if receipt is None:
-            raise ValidationError({"receipt": ["Stock receipt not found."]})
-        if receipt.status != StockReceipt.Status.DRAFT:
-            raise ValidationError(
-                {"receipt": ["Received stock cannot be removed or archived."]}
-            )
-        receipt = archive_stock_receipt(
+        receipt = archive_draft_stock_receipt(
             actor=request.user,
             business_id=business_id,
             receipt_id=receipt_id,
