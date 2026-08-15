@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, ChevronUp, CircleHelp } from "lucide-react";
+import { Archive, ChevronDown, ChevronUp, CircleHelp } from "lucide-react";
 import { useMemo, useState, type FormEvent } from "react";
 import { useTranslations } from "next-intl";
 
@@ -9,7 +9,7 @@ import { Input } from "@/components/global/primitives/input";
 import { Select } from "@/components/global/primitives/select";
 import { Tooltip } from "@/components/global/primitives/tooltip";
 import { useNotification } from "@/providers/global/notification-provider";
-import { commercePatch } from "@/services/commerce/commerce";
+import { commercePatch, commerceWrite } from "@/services/commerce/commerce";
 import type { Product } from "@/types/commerce/commerce";
 
 const countableUnits = new Set([
@@ -208,9 +208,24 @@ function StockReceiptCorrectionDropdown({
     }
   };
 
+  const archiveDraft = async () => {
+    if (!accessToken || receipt.status !== "draft") return;
+    if (!window.confirm(t("messages.archiveDraftConfirm"))) return;
+    await submit(
+      () =>
+        commerceWrite(
+          businessId,
+          accessToken,
+          `stock-receipts/${receipt.id}/archive`,
+          {},
+        ),
+      t("success.draftArchived"),
+    );
+  };
+
   return (
     <div className="grid gap-2 sm:col-span-2">
-      {receipt.correction_open ? (
+      {receipt.correction_open && receipt.status === "received" ? (
         <Tooltip content={t("tooltips.correctionOpen")}>
           <span className="w-fit cursor-help text-xs font-medium text-emerald-700 dark:text-emerald-300">
             {t("correctionOpen")}
@@ -218,27 +233,43 @@ function StockReceiptCorrectionDropdown({
         </Tooltip>
       ) : null}
 
-      <Tooltip
-        content={
-          receipt.correction_open
-            ? t("tooltips.correctStock")
-            : t("messages.correctionClosed")
-        }
-      >
-        <Button
-          onClick={toggle}
-          size="small"
-          type="button"
-          variant="outline"
+      <div className="flex flex-wrap gap-2">
+        <Tooltip
+          content={
+            receipt.correction_open
+              ? t("tooltips.correctStock")
+              : t("messages.correctionClosed")
+          }
         >
-          {t("actions.correctStock")}
-          {open ? (
-            <ChevronUp className="ml-1 size-4" />
-          ) : (
-            <ChevronDown className="ml-1 size-4" />
-          )}
-        </Button>
-      </Tooltip>
+          <Button
+            onClick={toggle}
+            size="small"
+            type="button"
+            variant="outline"
+          >
+            {t("actions.correctStock")}
+            {open ? (
+              <ChevronUp className="ml-1 size-4" />
+            ) : (
+              <ChevronDown className="ml-1 size-4" />
+            )}
+          </Button>
+        </Tooltip>
+
+        {receipt.status === "draft" ? (
+          <Tooltip content={t("tooltips.archiveDraft")}>
+            <Button
+              onClick={() => void archiveDraft()}
+              size="small"
+              type="button"
+              variant="ghost"
+            >
+              <Archive className="size-4" />
+              {t("actions.archiveDraft")}
+            </Button>
+          </Tooltip>
+        ) : null}
+      </div>
 
       {open ? (
         <div className="grid gap-3 border-t border-slate-200 pt-3 dark:border-slate-800">
