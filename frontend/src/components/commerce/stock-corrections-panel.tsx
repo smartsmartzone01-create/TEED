@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { useTranslations } from "next-intl";
 
 import { StockReceiptCorrectionDropdown } from "@/components/commerce/stock-receipt-correction-dropdown";
+import { Button } from "@/components/global/primitives/button";
 import { useIdentitySession } from "@/providers/identity/identity-session-provider";
 import { useNotification } from "@/providers/global/notification-provider";
 import { commerceRead, getProducts } from "@/services/commerce/commerce";
@@ -43,6 +44,8 @@ function StockCorrectionsPanel({ businessId }: { businessId: string }) {
   const [receipts, setReceipts] = useState<StockReceipt[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [targets, setTargets] = useState<Target[]>([]);
+  const [viewMoreTarget, setViewMoreTarget] = useState<HTMLElement | null>(null);
+  const [showAll, setShowAll] = useState(false);
 
   const load = useCallback(async () => {
     if (!accessToken) return;
@@ -80,8 +83,9 @@ function StockCorrectionsPanel({ businessId }: { businessId: string }) {
         const receivedPanel = heading?.parentElement;
 
         const nextTargets: Target[] = [];
+        let nextViewMoreTarget: HTMLElement | null = null;
         if (receivedPanel) {
-          for (const receipt of receipts) {
+          for (const [index, receipt] of receipts.entries()) {
             const article = Array.from(
               receivedPanel.querySelectorAll<HTMLElement>("article"),
             ).find(
@@ -90,6 +94,8 @@ function StockCorrectionsPanel({ businessId }: { businessId: string }) {
                 receipt.reference,
             );
             if (!article) continue;
+
+            article.hidden = !showAll && index >= 5;
 
             let mount = article.querySelector<HTMLElement>(
               `[data-commerce-correction-root="${receipt.id}"]`,
@@ -110,6 +116,19 @@ function StockCorrectionsPanel({ businessId }: { businessId: string }) {
             }
             nextTargets.push({ receipt, element: mount });
           }
+
+          if (receipts.length > 5) {
+            let viewMoreMount = receivedPanel.querySelector<HTMLElement>(
+              "[data-commerce-stock-view-more-root]",
+            );
+            if (!viewMoreMount) {
+              viewMoreMount = document.createElement("div");
+              viewMoreMount.dataset.commerceStockViewMoreRoot = "true";
+              viewMoreMount.className = "mt-3";
+              receivedPanel.appendChild(viewMoreMount);
+            }
+            nextViewMoreTarget = viewMoreMount;
+          }
         }
 
         setTargets((current) => {
@@ -122,6 +141,9 @@ function StockCorrectionsPanel({ businessId }: { businessId: string }) {
             );
           return unchanged ? current : nextTargets;
         });
+        setViewMoreTarget((current) =>
+          current === nextViewMoreTarget ? current : nextViewMoreTarget,
+        );
       });
     };
 
@@ -132,13 +154,18 @@ function StockCorrectionsPanel({ businessId }: { businessId: string }) {
     return () => {
       observer.disconnect();
       window.cancelAnimationFrame(frame);
+      for (const article of document.querySelectorAll<HTMLElement>(
+        "article[hidden]",
+      )) {
+        article.hidden = false;
+      }
       for (const mount of document.querySelectorAll(
-        "[data-commerce-correction-root]",
+        "[data-commerce-correction-root], [data-commerce-stock-view-more-root]",
       )) {
         mount.remove();
       }
     };
-  }, [receipts, t]);
+  }, [receipts, showAll, t]);
 
   const submit = async (
     operation: () => Promise<unknown>,
@@ -174,6 +201,19 @@ function StockCorrectionsPanel({ businessId }: { businessId: string }) {
           receipt.id,
         ),
       )}
+      {viewMoreTarget
+        ? createPortal(
+            <Button
+              onClick={() => setShowAll((current) => !current)}
+              size="small"
+              type="button"
+              variant="ghost"
+            >
+              {showAll ? t("actions.showLess") : t("actions.viewMore")}
+            </Button>,
+            viewMoreTarget,
+          )
+        : null}
     </>
   );
 }
