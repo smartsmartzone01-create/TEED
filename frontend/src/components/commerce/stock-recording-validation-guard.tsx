@@ -26,7 +26,7 @@ function StockRecordingValidationGuard() {
       event.preventDefault();
       event.stopPropagation();
       const label = invalid.closest("label")?.childNodes[0]?.textContent?.trim() || t("fields.product");
-      const message = t("validation.requiredField", { field: label });
+      const message = `${label}: ${t("errors.save")}`;
       notify({ message, tone: "error" });
       invalid.focus();
       invalid.reportValidity();
