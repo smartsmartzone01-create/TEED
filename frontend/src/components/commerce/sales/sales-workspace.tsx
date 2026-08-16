@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/global/primitives/button";
@@ -60,7 +60,9 @@ const money = (value: string | number | null | undefined) => {
 };
 
 function unitLabel(unit: SaleAvailabilityUnit) {
-  const identification = unit.identifiers.map((item) => `${item.kind}: ${item.value}`).join(" · ");
+  const identification = unit.identifiers
+    .map((item) => `${item.kind}: ${item.value}`)
+    .join(" · ");
   return [
     unit.model_name,
     unit.brand,
@@ -153,7 +155,7 @@ function SalesWorkspace({ businessId }: { businessId: string }) {
     setLines(
       sale.items.map((item) => ({
         source: item.source,
-        product_id: item.product ?? "",
+        product_id: item.product,
         tracked_unit_id: item.tracked_unit ?? "",
         item_name: item.item_name || item.product_name,
         quantity: item.quantity,
@@ -176,7 +178,7 @@ function SalesWorkspace({ businessId }: { businessId: string }) {
     updateLine(index, {
       product_id: productId,
       tracked_unit_id: "",
-      quantity: product?.tracking_mode === "individual" ? "1" : "1",
+      quantity: "1",
       unit_price: product?.selling_price ?? "",
     });
   };
@@ -189,7 +191,7 @@ function SalesWorkspace({ businessId }: { businessId: string }) {
       }
       const product = productFor(line);
       if (!product) return false;
-      if (product.tracking_mode === "individual" && !line.tracked_unit_id) return false;
+      if (product.available_units.length > 0 && !line.tracked_unit_id) return false;
       if (!line.unit_price && product.selling_price == null) return false;
     }
     return lines.length > 0;
@@ -304,9 +306,11 @@ function SalesWorkspace({ businessId }: { businessId: string }) {
               currentSaleItem?.tracked_unit === line.tracked_unit_id
                 ? currentSaleItem.tracked_unit_reference
                 : "";
-            const identification = trackedUnit
-              ? unitLabel(trackedUnit)
-              : currentTrackedReference;
+            const hasTrackedUnits = Boolean(
+              product?.available_units.length ||
+                (currentTrackedReference && line.tracked_unit_id),
+            );
+
             return (
               <div
                 className="grid gap-3 rounded-xl bg-slate-50 p-3 dark:bg-slate-900"
@@ -353,12 +357,12 @@ function SalesWorkspace({ businessId }: { businessId: string }) {
 
                   <Input
                     aria-label={t("quantity")}
-                    disabled={product?.tracking_mode === "individual"}
+                    disabled={hasTrackedUnits}
                     min="0.001"
                     required
                     step="0.001"
                     type="number"
-                    value={line.quantity}
+                    value={hasTrackedUnits ? "1" : line.quantity}
                     onChange={(event) => updateLine(index, { quantity: event.target.value })}
                   />
                   <Input
@@ -384,14 +388,19 @@ function SalesWorkspace({ businessId }: { businessId: string }) {
 
                 {line.source === "manual" ? (
                   <p className="text-xs text-slate-500">{t("manualHelp")}</p>
-                ) : product?.tracking_mode === "individual" ? (
-                  <div className="grid gap-3 sm:grid-cols-2">
+                ) : hasTrackedUnits && product ? (
+                  <div className="grid gap-3">
                     <label className={field}>
                       {t("chooseAvailableItem")}
                       <Select
                         required
                         value={line.tracked_unit_id}
-                        onChange={(event) => updateLine(index, { tracked_unit_id: event.target.value })}
+                        onChange={(event) =>
+                          updateLine(index, {
+                            tracked_unit_id: event.target.value,
+                            quantity: "1",
+                          })
+                        }
                       >
                         <option value="">{t("chooseAvailableItem")}</option>
                         {currentTrackedReference &&
@@ -405,11 +414,42 @@ function SalesWorkspace({ businessId }: { businessId: string }) {
                         ))}
                       </Select>
                     </label>
-                    <label className={field}>
-                      {t("itemIdentification")}
-                      <Input readOnly value={identification} />
-                    </label>
-                    <p className="text-xs text-slate-500 sm:col-span-2">{t("trackedHelp")}</p>
+
+                    {trackedUnit ? (
+                      <div className="grid gap-2 rounded-lg border border-slate-200 bg-white p-3 text-xs dark:border-slate-800 dark:bg-slate-950 sm:grid-cols-2 lg:grid-cols-3">
+                        {trackedUnit.stock_reference ? (
+                          <div><span className="text-slate-500">{t("stockReference")}</span><p className="font-semibold">{trackedUnit.stock_reference}</p></div>
+                        ) : null}
+                        {trackedUnit.batch_name ? (
+                          <div><span className="text-slate-500">{t("batch")}</span><p className="font-semibold">{trackedUnit.batch_name}</p></div>
+                        ) : null}
+                        {trackedUnit.group_name ? (
+                          <div><span className="text-slate-500">{t("group")}</span><p className="font-semibold">{trackedUnit.group_name}</p></div>
+                        ) : null}
+                        {trackedUnit.model_name ? (
+                          <div><span className="text-slate-500">{t("model")}</span><p className="font-semibold">{trackedUnit.model_name}</p></div>
+                        ) : null}
+                        {trackedUnit.brand ? (
+                          <div><span className="text-slate-500">{t("brand")}</span><p className="font-semibold">{trackedUnit.brand}</p></div>
+                        ) : null}
+                        {trackedUnit.color ? (
+                          <div><span className="text-slate-500">{t("color")}</span><p className="font-semibold">{trackedUnit.color}</p></div>
+                        ) : null}
+                        {trackedUnit.capacity ? (
+                          <div><span className="text-slate-500">{t("capacitySize")}</span><p className="font-semibold">{trackedUnit.capacity}</p></div>
+                        ) : null}
+                        {trackedUnit.identifiers.map((identifier) => (
+                          <div key={`${identifier.kind}-${identifier.value}`}>
+                            <span className="text-slate-500">{identifier.kind}</span>
+                            <p className="font-semibold">{identifier.value}</p>
+                          </div>
+                        ))}
+                        {!trackedUnit.identifiers.length && trackedUnit.internal_serial ? (
+                          <div><span className="text-slate-500">{t("internalSerial")}</span><p className="font-semibold">{trackedUnit.internal_serial}</p></div>
+                        ) : null}
+                      </div>
+                    ) : null}
+                    <p className="text-xs text-slate-500">{t("trackedHelp")}</p>
                   </div>
                 ) : (
                   <p className="text-xs text-slate-500">{t("catalogHelp")}</p>
