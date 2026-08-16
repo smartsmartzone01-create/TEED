@@ -24,7 +24,7 @@ type SaleAvailabilityProduct = {
 type SaleItem = {
   id: string;
   source: "catalog" | "manual";
-  product: string | null;
+  product: string;
   product_name: string;
   product_sku: string;
   tracked_unit: string | null;
