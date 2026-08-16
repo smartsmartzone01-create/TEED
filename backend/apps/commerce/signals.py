@@ -44,10 +44,7 @@ def notify_stock_attention(*, product_id):
         current_quantity > 0
         and product.low_stock_threshold > 0
         and current_quantity <= product.low_stock_threshold
-        and (
-            previous_quantity > product.low_stock_threshold
-            or previous_quantity <= 0
-        )
+        and (previous_quantity > product.low_stock_threshold or previous_quantity <= 0)
     ):
         template = UserNotification.Template.COMMERCE_LOW_STOCK
     if template is None:
