@@ -35,7 +35,7 @@ const saleItemSchema = z
   .object({
     id: z.string(),
     source: z.enum(["catalog", "manual"]),
-    product: z.string().nullable(),
+    product: z.string().nullable().transform((value) => value ?? ""),
     product_name: z.string(),
     product_sku: z.string(),
     tracked_unit: z.string().nullable(),
