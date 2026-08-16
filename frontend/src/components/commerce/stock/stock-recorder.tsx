@@ -14,6 +14,37 @@ function StockRecorder({ businessId }: { businessId: string }) {
             display: none;
           }
         }
+
+        /*
+         * The received-stock header only renders this button while a late-delivery
+         * workflow is active. Keep that same cancel action persistently reachable
+         * throughout every progressive recording step so the whole workflow can
+         * be abandoned without scrolling back to the received-stock list.
+         */
+        .stock-recorder-shell
+          > div
+          > section:nth-of-type(2)
+          > div:first-child
+          > button {
+          position: fixed;
+          right: 1rem;
+          bottom: 1rem;
+          z-index: 60;
+          box-shadow: 0 1px 3px rgb(0 0 0 / 0.12);
+          background: var(--background, white);
+        }
+
+        @media (max-width: 639px) {
+          .stock-recorder-shell
+            > div
+            > section:nth-of-type(2)
+            > div:first-child
+            > button {
+            right: 1rem;
+            left: 1rem;
+            width: calc(100% - 2rem);
+          }
+        }
       `}</style>
     </div>
   );
