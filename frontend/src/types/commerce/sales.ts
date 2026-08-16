@@ -6,6 +6,9 @@ type SaleAvailabilityUnit = {
   color: string;
   capacity: string;
   identifiers: Array<{ kind: string; value: string }>;
+  stock_reference: string;
+  batch_name: string;
+  group_name: string;
 };
 
 type SaleAvailabilityProduct = {
