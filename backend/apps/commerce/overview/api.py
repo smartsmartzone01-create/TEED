@@ -7,7 +7,7 @@ from django.utils import timezone
 from apps.workspaces.policy import WorkspacePermission, role_has_permission
 
 from ..api import CommerceBaseAPIView
-from ..inventory.stock import PolishedStockReceiptSerializer
+from ..inventory.serializers import CanonicalStockReceiptSerializer
 from ..models import (
     Expense,
     InventoryMovement,
@@ -85,9 +85,9 @@ class CommerceOverviewPolishAPIView(CommerceBaseAPIView):
         )[:5]
         recent_stock = StockReceipt.objects.prefetch_related(
             "lines__product",
-            "lines__tracked_units",
+            "lines__tracked_units__identifiers",
             "batches__groups__type_lines__product",
-            "batches__groups__type_lines__tracked_units",
+            "batches__groups__type_lines__tracked_units__identifiers",
         ).filter(
             business=business,
             parent_receipt__isnull=True,
@@ -121,7 +121,7 @@ class CommerceOverviewPolishAPIView(CommerceBaseAPIView):
                     many=True,
                     context={"show_costs": can_manage_finance},
                 ).data,
-                "recent_stock": PolishedStockReceiptSerializer(
+                "recent_stock": CanonicalStockReceiptSerializer(
                     recent_stock,
                     many=True,
                 ).data,
