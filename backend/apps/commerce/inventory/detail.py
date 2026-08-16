@@ -5,14 +5,12 @@ from rest_framework.exceptions import ValidationError
 
 from ..api import CommerceBaseAPIView
 from ..models import StockReceipt
-from ..serializers import StockReceiptUpdateSerializer
-from ..services import update_stock_receipt_details
-from .stock import (
-    PolishedStockReceiptSerializer,
-    StockReceiptCorrectionSerializer,
-    _assert_receipt_editable,
-    correct_stock_receipt,
+from .corrections import correct_stock_structure
+from .serializers import (
+    CanonicalStockReceiptCorrectionSerializer,
+    CanonicalStockReceiptSerializer,
 )
+from .stock import _assert_receipt_editable
 
 
 class GuardedStockReceiptDetailAPIView(CommerceBaseAPIView):
@@ -25,30 +23,27 @@ class GuardedStockReceiptDetailAPIView(CommerceBaseAPIView):
             raise ValidationError({"receipt": ["Stock receipt not found."]})
         _assert_receipt_editable(receipt)
 
-        if "lines" in request.data:
-            serializer = StockReceiptCorrectionSerializer(
-                data=request.data, partial=True
-            )
-            serializer.is_valid(raise_exception=True)
-            receipt = correct_stock_receipt(
-                actor=request.user,
-                business_id=business_id,
-                receipt_id=receipt_id,
-                **serializer.validated_data,
-            )
-            message = "Stock correction saved successfully."
-        else:
-            serializer = StockReceiptUpdateSerializer(data=request.data, partial=True)
-            serializer.is_valid(raise_exception=True)
-            receipt = update_stock_receipt_details(
-                actor=request.user,
-                business_id=business_id,
-                receipt_id=receipt_id,
-                **serializer.validated_data,
-            )
-            message = "Stock details updated successfully."
-
+        serializer = CanonicalStockReceiptCorrectionSerializer(
+            data=request.data, partial=True
+        )
+        serializer.is_valid(raise_exception=True)
+        receipt = correct_stock_structure(
+            actor=request.user,
+            business_id=business_id,
+            receipt_id=receipt_id,
+            **serializer.validated_data,
+        )
+        receipt = StockReceipt.objects.prefetch_related(
+            "lines__product",
+            "lines__tracked_units__identifiers",
+            "batches__groups__type_lines__product",
+            "batches__groups__type_lines__tracked_units__identifiers",
+            "late_deliveries__lines__product",
+            "late_deliveries__lines__tracked_units__identifiers",
+            "late_deliveries__batches__groups__type_lines__product",
+            "late_deliveries__batches__groups__type_lines__tracked_units__identifiers",
+        ).get(pk=receipt.pk)
         return SuccessResponse(
-            message=message,
-            data=PolishedStockReceiptSerializer(receipt).data,
+            message="Stock correction saved successfully.",
+            data=CanonicalStockReceiptSerializer(receipt).data,
         )
