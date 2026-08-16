@@ -1,7 +1,7 @@
 "use client";
 
 import { createPortal } from "react-dom";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/global/primitives/button";
@@ -213,7 +213,7 @@ function SummaryActions({ receipt }: { receipt: StockReceipt }) {
   };
 
   const print = () => {
-    const popup = window.open("", "_blank", "noopener,noreferrer,width=760,height=900");
+    const popup = window.open("", "_blank", "width=760,height=900");
     if (!popup) return;
     const escaped = text
       .replaceAll("&", "&amp;")
@@ -248,6 +248,7 @@ function StockSummaryActionsPanel({ businessId }: { businessId: string }) {
   const { notify } = useNotification();
   const [receipts, setReceipts] = useState<StockReceipt[]>([]);
   const [targets, setTargets] = useState<Target[]>([]);
+  const refreshingRef = useRef(false);
 
   const load = useCallback(async () => {
     if (!accessToken) return;
@@ -273,6 +274,21 @@ function StockSummaryActionsPanel({ businessId }: { businessId: string }) {
     const scan = () => {
       window.cancelAnimationFrame(frame);
       frame = window.requestAnimationFrame(() => {
+        const savedReference = Array.from(document.querySelectorAll<HTMLElement>("p"))
+          .map((node) => node.textContent?.trim() ?? "")
+          .find((text) => text.startsWith("MZIGO-") && text.includes(" · "))
+          ?.split(" · ")[0];
+        if (
+          savedReference &&
+          !receipts.some((receipt) => receipt.reference === savedReference) &&
+          !refreshingRef.current
+        ) {
+          refreshingRef.current = true;
+          void load().finally(() => {
+            refreshingRef.current = false;
+          });
+        }
+
         const next: Target[] = [];
         for (const receipt of receipts) {
           let host = Array.from(document.querySelectorAll<HTMLElement>("article")).find(
@@ -318,7 +334,7 @@ function StockSummaryActionsPanel({ businessId }: { businessId: string }) {
         mount.remove();
       }
     };
-  }, [receipts]);
+  }, [load, receipts]);
 
   return (
     <>
