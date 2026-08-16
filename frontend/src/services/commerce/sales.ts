@@ -1,4 +1,5 @@
 import {
+  saleAvailabilityResponseSchema,
   saleResponseSchema,
   salesResponseSchema,
 } from "@/schemas/commerce/sales";
@@ -15,6 +16,19 @@ function getSales(
     accessToken,
     path: `${commerceBase(businessId)}/sales/`,
     schema: salesResponseSchema,
+    signal,
+  });
+}
+
+function getSalesAvailability(
+  businessId: string,
+  accessToken: string,
+  signal?: AbortSignal,
+) {
+  return requestApi({
+    accessToken,
+    path: `${commerceBase(businessId)}/sales/availability/`,
+    schema: saleAvailabilityResponseSchema,
     signal,
   });
 }
@@ -68,4 +82,4 @@ function voidSale(
   );
 }
 
-export { createSale, getSales, updateSale, voidSale };
+export { createSale, getSales, getSalesAvailability, updateSale, voidSale };
