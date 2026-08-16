@@ -1,0 +1,24 @@
+{
+  "CommerceStock": {
+    "costMode": {
+      "label": "Namna ya bei ya kununua",
+      "perUnit": "Kwa kipimo",
+      "total": "Jumla"
+    },
+    "summary": {
+      "title": "Muhtasari wa mzigo",
+      "totalStockCost": "Jumla ya gharama ya mzigo",
+      "batch": "Fungu",
+      "group": "Kundi",
+      "directItems": "Bidhaa zilizorekodiwa moja kwa moja"
+    },
+    "actions": {
+      "copy": "Nakili muhtasari",
+      "share": "Shiriki muhtasari",
+      "print": "Chapisha muhtasari"
+    },
+    "success": {
+      "copied": "Muhtasari wa mzigo umenakiliwa."
+    }
+  }
+}
