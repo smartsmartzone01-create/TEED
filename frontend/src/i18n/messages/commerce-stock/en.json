@@ -1,21 +1,53 @@
 {
   "CommerceStock": {
     "costMode": {
-      "label": "Buying price mode",
+      "label": "Buying price",
       "perUnit": "Per unit",
       "total": "Total"
+    },
+    "fields": {
+      "supplier": "Supplier",
+      "dateReceived": "Date received",
+      "batchName": "Batch name",
+      "groupName": "Group name",
+      "groupQuantity": "Group quantity",
+      "unit": "Unit",
+      "productSku": "Product / SKU",
+      "productName": "Product name",
+      "productQuantity": "Product quantity",
+      "costPerUnit": "Buying price per unit",
+      "totalBuyingCost": "Total buying price",
+      "totalBuyingValue": "Total buying value",
+      "stockExpenses": "Stock expenses",
+      "quantity": "Quantity",
+      "status": "Status"
     },
     "summary": {
       "title": "Stock summary",
       "totalStockCost": "Total stock cost",
       "batch": "Batch",
-      "group": "Group",
-      "directItems": "Directly recorded items"
+      "group": "Group"
+    },
+    "values": {
+      "newProduct": "Add a new product"
     },
     "actions": {
       "copy": "Copy summary",
       "share": "Share summary",
-      "print": "Print summary"
+      "print": "Print summary",
+      "saving": "Saving stock..."
+    },
+    "groupBalance": "Products recorded: {recorded} of {total} {unit}",
+    "individualProgress": "Individual records: {recorded} of {total}",
+    "validation": {
+      "batchName": "Enter a batch name.",
+      "groupRequired": "Add at least one group to the batch.",
+      "groupName": "Enter a group name.",
+      "groupBalance": "Product quantities must equal the group quantity.",
+      "buyingCost": "Enter a valid buying price.",
+      "individualWhole": "Individually tracked stock must use a whole quantity.",
+      "individualCount": "Record all {count} individual items before receiving this stock.",
+      "productUnitMismatch": "This SKU uses a different unit. Choose a product with the same unit as this group."
     },
     "success": {
       "copied": "Stock summary copied."
