@@ -27,13 +27,31 @@ class SaleAvailabilityAPIView(CommerceBaseAPIView):
                 product__business=membership.business,
                 product__is_active=True,
                 status=TrackedUnit.Status.AVAILABLE,
+                stock_line__quantity_remaining__gt=0,
             )
-            .select_related("product", "stock_line")
+            .select_related(
+                "product",
+                "stock_line",
+                "stock_line__receipt",
+                "stock_line__stock_group",
+                "stock_line__stock_group__batch",
+            )
             .prefetch_related("identifiers")
             .order_by("product__name", "internal_serial")
         )
         units_by_product = {}
         for unit in available_units:
+            identifiers = [
+                {"kind": identifier.kind, "value": identifier.value}
+                for identifier in unit.identifiers.all()
+            ]
+            if unit.imei and not any(item["kind"] == "imei" for item in identifiers):
+                identifiers.append({"kind": "imei", "value": unit.imei})
+            if unit.serial_number and not any(
+                item["kind"] == "serial" for item in identifiers
+            ):
+                identifiers.append({"kind": "serial", "value": unit.serial_number})
+            group = unit.stock_line.stock_group
             units_by_product.setdefault(str(unit.product_id), []).append(
                 {
                     "id": str(unit.id),
@@ -42,10 +60,14 @@ class SaleAvailabilityAPIView(CommerceBaseAPIView):
                     "brand": unit.brand,
                     "color": unit.color,
                     "capacity": unit.capacity,
-                    "identifiers": [
-                        {"kind": identifier.kind, "value": identifier.value}
-                        for identifier in unit.identifiers.all()
-                    ],
+                    "identifiers": identifiers,
+                    "stock_reference": (
+                        unit.stock_line.receipt.reference
+                        if unit.stock_line.receipt_id
+                        else unit.stock_line.reference
+                    ),
+                    "batch_name": group.batch.name if group else "",
+                    "group_name": group.name if group else "",
                 }
             )
         payload = [
@@ -103,12 +125,9 @@ class SaleListCreateAPIView(CommerceBaseAPIView):
         sale = record_sale(
             actor=request.user, business_id=business_id, **serializer.validated_data
         )
-        sale = (
-            Sale.objects.prefetch_related(
-                "items__product", "items__tracked_unit__identifiers"
-            )
-            .get(pk=sale.pk)
-        )
+        sale = Sale.objects.prefetch_related(
+            "items__product", "items__tracked_unit__identifiers"
+        ).get(pk=sale.pk)
         return SuccessResponse(
             message="Sale recorded successfully.",
             data=SaleSerializer(sale).data,
