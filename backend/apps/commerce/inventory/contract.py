@@ -28,11 +28,16 @@ COUNTABLE_UNITS = {
 
 def _require_whole(value, unit, message):
     quantity = Decimal(value)
-    if unit.strip().casefold() in COUNTABLE_UNITS and quantity != quantity.to_integral_value():
+    if (
+        unit.strip().casefold() in COUNTABLE_UNITS
+        and quantity != quantity.to_integral_value()
+    ):
         raise ValidationError(message)
 
 
-class CanonicalStockReceiptCreateContractSerializer(CanonicalStockReceiptCreateSerializer):
+class CanonicalStockReceiptCreateContractSerializer(
+    CanonicalStockReceiptCreateSerializer
+):
     def validate(self, attrs):
         attrs = super().validate(attrs)
         for batch_index, batch in enumerate(attrs["batches"], start=1):
@@ -68,7 +73,9 @@ class CanonicalStockReceiptCreateContractSerializer(CanonicalStockReceiptCreateS
                                     ]
                                 }
                             )
-                        if attrs["status"] == "received" and len(product["tracked_units"]) != int(quantity):
+                        if attrs["status"] == "received" and len(
+                            product["tracked_units"]
+                        ) != int(quantity):
                             raise ValidationError(
                                 {
                                     "batches": [
