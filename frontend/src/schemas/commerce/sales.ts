@@ -30,7 +30,6 @@ const saleAvailabilityProductSchema = z.object({
   unit: z.string(),
   tracking_mode: z.enum(["quantity", "individual"]),
   current_quantity: decimal,
-  quantity_available: decimal,
   selling_price: decimal.nullable(),
   available_units: z.array(saleAvailabilityUnitSchema),
 });
