@@ -1,7 +1,35 @@
+type SaleAvailabilityUnit = {
+  id: string;
+  internal_serial: string;
+  model_name: string;
+  brand: string;
+  color: string;
+  capacity: string;
+  identifiers: Array<{ kind: string; value: string }>;
+};
+
+type SaleAvailabilityProduct = {
+  id: string;
+  name: string;
+  sku: string;
+  brand: string;
+  variant: string;
+  unit: string;
+  tracking_mode: "quantity" | "individual";
+  current_quantity: string;
+  selling_price: string | null;
+  available_units: SaleAvailabilityUnit[];
+};
+
 type SaleItem = {
   id: string;
-  product: string;
+  source: "catalog" | "manual";
+  product: string | null;
   product_name: string;
+  product_sku: string;
+  tracked_unit: string | null;
+  tracked_unit_reference: string;
+  item_name: string;
   quantity: string;
   unit_price: string;
   line_total: string;
@@ -15,6 +43,7 @@ type Sale = {
   sale_type: "retail" | "wholesale";
   customer_name: string;
   customer_phone: string;
+  customer_region: string;
   subtotal: string;
   discount: string;
   total: string;
@@ -27,4 +56,9 @@ type Sale = {
   status: "active" | "voided";
 };
 
-export type { Sale, SaleItem };
+export type {
+  Sale,
+  SaleAvailabilityProduct,
+  SaleAvailabilityUnit,
+  SaleItem,
+};
