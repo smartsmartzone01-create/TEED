@@ -16,6 +16,9 @@ const saleAvailabilityUnitSchema = z.object({
   color: z.string(),
   capacity: z.string(),
   identifiers: z.array(trackedIdentifierSchema),
+  stock_reference: z.string(),
+  batch_name: z.string(),
+  group_name: z.string(),
 });
 
 const saleAvailabilityProductSchema = z.object({
