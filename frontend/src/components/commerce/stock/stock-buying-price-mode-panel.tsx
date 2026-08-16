@@ -1,7 +1,7 @@
 "use client";
 
 import { createPortal } from "react-dom";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 
 import { Input } from "@/components/global/primitives/input";
@@ -24,25 +24,28 @@ function setReactInputValue(input: HTMLInputElement, value: string) {
 }
 
 function BuyingPriceControl({ target }: { target: Target }) {
-  const t = useTranslations("Commerce");
+  const stockT = useTranslations("CommerceStock");
   const [mode, setMode] = useState<CostMode>("per_unit");
   const [displayValue, setDisplayValue] = useState(target.input.value);
 
-  const normalize = (value: string, selectedMode = mode) => {
-    if (!value) {
-      setReactInputValue(target.input, "");
-      return;
-    }
-    const entered = Number(value);
-    const quantity = Number(target.quantityInput.value);
-    if (!Number.isFinite(entered) || entered < 0) return;
-    if (selectedMode === "total") {
-      if (!Number.isFinite(quantity) || quantity <= 0) return;
-      setReactInputValue(target.input, String(entered / quantity));
-      return;
-    }
-    setReactInputValue(target.input, value);
-  };
+  const normalize = useCallback(
+    (value: string, selectedMode: CostMode) => {
+      if (!value) {
+        setReactInputValue(target.input, "");
+        return;
+      }
+      const entered = Number(value);
+      const quantity = Number(target.quantityInput.value);
+      if (!Number.isFinite(entered) || entered < 0) return;
+      if (selectedMode === "total") {
+        if (!Number.isFinite(quantity) || quantity <= 0) return;
+        setReactInputValue(target.input, String(entered / quantity));
+        return;
+      }
+      setReactInputValue(target.input, value);
+    },
+    [target.input, target.quantityInput],
+  );
 
   useEffect(() => {
     const onQuantityChange = () => {
@@ -50,7 +53,7 @@ function BuyingPriceControl({ target }: { target: Target }) {
     };
     target.quantityInput.addEventListener("input", onQuantityChange);
     return () => target.quantityInput.removeEventListener("input", onQuantityChange);
-  }, [displayValue, mode, target.quantityInput]);
+  }, [displayValue, mode, normalize, target.quantityInput]);
 
   const changeMode = (nextMode: CostMode) => {
     const quantity = Number(target.quantityInput.value);
@@ -64,42 +67,26 @@ function BuyingPriceControl({ target }: { target: Target }) {
     normalize(nextDisplay, nextMode);
   };
 
-  const quantity = Number(target.quantityInput.value);
-  const normalized = Number(target.input.value || "0");
-  const counterpart =
-    mode === "total"
-      ? normalized
-      : Number.isFinite(quantity) && quantity > 0
-        ? normalized * quantity
-        : 0;
-
   return (
     <div className="grid gap-2 sm:grid-cols-[8.5rem_1fr]">
       <Select
-        aria-label={t("fields.buyingPriceMode")}
+        aria-label={stockT("costMode.label")}
         onChange={(event) => changeMode(event.target.value as CostMode)}
         value={mode}
       >
-        <option value="per_unit">{t("values.costPerUnit")}</option>
-        <option value="total">{t("values.costTotal")}</option>
+        <option value="per_unit">{stockT("costMode.perUnit")}</option>
+        <option value="total">{stockT("costMode.total")}</option>
       </Select>
       <Input
         min="0"
         onChange={(event) => {
           setDisplayValue(event.target.value);
-          normalize(event.target.value);
+          normalize(event.target.value, mode);
         }}
         step="0.01"
         type="number"
         value={displayValue}
       />
-      {displayValue ? (
-        <p className="text-[11px] font-normal text-slate-500 sm:col-span-2">
-          {mode === "total"
-            ? t("costPreview.perUnit", { value: counterpart })
-            : t("costPreview.total", { value: counterpart })}
-        </p>
-      ) : null}
     </div>
   );
 }
@@ -161,14 +148,9 @@ function StockBuyingPriceModePanel() {
 
   return (
     <>
-      {targets.map((target) =>
+      {targets.map((target, index) =>
         target.mount.isConnected
-          ? createPortal(
-              <BuyingPriceControl target={target} />,
-              target.mount,
-              target.input.dataset.commerceCostModeKey ??
-                `${targets.indexOf(target)}`,
-            )
+          ? createPortal(<BuyingPriceControl target={target} />, target.mount, index)
           : null,
       )}
     </>
