@@ -19,7 +19,6 @@ from .serializers import (
 )
 from .services import archive_draft_stock_receipt, current_stock_receipts
 
-
 PREFETCH_STOCK = (
     "lines__product",
     "lines__tracked_units__identifiers",
@@ -37,15 +36,16 @@ class ActiveStockReceiptListCreatePolishAPIView(CommerceBaseAPIView):
 
     def get(self, request, business_id):
         membership = commerce_membership(user=request.user, business_id=business_id)
-        receipts = current_stock_receipts(business=membership.business).prefetch_related(
-            *PREFETCH_STOCK
-        )
+        receipts = current_stock_receipts(
+            business=membership.business
+        ).prefetch_related(*PREFETCH_STOCK)
         return SuccessResponse(
             message="Stock received retrieved successfully.",
             data={
                 "receipts": CanonicalStockReceiptSerializer(receipts, many=True).data,
                 "units": CanonicalUnitDefinitionSerializer(
-                    UnitDefinition.objects.filter(business=membership.business), many=True
+                    UnitDefinition.objects.filter(business=membership.business),
+                    many=True,
                 ).data,
             },
         )
