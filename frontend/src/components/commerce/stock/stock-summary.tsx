@@ -49,7 +49,10 @@ function StockProductSummary({ line }: { line: StockReceiptLine }) {
       {line.tracked_units.length ? (
         <div className="grid gap-2 sm:grid-cols-2">
           {line.tracked_units.map((unit) => (
-            <div className="rounded-lg bg-slate-50 p-2 text-xs dark:bg-slate-900" key={unit.id}>
+            <div
+              className="rounded-lg bg-slate-50 p-2 text-xs dark:bg-slate-900"
+              key={unit.id}
+            >
               <strong>{unit.model_name || line.product_name}</strong>
               <p className="mt-1 text-slate-500">
                 {[
@@ -85,16 +88,26 @@ function formatStockSummary(receipt: StockReceipt, labels: Record<string, string
   for (const batch of receipt.batches) {
     rows.push(`${labels.batch}: ${batch.name}`);
     for (const group of batch.groups) {
-      rows.push(
-        `  ${labels.group}: ${group.name} · ${numberText(group.quantity)} ${group.unit}`,
-      );
+      const isDirectItem =
+        group.types.length === 1 && group.name === group.types[0].product_name;
+      if (!isDirectItem) {
+        rows.push(
+          `  ${labels.group}: ${group.name} · ${numberText(group.quantity)} ${group.unit}`,
+        );
+      }
       for (const line of group.types) {
         const quantity =
           Number(line.quantity_received) / Number(line.conversion_to_base || "1");
-        rows.push(`    ${line.product_name} (${line.product_sku})`);
-        rows.push(`      ${labels.quantity}: ${numberText(quantity)} ${line.received_unit}`);
-        rows.push(`      ${labels.costPerUnit}: ${moneyText(line.received_unit_cost)}`);
-        rows.push(`      ${labels.totalBuyingCost}: ${moneyText(line.total_buying_cost)}`);
+        rows.push(`${isDirectItem ? "  " : "    "}${line.product_name} (${line.product_sku})`);
+        rows.push(
+          `${isDirectItem ? "    " : "      "}${labels.quantity}: ${numberText(quantity)} ${line.received_unit}`,
+        );
+        rows.push(
+          `${isDirectItem ? "    " : "      "}${labels.costPerUnit}: ${moneyText(line.received_unit_cost)}`,
+        );
+        rows.push(
+          `${isDirectItem ? "    " : "      "}${labels.totalBuyingCost}: ${moneyText(line.total_buying_cost)}`,
+        );
         for (const unit of line.tracked_units) {
           const details = [
             unit.model_name,
@@ -106,7 +119,7 @@ function formatStockSummary(receipt: StockReceipt, labels: Record<string, string
               (identifier) => `${identifier.kind}: ${identifier.value}`,
             ),
           ].filter(Boolean);
-          rows.push(`      - ${details.join(" · ")}`);
+          rows.push(`${isDirectItem ? "    " : "      "}- ${details.join(" · ")}`);
         }
       }
     }
