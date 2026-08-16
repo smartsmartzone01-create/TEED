@@ -9,15 +9,15 @@ from ..api import (
     StockBatchListCreateAPIView,
     StockReceiptReceiveAPIView,
 )
+from ..catalog.models import UnitDefinition
 from ..services import commerce_membership, create_stock_receipt
+from .contract import CanonicalStockReceiptCreateContractSerializer
 from .detail import GuardedStockReceiptDetailAPIView
 from .serializers import (
-    CanonicalStockReceiptCreateSerializer,
     CanonicalStockReceiptSerializer,
     CanonicalUnitDefinitionSerializer,
 )
 from .services import archive_draft_stock_receipt, current_stock_receipts
-from ..catalog.models import UnitDefinition
 
 
 PREFETCH_STOCK = (
@@ -52,7 +52,7 @@ class ActiveStockReceiptListCreatePolishAPIView(CommerceBaseAPIView):
 
     @method_decorator(csrf_protect)
     def post(self, request, business_id):
-        serializer = CanonicalStockReceiptCreateSerializer(data=request.data)
+        serializer = CanonicalStockReceiptCreateContractSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         receipt = create_stock_receipt(
             actor=request.user,
