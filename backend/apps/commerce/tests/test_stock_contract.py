@@ -48,9 +48,7 @@ class CanonicalStockContractTests(TestCase):
             "supplier_name": "China Supplier",
             "additional_cost": "5000",
             "received_at": timezone.now(),
-            "catalog_items": [
-                {"key": "anker", "product_id": str(self.product.id)}
-            ],
+            "catalog_items": [{"key": "anker", "product_id": str(self.product.id)}],
             "batches": [
                 {
                     "name": "Batch 1",
@@ -96,9 +94,7 @@ class CanonicalStockContractTests(TestCase):
     def test_contract_allows_fractional_measured_units(self):
         payload = self.payload(quantity="1.5")
         payload["batches"][0]["groups"][0]["unit"] = "kilogram"
-        payload["batches"][0]["groups"][0]["types"][0]["received_unit"] = (
-            "kilogram"
-        )
+        payload["batches"][0]["groups"][0]["types"][0]["received_unit"] = "kilogram"
         self.product.unit = "kilogram"
         self.product.save(update_fields=["unit", "updated_at"])
         serializer = CanonicalStockReceiptCreateContractSerializer(data=payload)
@@ -173,9 +169,7 @@ class CanonicalStockContractTests(TestCase):
             is_active=True,
         )
         payload = self.payload(quantity="10", unit_cost="10000")
-        payload["catalog_items"].append(
-            {"key": "jbl", "product_id": str(second.id)}
-        )
+        payload["catalog_items"].append({"key": "jbl", "product_id": str(second.id)})
         group = payload["batches"][0]["groups"][0]
         group["types"][0]["quantity_received"] = "5"
         group["types"].append(
