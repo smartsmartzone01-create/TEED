@@ -59,7 +59,9 @@ class ProductDetailOperationsPolishAPIView(CommerceBaseAPIView):
         ).first()
         if product is None:
             raise ValidationError({"product": ["Item not found."]})
-        serializer = ProductCorrectionSerializer(product, data=request.data, partial=True)
+        serializer = ProductCorrectionSerializer(
+            product, data=request.data, partial=True
+        )
         serializer.is_valid(raise_exception=True)
         new_unit = serializer.validated_data.get("unit", product.unit)
         if new_unit.casefold() != product.unit.casefold() and (
