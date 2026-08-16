@@ -32,6 +32,7 @@ class Sale(BaseModel):
     )
     customer_name = models.CharField(max_length=120, blank=True, default="")
     customer_phone = models.CharField(max_length=32, blank=True, default="")
+    customer_region = models.CharField(max_length=120, blank=True, default="")
     subtotal = models.DecimalField(max_digits=14, decimal_places=2, default=0)
     discount = models.DecimalField(max_digits=14, decimal_places=2, default=0)
     total = models.DecimalField(max_digits=14, decimal_places=2, default=0)
@@ -86,10 +87,29 @@ class SaleAudit(BaseModel):
 
 
 class SaleItem(BaseModel):
+    class Source(models.TextChoices):
+        CATALOG = "catalog", "TEED product / SKU"
+        MANUAL = "manual", "Manual item"
+
     sale = models.ForeignKey(Sale, on_delete=models.CASCADE, related_name="items")
-    product = models.ForeignKey(
-        Product, on_delete=models.PROTECT, related_name="sale_items"
+    source = models.CharField(
+        max_length=12, choices=Source.choices, default=Source.CATALOG
     )
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.PROTECT,
+        related_name="sale_items",
+        null=True,
+        blank=True,
+    )
+    tracked_unit = models.ForeignKey(
+        "commerce.TrackedUnit",
+        on_delete=models.PROTECT,
+        related_name="sale_items",
+        null=True,
+        blank=True,
+    )
+    item_name = models.CharField(max_length=160, blank=True, default="")
     quantity = models.DecimalField(max_digits=14, decimal_places=3)
     unit_price = models.DecimalField(max_digits=14, decimal_places=2)
     line_total = models.DecimalField(max_digits=14, decimal_places=2)
