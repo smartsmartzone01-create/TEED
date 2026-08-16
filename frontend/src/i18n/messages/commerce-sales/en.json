@@ -38,6 +38,14 @@
     "receipt": "Receipt",
     "customer": "Customer",
     "amount": "Amount",
+    "stockReference": "Stock",
+    "batch": "Batch",
+    "group": "Group",
+    "model": "Name / model",
+    "brand": "Brand",
+    "color": "Color",
+    "capacitySize": "Capacity / size",
+    "internalSerial": "Internal serial",
     "noSales": "No sales recorded yet.",
     "saleSaved": "Sale recorded successfully.",
     "saleEdited": "Sale corrected successfully.",
@@ -46,6 +54,6 @@
     "saveError": "Sale could not be saved.",
     "manualHelp": "Use this when you want to record a sale without using TEED inventory.",
     "catalogHelp": "Use TEED product identification and deduct the sale from available stock.",
-    "trackedHelp": "Choose the exact available item. TEED will keep its serial, chassis, registration or other identifier with this sale."
+    "trackedHelp": "Only unsold items from this SKU are shown. Choose the exact item sold so TEED keeps its recorded properties and identifiers with the sale."
   }
 }
