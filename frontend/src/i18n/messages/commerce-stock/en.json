@@ -1,0 +1,24 @@
+{
+  "CommerceStock": {
+    "costMode": {
+      "label": "Buying price mode",
+      "perUnit": "Per unit",
+      "total": "Total"
+    },
+    "summary": {
+      "title": "Stock summary",
+      "totalStockCost": "Total stock cost",
+      "batch": "Batch",
+      "group": "Group",
+      "directItems": "Directly recorded items"
+    },
+    "actions": {
+      "copy": "Copy summary",
+      "share": "Share summary",
+      "print": "Print summary"
+    },
+    "success": {
+      "copied": "Stock summary copied."
+    }
+  }
+}
