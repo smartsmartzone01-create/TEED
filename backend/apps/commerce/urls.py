@@ -15,7 +15,12 @@ from .inventory.api import (
 )
 from .overview.api import CommerceOverviewPolishAPIView
 from .returns.api import ReturnListCreateAPIView
-from .sales.api import SaleDetailAPIView, SaleListCreateAPIView, SaleVoidAPIView
+from .sales.api import (
+    SaleAvailabilityAPIView,
+    SaleDetailAPIView,
+    SaleListCreateAPIView,
+    SaleVoidAPIView,
+)
 
 app_name = "commerce"
 urlpatterns = [
@@ -63,6 +68,11 @@ urlpatterns = [
         "businesses/<uuid:business_id>/inventory/adjustments/",
         AdjustmentCreateAPIView.as_view(),
         name="adjustments",
+    ),
+    path(
+        "businesses/<uuid:business_id>/sales/availability/",
+        SaleAvailabilityAPIView.as_view(),
+        name="sales-availability",
     ),
     path(
         "businesses/<uuid:business_id>/sales/",
