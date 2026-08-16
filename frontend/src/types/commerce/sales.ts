@@ -1,14 +1,14 @@
 type SaleAvailabilityUnit = {
   id: string;
   internal_serial: string;
+  stock_reference: string;
+  batch_name: string;
+  group_name: string;
   model_name: string;
   brand: string;
   color: string;
   capacity: string;
   identifiers: Array<{ kind: string; value: string }>;
-  stock_reference: string;
-  batch_name: string;
-  group_name: string;
 };
 
 type SaleAvailabilityProduct = {
@@ -20,6 +20,7 @@ type SaleAvailabilityProduct = {
   unit: string;
   tracking_mode: "quantity" | "individual";
   current_quantity: string;
+  quantity_available: string;
   selling_price: string | null;
   available_units: SaleAvailabilityUnit[];
 };
@@ -33,6 +34,8 @@ type SaleItem = {
   tracked_unit: string | null;
   tracked_unit_reference: string;
   item_name: string;
+  item_details: Record<string, string>;
+  acquisition_unit_cost: string | null;
   quantity: string;
   unit_price: string;
   line_total: string;
@@ -43,6 +46,7 @@ type SaleItem = {
 type Sale = {
   id: string;
   receipt_number: string;
+  sale_mode: "stock" | "independent" | "trade_in";
   sale_type: "retail" | "wholesale";
   customer_name: string;
   customer_phone: string;
