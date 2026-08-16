@@ -24,7 +24,9 @@ class StockTrackedUnitInputSerializer(serializers.Serializer):
     brand = serializers.CharField(max_length=80, required=False, allow_blank=True)
     color = serializers.CharField(max_length=60, required=False, allow_blank=True)
     capacity = serializers.CharField(max_length=80, required=False, allow_blank=True)
-    identifiers = StockIdentifierInputSerializer(many=True, required=False, default=list)
+    identifiers = StockIdentifierInputSerializer(
+        many=True, required=False, default=list
+    )
 
 
 class StockCatalogItemInputSerializer(serializers.Serializer):
@@ -56,7 +58,9 @@ class CanonicalStockLineInputSerializer(serializers.Serializer):
     tracking_mode = serializers.ChoiceField(
         choices=Product.TrackingMode.choices, default=Product.TrackingMode.QUANTITY
     )
-    tracked_units = StockTrackedUnitInputSerializer(many=True, required=False, default=list)
+    tracked_units = StockTrackedUnitInputSerializer(
+        many=True, required=False, default=list
+    )
 
 
 class CanonicalStockGroupInputSerializer(serializers.Serializer):
@@ -119,10 +123,16 @@ class CanonicalStockReceiptCreateSerializer(serializers.Serializer):
                 for line in group["types"]:
                     if line["catalog_key"] not in known:
                         raise serializers.ValidationError(
-                            {"catalog_items": "A stock product uses an unknown identification."}
+                            {
+                                "catalog_items": "A stock product uses an unknown identification."
+                            }
                         )
-        if attrs["status"] == StockReceipt.Status.RECEIVED and not attrs.get("received_at"):
-            raise serializers.ValidationError({"received_at": "Enter the date received."})
+        if attrs["status"] == StockReceipt.Status.RECEIVED and not attrs.get(
+            "received_at"
+        ):
+            raise serializers.ValidationError(
+                {"received_at": "Enter the date received."}
+            )
         return attrs
 
 
@@ -143,7 +153,11 @@ class StockTrackedUnitSerializer(serializers.ModelSerializer):
 
     def get_identifiers(self, obj):
         return [
-            {"id": str(identifier.id), "kind": identifier.kind, "value": identifier.value}
+            {
+                "id": str(identifier.id),
+                "kind": identifier.kind,
+                "value": identifier.value,
+            }
             for identifier in obj.identifiers.all()
         ]
 
@@ -187,9 +201,7 @@ class CanonicalStockLineSerializer(serializers.ModelSerializer):
     def get_total_buying_cost(self, obj):
         if obj.unit_cost is None:
             return None
-        return str(
-            (obj.quantity_received * obj.unit_cost).quantize(Decimal("0.01"))
-        )
+        return str((obj.quantity_received * obj.unit_cost).quantize(Decimal("0.01")))
 
 
 class CanonicalStockGroupSerializer(serializers.ModelSerializer):
@@ -290,7 +302,11 @@ class CanonicalStockReceiptSerializer(serializers.ModelSerializer):
     def get_correction_deadline(self, obj):
         from .stock import _correction_deadline
 
-        return _correction_deadline(obj) if obj.status == StockReceipt.Status.RECEIVED else None
+        return (
+            _correction_deadline(obj)
+            if obj.status == StockReceipt.Status.RECEIVED
+            else None
+        )
 
 
 class StockBatchNameCorrectionSerializer(serializers.Serializer):
