@@ -38,6 +38,14 @@
     "receipt": "Risiti",
     "customer": "Mteja",
     "amount": "Kiasi",
+    "stockReference": "Mzigo",
+    "batch": "Batch",
+    "group": "Kundi",
+    "model": "Jina / modeli",
+    "brand": "Chapa",
+    "color": "Rangi",
+    "capacitySize": "Ujazo / saizi",
+    "internalSerial": "Namba ya ndani",
     "noSales": "Hakuna mauzo yaliyorekodiwa bado.",
     "saleSaved": "Mauzo yamerekodiwa.",
     "saleEdited": "Mauzo yamerekebishwa.",
@@ -46,6 +54,6 @@
     "saveError": "Mauzo hayakuweza kuhifadhiwa.",
     "manualHelp": "Tumia hii kama unataka kurekodi mauzo bila kutumia stock ya TEED.",
     "catalogHelp": "Tumia utambulisho wa bidhaa wa TEED na mauzo yatakatwa kwenye stock iliyopo.",
-    "trackedHelp": "Chagua bidhaa halisi iliyopo. TEED itahifadhi serial, chassis, usajili au utambulisho mwingine pamoja na mauzo haya."
+    "trackedHelp": "Ni bidhaa ambazo bado hazijauzwa tu kutoka SKU hii zinaonyeshwa. Chagua bidhaa halisi iliyouzwa ili TEED ihifadhi taarifa na vitambulisho vyake pamoja na mauzo."
   }
 }
