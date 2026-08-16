@@ -129,16 +129,26 @@ def _record_items(*, sale, actor, business, items):
         if item["source"] == SaleItem.Source.MANUAL:
             quantity = item["quantity"]
             unit_price = item["unit_price"]
+            acquisition_unit_cost = item.get("acquisition_unit_cost")
             line_total = quantity * unit_price
+            cost_total = (
+                quantity * acquisition_unit_cost
+                if acquisition_unit_cost is not None
+                else Decimal("0")
+            )
             SaleItem.objects.create(
                 sale=sale,
                 source=SaleItem.Source.MANUAL,
                 item_name=item["item_name"].strip(),
+                item_details=item.get("item_details", {}),
+                acquisition_unit_cost=acquisition_unit_cost,
                 quantity=quantity,
                 unit_price=unit_price,
                 line_total=line_total,
+                cost_total=cost_total,
             )
             subtotal += line_total
+            total_cost += cost_total
             continue
 
         product = (
@@ -239,6 +249,7 @@ def record_sale(*, actor, business_id, items, **values):
 
 def _sale_snapshot(sale):
     return {
+        "sale_mode": sale.sale_mode,
         "sale_type": sale.sale_type,
         "customer_name": sale.customer_name,
         "customer_phone": sale.customer_phone,
@@ -254,6 +265,12 @@ def _sale_snapshot(sale):
                 if item.tracked_unit_id
                 else None,
                 "item_name": item.item_name,
+                "item_details": item.item_details,
+                "acquisition_unit_cost": (
+                    str(item.acquisition_unit_cost)
+                    if item.acquisition_unit_cost is not None
+                    else None
+                ),
                 "quantity": str(item.quantity),
                 "unit_price": str(item.unit_price),
             }
