@@ -1,3 +1,4 @@
+import { genericResponseSchema } from "@/schemas/commerce/shared";
 import { requestApi } from "@/services/global/api-client";
 import { withCsrfRetry } from "@/services/identity/csrf";
 import { commerceBase } from "@/services/commerce/shared";
@@ -10,6 +11,7 @@ function getStockReceipts(
   return requestApi({
     accessToken,
     path: `${commerceBase(businessId)}/stock-receipts/`,
+    schema: genericResponseSchema,
     signal,
   });
 }
@@ -26,6 +28,7 @@ function createStockReceipt(
       csrfToken,
       method: "POST",
       path: `${commerceBase(businessId)}/stock-receipts/`,
+      schema: genericResponseSchema,
     }),
   );
 }
@@ -43,6 +46,7 @@ function correctStockReceipt(
       csrfToken,
       method: "PATCH",
       path: `${commerceBase(businessId)}/stock-receipts/${receiptId}/`,
+      schema: genericResponseSchema,
     }),
   );
 }
@@ -59,6 +63,7 @@ function archiveDraftStockReceipt(
       csrfToken,
       method: "POST",
       path: `${commerceBase(businessId)}/stock-receipts/${receiptId}/archive/`,
+      schema: genericResponseSchema,
     }),
   );
 }
