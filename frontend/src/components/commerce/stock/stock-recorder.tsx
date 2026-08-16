@@ -1,1 +1,1 @@
-export { StockDomainWorkspaceV2 as StockRecorder } from "@/components/commerce/stock/stock-domain-workspace-v2";
+export { ProgressiveStockWorkspace as StockRecorder } from "@/components/commerce/stock/stock-progressive-workspace";
