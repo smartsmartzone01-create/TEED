@@ -20,7 +20,6 @@ type SaleAvailabilityProduct = {
   unit: string;
   tracking_mode: "quantity" | "individual";
   current_quantity: string;
-  quantity_available: string;
   selling_price: string | null;
   available_units: SaleAvailabilityUnit[];
 };
