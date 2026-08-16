@@ -17,7 +17,8 @@ from ..models import (
     SaleReturn,
     StockReceipt,
 )
-from ..serializers import ProductSerializer, ReturnSerializer, SaleSerializer
+from ..sales.serializers import SaleSerializer
+from ..serializers import ProductSerializer, ReturnSerializer
 from ..services import commerce_membership
 
 
@@ -79,7 +80,9 @@ class CommerceOverviewPolishAPIView(CommerceBaseAPIView):
             )
             for product in products
         )
-        recent_sales = Sale.objects.prefetch_related("items__product").filter(
+        recent_sales = Sale.objects.prefetch_related(
+            "items__product", "items__tracked_unit__identifiers"
+        ).filter(
             business=business,
             status=Sale.Status.ACTIVE,
         )[:5]
