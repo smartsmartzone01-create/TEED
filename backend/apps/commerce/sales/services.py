@@ -41,7 +41,11 @@ def _allocate_fifo(*, product, sale_item, quantity, actor, sale):
     cost_total = Decimal("0")
     batches = (
         StockBatch.objects.select_for_update()
-        .filter(product=product, quantity_remaining__gt=0)
+        .filter(
+            product=product,
+            tracking_mode=Product.TrackingMode.QUANTITY,
+            quantity_remaining__gt=0,
+        )
         .order_by("received_at", "created_at")
     )
     for batch in batches:
@@ -69,7 +73,9 @@ def _allocate_fifo(*, product, sale_item, quantity, actor, sale):
         if remaining == 0:
             break
     if remaining > 0:
-        raise ValidationError({"items": [f"Insufficient stock for {product.name}."]})
+        raise ValidationError(
+            {"items": [f"Insufficient quantity-tracked stock for {product.name}."]}
+        )
     return cost_total
 
 
@@ -82,6 +88,7 @@ def _allocate_tracked_unit(*, product, sale_item, tracked_unit_id, actor, sale):
             product=product,
             product__business=product.business,
             status=TrackedUnit.Status.AVAILABLE,
+            stock_line__tracking_mode=Product.TrackingMode.INDIVIDUAL,
         )
         .first()
     )
@@ -142,14 +149,10 @@ def _record_items(*, sale, actor, business, items):
         if product is None:
             raise ValidationError({"items": ["A selected product is unavailable."]})
         quantity = item["quantity"]
-        if product.current_quantity < quantity:
+        tracked_unit_id = item.get("tracked_unit_id")
+        if tracked_unit_id and quantity != 1:
             raise ValidationError(
-                {
-                    "items": [
-                        f"Only {product.current_quantity} {product.unit} of "
-                        f"{product.name} are available."
-                    ]
-                }
+                {"items": [f"Record the selected {product.name} item as one unit."]}
             )
         unit_price = item.get("unit_price")
         if unit_price is None:
@@ -158,27 +161,18 @@ def _record_items(*, sale, actor, business, items):
                     {"items": [f"Enter a selling price for {product.name}."]}
                 )
             unit_price = product.selling_price
-        if product.tracking_mode == Product.TrackingMode.INDIVIDUAL and quantity != 1:
-            raise ValidationError(
-                {"items": [f"Record {product.name} individual items one at a time."]}
-            )
         line_total = quantity * unit_price
         sale_item = SaleItem.objects.create(
             sale=sale,
             source=SaleItem.Source.CATALOG,
             product=product,
-            tracked_unit_id=item.get("tracked_unit_id"),
+            tracked_unit_id=tracked_unit_id,
             item_name=product.name,
             quantity=quantity,
             unit_price=unit_price,
             line_total=line_total,
         )
-        if product.tracking_mode == Product.TrackingMode.INDIVIDUAL:
-            tracked_unit_id = item.get("tracked_unit_id")
-            if not tracked_unit_id:
-                raise ValidationError(
-                    {"items": [f"Choose the available {product.name} item being sold."]}
-                )
+        if tracked_unit_id:
             cost = _allocate_tracked_unit(
                 product=product,
                 sale_item=sale_item,
