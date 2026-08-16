@@ -1,7 +1,7 @@
 import { z } from "zod";
 
-import { createApiEnvelopeSchema } from "@/schemas/global/api";
 import { decimal } from "@/schemas/commerce/shared";
+import { createApiEnvelopeSchema } from "@/schemas/global/api";
 
 const trackedIdentifierSchema = z.object({
   kind: z.string(),
@@ -30,6 +30,7 @@ const saleAvailabilityProductSchema = z.object({
   unit: z.string(),
   tracking_mode: z.enum(["quantity", "individual"]),
   current_quantity: decimal,
+  quantity_available: decimal,
   selling_price: decimal.nullable(),
   available_units: z.array(saleAvailabilityUnitSchema),
 });
@@ -44,6 +45,8 @@ const saleItemSchema = z
     tracked_unit: z.string().nullable(),
     tracked_unit_reference: z.string(),
     item_name: z.string(),
+    item_details: z.record(z.string(), z.string()).default({}),
+    acquisition_unit_cost: decimal.nullable(),
     quantity: decimal,
     unit_price: decimal,
     line_total: decimal,
@@ -56,6 +59,7 @@ const saleSchema = z
   .object({
     id: z.string(),
     receipt_number: z.string(),
+    sale_mode: z.enum(["stock", "independent", "trade_in"]),
     sale_type: z.enum(["retail", "wholesale"]),
     customer_name: z.string(),
     customer_phone: z.string(),
