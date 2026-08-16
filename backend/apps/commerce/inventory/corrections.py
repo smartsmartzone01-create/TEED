@@ -36,7 +36,9 @@ def _recalculate_sale_costs(batch):
         sale_item_ids.add(allocation.sale_item_id)
         sale_ids.add(allocation.sale_item.sale_id)
 
-    for item in SaleItem.objects.filter(id__in=sale_item_ids).prefetch_related("allocations"):
+    for item in SaleItem.objects.filter(id__in=sale_item_ids).prefetch_related(
+        "allocations"
+    ):
         item.cost_total = sum(
             (
                 allocation.quantity * allocation.unit_cost
@@ -76,7 +78,10 @@ def _change_group_unit(*, group, new_unit):
         old_received = line.quantity_received
         old_remaining = line.quantity_remaining
         consumed = max(Decimal("0"), old_received - old_remaining)
-        if consumed > 0 or line.movements.exclude(kind=InventoryMovement.Kind.RECEIPT).exists():
+        if (
+            consumed > 0
+            or line.movements.exclude(kind=InventoryMovement.Kind.RECEIPT).exists()
+        ):
             raise ValidationError(
                 {
                     "groups": [
@@ -154,9 +159,11 @@ def correct_stock_structure(
         receipt.save(update_fields=[*allowed_receipt_values.keys(), "updated_at"])
 
     for correction in batches or []:
-        batch = StockContainer.objects.select_for_update().filter(
-            id=correction["id"], receipt=receipt
-        ).first()
+        batch = (
+            StockContainer.objects.select_for_update()
+            .filter(id=correction["id"], receipt=receipt)
+            .first()
+        )
         if batch is None:
             raise ValidationError({"batches": ["Select a batch from this stock."]})
         before["batches"].append({"id": str(batch.id), "name": batch.name})
@@ -165,9 +172,11 @@ def correct_stock_structure(
             batch.save(update_fields=["name", "updated_at"])
 
     for correction in groups or []:
-        group = StockGroup.objects.select_for_update().filter(
-            id=correction["id"], batch__receipt=receipt
-        ).first()
+        group = (
+            StockGroup.objects.select_for_update()
+            .filter(id=correction["id"], batch__receipt=receipt)
+            .first()
+        )
         if group is None:
             raise ValidationError({"groups": ["Select a group from this stock."]})
         before["groups"].append(
@@ -188,7 +197,7 @@ def correct_stock_structure(
     for correction in lines or []:
         line = (
             StockBatch.objects.select_for_update()
-            .select_related("product", "stock_group")
+            .select_related("product")
             .filter(id=correction["id"], receipt=receipt)
             .first()
         )
@@ -206,7 +215,9 @@ def correct_stock_structure(
                 "product": product.name,
                 "quantity_received": str(old_received),
                 "unit": old_unit,
-                "unit_cost": str(line.unit_cost) if line.unit_cost is not None else None,
+                "unit_cost": str(line.unit_cost)
+                if line.unit_cost is not None
+                else None,
             }
         )
 
@@ -218,7 +229,10 @@ def correct_stock_structure(
 
         new_unit = correction.get("unit", old_unit).strip()
         if new_unit.casefold() != old_unit.casefold():
-            if line.stock_group_id and line.stock_group.type_lines.exclude(pk=line.pk).exists():
+            if (
+                line.stock_group_id
+                and line.stock_group.type_lines.exclude(pk=line.pk).exists()
+            ):
                 raise ValidationError(
                     {
                         "lines": [
@@ -226,7 +240,10 @@ def correct_stock_structure(
                         ]
                     }
                 )
-            if consumed > 0 or line.movements.exclude(kind=InventoryMovement.Kind.RECEIPT).exists():
+            if (
+                consumed > 0
+                or line.movements.exclude(kind=InventoryMovement.Kind.RECEIPT).exists()
+            ):
                 raise ValidationError(
                     {
                         "lines": [
@@ -354,7 +371,9 @@ def correct_stock_structure(
                 "product": line.product.name,
                 "quantity_received": str(line.quantity_received),
                 "unit": line.received_unit or line.product.unit,
-                "unit_cost": str(line.unit_cost) if line.unit_cost is not None else None,
+                "unit_cost": str(line.unit_cost)
+                if line.unit_cost is not None
+                else None,
             }
             for line in receipt.lines.select_related("product").all()
         ],
