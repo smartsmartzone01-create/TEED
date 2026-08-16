@@ -12,6 +12,14 @@ class SaleItemInputSerializer(serializers.Serializer):
     product_id = serializers.UUIDField(required=False, allow_null=True)
     tracked_unit_id = serializers.UUIDField(required=False, allow_null=True)
     item_name = serializers.CharField(max_length=160, required=False, allow_blank=True)
+    item_details = serializers.JSONField(required=False, default=dict)
+    acquisition_unit_cost = serializers.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        min_value=Decimal("0"),
+        required=False,
+        allow_null=True,
+    )
     quantity = serializers.DecimalField(
         max_digits=14, decimal_places=3, min_value=Decimal("0.001")
     )
@@ -24,11 +32,11 @@ class SaleItemInputSerializer(serializers.Serializer):
         if source == SaleItem.Source.MANUAL:
             if not attrs.get("item_name", "").strip():
                 raise serializers.ValidationError(
-                    {"item_name": "Enter the item name for a manual sale item."}
+                    {"item_name": "Enter the item name for an independent sale item."}
                 )
             if "unit_price" not in attrs:
                 raise serializers.ValidationError(
-                    {"unit_price": "Enter the selling price for a manual sale item."}
+                    {"unit_price": "Enter the selling price for an independent sale item."}
                 )
             attrs.pop("product_id", None)
             attrs.pop("tracked_unit_id", None)
@@ -40,6 +48,7 @@ class SaleItemInputSerializer(serializers.Serializer):
 
 
 class SaleCreateSerializer(serializers.Serializer):
+    sale_mode = serializers.ChoiceField(choices=Sale.SaleMode.choices)
     sale_type = serializers.ChoiceField(choices=Sale.SaleType.choices)
     customer_name = serializers.CharField(
         max_length=120, required=False, allow_blank=True
@@ -56,6 +65,23 @@ class SaleCreateSerializer(serializers.Serializer):
     payment_status = serializers.ChoiceField(choices=Sale.PaymentStatus.choices)
     sold_at = serializers.DateTimeField()
     items = SaleItemInputSerializer(many=True, min_length=1)
+
+    def validate(self, attrs):
+        mode = attrs["sale_mode"]
+        if mode == Sale.SaleMode.TRADE_IN:
+            raise serializers.ValidationError(
+                {"sale_mode": "Trade-in requires the incoming-item contract and is not enabled yet."}
+            )
+        expected = (
+            SaleItem.Source.CATALOG
+            if mode == Sale.SaleMode.STOCK
+            else SaleItem.Source.MANUAL
+        )
+        if any(item["source"] != expected for item in attrs["items"]):
+            raise serializers.ValidationError(
+                {"items": "All items must match the selected sale mode."}
+            )
+        return attrs
 
 
 class SaleVoidSerializer(serializers.Serializer):
@@ -78,6 +104,8 @@ class SaleItemSerializer(serializers.ModelSerializer):
             "tracked_unit",
             "tracked_unit_reference",
             "item_name",
+            "item_details",
+            "acquisition_unit_cost",
             "quantity",
             "unit_price",
             "line_total",
@@ -113,6 +141,7 @@ class SaleSerializer(serializers.ModelSerializer):
             "receipt_number",
             "receipt_sequence",
             "status",
+            "sale_mode",
             "sale_type",
             "customer_name",
             "customer_phone",
