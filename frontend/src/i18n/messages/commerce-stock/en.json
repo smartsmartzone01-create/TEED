@@ -5,6 +5,39 @@
       "perUnit": "Per unit",
       "total": "Total"
     },
+    "steps": {
+      "stock": "New stock",
+      "lateDelivery": "Late delivery",
+      "batch": "Batch",
+      "products": "Create new products / SKUs",
+      "method": "Choose how to record this stock",
+      "review": "Review and save"
+    },
+    "help": {
+      "stock": "Enter the receiving details, then press Enter to continue.",
+      "batch": "Name this batch, then press Enter.",
+      "products": "Add a new product only if it does not already exist in your available items. You can skip this step and use existing products while recording.",
+      "method": "Choose whether this batch will be recorded item by item or through groups.",
+      "individual": "Record one physical item at a time. After Enter, the item is saved and a fresh form is ready for the next one.",
+      "group": "Name the group, choose whether it is recorded by quantity or by individual items, then continue inside that group.",
+      "review": "Check what has been recorded. Save a draft or finish and receive the stock."
+    },
+    "recordMethod": {
+      "individual": "Record as individual",
+      "group": "Record as group"
+    },
+    "recordMethodHelp": {
+      "individual": "Enter each physical item one by one.",
+      "group": "Create one or more groups and record each group by quantity or by individual items."
+    },
+    "groupMethod": {
+      "quantity": "By quantity",
+      "individual": "By individual"
+    },
+    "groupMethodHelp": {
+      "quantity": "Record product quantities inside this group.",
+      "individual": "Record each physical item inside this group one by one."
+    },
     "fields": {
       "supplier": "Supplier",
       "dateReceived": "Date received",
@@ -20,7 +53,10 @@
       "totalBuyingValue": "Total buying value",
       "stockExpenses": "Stock expenses",
       "quantity": "Quantity",
-      "status": "Status"
+      "status": "Status",
+      "identifierType": "Identifier type",
+      "identifierValue": "Identifier number",
+      "totalProducts": "Recorded entries"
     },
     "summary": {
       "title": "Stock summary",
@@ -29,14 +65,36 @@
       "group": "Group"
     },
     "values": {
-      "newProduct": "Add a new product"
+      "newProduct": "Add a new product",
+      "pendingSku": "New SKU",
+      "noSupplier": "Supplier not entered",
+      "notEntered": "Not entered yet",
+      "noNewProducts": "No new products added",
+      "chooseProduct": "Choose a product / SKU",
+      "entries": "entries"
     },
     "actions": {
       "copy": "Copy summary",
       "share": "Share summary",
       "print": "Print summary",
-      "saving": "Saving stock..."
+      "saving": "Saving stock...",
+      "enter": "Enter",
+      "edit": "Edit",
+      "enterProduct": "Enter product",
+      "updateProduct": "Update product",
+      "continue": "Continue",
+      "enterItem": "Enter item",
+      "review": "Review",
+      "finishGroup": "Finish group",
+      "saveDraft": "Save as draft",
+      "finishSave": "Finish & save",
+      "backToRecording": "Back to recording",
+      "recordAnother": "Record another new stock",
+      "cancelLateDelivery": "Cancel late delivery"
     },
+    "savedSoFar": "Saved so far",
+    "savedCount": "{count} individual items entered",
+    "savedGroups": "{count} groups entered",
     "groupBalance": "Products recorded: {recorded} of {total} {unit}",
     "individualProgress": "Individual records: {recorded} of {total}",
     "validation": {
@@ -47,10 +105,23 @@
       "buyingCost": "Enter a valid buying price.",
       "individualWhole": "Individually tracked stock must use a whole quantity.",
       "individualCount": "Record all {count} individual items before receiving this stock.",
-      "productUnitMismatch": "This SKU uses a different unit. Choose a product with the same unit as this group."
+      "productUnitMismatch": "This SKU uses a different unit. Choose a product with the same unit as this group.",
+      "dateReceived": "Enter the date received.",
+      "stockExpenses": "Enter a valid stock expense amount.",
+      "productName": "Enter a product name.",
+      "unit": "Choose a unit.",
+      "recordMethod": "Choose how you want to record this stock.",
+      "productRequired": "Choose a product / SKU.",
+      "quantityPositive": "Enter a quantity greater than zero.",
+      "wholeQuantity": "{unit} is a countable unit. Enter a whole quantity.",
+      "individualOneAtATime": "Individual recording saves one physical item at a time.",
+      "groupUnitMismatch": "Products in this group must use the same unit: {unit}.",
+      "groupNeedsProduct": "Enter at least one product before finishing this group."
     },
     "success": {
-      "copied": "Stock summary copied."
+      "copied": "Stock summary copied.",
+      "draftSaved": "Stock draft saved.",
+      "savedTitle": "Stock saved successfully"
     }
   }
 }
