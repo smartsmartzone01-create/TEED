@@ -60,9 +60,24 @@ type StockReceipt = {
   late_deliveries: StockReceipt[];
 };
 
-type Target = {
-  receipt: StockReceipt;
-  mount: HTMLElement;
+type Target = { receipt: StockReceipt; mount: HTMLElement };
+type Labels = {
+  title: string;
+  supplier: string;
+  supplierReference: string;
+  notes: string;
+  receivedAt: string;
+  status: string;
+  buyingValue: string;
+  stockExpense: string;
+  totalStockCost: string;
+  batch: string;
+  group: string;
+  directItems: string;
+  lateDeliveries: string;
+  costPerUnit: string;
+  totalCost: string;
+  tracking: string;
 };
 
 const numberText = (value: string | number | null | undefined) => {
@@ -79,20 +94,17 @@ const moneyText = (value: string | number | null | undefined) => {
     : String(value ?? "");
 };
 
-function lineSummary(line: StockLine, indent = "") {
+function lineSummary(line: StockLine, labels: Labels, indent = "") {
   const conversion = Number(line.conversion_to_base || "1") || 1;
   const quantity = Number(line.quantity_received) / conversion;
-  const unitCost =
-    line.received_unit_cost == null
-      ? null
-      : Number(line.received_unit_cost);
+  const unitCost = line.received_unit_cost == null ? null : Number(line.received_unit_cost);
   const total = unitCost == null ? null : quantity * unitCost;
   const rows = [
     `${indent}${line.product_name}${line.product_sku ? ` (${line.product_sku})` : ""}`,
     `${indent}  ${numberText(quantity)} ${line.received_unit}`,
-    `${indent}  Cost per unit: ${unitCost == null ? "—" : moneyText(unitCost)}`,
-    `${indent}  Total cost: ${total == null ? "—" : moneyText(total)}`,
-    `${indent}  Tracking: ${line.tracking_mode}`,
+    `${indent}  ${labels.costPerUnit}: ${unitCost == null ? "—" : moneyText(unitCost)}`,
+    `${indent}  ${labels.totalCost}: ${total == null ? "—" : moneyText(total)}`,
+    `${indent}  ${labels.tracking}: ${line.tracking_mode}`,
   ];
   for (const unit of line.tracked_units) {
     const details = [
@@ -106,26 +118,12 @@ function lineSummary(line: StockLine, indent = "") {
       unit.condition,
       ...unit.identifiers.map((identifier) => `${identifier.kind}: ${identifier.value}`),
     ].filter(Boolean);
-    rows.push(`${indent}  - ${details.join(" · ") || "Individual item"}`);
+    rows.push(`${indent}  - ${details.join(" · ") || line.product_name}`);
   }
   return rows;
 }
 
-function formatReceipt(receipt: StockReceipt, labels: {
-  title: string;
-  supplier: string;
-  supplierReference: string;
-  notes: string;
-  receivedAt: string;
-  status: string;
-  buyingValue: string;
-  stockExpense: string;
-  totalStockCost: string;
-  batch: string;
-  group: string;
-  directItems: string;
-  lateDeliveries: string;
-}) {
+function formatReceipt(receipt: StockReceipt, labels: Labels) {
   const rows = [
     labels.title,
     receipt.reference,
@@ -142,18 +140,14 @@ function formatReceipt(receipt: StockReceipt, labels: {
     rows.push(`${labels.batch}: ${batch.name}`);
     if (batch.notes) rows.push(`  ${labels.notes}: ${batch.notes}`);
     for (const group of batch.groups) {
-      rows.push(
-        `  ${labels.group}: ${group.name} · ${numberText(group.quantity)} ${group.unit}`,
-      );
+      rows.push(`  ${labels.group}: ${group.name} · ${numberText(group.quantity)} ${group.unit}`);
       if (group.buying_price != null) {
-        rows.push(`    Cost per unit: ${moneyText(group.buying_price)}`);
-        rows.push(
-          `    Total cost: ${moneyText(Number(group.buying_price) * Number(group.quantity))}`,
-        );
+        rows.push(`    ${labels.costPerUnit}: ${moneyText(group.buying_price)}`);
+        rows.push(`    ${labels.totalCost}: ${moneyText(Number(group.buying_price) * Number(group.quantity))}`);
       }
       for (const line of group.types) {
         groupedLineIds.add(line.id);
-        rows.push(...lineSummary(line, "    "));
+        rows.push(...lineSummary(line, labels, "    "));
       }
     }
     rows.push("");
@@ -162,7 +156,7 @@ function formatReceipt(receipt: StockReceipt, labels: {
   const directLines = receipt.lines.filter((line) => !groupedLineIds.has(line.id));
   if (directLines.length) {
     rows.push(labels.directItems);
-    for (const line of directLines) rows.push(...lineSummary(line, "  "));
+    for (const line of directLines) rows.push(...lineSummary(line, labels, "  "));
     rows.push("");
   }
 
@@ -183,9 +177,10 @@ function formatReceipt(receipt: StockReceipt, labels: {
 
 function SummaryActions({ receipt }: { receipt: StockReceipt }) {
   const t = useTranslations("Commerce");
+  const stockT = useTranslations("CommerceStock");
   const { notify } = useNotification();
-  const text = formatReceipt(receipt, {
-    title: t("stockSummary.title"),
+  const labels: Labels = {
+    title: stockT("summary.title"),
     supplier: t("fields.supplier"),
     supplierReference: t("fields.reference"),
     notes: t("fields.notes"),
@@ -193,21 +188,25 @@ function SummaryActions({ receipt }: { receipt: StockReceipt }) {
     status: t("savedReceipt.status"),
     buyingValue: t("savedReceipt.buyingValue"),
     stockExpense: t("fields.stockExpense"),
-    totalStockCost: t("stockSummary.totalStockCost"),
-    batch: t("stockSummary.batch"),
-    group: t("stockSummary.group"),
-    directItems: t("stockSummary.directItems"),
+    totalStockCost: stockT("summary.totalStockCost"),
+    batch: stockT("summary.batch"),
+    group: stockT("summary.group"),
+    directItems: stockT("summary.directItems"),
     lateDeliveries: t("lateDeliveries"),
-  });
+    costPerUnit: stockT("costMode.perUnit"),
+    totalCost: stockT("costMode.total"),
+    tracking: t("fields.tracking"),
+  };
+  const text = formatReceipt(receipt, labels);
 
   const copy = async () => {
     await navigator.clipboard.writeText(text);
-    notify({ message: t("success.stockSummaryCopied"), tone: "success" });
+    notify({ message: stockT("success.copied"), tone: "success" });
   };
 
   const share = async () => {
     if (navigator.share) {
-      await navigator.share({ title: `${t("stockSummary.title")} ${receipt.reference}`, text });
+      await navigator.share({ title: `${stockT("summary.title")} ${receipt.reference}`, text });
       return;
     }
     await copy();
@@ -231,13 +230,13 @@ function SummaryActions({ receipt }: { receipt: StockReceipt }) {
   return (
     <div className="flex flex-wrap gap-2 pt-1">
       <Button onClick={() => void copy()} size="small" type="button" variant="outline">
-        {t("actions.copySummary")}
+        {stockT("actions.copy")}
       </Button>
       <Button onClick={() => void share()} size="small" type="button" variant="outline">
-        {t("actions.shareSummary")}
+        {stockT("actions.share")}
       </Button>
       <Button onClick={print} size="small" type="button" variant="outline">
-        {t("actions.printSummary")}
+        {stockT("actions.print")}
       </Button>
     </div>
   );
@@ -315,9 +314,7 @@ function StockSummaryActionsPanel({ businessId }: { businessId: string }) {
     return () => {
       observer.disconnect();
       window.cancelAnimationFrame(frame);
-      for (const mount of document.querySelectorAll(
-        "[data-commerce-stock-summary-root]",
-      )) {
+      for (const mount of document.querySelectorAll("[data-commerce-stock-summary-root]")) {
         mount.remove();
       }
     };
