@@ -10,6 +10,11 @@ class Sale(BaseModel):
         ACTIVE = "active", "Active"
         VOIDED = "voided", "Voided and archived"
 
+    class SaleMode(models.TextChoices):
+        STOCK = "stock", "From stock"
+        INDEPENDENT = "independent", "Independent sale"
+        TRADE_IN = "trade_in", "Trade-in"
+
     class SaleType(models.TextChoices):
         RETAIL = "retail", "Retail"
         WHOLESALE = "wholesale", "Wholesale"
@@ -26,6 +31,9 @@ class Sale(BaseModel):
     receipt_sequence = models.PositiveBigIntegerField()
     status = models.CharField(
         max_length=12, choices=Status.choices, default=Status.ACTIVE, db_index=True
+    )
+    sale_mode = models.CharField(
+        max_length=16, choices=SaleMode.choices, default=SaleMode.STOCK, db_index=True
     )
     sale_type = models.CharField(
         max_length=16, choices=SaleType.choices, default=SaleType.RETAIL
@@ -89,7 +97,7 @@ class SaleAudit(BaseModel):
 class SaleItem(BaseModel):
     class Source(models.TextChoices):
         CATALOG = "catalog", "TEED product / SKU"
-        MANUAL = "manual", "Manual item"
+        MANUAL = "manual", "Independent item"
 
     sale = models.ForeignKey(Sale, on_delete=models.CASCADE, related_name="items")
     source = models.CharField(
@@ -110,6 +118,10 @@ class SaleItem(BaseModel):
         blank=True,
     )
     item_name = models.CharField(max_length=160, blank=True, default="")
+    item_details = models.JSONField(default=dict, blank=True)
+    acquisition_unit_cost = models.DecimalField(
+        max_digits=14, decimal_places=2, null=True, blank=True
+    )
     quantity = models.DecimalField(max_digits=14, decimal_places=3)
     unit_price = models.DecimalField(max_digits=14, decimal_places=2)
     line_total = models.DecimalField(max_digits=14, decimal_places=2)
