@@ -1,5 +1,6 @@
 "use client";
 
+import { Copy, Printer, Share2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/global/primitives/button";
@@ -179,31 +180,78 @@ function StockSummaryActions({ receipt }: { receipt: StockReceipt }) {
   };
 
   const print = () => {
-    const popup = window.open("", "_blank", "width=760,height=900");
-    if (!popup) return;
     const escaped = text
       .replaceAll("&", "&amp;")
       .replaceAll("<", "&lt;")
       .replaceAll(">", "&gt;");
-    popup.document.open();
-    popup.document.write(
-      `<!doctype html><html><head><meta charset="utf-8"><title>${receipt.reference}</title><style>body{font-family:Arial,sans-serif;margin:32px;color:#111}pre{white-space:pre-wrap;font:14px/1.6 Arial,sans-serif}</style></head><body><pre>${escaped}</pre></body></html>`,
+    const frame = document.createElement("iframe");
+    frame.setAttribute("aria-hidden", "true");
+    frame.style.position = "fixed";
+    frame.style.width = "1px";
+    frame.style.height = "1px";
+    frame.style.right = "0";
+    frame.style.bottom = "0";
+    frame.style.border = "0";
+    frame.style.opacity = "0";
+    document.body.appendChild(frame);
+
+    const printWindow = frame.contentWindow;
+    const printDocument = frame.contentDocument;
+    if (!printWindow || !printDocument) {
+      frame.remove();
+      return;
+    }
+
+    printDocument.open();
+    printDocument.write(
+      `<!doctype html><html><head><meta charset="utf-8"><title>${receipt.reference}</title><style>@page{margin:16mm}body{font-family:Arial,sans-serif;color:#111;margin:0}pre{white-space:pre-wrap;overflow-wrap:anywhere;font:14px/1.55 Arial,sans-serif;margin:0}</style></head><body><pre>${escaped}</pre></body></html>`,
     );
-    popup.document.close();
-    popup.focus();
-    window.setTimeout(() => popup.print(), 100);
+    printDocument.close();
+
+    const cleanup = () => window.setTimeout(() => frame.remove(), 500);
+    window.setTimeout(() => {
+      printWindow.focus();
+      printWindow.print();
+      cleanup();
+    }, 150);
   };
 
+  const iconButtonClass = "size-9 rounded-full p-0";
+
   return (
-    <div className="flex flex-wrap gap-2">
-      <Button onClick={() => void copy()} size="small" type="button" variant="outline">
-        {stockT("actions.copy")}
+    <div className="order-2 flex flex-wrap items-center gap-1.5">
+      <Button
+        aria-label={stockT("actions.copy")}
+        className={iconButtonClass}
+        onClick={() => void copy()}
+        size="small"
+        title={stockT("actions.copy")}
+        type="button"
+        variant="ghost"
+      >
+        <Copy className="size-4" />
       </Button>
-      <Button onClick={() => void share()} size="small" type="button" variant="outline">
-        {stockT("actions.share")}
+      <Button
+        aria-label={stockT("actions.share")}
+        className={iconButtonClass}
+        onClick={() => void share()}
+        size="small"
+        title={stockT("actions.share")}
+        type="button"
+        variant="ghost"
+      >
+        <Share2 className="size-4" />
       </Button>
-      <Button onClick={print} size="small" type="button" variant="outline">
-        {stockT("actions.print")}
+      <Button
+        aria-label={stockT("actions.print")}
+        className={iconButtonClass}
+        onClick={print}
+        size="small"
+        title={stockT("actions.print")}
+        type="button"
+        variant="ghost"
+      >
+        <Printer className="size-4" />
       </Button>
     </div>
   );
