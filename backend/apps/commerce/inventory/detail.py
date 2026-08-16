@@ -5,11 +5,9 @@ from rest_framework.exceptions import ValidationError
 
 from ..api import CommerceBaseAPIView
 from ..models import StockReceipt
+from .contract import CanonicalStockReceiptCorrectionContractSerializer
 from .corrections import correct_stock_structure
-from .serializers import (
-    CanonicalStockReceiptCorrectionSerializer,
-    CanonicalStockReceiptSerializer,
-)
+from .serializers import CanonicalStockReceiptSerializer
 from .stock import _assert_receipt_editable
 
 
@@ -23,7 +21,7 @@ class GuardedStockReceiptDetailAPIView(CommerceBaseAPIView):
             raise ValidationError({"receipt": ["Stock receipt not found."]})
         _assert_receipt_editable(receipt)
 
-        serializer = CanonicalStockReceiptCorrectionSerializer(
+        serializer = CanonicalStockReceiptCorrectionContractSerializer(
             data=request.data, partial=True
         )
         serializer.is_valid(raise_exception=True)
