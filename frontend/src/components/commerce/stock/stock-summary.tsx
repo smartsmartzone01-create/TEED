@@ -179,18 +179,19 @@ function StockSummaryActions({ receipt }: { receipt: StockReceipt }) {
   };
 
   const print = () => {
-    const popup = window.open("", "_blank", "noopener,noreferrer,width=760,height=900");
+    const popup = window.open("", "_blank", "width=760,height=900");
     if (!popup) return;
     const escaped = text
       .replaceAll("&", "&amp;")
       .replaceAll("<", "&lt;")
       .replaceAll(">", "&gt;");
+    popup.document.open();
     popup.document.write(
-      `<!doctype html><html><head><title>${receipt.reference}</title><style>body{font-family:Arial,sans-serif;margin:32px;color:#111}pre{white-space:pre-wrap;font:14px/1.6 Arial,sans-serif}</style></head><body><pre>${escaped}</pre></body></html>`,
+      `<!doctype html><html><head><meta charset="utf-8"><title>${receipt.reference}</title><style>body{font-family:Arial,sans-serif;margin:32px;color:#111}pre{white-space:pre-wrap;font:14px/1.6 Arial,sans-serif}</style></head><body><pre>${escaped}</pre></body></html>`,
     );
     popup.document.close();
     popup.focus();
-    popup.print();
+    window.setTimeout(() => popup.print(), 100);
   };
 
   return (
