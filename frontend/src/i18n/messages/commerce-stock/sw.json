@@ -1,21 +1,53 @@
 {
   "CommerceStock": {
     "costMode": {
-      "label": "Namna ya bei ya kununua",
+      "label": "Bei ya kununua",
       "perUnit": "Kwa kipimo",
       "total": "Jumla"
+    },
+    "fields": {
+      "supplier": "Msambazaji",
+      "dateReceived": "Tarehe ya kupokea",
+      "batchName": "Jina la fungu",
+      "groupName": "Jina la kundi",
+      "groupQuantity": "Idadi ya kundi",
+      "unit": "Kipimo",
+      "productSku": "Bidhaa / SKU",
+      "productName": "Jina la bidhaa",
+      "productQuantity": "Idadi ya bidhaa",
+      "costPerUnit": "Bei ya kununua kwa kipimo",
+      "totalBuyingCost": "Jumla ya bei ya kununua",
+      "totalBuyingValue": "Jumla ya thamani ya kununua",
+      "stockExpenses": "Gharama za mzigo",
+      "quantity": "Idadi",
+      "status": "Hali"
     },
     "summary": {
       "title": "Muhtasari wa mzigo",
       "totalStockCost": "Jumla ya gharama ya mzigo",
       "batch": "Fungu",
-      "group": "Kundi",
-      "directItems": "Bidhaa zilizorekodiwa moja kwa moja"
+      "group": "Kundi"
+    },
+    "values": {
+      "newProduct": "Ongeza bidhaa mpya"
     },
     "actions": {
       "copy": "Nakili muhtasari",
       "share": "Shiriki muhtasari",
-      "print": "Chapisha muhtasari"
+      "print": "Chapisha muhtasari",
+      "saving": "Inahifadhi mzigo..."
+    },
+    "groupBalance": "Bidhaa zilizorekodiwa: {recorded} kati ya {total} {unit}",
+    "individualProgress": "Bidhaa moja moja: {recorded} kati ya {total}",
+    "validation": {
+      "batchName": "Weka jina la fungu.",
+      "groupRequired": "Ongeza angalau kundi moja kwenye fungu.",
+      "groupName": "Weka jina la kundi.",
+      "groupBalance": "Jumla ya idadi za bidhaa lazima ilingane na idadi ya kundi.",
+      "buyingCost": "Weka bei sahihi ya kununua.",
+      "individualWhole": "Bidhaa zinazofuatiliwa moja moja lazima ziwe namba kamili.",
+      "individualCount": "Rekodi bidhaa zote {count} moja moja kabla ya kupokea mzigo.",
+      "productUnitMismatch": "SKU hii ina kipimo tofauti. Chagua bidhaa yenye kipimo sawa na kundi hili."
     },
     "success": {
       "copied": "Muhtasari wa mzigo umenakiliwa."
