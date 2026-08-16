@@ -402,18 +402,9 @@ function SalesWorkspace({ businessId }: { businessId: string }) {
               <option value="wholesale">{t("wholesale")}</option>
             </Select>
           </label>
-          <label className={field}>
-            {t("customerName")}
-            <Input value={customerName} onChange={(event) => setCustomerName(event.target.value)} />
-          </label>
-          <label className={field}>
-            {t("customerPhone")}
-            <Input value={customerPhone} onChange={(event) => setCustomerPhone(event.target.value)} />
-          </label>
-          <label className={field}>
-            {t("customerRegion")}
-            <Input value={customerRegion} onChange={(event) => setCustomerRegion(event.target.value)} />
-          </label>
+          <label className={field}>{t("customerName")}<Input value={customerName} onChange={(event) => setCustomerName(event.target.value)} /></label>
+          <label className={field}>{t("customerPhone")}<Input value={customerPhone} onChange={(event) => setCustomerPhone(event.target.value)} /></label>
+          <label className={field}>{t("customerRegion")}<Input value={customerRegion} onChange={(event) => setCustomerRegion(event.target.value)} /></label>
         </div>
 
         <div className="grid gap-3">
@@ -421,14 +412,20 @@ function SalesWorkspace({ businessId }: { businessId: string }) {
             const product = productFor(line);
             const trackedUnit = trackedUnitFor(line);
             const currentSaleItem = editing?.items[index];
-            const currentTrackedReference =
-              currentSaleItem?.tracked_unit === line.tracked_unit_id
-                ? currentSaleItem.tracked_unit_reference
-                : "";
-            const hasTrackedUnits = Boolean(
-              product?.available_units.length ||
-                (currentTrackedReference && line.tracked_unit_id),
-            );
+            const currentTrackedReference = currentSaleItem?.tracked_unit === line.tracked_unit_id ? currentSaleItem.tracked_unit_reference : "";
+            const hasTrackedUnits = Boolean(product?.available_units.length || (currentTrackedReference && line.tracked_unit_id));
+            const detailRows: Array<[string, string]> = trackedUnit
+              ? [
+                  [t("stockReference"), trackedUnit.stock_reference],
+                  [t("batch"), trackedUnit.batch_name],
+                  [t("group"), trackedUnit.group_name],
+                  [t("nameModel"), trackedUnit.model_name],
+                  [t("brand"), trackedUnit.brand],
+                  [t("color"), trackedUnit.color],
+                  [t("capacitySize"), trackedUnit.capacity],
+                  [t("internalSerial"), trackedUnit.internal_serial],
+                ]
+              : [];
             return (
               <div className="grid gap-3 rounded-xl border border-slate-200 p-3 dark:border-slate-800" key={index}>
                 {saleMode === "stock" ? (
@@ -436,32 +433,10 @@ function SalesWorkspace({ businessId }: { businessId: string }) {
                     <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_8rem_10rem_auto]">
                       <Select required value={line.product_id} onChange={(event) => chooseProduct(index, event.target.value)}>
                         <option value="">{t("chooseProduct")}</option>
-                        {availability.map((item) => (
-                          <option key={item.id} value={item.id}>
-                            {item.name} · {item.sku} · {money(item.current_quantity)} {item.unit} {t("available")}
-                          </option>
-                        ))}
+                        {availability.map((item) => <option key={item.id} value={item.id}>{item.name} · {item.sku} · {money(item.current_quantity)} {item.unit} {t("available")}</option>)}
                       </Select>
-                      <Input
-                        aria-label={t("quantity")}
-                        disabled={hasTrackedUnits}
-                        min="0.001"
-                        required
-                        step="0.001"
-                        type="number"
-                        value={hasTrackedUnits ? "1" : line.quantity}
-                        onChange={(event) => updateLine(index, { quantity: event.target.value })}
-                      />
-                      <Input
-                        aria-label={t("sellingPrice")}
-                        min="0"
-                        placeholder={t("sellingPrice")}
-                        required={product?.selling_price == null}
-                        step="0.01"
-                        type="number"
-                        value={line.unit_price}
-                        onChange={(event) => updateLine(index, { unit_price: event.target.value })}
-                      />
+                      <Input aria-label={t("quantity")} disabled={hasTrackedUnits} min="0.001" required step="0.001" type="number" value={hasTrackedUnits ? "1" : line.quantity} onChange={(event) => updateLine(index, { quantity: event.target.value })} />
+                      <Input aria-label={t("sellingPrice")} min="0" placeholder={t("sellingPrice")} required={product?.selling_price == null} step="0.01" type="number" value={line.unit_price} onChange={(event) => updateLine(index, { unit_price: event.target.value })} />
                       <Button disabled={lines.length === 1} type="button" variant="outline" onClick={() => setLines((current) => current.filter((_, itemIndex) => itemIndex !== index))}>×</Button>
                     </div>
                     {hasTrackedUnits && product ? (
@@ -470,17 +445,13 @@ function SalesWorkspace({ businessId }: { businessId: string }) {
                           {t("chooseAvailableItem")}
                           <Select required value={line.tracked_unit_id} onChange={(event) => updateLine(index, { tracked_unit_id: event.target.value, quantity: "1" })}>
                             <option value="">{t("chooseAvailableItem")}</option>
-                            {currentTrackedReference && !product.available_units.some((unit) => unit.id === line.tracked_unit_id) ? (
-                              <option value={line.tracked_unit_id}>{currentTrackedReference}</option>
-                            ) : null}
-                            {product.available_units.map((unit) => (
-                              <option key={unit.id} value={unit.id}>{unitLabel(unit)}</option>
-                            ))}
+                            {currentTrackedReference && !product.available_units.some((unit) => unit.id === line.tracked_unit_id) ? <option value={line.tracked_unit_id}>{currentTrackedReference}</option> : null}
+                            {product.available_units.map((unit) => <option key={unit.id} value={unit.id}>{unitLabel(unit)}</option>)}
                           </Select>
                         </label>
                         {trackedUnit ? (
                           <div className="grid gap-2 rounded-lg bg-slate-50 p-3 text-xs dark:bg-slate-900 sm:grid-cols-2 lg:grid-cols-4">
-                            {[t("stockReference"), trackedUnit.stock_reference], [t("batch"), trackedUnit.batch_name], [t("group"), trackedUnit.group_name], [t("nameModel"), trackedUnit.model_name], [t("brand"), trackedUnit.brand], [t("color"), trackedUnit.color], [t("capacitySize"), trackedUnit.capacity], [t("internalSerial"), trackedUnit.internal_serial]].map(([label, value]) => value ? <div key={label}><span className="text-slate-500">{label}</span><strong className="block">{value}</strong></div> : null)}
+                            {detailRows.map(([label, value]) => value ? <div key={label}><span className="text-slate-500">{label}</span><strong className="block">{value}</strong></div> : null)}
                             {trackedUnit.identifiers.map((identifier) => <div key={`${identifier.kind}-${identifier.value}`}><span className="text-slate-500">{identifier.kind}</span><strong className="block">{identifier.value}</strong></div>)}
                           </div>
                         ) : null}
@@ -495,10 +466,7 @@ function SalesWorkspace({ businessId }: { businessId: string }) {
                       <Input placeholder={t("model")} value={line.model} onChange={(event) => updateLine(index, { model: event.target.value })} />
                       <Input placeholder={t("color")} value={line.color} onChange={(event) => updateLine(index, { color: event.target.value })} />
                       <Input placeholder={t("capacitySize")} value={line.capacity} onChange={(event) => updateLine(index, { capacity: event.target.value })} />
-                      <Select value={line.identifier_kind} onChange={(event) => updateLine(index, { identifier_kind: event.target.value })}>
-                        <option value="">{t("identifierType")}</option>
-                        {['serial', 'imei', 'chassis', 'registration', 'engine', 'barcode'].map((kind) => <option key={kind} value={kind}>{kind}</option>)}
-                      </Select>
+                      <Select value={line.identifier_kind} onChange={(event) => updateLine(index, { identifier_kind: event.target.value })}><option value="">{t("identifierType")}</option>{["serial", "imei", "chassis", "registration", "engine", "barcode"].map((kind) => <option key={kind} value={kind}>{kind}</option>)}</Select>
                       <Input placeholder={t("identifierValue")} value={line.identifier_value} onChange={(event) => updateLine(index, { identifier_value: event.target.value })} />
                       <Input min="0.001" step="0.001" type="number" placeholder={t("quantity")} required value={line.quantity} onChange={(event) => updateLine(index, { quantity: event.target.value })} />
                       <Input min="0" step="0.01" type="number" placeholder={t("buyingCostOptional")} value={line.acquisition_unit_cost} onChange={(event) => updateLine(index, { acquisition_unit_cost: event.target.value })} />
@@ -513,13 +481,11 @@ function SalesWorkspace({ businessId }: { businessId: string }) {
         </div>
 
         <Button type="button" variant="outline" onClick={() => setLines((current) => [...current, emptyLine()])}>{t("addLine")}</Button>
-
         <div className="grid gap-3 sm:grid-cols-3">
           <label className={field}>{t("discount")}<Input min="0" step="0.01" type="number" value={discount} onChange={(event) => setDiscount(event.target.value)} /></label>
           <label className={field}>{t("payment")}<Select value={paymentStatus} onChange={(event) => setPaymentStatus(event.target.value as "paid" | "partial" | "unpaid")}><option value="paid">{t("paid")}</option><option value="partial">{t("partial")}</option><option value="unpaid">{t("unpaid")}</option></Select></label>
           <label className={field}>{t("date")}<Input type="datetime-local" value={soldAt} onChange={(event) => setSoldAt(event.target.value)} /></label>
         </div>
-
         <Button disabled={busy || !accessToken || !validate()} type="submit">{editing ? t("saveEdit") : t("save")}</Button>
       </form>
 
