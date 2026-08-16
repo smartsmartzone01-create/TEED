@@ -104,9 +104,7 @@ class CommerceOverviewPolishAPIView(CommerceBaseAPIView):
                     "revenue": revenue,
                     "cost_of_goods": financial_value(cost),
                     "gross_profit": financial_value(revenue - cost),
-                    "operating_result": financial_value(
-                        revenue - cost - expense_total
-                    ),
+                    "operating_result": financial_value(revenue - cost - expense_total),
                     "expenses": financial_value(expense_total),
                     "sales_count": today_sales.count(),
                     "low_stock_count": low_stock_products.count(),
