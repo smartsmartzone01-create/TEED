@@ -65,6 +65,51 @@ def _recalculate_group_quantity(group):
     group.save(update_fields=["quantity", "updated_at"])
 
 
+def _change_group_unit(*, group, new_unit):
+    lines = list(
+        StockBatch.objects.select_for_update()
+        .select_related("product")
+        .filter(stock_group=group)
+    )
+    for line in lines:
+        product = Product.objects.select_for_update().get(pk=line.product_id)
+        old_received = line.quantity_received
+        old_remaining = line.quantity_remaining
+        consumed = max(Decimal("0"), old_received - old_remaining)
+        if consumed > 0 or line.movements.exclude(kind=InventoryMovement.Kind.RECEIPT).exists():
+            raise ValidationError(
+                {
+                    "groups": [
+                        f"{product.name}: the group unit cannot change after dependent stock activity."
+                    ]
+                }
+            )
+        if product.stock_batches.exclude(pk=line.pk).exists():
+            raise ValidationError(
+                {
+                    "groups": [
+                        f"{product.name}: its unit is already used by another stock receipt."
+                    ]
+                }
+            )
+        if line.conversion_to_base != Decimal("1"):
+            raise ValidationError(
+                {
+                    "groups": [
+                        f"{product.name}: converted units require a governed inventory correction."
+                    ]
+                }
+            )
+
+    for line in lines:
+        product = Product.objects.select_for_update().get(pk=line.product_id)
+        line.received_unit = new_unit
+        line.save(update_fields=["received_unit", "updated_at"])
+        product.unit = new_unit
+        product.save(update_fields=["unit", "updated_at"])
+    group.unit = new_unit
+
+
 @transaction.atomic
 def correct_stock_structure(
     *,
@@ -115,8 +160,9 @@ def correct_stock_structure(
         if batch is None:
             raise ValidationError({"batches": ["Select a batch from this stock."]})
         before["batches"].append({"id": str(batch.id), "name": batch.name})
-        batch.name = correction["name"].strip()
-        batch.save(update_fields=["name", "updated_at"])
+        if "name" in correction:
+            batch.name = correction["name"].strip()
+            batch.save(update_fields=["name", "updated_at"])
 
     for correction in groups or []:
         group = StockGroup.objects.select_for_update().filter(
@@ -124,9 +170,19 @@ def correct_stock_structure(
         ).first()
         if group is None:
             raise ValidationError({"groups": ["Select a group from this stock."]})
-        before["groups"].append({"id": str(group.id), "name": group.name})
-        group.name = correction["name"].strip()
-        group.save(update_fields=["name", "updated_at"])
+        before["groups"].append(
+            {"id": str(group.id), "name": group.name, "unit": group.unit}
+        )
+        update_fields = []
+        if "name" in correction:
+            group.name = correction["name"].strip()
+            update_fields.append("name")
+        new_group_unit = correction.get("unit", group.unit).strip()
+        if new_group_unit.casefold() != group.unit.casefold():
+            _change_group_unit(group=group, new_unit=new_group_unit)
+            update_fields.append("unit")
+        if update_fields:
+            group.save(update_fields=[*set(update_fields), "updated_at"])
 
     touched_groups = set()
     for correction in lines or []:
@@ -164,19 +220,35 @@ def correct_stock_structure(
         if new_unit.casefold() != old_unit.casefold():
             if line.stock_group_id and line.stock_group.type_lines.exclude(pk=line.pk).exists():
                 raise ValidationError(
-                    {"lines": [f"{product.name}: change the unit from the whole group, not one product."]}
+                    {
+                        "lines": [
+                            f"{product.name}: change the unit from the whole group, not one product."
+                        ]
+                    }
                 )
             if consumed > 0 or line.movements.exclude(kind=InventoryMovement.Kind.RECEIPT).exists():
                 raise ValidationError(
-                    {"lines": [f"{product.name}: the unit cannot change after dependent stock activity."]}
+                    {
+                        "lines": [
+                            f"{product.name}: the unit cannot change after dependent stock activity."
+                        ]
+                    }
                 )
             if product.stock_batches.exclude(pk=line.pk).exists():
                 raise ValidationError(
-                    {"lines": [f"{product.name}: this unit is already used by other stock receipts."]}
+                    {
+                        "lines": [
+                            f"{product.name}: this unit is already used by other stock receipts."
+                        ]
+                    }
                 )
             if line.conversion_to_base != Decimal("1"):
                 raise ValidationError(
-                    {"lines": [f"{product.name}: converted units require a governed inventory correction."]}
+                    {
+                        "lines": [
+                            f"{product.name}: converted units require a governed inventory correction."
+                        ]
+                    }
                 )
             line.received_unit = new_unit
             product.unit = new_unit
@@ -194,13 +266,24 @@ def correct_stock_structure(
             new_received = quantity * line.conversion_to_base
             if line.tracking_mode == Product.TrackingMode.INDIVIDUAL:
                 tracked_count = line.tracked_units.count()
-                if new_received != new_received.to_integral_value() or tracked_count != int(new_received):
+                if (
+                    new_received != new_received.to_integral_value()
+                    or tracked_count != int(new_received)
+                ):
                     raise ValidationError(
-                        {"lines": [f"{product.name}: quantity must match the {tracked_count} saved individual records."]}
+                        {
+                            "lines": [
+                                f"{product.name}: quantity must match the {tracked_count} saved individual records."
+                            ]
+                        }
                     )
             if new_received < consumed:
                 raise ValidationError(
-                    {"lines": [f"{product.name}: quantity cannot be reduced below {consumed} already consumed."]}
+                    {
+                        "lines": [
+                            f"{product.name}: quantity cannot be reduced below {consumed} already consumed."
+                        ]
+                    }
                 )
 
             delta = new_received - old_received
@@ -209,7 +292,11 @@ def correct_stock_structure(
                 line.quantity_remaining = old_remaining + delta
                 if line.quantity_remaining < 0:
                     raise ValidationError(
-                        {"lines": [f"{product.name}: this correction would create negative stock."]}
+                        {
+                            "lines": [
+                                f"{product.name}: this correction would create negative stock."
+                            ]
+                        }
                     )
                 if delta:
                     Product.objects.filter(pk=product.pk).update(
@@ -222,7 +309,9 @@ def correct_stock_structure(
                         kind=InventoryMovement.Kind.CORRECTION,
                         quantity_delta=delta,
                         occurred_at=timezone.now(),
-                        reason=f"Correction to {receipt.reference} within the stock correction window.",
+                        reason=(
+                            f"Correction to {receipt.reference} within the stock correction window."
+                        ),
                         recorded_by=actor,
                     )
             else:
@@ -256,7 +345,7 @@ def correct_stock_structure(
             {"id": str(batch.id), "name": batch.name} for batch in receipt.batches.all()
         ],
         "groups": [
-            {"id": str(group.id), "name": group.name}
+            {"id": str(group.id), "name": group.name, "unit": group.unit}
             for group in StockGroup.objects.filter(batch__receipt=receipt)
         ],
         "lines": [
