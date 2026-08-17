@@ -17,11 +17,11 @@ from .services import edit_sale, record_sale, void_sale
 class SaleAvailabilityAPIView(CommerceBaseAPIView):
     def get(self, request, business_id):
         membership = commerce_membership(user=request.user, business_id=business_id)
-        products = Product.objects.filter(
+        all_products = Product.objects.filter(
             business=membership.business,
             is_active=True,
-            current_quantity__gt=0,
         ).order_by("name", "sku")
+        products = all_products.filter(current_quantity__gt=0)
         available_units = (
             TrackedUnit.objects.filter(
                 product__business=membership.business,
@@ -89,9 +89,20 @@ class SaleAvailabilityAPIView(CommerceBaseAPIView):
             }
             for product in products
         ]
+        stock_targets = [
+            {
+                "id": str(product.id),
+                "name": product.name,
+                "sku": product.sku,
+                "brand": product.brand,
+                "variant": product.variant,
+                "unit": product.unit,
+            }
+            for product in all_products
+        ]
         return SuccessResponse(
             message="Sale availability retrieved successfully.",
-            data={"products": payload},
+            data={"products": payload, "stock_targets": stock_targets},
         )
 
 
@@ -100,7 +111,12 @@ class SaleListCreateAPIView(CommerceBaseAPIView):
         membership = commerce_membership(user=request.user, business_id=business_id)
         sales = (
             Sale.objects.filter(business=membership.business, status=Sale.Status.ACTIVE)
-            .select_related("recorded_by")
+            .select_related(
+                "recorded_by",
+                "trade_in_detail",
+                "trade_in_detail__stock_product",
+                "trade_in_detail__stock_receipt",
+            )
             .prefetch_related("items__product", "items__tracked_unit__identifiers")[:100]
         )
         return SuccessResponse(
@@ -125,9 +141,15 @@ class SaleListCreateAPIView(CommerceBaseAPIView):
         sale = record_sale(
             actor=request.user, business_id=business_id, **serializer.validated_data
         )
-        sale = Sale.objects.prefetch_related(
-            "items__product", "items__tracked_unit__identifiers"
-        ).get(pk=sale.pk)
+        sale = (
+            Sale.objects.select_related(
+                "trade_in_detail",
+                "trade_in_detail__stock_product",
+                "trade_in_detail__stock_receipt",
+            )
+            .prefetch_related("items__product", "items__tracked_unit__identifiers")
+            .get(pk=sale.pk)
+        )
         return SuccessResponse(
             message="Sale recorded successfully.",
             data=SaleSerializer(sale).data,
@@ -146,9 +168,15 @@ class SaleDetailAPIView(CommerceBaseAPIView):
             sale_id=sale_id,
             **serializer.validated_data,
         )
-        sale = Sale.objects.prefetch_related(
-            "items__product", "items__tracked_unit__identifiers"
-        ).get(pk=sale.pk)
+        sale = (
+            Sale.objects.select_related(
+                "trade_in_detail",
+                "trade_in_detail__stock_product",
+                "trade_in_detail__stock_receipt",
+            )
+            .prefetch_related("items__product", "items__tracked_unit__identifiers")
+            .get(pk=sale.pk)
+        )
         return SuccessResponse(
             message="Sale corrected successfully.", data=SaleSerializer(sale).data
         )
