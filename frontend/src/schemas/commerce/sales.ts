@@ -34,6 +34,16 @@ const saleAvailabilityProductSchema = z.object({
   available_units: z.array(saleAvailabilityUnitSchema),
 });
 
+const saleTrackedUnitDetailsSchema = z.object({
+  model_name: z.string(),
+  brand: z.string(),
+  color: z.string(),
+  capacity: z.string(),
+  condition: z.string(),
+  internal_serial: z.string(),
+  identifiers: z.array(trackedIdentifierSchema),
+});
+
 const saleItemSchema = z
   .object({
     id: z.string(),
@@ -43,6 +53,7 @@ const saleItemSchema = z
     product_sku: z.string(),
     tracked_unit: z.string().nullable(),
     tracked_unit_reference: z.string(),
+    tracked_unit_details: saleTrackedUnitDetailsSchema.nullable(),
     item_name: z.string(),
     item_details: z.record(z.string(), z.string()).default({}),
     acquisition_unit_cost: decimal.nullable(),
@@ -91,5 +102,6 @@ export {
   saleItemSchema,
   saleResponseSchema,
   saleSchema,
+  saleTrackedUnitDetailsSchema,
   salesResponseSchema,
 };
