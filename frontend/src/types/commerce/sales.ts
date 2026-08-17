@@ -24,7 +24,7 @@ type SaleAvailabilityProduct = {
   available_units: SaleAvailabilityUnit[];
 };
 
-type SaleTrackedUnitDetails = {
+type TrackedSaleUnitDetails = {
   model_name: string;
   brand: string;
   color: string;
@@ -42,7 +42,7 @@ type SaleItem = {
   product_sku: string;
   tracked_unit: string | null;
   tracked_unit_reference: string;
-  tracked_unit_details: SaleTrackedUnitDetails | null;
+  tracked_unit_details: TrackedSaleUnitDetails | null;
   item_name: string;
   item_details: Record<string, string>;
   acquisition_unit_cost: string | null;
@@ -53,10 +53,24 @@ type SaleItem = {
   returned_quantity: string;
 };
 
+type TradeInDetail = {
+  incoming_item_name: string;
+  incoming_item_details: Record<string, string>;
+  incoming_value: string;
+  cash_top_up: string;
+  add_to_stock: boolean;
+  stock_product: string | null;
+  stock_product_sku: string;
+  stock_group_name: string;
+  stock_receipt: string | null;
+  stock_receipt_reference: string;
+};
+
 type Sale = {
   id: string;
   receipt_number: string;
   sale_mode: "stock" | "independent" | "trade_in";
+  transaction_type: "normal" | "trade_in";
   sale_type: "retail" | "wholesale";
   customer_name: string;
   customer_phone: string;
@@ -69,6 +83,7 @@ type Sale = {
   payment_status: "paid" | "partial" | "unpaid";
   sold_at: string;
   items: SaleItem[];
+  trade_in: TradeInDetail | null;
   recorded_by: string;
   status: "active" | "voided";
 };
@@ -78,5 +93,6 @@ export type {
   SaleAvailabilityProduct,
   SaleAvailabilityUnit,
   SaleItem,
-  SaleTrackedUnitDetails,
+  TradeInDetail,
+  TrackedSaleUnitDetails,
 };
