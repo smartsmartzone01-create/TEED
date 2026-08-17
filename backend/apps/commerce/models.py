@@ -14,7 +14,7 @@ from .inventory.models import (
 )
 from .overview.models import CommerceDecision
 from .returns.models import ReturnItem, SaleReturn
-from .sales.models import Sale, SaleAllocation, SaleAudit, SaleItem
+from .sales.models import Sale, SaleAllocation, SaleAudit, SaleItem, TradeInDetail
 
 __all__ = [
     "Budget",
@@ -35,5 +35,6 @@ __all__ = [
     "StockReceiptAudit",
     "TrackedUnit",
     "TrackedUnitIdentifier",
+    "TradeInDetail",
     "UnitDefinition",
 ]
