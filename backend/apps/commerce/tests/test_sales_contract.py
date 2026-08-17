@@ -7,8 +7,9 @@ from apps.identity.models import User
 from apps.workspaces.models import Business, BusinessMembership
 
 from ..catalog.models import Product
-from ..inventory.models import StockBatch, TrackedUnit
+from ..inventory.models import StockBatch, TrackedUnit, TrackedUnitIdentifier
 from ..sales.models import SaleItem
+from ..sales.serializers import SaleSerializer
 from ..sales.services import record_sale
 
 
@@ -76,7 +77,7 @@ class SalesContractTests(TestCase):
     def test_individual_sale_marks_the_selected_unit_sold(self):
         product = Product.objects.create(
             business=self.business,
-            name="Toyota IST",
+            name="Toyota vehicles",
             sku="ITM-000002",
             unit="piece",
             tracking_mode=Product.TrackingMode.INDIVIDUAL,
@@ -100,6 +101,12 @@ class SalesContractTests(TestCase):
             model_name="Toyota IST",
             brand="Toyota",
             color="White",
+            capacity="1.5L",
+        )
+        TrackedUnitIdentifier.objects.create(
+            unit=unit,
+            kind=TrackedUnitIdentifier.Kind.CHASSIS,
+            value="NCP60-1234567",
         )
 
         sale = record_sale(
@@ -126,3 +133,13 @@ class SalesContractTests(TestCase):
         self.assertEqual(batch.quantity_remaining, Decimal("0"))
         self.assertEqual(product.current_quantity, Decimal("0"))
         self.assertEqual(line.cost_total, Decimal("10000000"))
+
+        serialized = SaleSerializer(sale).data["items"][0]
+        self.assertEqual(serialized["product_name"], "Toyota vehicles")
+        self.assertEqual(serialized["tracked_unit_details"]["model_name"], "Toyota IST")
+        self.assertEqual(serialized["tracked_unit_details"]["color"], "White")
+        self.assertEqual(serialized["tracked_unit_details"]["capacity"], "1.5L")
+        self.assertEqual(
+            serialized["tracked_unit_details"]["identifiers"],
+            [{"kind": "chassis", "value": "NCP60-1234567"}],
+        )
