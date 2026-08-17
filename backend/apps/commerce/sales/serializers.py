@@ -70,7 +70,9 @@ class SaleCreateSerializer(serializers.Serializer):
         mode = attrs["sale_mode"]
         if mode == Sale.SaleMode.TRADE_IN:
             raise serializers.ValidationError(
-                {"sale_mode": "Trade-in requires the incoming-item contract and is not enabled yet."}
+                {
+                    "sale_mode": "Trade-in requires the incoming-item contract and is not enabled yet."
+                }
             )
         expected = (
             SaleItem.Source.CATALOG
@@ -92,6 +94,7 @@ class SaleItemSerializer(serializers.ModelSerializer):
     product_name = serializers.SerializerMethodField()
     product_sku = serializers.SerializerMethodField()
     tracked_unit_reference = serializers.SerializerMethodField()
+    tracked_unit_details = serializers.SerializerMethodField()
 
     class Meta:
         model = SaleItem
@@ -103,6 +106,7 @@ class SaleItemSerializer(serializers.ModelSerializer):
             "product_sku",
             "tracked_unit",
             "tracked_unit_reference",
+            "tracked_unit_details",
             "item_name",
             "item_details",
             "acquisition_unit_cost",
@@ -119,15 +123,49 @@ class SaleItemSerializer(serializers.ModelSerializer):
     def get_product_sku(self, obj):
         return obj.product.sku if obj.product_id else ""
 
+    def _tracked_identifiers(self, obj):
+        if not obj.tracked_unit_id:
+            return []
+        identifiers = [
+            {"kind": identifier.kind, "value": identifier.value}
+            for identifier in obj.tracked_unit.identifiers.all()
+        ]
+        if obj.tracked_unit.imei and not any(
+            item["kind"] == "imei" for item in identifiers
+        ):
+            identifiers.append({"kind": "imei", "value": obj.tracked_unit.imei})
+        if obj.tracked_unit.serial_number and not any(
+            item["kind"] == "serial" for item in identifiers
+        ):
+            identifiers.append(
+                {"kind": "serial", "value": obj.tracked_unit.serial_number}
+            )
+        return identifiers
+
     def get_tracked_unit_reference(self, obj):
         if not obj.tracked_unit_id:
             return ""
-        identifiers = list(obj.tracked_unit.identifiers.all())
+        identifiers = self._tracked_identifiers(obj)
         if identifiers:
             return " · ".join(
-                f"{identifier.kind}: {identifier.value}" for identifier in identifiers
+                f"{identifier['kind']}: {identifier['value']}"
+                for identifier in identifiers
             )
         return obj.tracked_unit.internal_serial
+
+    def get_tracked_unit_details(self, obj):
+        if not obj.tracked_unit_id:
+            return None
+        unit = obj.tracked_unit
+        return {
+            "model_name": unit.model_name,
+            "brand": unit.brand,
+            "color": unit.color,
+            "capacity": unit.capacity,
+            "condition": unit.condition,
+            "internal_serial": unit.internal_serial,
+            "identifiers": self._tracked_identifiers(obj),
+        }
 
 
 class SaleSerializer(serializers.ModelSerializer):
