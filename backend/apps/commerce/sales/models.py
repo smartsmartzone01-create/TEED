@@ -13,6 +13,10 @@ class Sale(BaseModel):
     class SaleMode(models.TextChoices):
         STOCK = "stock", "From stock"
         INDEPENDENT = "independent", "Independent sale"
+        TRADE_IN = "trade_in", "Trade-in (legacy)"
+
+    class TransactionType(models.TextChoices):
+        NORMAL = "normal", "Normal sale"
         TRADE_IN = "trade_in", "Trade-in"
 
     class SaleType(models.TextChoices):
@@ -34,6 +38,12 @@ class Sale(BaseModel):
     )
     sale_mode = models.CharField(
         max_length=16, choices=SaleMode.choices, default=SaleMode.STOCK, db_index=True
+    )
+    transaction_type = models.CharField(
+        max_length=16,
+        choices=TransactionType.choices,
+        default=TransactionType.NORMAL,
+        db_index=True,
     )
     sale_type = models.CharField(
         max_length=16, choices=SaleType.choices, default=SaleType.RETAIL
@@ -144,3 +154,32 @@ class SaleAllocation(BaseModel):
 
     class Meta:
         db_table = "commerce_sale_allocations"
+
+
+class TradeInDetail(BaseModel):
+    sale = models.OneToOneField(
+        Sale, on_delete=models.CASCADE, related_name="trade_in_detail"
+    )
+    incoming_item_name = models.CharField(max_length=160)
+    incoming_item_details = models.JSONField(default=dict, blank=True)
+    incoming_value = models.DecimalField(max_digits=14, decimal_places=2)
+    cash_top_up = models.DecimalField(max_digits=14, decimal_places=2)
+    add_to_stock = models.BooleanField(default=False)
+    stock_product = models.ForeignKey(
+        Product,
+        on_delete=models.PROTECT,
+        related_name="trade_in_acquisitions",
+        null=True,
+        blank=True,
+    )
+    stock_group_name = models.CharField(max_length=120, blank=True, default="")
+    stock_receipt = models.ForeignKey(
+        "commerce.StockReceipt",
+        on_delete=models.PROTECT,
+        related_name="trade_in_details",
+        null=True,
+        blank=True,
+    )
+
+    class Meta:
+        db_table = "commerce_trade_in_details"
