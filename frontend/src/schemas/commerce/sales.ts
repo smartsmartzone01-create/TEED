@@ -34,7 +34,7 @@ const saleAvailabilityProductSchema = z.object({
   available_units: z.array(saleAvailabilityUnitSchema),
 });
 
-const saleTrackedUnitDetailsSchema = z.object({
+const trackedSaleUnitDetailsSchema = z.object({
   model_name: z.string(),
   brand: z.string(),
   color: z.string(),
@@ -53,7 +53,7 @@ const saleItemSchema = z
     product_sku: z.string(),
     tracked_unit: z.string().nullable(),
     tracked_unit_reference: z.string(),
-    tracked_unit_details: saleTrackedUnitDetailsSchema.nullable(),
+    tracked_unit_details: trackedSaleUnitDetailsSchema.nullable(),
     item_name: z.string(),
     item_details: z.record(z.string(), z.string()).default({}),
     acquisition_unit_cost: decimal.nullable(),
@@ -65,11 +65,25 @@ const saleItemSchema = z
   })
   .passthrough();
 
+const tradeInDetailSchema = z.object({
+  incoming_item_name: z.string(),
+  incoming_item_details: z.record(z.string(), z.string()).default({}),
+  incoming_value: decimal,
+  cash_top_up: decimal,
+  add_to_stock: z.boolean(),
+  stock_product: z.string().nullable(),
+  stock_product_sku: z.string(),
+  stock_group_name: z.string(),
+  stock_receipt: z.string().nullable(),
+  stock_receipt_reference: z.string(),
+});
+
 const saleSchema = z
   .object({
     id: z.string(),
     receipt_number: z.string(),
     sale_mode: z.enum(["stock", "independent", "trade_in"]),
+    transaction_type: z.enum(["normal", "trade_in"]),
     sale_type: z.enum(["retail", "wholesale"]),
     customer_name: z.string(),
     customer_phone: z.string(),
@@ -82,6 +96,7 @@ const saleSchema = z
     payment_status: z.enum(["paid", "partial", "unpaid"]),
     sold_at: z.string(),
     items: z.array(saleItemSchema),
+    trade_in: tradeInDetailSchema.nullable(),
     recorded_by: z.string(),
     status: z.enum(["active", "voided"]),
   })
@@ -102,6 +117,6 @@ export {
   saleItemSchema,
   saleResponseSchema,
   saleSchema,
-  saleTrackedUnitDetailsSchema,
   salesResponseSchema,
+  tradeInDetailSchema,
 };
