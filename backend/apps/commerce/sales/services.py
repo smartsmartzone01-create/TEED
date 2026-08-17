@@ -12,8 +12,8 @@ from apps.workspaces.policy import WorkspacePermission, role_has_permission
 
 from ..catalog.models import Product
 from ..inventory.models import InventoryMovement, StockBatch, TrackedUnit
-from ..services import commerce_membership, refresh_decisions
-from .models import Sale, SaleAllocation, SaleAudit, SaleItem
+from ..services import commerce_membership, create_stock_receipt, refresh_decisions
+from .models import Sale, SaleAllocation, SaleAudit, SaleItem, TradeInDetail
 
 
 def _effective_batch_unit_cost(batch):
@@ -207,8 +207,113 @@ def _record_items(*, sale, actor, business, items):
     return subtotal, total_cost
 
 
+def _record_trade_in(*, sale, actor, business_id, trade_in):
+    if not trade_in:
+        return None
+    details = dict(trade_in.get("incoming_item_details", {}))
+    stock_product_id = trade_in.get("stock_product_id")
+    stock_receipt = None
+    stock_product = None
+    if stock_product_id:
+        stock_product = Product.objects.filter(
+            id=stock_product_id, business_id=business_id, is_active=True
+        ).first()
+        if stock_product is None:
+            raise ValidationError(
+                {"trade_in": ["Choose an active SKU from this business for the received item."]}
+            )
+
+    if trade_in.get("add_to_stock"):
+        unit = details.get("unit", "piece") or "piece"
+        identifier_kind = details.get("identifier_kind", "")
+        identifier_value = details.get("identifier_value", "")
+        tracking_mode = (
+            Product.TrackingMode.INDIVIDUAL
+            if identifier_value
+            else Product.TrackingMode.QUANTITY
+        )
+        tracked_units = []
+        if tracking_mode == Product.TrackingMode.INDIVIDUAL:
+            tracked_units = [
+                {
+                    "model_name": details.get("model", ""),
+                    "brand": details.get("brand", ""),
+                    "color": details.get("color", ""),
+                    "capacity": details.get("capacity", ""),
+                    "condition": details.get("condition", ""),
+                    "identifiers": [
+                        {"kind": identifier_kind, "value": identifier_value}
+                    ]
+                    if identifier_kind and identifier_value
+                    else [],
+                }
+            ]
+        catalog_item = (
+            {"key": "trade-in-item", "product_id": stock_product.id}
+            if stock_product
+            else {
+                "key": "trade-in-item",
+                "item": {
+                    "name": trade_in["incoming_item_name"].strip(),
+                    "brand": details.get("brand", ""),
+                    "variant": details.get("model", ""),
+                    "unit": unit,
+                    "tracking_mode": tracking_mode,
+                },
+            }
+        )
+        group_name = (
+            trade_in.get("stock_group_name", "").strip()
+            or trade_in["incoming_item_name"].strip()
+        )
+        stock_receipt = create_stock_receipt(
+            actor=actor,
+            business_id=business_id,
+            supplier_name=sale.customer_name or "Trade-in customer",
+            received_at=sale.sold_at,
+            status="received",
+            catalog_items=[catalog_item],
+            batches=[
+                {
+                    "name": f"Trade-in {sale.receipt_number}",
+                    "groups": [
+                        {
+                            "name": group_name,
+                            "quantity": Decimal("1"),
+                            "unit": unit,
+                            "types": [
+                                {
+                                    "catalog_key": "trade-in-item",
+                                    "quantity_received": Decimal("1"),
+                                    "received_unit": unit,
+                                    "tracking_mode": tracking_mode,
+                                    "unit_cost": trade_in["incoming_value"],
+                                    "tracked_units": tracked_units,
+                                }
+                            ],
+                        }
+                    ],
+                }
+            ],
+        )
+        stock_line = stock_receipt.lines.select_related("product").first()
+        stock_product = stock_line.product if stock_line else stock_product
+
+    return TradeInDetail.objects.create(
+        sale=sale,
+        incoming_item_name=trade_in["incoming_item_name"].strip(),
+        incoming_item_details=details,
+        incoming_value=trade_in["incoming_value"],
+        cash_top_up=trade_in["cash_top_up"],
+        add_to_stock=trade_in.get("add_to_stock", False),
+        stock_product=stock_product,
+        stock_group_name=trade_in.get("stock_group_name", "").strip(),
+        stock_receipt=stock_receipt,
+    )
+
+
 @transaction.atomic
-def record_sale(*, actor, business_id, items, **values):
+def record_sale(*, actor, business_id, items, trade_in=None, **values):
     membership = commerce_membership(
         user=actor, business_id=business_id, permission=WorkspacePermission.RECORD_SALES
     )
@@ -243,13 +348,34 @@ def record_sale(*, actor, business_id, items, **values):
     sale.total = max(Decimal("0"), subtotal - sale.discount)
     sale.cost_of_goods = total_cost
     sale.save(update_fields=["subtotal", "total", "cost_of_goods", "updated_at"])
+    if sale.transaction_type == Sale.TransactionType.TRADE_IN:
+        _record_trade_in(
+            sale=sale, actor=actor, business_id=business_id, trade_in=trade_in
+        )
     refresh_decisions(business=membership.business)
     return sale
 
 
 def _sale_snapshot(sale):
+    trade_in = None
+    try:
+        detail = sale.trade_in_detail
+        trade_in = {
+            "incoming_item_name": detail.incoming_item_name,
+            "incoming_item_details": detail.incoming_item_details,
+            "incoming_value": str(detail.incoming_value),
+            "cash_top_up": str(detail.cash_top_up),
+            "add_to_stock": detail.add_to_stock,
+            "stock_product_id": str(detail.stock_product_id)
+            if detail.stock_product_id
+            else None,
+            "stock_group_name": detail.stock_group_name,
+        }
+    except TradeInDetail.DoesNotExist:
+        pass
     return {
         "sale_mode": sale.sale_mode,
+        "transaction_type": sale.transaction_type,
         "sale_type": sale.sale_type,
         "customer_name": sale.customer_name,
         "customer_phone": sale.customer_phone,
@@ -257,6 +383,7 @@ def _sale_snapshot(sale):
         "discount": str(sale.discount),
         "payment_status": sale.payment_status,
         "sold_at": sale.sold_at.isoformat(),
+        "trade_in": trade_in,
         "items": [
             {
                 "source": item.source,
@@ -319,8 +446,24 @@ def _restore_sale_inventory(sale):
     sale.inventory_movements.all().delete()
 
 
+def _protect_trade_in_stock(sale):
+    try:
+        detail = sale.trade_in_detail
+    except TradeInDetail.DoesNotExist:
+        return
+    if detail.stock_receipt_id:
+        raise ValidationError(
+            {
+                "sale_id": [
+                    "This trade-in already added the received item to Stock. "
+                    "Use the coordinated trade-in correction flow before changing it."
+                ]
+            }
+        )
+
+
 @transaction.atomic
-def edit_sale(*, actor, business_id, sale_id, items, **values):
+def edit_sale(*, actor, business_id, sale_id, items, trade_in=None, **values):
     membership = commerce_membership(user=actor, business_id=business_id)
     sale = (
         Sale.objects.select_for_update()
@@ -335,8 +478,10 @@ def edit_sale(*, actor, business_id, sale_id, items, **values):
         raise ValidationError(
             {"sale_id": ["A sale with a recorded return cannot be edited."]}
         )
+    _protect_trade_in_stock(sale)
     before = _sale_snapshot(sale)
     _restore_sale_inventory(sale)
+    TradeInDetail.objects.filter(sale=sale).delete()
     sale.items.all().delete()
     for key, value in values.items():
         setattr(sale, key, value)
@@ -348,6 +493,10 @@ def edit_sale(*, actor, business_id, sale_id, items, **values):
     sale.total = max(Decimal("0"), subtotal - sale.discount)
     sale.cost_of_goods = total_cost
     sale.save()
+    if sale.transaction_type == Sale.TransactionType.TRADE_IN:
+        _record_trade_in(
+            sale=sale, actor=actor, business_id=business_id, trade_in=trade_in
+        )
     SaleAudit.objects.create(
         sale=sale,
         actor=actor,
@@ -375,6 +524,7 @@ def void_sale(*, actor, business_id, sale_id, reason):
         raise ValidationError({"sale_id": ["Active sale not found."]})
     if sale.returns.exists():
         raise ValidationError({"sale_id": ["A sale with returns cannot be voided."]})
+    _protect_trade_in_stock(sale)
     before = _sale_snapshot(sale)
     _restore_sale_inventory(sale)
     sale.status = Sale.Status.VOIDED
