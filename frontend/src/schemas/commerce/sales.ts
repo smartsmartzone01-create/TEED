@@ -21,13 +21,16 @@ const saleAvailabilityUnitSchema = z.object({
   group_name: z.string(),
 });
 
-const saleAvailabilityProductSchema = z.object({
+const saleStockTargetSchema = z.object({
   id: z.string(),
   name: z.string(),
   sku: z.string(),
   brand: z.string(),
   variant: z.string(),
   unit: z.string(),
+});
+
+const saleAvailabilityProductSchema = saleStockTargetSchema.extend({
   tracking_mode: z.enum(["quantity", "individual"]),
   current_quantity: decimal,
   selling_price: decimal.nullable(),
@@ -107,7 +110,10 @@ const salesResponseSchema = createApiEnvelopeSchema(
 );
 const saleResponseSchema = createApiEnvelopeSchema(saleSchema);
 const saleAvailabilityResponseSchema = createApiEnvelopeSchema(
-  z.object({ products: z.array(saleAvailabilityProductSchema) }),
+  z.object({
+    products: z.array(saleAvailabilityProductSchema),
+    stock_targets: z.array(saleStockTargetSchema),
+  }),
 );
 
 export {
@@ -118,5 +124,6 @@ export {
   saleResponseSchema,
   saleSchema,
   salesResponseSchema,
+  saleStockTargetSchema,
   tradeInDetailSchema,
 };
