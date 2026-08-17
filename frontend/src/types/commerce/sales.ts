@@ -11,13 +11,16 @@ type SaleAvailabilityUnit = {
   identifiers: Array<{ kind: string; value: string }>;
 };
 
-type SaleAvailabilityProduct = {
+type SaleStockTarget = {
   id: string;
   name: string;
   sku: string;
   brand: string;
   variant: string;
   unit: string;
+};
+
+type SaleAvailabilityProduct = SaleStockTarget & {
   tracking_mode: "quantity" | "individual";
   current_quantity: string;
   selling_price: string | null;
@@ -93,6 +96,7 @@ export type {
   SaleAvailabilityProduct,
   SaleAvailabilityUnit,
   SaleItem,
+  SaleStockTarget,
   TradeInDetail,
   TrackedSaleUnitDetails,
 };
