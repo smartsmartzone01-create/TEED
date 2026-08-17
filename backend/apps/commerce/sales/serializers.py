@@ -2,7 +2,7 @@ from decimal import Decimal
 
 from rest_framework import serializers
 
-from .models import Sale, SaleItem
+from .models import Sale, SaleItem, TradeInDetail
 
 
 class SaleItemInputSerializer(serializers.Serializer):
@@ -47,8 +47,29 @@ class SaleItemInputSerializer(serializers.Serializer):
         return attrs
 
 
+class TradeInInputSerializer(serializers.Serializer):
+    incoming_item_name = serializers.CharField(max_length=160)
+    incoming_item_details = serializers.JSONField(required=False, default=dict)
+    incoming_value = serializers.DecimalField(
+        max_digits=14, decimal_places=2, min_value=Decimal("0")
+    )
+    cash_top_up = serializers.DecimalField(
+        max_digits=14, decimal_places=2, min_value=Decimal("0")
+    )
+    add_to_stock = serializers.BooleanField(default=False)
+    stock_product_id = serializers.UUIDField(required=False, allow_null=True)
+    stock_group_name = serializers.CharField(
+        max_length=120, required=False, allow_blank=True, default=""
+    )
+
+
 class SaleCreateSerializer(serializers.Serializer):
-    sale_mode = serializers.ChoiceField(choices=Sale.SaleMode.choices)
+    sale_mode = serializers.ChoiceField(
+        choices=[Sale.SaleMode.STOCK, Sale.SaleMode.INDEPENDENT]
+    )
+    transaction_type = serializers.ChoiceField(
+        choices=Sale.TransactionType.choices, default=Sale.TransactionType.NORMAL
+    )
     sale_type = serializers.ChoiceField(choices=Sale.SaleType.choices)
     customer_name = serializers.CharField(
         max_length=120, required=False, allow_blank=True
@@ -65,15 +86,10 @@ class SaleCreateSerializer(serializers.Serializer):
     payment_status = serializers.ChoiceField(choices=Sale.PaymentStatus.choices)
     sold_at = serializers.DateTimeField()
     items = SaleItemInputSerializer(many=True, min_length=1)
+    trade_in = TradeInInputSerializer(required=False, allow_null=True)
 
     def validate(self, attrs):
         mode = attrs["sale_mode"]
-        if mode == Sale.SaleMode.TRADE_IN:
-            raise serializers.ValidationError(
-                {
-                    "sale_mode": "Trade-in requires the incoming-item contract and is not enabled yet."
-                }
-            )
         expected = (
             SaleItem.Source.CATALOG
             if mode == Sale.SaleMode.STOCK
@@ -81,7 +97,38 @@ class SaleCreateSerializer(serializers.Serializer):
         )
         if any(item["source"] != expected for item in attrs["items"]):
             raise serializers.ValidationError(
-                {"items": "All items must match the selected sale mode."}
+                {"items": "All outgoing items must match the selected sale source."}
+            )
+
+        transaction_type = attrs["transaction_type"]
+        trade_in = attrs.get("trade_in")
+        if transaction_type == Sale.TransactionType.NORMAL:
+            attrs["trade_in"] = None
+            return attrs
+
+        if not trade_in:
+            raise serializers.ValidationError(
+                {"trade_in": "Record the incoming customer item for a trade-in."}
+            )
+        if any("unit_price" not in item for item in attrs["items"]):
+            raise serializers.ValidationError(
+                {"items": "Enter the agreed sale value for every outgoing trade-in item."}
+            )
+        outgoing_value = sum(
+            (item["quantity"] * item["unit_price"] for item in attrs["items"]),
+            Decimal("0"),
+        ) - attrs["discount"]
+        if outgoing_value < 0:
+            outgoing_value = Decimal("0")
+        consideration = trade_in["incoming_value"] + trade_in["cash_top_up"]
+        if outgoing_value != consideration:
+            raise serializers.ValidationError(
+                {
+                    "trade_in": (
+                        "Trade-in values must balance: agreed outgoing value must equal "
+                        "incoming item value plus cash top-up."
+                    )
+                }
             )
         return attrs
 
@@ -123,40 +170,24 @@ class SaleItemSerializer(serializers.ModelSerializer):
     def get_product_sku(self, obj):
         return obj.product.sku if obj.product_id else ""
 
-    def _tracked_identifiers(self, obj):
-        if not obj.tracked_unit_id:
-            return []
-        identifiers = [
-            {"kind": identifier.kind, "value": identifier.value}
-            for identifier in obj.tracked_unit.identifiers.all()
-        ]
-        if obj.tracked_unit.imei and not any(
-            item["kind"] == "imei" for item in identifiers
-        ):
-            identifiers.append({"kind": "imei", "value": obj.tracked_unit.imei})
-        if obj.tracked_unit.serial_number and not any(
-            item["kind"] == "serial" for item in identifiers
-        ):
-            identifiers.append(
-                {"kind": "serial", "value": obj.tracked_unit.serial_number}
-            )
-        return identifiers
-
     def get_tracked_unit_reference(self, obj):
         if not obj.tracked_unit_id:
             return ""
-        identifiers = self._tracked_identifiers(obj)
+        identifiers = list(obj.tracked_unit.identifiers.all())
         if identifiers:
             return " · ".join(
-                f"{identifier['kind']}: {identifier['value']}"
-                for identifier in identifiers
+                f"{identifier.kind}: {identifier.value}" for identifier in identifiers
             )
         return obj.tracked_unit.internal_serial
 
     def get_tracked_unit_details(self, obj):
         if not obj.tracked_unit_id:
-            return None
+            return {}
         unit = obj.tracked_unit
+        identifiers = [
+            {"kind": identifier.kind, "value": identifier.value}
+            for identifier in unit.identifiers.all()
+        ]
         return {
             "model_name": unit.model_name,
             "brand": unit.brand,
@@ -164,12 +195,39 @@ class SaleItemSerializer(serializers.ModelSerializer):
             "capacity": unit.capacity,
             "condition": unit.condition,
             "internal_serial": unit.internal_serial,
-            "identifiers": self._tracked_identifiers(obj),
+            "identifiers": identifiers,
         }
+
+
+class TradeInDetailSerializer(serializers.ModelSerializer):
+    stock_product_sku = serializers.SerializerMethodField()
+    stock_receipt_reference = serializers.SerializerMethodField()
+
+    class Meta:
+        model = TradeInDetail
+        fields = [
+            "incoming_item_name",
+            "incoming_item_details",
+            "incoming_value",
+            "cash_top_up",
+            "add_to_stock",
+            "stock_product",
+            "stock_product_sku",
+            "stock_group_name",
+            "stock_receipt",
+            "stock_receipt_reference",
+        ]
+
+    def get_stock_product_sku(self, obj):
+        return obj.stock_product.sku if obj.stock_product_id else ""
+
+    def get_stock_receipt_reference(self, obj):
+        return obj.stock_receipt.reference if obj.stock_receipt_id else ""
 
 
 class SaleSerializer(serializers.ModelSerializer):
     items = SaleItemSerializer(many=True, read_only=True)
+    trade_in = serializers.SerializerMethodField()
     gross_profit = serializers.SerializerMethodField()
 
     class Meta:
@@ -180,6 +238,7 @@ class SaleSerializer(serializers.ModelSerializer):
             "receipt_sequence",
             "status",
             "sale_mode",
+            "transaction_type",
             "sale_type",
             "customer_name",
             "customer_phone",
@@ -195,7 +254,15 @@ class SaleSerializer(serializers.ModelSerializer):
             "voided_at",
             "void_reason",
             "items",
+            "trade_in",
         ]
+
+    def get_trade_in(self, obj):
+        try:
+            detail = obj.trade_in_detail
+        except TradeInDetail.DoesNotExist:
+            return None
+        return TradeInDetailSerializer(detail).data
 
     def get_gross_profit(self, obj):
         return obj.total - obj.cost_of_goods
