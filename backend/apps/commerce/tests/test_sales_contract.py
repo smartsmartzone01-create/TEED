@@ -145,7 +145,7 @@ class SalesContractTests(TestCase):
             [{"kind": "chassis", "value": "NCP60-1234567"}],
         )
 
-    def test_trade_in_values_must_balance(self):
+    def test_trade_in_values_are_negotiated_not_forced_to_balance(self):
         serializer = SaleCreateSerializer(
             data={
                 "transaction_type": "trade_in",
@@ -158,20 +158,19 @@ class SalesContractTests(TestCase):
                         "source": "manual",
                         "item_name": "iPhone 17",
                         "quantity": "1",
-                        "unit_price": "2500000",
+                        "unit_price": "4000000",
                     }
                 ],
                 "trade_in": {
                     "incoming_item_name": "iPhone 16",
-                    "incoming_value": "1600000",
-                    "cash_top_up": "800000",
+                    "incoming_value": "2000000",
+                    "cash_top_up": "2500000",
                 },
             }
         )
-        self.assertFalse(serializer.is_valid())
-        self.assertIn("trade_in", serializer.errors)
+        self.assertTrue(serializer.is_valid(), serializer.errors)
 
-    def test_trade_in_can_add_received_item_to_stock(self):
+    def test_trade_in_can_add_received_item_to_stock_automatically(self):
         sale = record_sale(
             actor=self.owner,
             business_id=self.business.id,
@@ -200,9 +199,8 @@ class SalesContractTests(TestCase):
                     "identifier_value": "356789012345678",
                 },
                 "incoming_value": Decimal("1700000"),
-                "cash_top_up": Decimal("800000"),
+                "cash_top_up": Decimal("1000000"),
                 "add_to_stock": True,
-                "stock_group_name": "Trade-in phones",
             },
             **self.sale_values(),
         )
@@ -211,9 +209,13 @@ class SalesContractTests(TestCase):
         self.assertEqual(sale.total, Decimal("2500000"))
         self.assertEqual(sale.cost_of_goods, Decimal("2000000"))
         self.assertEqual(detail.incoming_value, Decimal("1700000"))
-        self.assertEqual(detail.cash_top_up, Decimal("800000"))
+        self.assertEqual(detail.cash_top_up, Decimal("1000000"))
         self.assertIsNotNone(detail.stock_receipt_id)
         self.assertIsNotNone(detail.stock_product_id)
+
+        receipt = detail.stock_receipt
+        self.assertEqual(receipt.batches.count(), 1)
+        self.assertEqual(receipt.batches.get().name, f"Trade-in {sale.receipt_number}")
 
         product = detail.stock_product
         product.refresh_from_db()
@@ -227,7 +229,8 @@ class SalesContractTests(TestCase):
             "356789012345678",
         )
 
-        serialized = SaleSerializer(sale).data
+        serialized = SaleSerializer(sale, context={"show_costs": True}).data
         self.assertEqual(serialized["transaction_type"], "trade_in")
         self.assertEqual(serialized["trade_in"]["incoming_item_name"], "iPhone 16")
         self.assertTrue(serialized["trade_in"]["stock_receipt_reference"])
+        self.assertEqual(serialized["gross_profit"], Decimal("700000"))
