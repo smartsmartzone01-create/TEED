@@ -65,7 +65,9 @@ function TradeInFields({
   const t = useTranslations("CommerceSales");
   const incoming = Number(draft.incoming_value || 0);
   const topUp = Number(draft.cash_top_up || 0);
-  const balanced = Math.abs(outgoingValue - incoming - topUp) < 0.005;
+  const minimumTopUp = Math.max(0, outgoingValue - incoming);
+  const totalConsideration = incoming + topUp;
+  const uplift = totalConsideration - outgoingValue;
 
   return (
     <section className="grid gap-4 rounded-xl border border-slate-200 p-4 dark:border-slate-800">
@@ -124,13 +126,14 @@ function TradeInFields({
         </label>
       </div>
 
-      <div className="rounded-lg bg-slate-50 p-3 text-sm dark:bg-slate-900">
+      <div className="grid gap-1 rounded-lg bg-slate-50 p-3 text-sm dark:bg-slate-900">
         <div className="flex justify-between gap-3"><span>{t("agreedOutgoingValue")}</span><strong>{outgoingValue.toLocaleString()}</strong></div>
-        <div className="mt-1 flex justify-between gap-3"><span>{t("agreedTradeValue")}</span><strong>- {incoming.toLocaleString()}</strong></div>
-        <div className="mt-1 flex justify-between gap-3"><span>{t("cashTopUp")}</span><strong>{topUp.toLocaleString()}</strong></div>
-        <p className={`mt-2 text-xs ${balanced ? "text-slate-500" : "font-semibold text-red-600"}`}>
-          {balanced ? t("tradeBalanced") : t("tradeMustBalance")}
-        </p>
+        <div className="flex justify-between gap-3"><span>{t("agreedTradeValue")}</span><strong>{incoming.toLocaleString()}</strong></div>
+        <div className="flex justify-between gap-3"><span>{t("minimumTopUp")}</span><strong>{minimumTopUp.toLocaleString()}</strong></div>
+        <div className="flex justify-between gap-3"><span>{t("cashTopUp")}</span><strong>{topUp.toLocaleString()}</strong></div>
+        <div className="mt-2 flex justify-between gap-3 border-t border-slate-200 pt-2 dark:border-slate-700"><span>{t("totalConsideration")}</span><strong>{totalConsideration.toLocaleString()}</strong></div>
+        <div className="flex justify-between gap-3"><span>{t("tradeInUplift")}</span><strong>{uplift.toLocaleString()}</strong></div>
+        <p className="mt-1 text-xs text-slate-500">{t("tradeNegotiationHelp")}</p>
       </div>
 
       <label className="flex items-center gap-2 text-sm font-semibold">
@@ -139,7 +142,7 @@ function TradeInFields({
       </label>
 
       {draft.add_to_stock ? (
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3">
           <label className={field}>
             {t("stockTarget")}
             <Select value={draft.stock_product_id} onChange={(event) => onChange({ ...draft, stock_product_id: event.target.value })}>
@@ -149,10 +152,7 @@ function TradeInFields({
               ))}
             </Select>
           </label>
-          <label className={field}>
-            {t("stockGroupOptional")}
-            <Input value={draft.stock_group_name} onChange={(event) => onChange({ ...draft, stock_group_name: event.target.value })} />
-          </label>
+          <p className="text-xs text-slate-500">{t("tradeStockAutoHelp")}</p>
         </div>
       ) : null}
     </section>
