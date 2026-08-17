@@ -182,7 +182,7 @@ class SaleItemSerializer(serializers.ModelSerializer):
 
     def get_tracked_unit_details(self, obj):
         if not obj.tracked_unit_id:
-            return {}
+            return None
         unit = obj.tracked_unit
         identifiers = [
             {"kind": identifier.kind, "value": identifier.value}
