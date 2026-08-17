@@ -8,8 +8,8 @@ from apps.workspaces.models import Business, BusinessMembership
 
 from ..catalog.models import Product
 from ..inventory.models import StockBatch, TrackedUnit, TrackedUnitIdentifier
-from ..sales.models import SaleItem
-from ..sales.serializers import SaleSerializer
+from ..sales.models import Sale, SaleItem
+from ..sales.serializers import SaleCreateSerializer, SaleSerializer
 from ..sales.services import record_sale
 
 
@@ -73,6 +73,7 @@ class SalesContractTests(TestCase):
         self.assertEqual(line.cost_total, Decimal("0"))
         self.assertEqual(sale.customer_region, "Dar es Salaam")
         self.assertEqual(sale.total, Decimal("10000"))
+        self.assertIsNone(SaleSerializer(sale).data["items"][0]["tracked_unit_details"])
 
     def test_individual_sale_marks_the_selected_unit_sold(self):
         product = Product.objects.create(
@@ -143,3 +144,90 @@ class SalesContractTests(TestCase):
             serialized["tracked_unit_details"]["identifiers"],
             [{"kind": "chassis", "value": "NCP60-1234567"}],
         )
+
+    def test_trade_in_values_must_balance(self):
+        serializer = SaleCreateSerializer(
+            data={
+                "transaction_type": "trade_in",
+                "sale_mode": "independent",
+                "sale_type": "retail",
+                "payment_status": "paid",
+                "sold_at": timezone.now().isoformat(),
+                "items": [
+                    {
+                        "source": "manual",
+                        "item_name": "iPhone 17",
+                        "quantity": "1",
+                        "unit_price": "2500000",
+                    }
+                ],
+                "trade_in": {
+                    "incoming_item_name": "iPhone 16",
+                    "incoming_value": "1600000",
+                    "cash_top_up": "800000",
+                },
+            }
+        )
+        self.assertFalse(serializer.is_valid())
+        self.assertIn("trade_in", serializer.errors)
+
+    def test_trade_in_can_add_received_item_to_stock(self):
+        sale = record_sale(
+            actor=self.owner,
+            business_id=self.business.id,
+            transaction_type=Sale.TransactionType.TRADE_IN,
+            sale_mode=Sale.SaleMode.INDEPENDENT,
+            items=[
+                {
+                    "source": SaleItem.Source.MANUAL,
+                    "item_name": "iPhone 17",
+                    "item_details": {"model": "iPhone 17 Pro"},
+                    "acquisition_unit_cost": Decimal("2000000"),
+                    "quantity": Decimal("1"),
+                    "unit_price": Decimal("2500000"),
+                }
+            ],
+            trade_in={
+                "incoming_item_name": "iPhone 16",
+                "incoming_item_details": {
+                    "brand": "Apple",
+                    "model": "iPhone 16 Pro",
+                    "color": "Black",
+                    "capacity": "256GB",
+                    "condition": "Used",
+                    "unit": "piece",
+                    "identifier_kind": "imei",
+                    "identifier_value": "356789012345678",
+                },
+                "incoming_value": Decimal("1700000"),
+                "cash_top_up": Decimal("800000"),
+                "add_to_stock": True,
+                "stock_group_name": "Trade-in phones",
+            },
+            **self.sale_values(),
+        )
+
+        detail = sale.trade_in_detail
+        self.assertEqual(sale.total, Decimal("2500000"))
+        self.assertEqual(sale.cost_of_goods, Decimal("2000000"))
+        self.assertEqual(detail.incoming_value, Decimal("1700000"))
+        self.assertEqual(detail.cash_top_up, Decimal("800000"))
+        self.assertIsNotNone(detail.stock_receipt_id)
+        self.assertIsNotNone(detail.stock_product_id)
+
+        product = detail.stock_product
+        product.refresh_from_db()
+        self.assertEqual(product.name, "iPhone 16")
+        self.assertEqual(product.current_quantity, Decimal("1"))
+        unit = product.tracked_units.get()
+        self.assertEqual(unit.model_name, "iPhone 16 Pro")
+        self.assertEqual(unit.status, TrackedUnit.Status.AVAILABLE)
+        self.assertEqual(
+            unit.identifiers.get(kind=TrackedUnitIdentifier.Kind.IMEI).value,
+            "356789012345678",
+        )
+
+        serialized = SaleSerializer(sale).data
+        self.assertEqual(serialized["transaction_type"], "trade_in")
+        self.assertEqual(serialized["trade_in"]["incoming_item_name"], "iPhone 16")
+        self.assertTrue(serialized["trade_in"]["stock_receipt_reference"])
