@@ -364,13 +364,10 @@ function SalesWorkspace({ businessId }: { businessId: string }) {
         return Boolean(line.unit_price || product.selling_price != null);
       });
     if (!outgoingValid || transactionType === "normal") return outgoingValid;
-    const incoming = Number(tradeIn.incoming_value || 0);
-    const topUp = Number(tradeIn.cash_top_up || 0);
     return Boolean(
       tradeIn.incoming_item_name.trim() &&
         tradeIn.incoming_value !== "" &&
-        tradeIn.cash_top_up !== "" &&
-        Math.abs(outgoingValue - incoming - topUp) < 0.005,
+        tradeIn.cash_top_up !== "",
     );
   };
 
