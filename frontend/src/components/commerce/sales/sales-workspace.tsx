@@ -22,6 +22,7 @@ import type {
   Sale,
   SaleAvailabilityProduct,
   SaleAvailabilityUnit,
+  SaleItem,
 } from "@/types/commerce/sales";
 
 const panel =
@@ -88,24 +89,42 @@ function unitLabel(unit: SaleAvailabilityUnit) {
     .join(" · ");
 }
 
-function saleSummary(sale: Sale) {
-  const lines = sale.items.flatMap((item) => {
-    const details = Object.entries(item.item_details ?? {})
-      .filter(([, value]) => Boolean(value))
-      .map(([key, value]) => `${key}: ${value}`);
+function itemDetailRows(item: SaleItem) {
+  if (item.tracked_unit_details) {
+    const unit = item.tracked_unit_details;
     return [
-      item.product_name || item.item_name,
+      ["Name / model", unit.model_name],
+      ["Brand", unit.brand],
+      ["Color", unit.color],
+      ["Capacity / size", unit.capacity],
+      ["Condition", unit.condition],
+      ...unit.identifiers.map((identifier) => [identifier.kind, identifier.value]),
+      ...(unit.identifiers.length ? [] : [["Internal serial", unit.internal_serial]]),
+    ].filter(([, value]) => Boolean(value)) as Array<[string, string]>;
+  }
+
+  return Object.entries(item.item_details ?? {})
+    .filter(([, value]) => Boolean(value))
+    .map(([key, value]) => [key.replaceAll("_", " "), value]);
+}
+
+function saleSummary(sale: Sale) {
+  const lines = sale.items.flatMap((item, index) => {
+    const details = itemDetailRows(item).map(([label, value]) => `${label}: ${value}`);
+    return [
+      `Item ${index + 1}: ${item.product_name || item.item_name}`,
       item.product_sku ? `SKU: ${item.product_sku}` : "",
-      item.tracked_unit_reference || "",
       ...details,
       `Quantity: ${item.quantity}`,
       `Selling price: ${money(item.unit_price)}`,
       `Line total: ${money(item.line_total)}`,
-    ].filter(Boolean);
+      "",
+    ].filter((value) => value !== "");
   });
+
   return [
     "SALE SUMMARY",
-    sale.receipt_number,
+    `Receipt: ${sale.receipt_number}`,
     `Mode: ${sale.sale_mode}`,
     `Market: ${sale.sale_type}`,
     `Date: ${new Date(sale.sold_at).toLocaleString()}`,
@@ -114,7 +133,6 @@ function saleSummary(sale: Sale) {
     `Region: ${sale.customer_region || "—"}`,
     "",
     ...lines,
-    "",
     `Payment: ${sale.payment_status}`,
     `Discount: ${money(sale.discount)}`,
     `Total: ${money(sale.total)}`,
@@ -134,7 +152,7 @@ function printText(text: string) {
     return;
   }
   doc.open();
-  doc.write(`<!doctype html><html><head><title>Sale summary</title><style>body{font-family:Arial,sans-serif;padding:32px;white-space:pre-wrap;line-height:1.5;font-size:13px}</style></head><body>${text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;")}</body></html>`);
+  doc.write(`<!doctype html><html><head><title>Sale summary</title><style>body{font-family:Arial,sans-serif;padding:32px;white-space:pre-wrap;line-height:1.55;font-size:13px}</style></head><body>${text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;")}</body></html>`);
   doc.close();
   window.setTimeout(() => {
     frame.contentWindow?.focus();
@@ -216,7 +234,9 @@ function SalesWorkspace({ businessId }: { businessId: string }) {
 
   const openRecorder = () => {
     setShowRecorder(true);
-    requestAnimationFrame(() => recorderRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+    requestAnimationFrame(() =>
+      recorderRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
+    );
   };
 
   const closeRecorder = () => {
@@ -335,6 +355,7 @@ function SalesWorkspace({ businessId }: { businessId: string }) {
       sold_at: new Date(soldAt).toISOString(),
       items,
     };
+
     try {
       if (editing) {
         await updateSale(businessId, editing.id, accessToken, body);
@@ -346,7 +367,9 @@ function SalesWorkspace({ businessId }: { businessId: string }) {
       resetForm();
       setShowRecorder(false);
       await load();
-      requestAnimationFrame(() => historyRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+      requestAnimationFrame(() =>
+        historyRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
+      );
     } catch (reason) {
       notify({
         message: reason instanceof Error ? reason.message : t("saveError"),
@@ -421,13 +444,7 @@ function SalesWorkspace({ businessId }: { businessId: string }) {
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
               <label className={field}>
                 {t("saleMode")}
-                <Select
-                  value={saleMode}
-                  onChange={(event) => {
-                    setSaleMode(event.target.value as SaleMode);
-                    setLines([emptyLine()]);
-                  }}
-                >
+                <Select value={saleMode} onChange={(event) => { setSaleMode(event.target.value as SaleMode); setLines([emptyLine()]); }}>
                   <option value="stock">{t("fromStock")}</option>
                   <option value="independent">{t("independentSale")}</option>
                 </Select>
@@ -449,8 +466,14 @@ function SalesWorkspace({ businessId }: { businessId: string }) {
                 const product = productFor(line);
                 const trackedUnit = trackedUnitFor(line);
                 const currentSaleItem = editing?.items[index];
-                const currentTrackedReference = currentSaleItem?.tracked_unit === line.tracked_unit_id ? currentSaleItem.tracked_unit_reference : "";
-                const hasTrackedUnits = Boolean(product?.available_units.length || (currentTrackedReference && line.tracked_unit_id));
+                const currentTrackedReference =
+                  currentSaleItem?.tracked_unit === line.tracked_unit_id
+                    ? currentSaleItem.tracked_unit_reference
+                    : "";
+                const hasTrackedUnits = Boolean(
+                  product?.available_units.length ||
+                    (currentTrackedReference && line.tracked_unit_id),
+                );
                 const detailRows: Array<[string, string]> = trackedUnit
                   ? [
                       [t("stockReference"), trackedUnit.stock_reference],
@@ -463,6 +486,7 @@ function SalesWorkspace({ businessId }: { businessId: string }) {
                       [t("internalSerial"), trackedUnit.internal_serial],
                     ]
                   : [];
+
                 return (
                   <div className="grid gap-3 rounded-xl border border-slate-200 p-3 dark:border-slate-800" key={index}>
                     {saleMode === "stock" ? (
@@ -470,7 +494,9 @@ function SalesWorkspace({ businessId }: { businessId: string }) {
                         <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_8rem_10rem_auto]">
                           <Select required value={line.product_id} onChange={(event) => chooseProduct(index, event.target.value)}>
                             <option value="">{t("chooseProduct")}</option>
-                            {availability.map((item) => <option key={item.id} value={item.id}>{item.name} · {item.sku} · {money(item.current_quantity)} {item.unit} {t("available")}</option>)}
+                            {availability.map((item) => (
+                              <option key={item.id} value={item.id}>{item.name} · {item.sku} · {money(item.current_quantity)} {item.unit} {t("available")}</option>
+                            ))}
                           </Select>
                           <Input aria-label={t("quantity")} disabled={hasTrackedUnits} min="0.001" required step="0.001" type="number" value={hasTrackedUnits ? "1" : line.quantity} onChange={(event) => updateLine(index, { quantity: event.target.value })} />
                           <Input aria-label={t("sellingPrice")} min="0" placeholder={t("sellingPrice")} required={product?.selling_price == null} step="0.01" type="number" value={line.unit_price} onChange={(event) => updateLine(index, { unit_price: event.target.value })} />
@@ -542,24 +568,45 @@ function SalesWorkspace({ businessId }: { businessId: string }) {
               borderInlineStartWidth: 3,
             }}
           >
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <div className="min-w-0 flex-1 space-y-3">
-                {sale.items.map((item) => (
-                  <div key={item.id}>
-                    <strong className="text-base">{item.product_name || item.item_name}</strong>
-                    <p className="text-sm text-slate-500">{[item.product_sku, item.tracked_unit_reference, item.quantity !== "1.000" ? `${money(item.quantity)} × ${money(item.unit_price)}` : ""].filter(Boolean).join(" · ")}</p>
-                    {Object.keys(item.item_details ?? {}).length ? <p className="mt-1 text-xs text-slate-500">{Object.entries(item.item_details).filter(([, value]) => value).map(([key, value]) => `${key}: ${value}`).join(" · ")}</p> : null}
-                  </div>
-                ))}
-                <div className="grid gap-2 text-sm sm:grid-cols-2 lg:grid-cols-5">
-                  <div><span className="text-xs text-slate-500">{t("receipt")}</span><strong className="block">{sale.receipt_number}</strong></div>
-                  <div><span className="text-xs text-slate-500">{t("customer")}</span><strong className="block">{sale.customer_name || "—"}</strong></div>
-                  <div><span className="text-xs text-slate-500">{t("customerRegion")}</span><strong className="block">{sale.customer_region || "—"}</strong></div>
-                  <div><span className="text-xs text-slate-500">{t("payment")}</span><strong className="block">{sale.payment_status}</strong></div>
-                  <div><span className="text-xs text-slate-500">{t("amount")}</span><strong className="block">{money(sale.total)}</strong></div>
+            <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
+              <div className="min-w-0 space-y-4">
+                <div className="space-y-4">
+                  {sale.items.map((item) => {
+                    const details = itemDetailRows(item);
+                    const exactName = item.tracked_unit_details?.model_name || item.item_details?.model || "";
+                    return (
+                      <div className="min-w-0" key={item.id}>
+                        <strong className="block break-words text-base">{item.product_name || item.item_name}</strong>
+                        {exactName && exactName !== item.product_name ? (
+                          <span className="mt-0.5 block break-words text-sm font-semibold text-slate-700 dark:text-slate-200">{exactName}</span>
+                        ) : null}
+                        <p className="mt-1 break-words text-sm text-slate-500">
+                          {[item.product_sku, item.quantity !== "1.000" ? `${money(item.quantity)} × ${money(item.unit_price)}` : ""].filter(Boolean).join(" · ")}
+                        </p>
+                        {details.length ? (
+                          <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-500">
+                            {details.map(([label, value]) => (
+                              <span className="break-all" key={`${label}-${value}`}><span className="capitalize">{label}</span>: <strong className="font-semibold text-slate-700 dark:text-slate-200">{value}</strong></span>
+                            ))}
+                          </div>
+                        ) : item.tracked_unit_reference ? (
+                          <p className="mt-2 break-all text-xs text-slate-500">{item.tracked_unit_reference}</p>
+                        ) : null}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="grid grid-cols-2 gap-x-4 gap-y-3 border-t border-slate-100 pt-4 text-sm dark:border-slate-800 sm:grid-cols-3 lg:grid-cols-5">
+                  <div className="min-w-0"><span className="text-xs text-slate-500">{t("receipt")}</span><strong className="block break-all">{sale.receipt_number}</strong></div>
+                  <div className="min-w-0"><span className="text-xs text-slate-500">{t("customer")}</span><strong className="block break-words">{sale.customer_name || "—"}</strong></div>
+                  <div className="min-w-0"><span className="text-xs text-slate-500">{t("customerRegion")}</span><strong className="block break-words">{sale.customer_region || "—"}</strong></div>
+                  <div className="min-w-0"><span className="text-xs text-slate-500">{t("payment")}</span><strong className="block break-words">{sale.payment_status}</strong></div>
+                  <div className="min-w-0"><span className="text-xs text-slate-500">{t("amount")}</span><strong className="block break-words">{money(sale.total)}</strong></div>
                 </div>
               </div>
-              <div className="flex flex-wrap items-center gap-2">
+
+              <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3 dark:border-slate-800 lg:border-t-0 lg:pt-0">
                 <button aria-label={t("copySummary")} className="rounded-lg border border-slate-200 p-2 dark:border-slate-800" title={t("copySummary")} type="button" onClick={() => void copySale(sale)}><Copy className="size-4" /></button>
                 <button aria-label={t("shareSummary")} className="rounded-lg border border-slate-200 p-2 dark:border-slate-800" title={t("shareSummary")} type="button" onClick={() => void shareSale(sale)}><Share2 className="size-4" /></button>
                 <button aria-label={t("printSummary")} className="rounded-lg border border-slate-200 p-2 dark:border-slate-800" title={t("printSummary")} type="button" onClick={() => printText(saleSummary(sale))}><Printer className="size-4" /></button>
