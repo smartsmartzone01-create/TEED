@@ -24,6 +24,16 @@ type SaleAvailabilityProduct = {
   available_units: SaleAvailabilityUnit[];
 };
 
+type SaleTrackedUnitDetails = {
+  model_name: string;
+  brand: string;
+  color: string;
+  capacity: string;
+  condition: string;
+  internal_serial: string;
+  identifiers: Array<{ kind: string; value: string }>;
+};
+
 type SaleItem = {
   id: string;
   source: "catalog" | "manual";
@@ -32,6 +42,7 @@ type SaleItem = {
   product_sku: string;
   tracked_unit: string | null;
   tracked_unit_reference: string;
+  tracked_unit_details: SaleTrackedUnitDetails | null;
   item_name: string;
   item_details: Record<string, string>;
   acquisition_unit_cost: string | null;
@@ -67,4 +78,5 @@ export type {
   SaleAvailabilityProduct,
   SaleAvailabilityUnit,
   SaleItem,
+  SaleTrackedUnitDetails,
 };
