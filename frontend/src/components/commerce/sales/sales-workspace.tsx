@@ -2,7 +2,7 @@
 
 import { Copy, Printer, Share2 } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 
 import { Button } from "@/components/global/primitives/button";
 import { Input } from "@/components/global/primitives/input";
@@ -151,6 +151,9 @@ function SalesWorkspace({ businessId }: { businessId: string }) {
   const permissions =
     businesses.find((business) => business.id === businessId)?.membership.permissions ?? [];
 
+  const recorderRef = useRef<HTMLDivElement>(null);
+  const historyRef = useRef<HTMLElement>(null);
+  const [showRecorder, setShowRecorder] = useState(false);
   const [sales, setSales] = useState<Sale[]>([]);
   const [availability, setAvailability] = useState<SaleAvailabilityProduct[]>([]);
   const [editing, setEditing] = useState<Sale | null>(null);
@@ -211,6 +214,20 @@ function SalesWorkspace({ businessId }: { businessId: string }) {
     setLines([emptyLine()]);
   };
 
+  const openRecorder = () => {
+    setShowRecorder(true);
+    requestAnimationFrame(() => recorderRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  };
+
+  const closeRecorder = () => {
+    resetForm();
+    setShowRecorder(false);
+  };
+
+  const viewHistory = () => {
+    historyRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   const beginEdit = (sale: Sale) => {
     if (sale.sale_mode === "trade_in") return;
     setEditing(sale);
@@ -239,7 +256,7 @@ function SalesWorkspace({ businessId }: { businessId: string }) {
         unit_price: item.unit_price,
       })),
     );
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    openRecorder();
   };
 
   const updateLine = (index: number, change: Partial<SaleLineDraft>) => {
@@ -327,7 +344,9 @@ function SalesWorkspace({ businessId }: { businessId: string }) {
         notify({ message: t("saleSaved"), tone: "success" });
       }
       resetForm();
+      setShowRecorder(false);
       await load();
+      requestAnimationFrame(() => historyRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
     } catch (reason) {
       notify({
         message: reason instanceof Error ? reason.message : t("saveError"),
@@ -371,128 +390,158 @@ function SalesWorkspace({ businessId }: { businessId: string }) {
 
   return (
     <section className="mx-auto w-full max-w-7xl space-y-5 px-4 py-6 sm:px-6 lg:px-8">
-      <form className={`${panel} grid gap-4`} onSubmit={(event) => void onSubmit(event)}>
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="text-xl font-bold">{editing ? t("editSale") : t("recordSale")}</h2>
-          {editing ? (
-            <Button type="button" variant="ghost" onClick={resetForm}>
-              {t("cancel")}
-            </Button>
-          ) : null}
-        </div>
+      <header className="border-b border-slate-200 pb-5 dark:border-slate-800">
+        <h1 className="text-2xl font-bold text-slate-950 dark:text-white">{t("title")}</h1>
+        <p className="mt-1 max-w-2xl text-sm text-slate-500">{t("description")}</p>
+      </header>
 
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-          <label className={field}>
-            {t("saleMode")}
-            <Select
-              value={saleMode}
-              onChange={(event) => {
-                setSaleMode(event.target.value as SaleMode);
-                setLines([emptyLine()]);
-              }}
-            >
-              <option value="stock">{t("fromStock")}</option>
-              <option value="independent">{t("independentSale")}</option>
-            </Select>
-          </label>
-          <label className={field}>
-            {t("marketType")}
-            <Select value={saleType} onChange={(event) => setSaleType(event.target.value as "retail" | "wholesale")}>
-              <option value="retail">{t("retail")}</option>
-              <option value="wholesale">{t("wholesale")}</option>
-            </Select>
-          </label>
-          <label className={field}>{t("customerName")}<Input value={customerName} onChange={(event) => setCustomerName(event.target.value)} /></label>
-          <label className={field}>{t("customerPhone")}<Input value={customerPhone} onChange={(event) => setCustomerPhone(event.target.value)} /></label>
-          <label className={field}>{t("customerRegion")}<Input value={customerRegion} onChange={(event) => setCustomerRegion(event.target.value)} /></label>
+      <section className={`${panel} flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between`}>
+        <div>
+          <h2 className="font-bold text-slate-950 dark:text-white">{t("salesActionsTitle")}</h2>
+          <p className="mt-1 text-sm text-slate-500">{t("salesActionsHelp")}</p>
         </div>
+        <div className="grid gap-2 sm:flex sm:flex-wrap">
+          <Button type="button" variant="outline" onClick={viewHistory}>{t("viewSaleHistory")}</Button>
+          {showRecorder ? (
+            <Button type="button" variant="outline" onClick={closeRecorder}>{t("closeRecorder")}</Button>
+          ) : (
+            <Button type="button" onClick={openRecorder}>{t("recordSale")}</Button>
+          )}
+        </div>
+      </section>
 
-        <div className="grid gap-3">
-          {lines.map((line, index) => {
-            const product = productFor(line);
-            const trackedUnit = trackedUnitFor(line);
-            const currentSaleItem = editing?.items[index];
-            const currentTrackedReference = currentSaleItem?.tracked_unit === line.tracked_unit_id ? currentSaleItem.tracked_unit_reference : "";
-            const hasTrackedUnits = Boolean(product?.available_units.length || (currentTrackedReference && line.tracked_unit_id));
-            const detailRows: Array<[string, string]> = trackedUnit
-              ? [
-                  [t("stockReference"), trackedUnit.stock_reference],
-                  [t("batch"), trackedUnit.batch_name],
-                  [t("group"), trackedUnit.group_name],
-                  [t("nameModel"), trackedUnit.model_name],
-                  [t("brand"), trackedUnit.brand],
-                  [t("color"), trackedUnit.color],
-                  [t("capacitySize"), trackedUnit.capacity],
-                  [t("internalSerial"), trackedUnit.internal_serial],
-                ]
-              : [];
-            return (
-              <div className="grid gap-3 rounded-xl border border-slate-200 p-3 dark:border-slate-800" key={index}>
-                {saleMode === "stock" ? (
-                  <>
-                    <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_8rem_10rem_auto]">
-                      <Select required value={line.product_id} onChange={(event) => chooseProduct(index, event.target.value)}>
-                        <option value="">{t("chooseProduct")}</option>
-                        {availability.map((item) => <option key={item.id} value={item.id}>{item.name} · {item.sku} · {money(item.current_quantity)} {item.unit} {t("available")}</option>)}
-                      </Select>
-                      <Input aria-label={t("quantity")} disabled={hasTrackedUnits} min="0.001" required step="0.001" type="number" value={hasTrackedUnits ? "1" : line.quantity} onChange={(event) => updateLine(index, { quantity: event.target.value })} />
-                      <Input aria-label={t("sellingPrice")} min="0" placeholder={t("sellingPrice")} required={product?.selling_price == null} step="0.01" type="number" value={line.unit_price} onChange={(event) => updateLine(index, { unit_price: event.target.value })} />
-                      <Button disabled={lines.length === 1} type="button" variant="outline" onClick={() => setLines((current) => current.filter((_, itemIndex) => itemIndex !== index))}>×</Button>
-                    </div>
-                    {hasTrackedUnits && product ? (
-                      <div className="grid gap-3">
-                        <label className={field}>
-                          {t("chooseAvailableItem")}
-                          <Select required value={line.tracked_unit_id} onChange={(event) => updateLine(index, { tracked_unit_id: event.target.value, quantity: "1" })}>
-                            <option value="">{t("chooseAvailableItem")}</option>
-                            {currentTrackedReference && !product.available_units.some((unit) => unit.id === line.tracked_unit_id) ? <option value={line.tracked_unit_id}>{currentTrackedReference}</option> : null}
-                            {product.available_units.map((unit) => <option key={unit.id} value={unit.id}>{unitLabel(unit)}</option>)}
+      {showRecorder ? (
+        <div ref={recorderRef}>
+          <form className={`${panel} grid gap-4 scroll-mt-5`} onSubmit={(event) => void onSubmit(event)}>
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-xl font-bold">{editing ? t("editSale") : t("recordSale")}</h2>
+              <Button type="button" variant="ghost" onClick={closeRecorder}>{t("cancel")}</Button>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+              <label className={field}>
+                {t("saleMode")}
+                <Select
+                  value={saleMode}
+                  onChange={(event) => {
+                    setSaleMode(event.target.value as SaleMode);
+                    setLines([emptyLine()]);
+                  }}
+                >
+                  <option value="stock">{t("fromStock")}</option>
+                  <option value="independent">{t("independentSale")}</option>
+                </Select>
+              </label>
+              <label className={field}>
+                {t("marketType")}
+                <Select value={saleType} onChange={(event) => setSaleType(event.target.value as "retail" | "wholesale")}>
+                  <option value="retail">{t("retail")}</option>
+                  <option value="wholesale">{t("wholesale")}</option>
+                </Select>
+              </label>
+              <label className={field}>{t("customerName")}<Input value={customerName} onChange={(event) => setCustomerName(event.target.value)} /></label>
+              <label className={field}>{t("customerPhone")}<Input value={customerPhone} onChange={(event) => setCustomerPhone(event.target.value)} /></label>
+              <label className={field}>{t("customerRegion")}<Input value={customerRegion} onChange={(event) => setCustomerRegion(event.target.value)} /></label>
+            </div>
+
+            <div className="grid gap-3">
+              {lines.map((line, index) => {
+                const product = productFor(line);
+                const trackedUnit = trackedUnitFor(line);
+                const currentSaleItem = editing?.items[index];
+                const currentTrackedReference = currentSaleItem?.tracked_unit === line.tracked_unit_id ? currentSaleItem.tracked_unit_reference : "";
+                const hasTrackedUnits = Boolean(product?.available_units.length || (currentTrackedReference && line.tracked_unit_id));
+                const detailRows: Array<[string, string]> = trackedUnit
+                  ? [
+                      [t("stockReference"), trackedUnit.stock_reference],
+                      [t("batch"), trackedUnit.batch_name],
+                      [t("group"), trackedUnit.group_name],
+                      [t("nameModel"), trackedUnit.model_name],
+                      [t("brand"), trackedUnit.brand],
+                      [t("color"), trackedUnit.color],
+                      [t("capacitySize"), trackedUnit.capacity],
+                      [t("internalSerial"), trackedUnit.internal_serial],
+                    ]
+                  : [];
+                return (
+                  <div className="grid gap-3 rounded-xl border border-slate-200 p-3 dark:border-slate-800" key={index}>
+                    {saleMode === "stock" ? (
+                      <>
+                        <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_8rem_10rem_auto]">
+                          <Select required value={line.product_id} onChange={(event) => chooseProduct(index, event.target.value)}>
+                            <option value="">{t("chooseProduct")}</option>
+                            {availability.map((item) => <option key={item.id} value={item.id}>{item.name} · {item.sku} · {money(item.current_quantity)} {item.unit} {t("available")}</option>)}
                           </Select>
-                        </label>
-                        {trackedUnit ? (
-                          <div className="grid gap-2 rounded-lg bg-slate-50 p-3 text-xs dark:bg-slate-900 sm:grid-cols-2 lg:grid-cols-4">
-                            {detailRows.map(([label, value]) => value ? <div key={label}><span className="text-slate-500">{label}</span><strong className="block">{value}</strong></div> : null)}
-                            {trackedUnit.identifiers.map((identifier) => <div key={`${identifier.kind}-${identifier.value}`}><span className="text-slate-500">{identifier.kind}</span><strong className="block">{identifier.value}</strong></div>)}
+                          <Input aria-label={t("quantity")} disabled={hasTrackedUnits} min="0.001" required step="0.001" type="number" value={hasTrackedUnits ? "1" : line.quantity} onChange={(event) => updateLine(index, { quantity: event.target.value })} />
+                          <Input aria-label={t("sellingPrice")} min="0" placeholder={t("sellingPrice")} required={product?.selling_price == null} step="0.01" type="number" value={line.unit_price} onChange={(event) => updateLine(index, { unit_price: event.target.value })} />
+                          <Button disabled={lines.length === 1} type="button" variant="outline" onClick={() => setLines((current) => current.filter((_, itemIndex) => itemIndex !== index))}>×</Button>
+                        </div>
+                        {hasTrackedUnits && product ? (
+                          <div className="grid gap-3">
+                            <label className={field}>
+                              {t("chooseAvailableItem")}
+                              <Select required value={line.tracked_unit_id} onChange={(event) => updateLine(index, { tracked_unit_id: event.target.value, quantity: "1" })}>
+                                <option value="">{t("chooseAvailableItem")}</option>
+                                {currentTrackedReference && !product.available_units.some((unit) => unit.id === line.tracked_unit_id) ? <option value={line.tracked_unit_id}>{currentTrackedReference}</option> : null}
+                                {product.available_units.map((unit) => <option key={unit.id} value={unit.id}>{unitLabel(unit)}</option>)}
+                              </Select>
+                            </label>
+                            {trackedUnit ? (
+                              <div className="grid gap-2 rounded-lg bg-slate-50 p-3 text-xs dark:bg-slate-900 sm:grid-cols-2 lg:grid-cols-4">
+                                {detailRows.map(([label, value]) => value ? <div key={label}><span className="text-slate-500">{label}</span><strong className="block">{value}</strong></div> : null)}
+                                {trackedUnit.identifiers.map((identifier) => <div key={`${identifier.kind}-${identifier.value}`}><span className="text-slate-500">{identifier.kind}</span><strong className="block">{identifier.value}</strong></div>)}
+                              </div>
+                            ) : null}
                           </div>
                         ) : null}
-                      </div>
-                    ) : null}
-                  </>
-                ) : (
-                  <>
-                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                      <Input placeholder={t("itemName")} required value={line.item_name} onChange={(event) => updateLine(index, { item_name: event.target.value })} />
-                      <Input placeholder={t("brand")} value={line.brand} onChange={(event) => updateLine(index, { brand: event.target.value })} />
-                      <Input placeholder={t("model")} value={line.model} onChange={(event) => updateLine(index, { model: event.target.value })} />
-                      <Input placeholder={t("color")} value={line.color} onChange={(event) => updateLine(index, { color: event.target.value })} />
-                      <Input placeholder={t("capacitySize")} value={line.capacity} onChange={(event) => updateLine(index, { capacity: event.target.value })} />
-                      <Select value={line.identifier_kind} onChange={(event) => updateLine(index, { identifier_kind: event.target.value })}><option value="">{t("identifierType")}</option>{["serial", "imei", "chassis", "registration", "engine", "barcode"].map((kind) => <option key={kind} value={kind}>{kind}</option>)}</Select>
-                      <Input placeholder={t("identifierValue")} value={line.identifier_value} onChange={(event) => updateLine(index, { identifier_value: event.target.value })} />
-                      <Input min="0.001" step="0.001" type="number" placeholder={t("quantity")} required value={line.quantity} onChange={(event) => updateLine(index, { quantity: event.target.value })} />
-                      <Input min="0" step="0.01" type="number" placeholder={t("buyingCostOptional")} value={line.acquisition_unit_cost} onChange={(event) => updateLine(index, { acquisition_unit_cost: event.target.value })} />
-                      <Input min="0" step="0.01" type="number" placeholder={t("sellingPrice")} required value={line.unit_price} onChange={(event) => updateLine(index, { unit_price: event.target.value })} />
-                    </div>
-                    <div className="flex justify-end"><Button disabled={lines.length === 1} type="button" variant="outline" onClick={() => setLines((current) => current.filter((_, itemIndex) => itemIndex !== index))}>{t("remove")}</Button></div>
-                  </>
-                )}
-              </div>
-            );
-          })}
-        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                          <Input placeholder={t("itemName")} required value={line.item_name} onChange={(event) => updateLine(index, { item_name: event.target.value })} />
+                          <Input placeholder={t("brand")} value={line.brand} onChange={(event) => updateLine(index, { brand: event.target.value })} />
+                          <Input placeholder={t("model")} value={line.model} onChange={(event) => updateLine(index, { model: event.target.value })} />
+                          <Input placeholder={t("color")} value={line.color} onChange={(event) => updateLine(index, { color: event.target.value })} />
+                          <Input placeholder={t("capacitySize")} value={line.capacity} onChange={(event) => updateLine(index, { capacity: event.target.value })} />
+                          <Select value={line.identifier_kind} onChange={(event) => updateLine(index, { identifier_kind: event.target.value })}><option value="">{t("identifierType")}</option>{["serial", "imei", "chassis", "registration", "engine", "barcode"].map((kind) => <option key={kind} value={kind}>{kind}</option>)}</Select>
+                          <Input placeholder={t("identifierValue")} value={line.identifier_value} onChange={(event) => updateLine(index, { identifier_value: event.target.value })} />
+                          <Input min="0.001" step="0.001" type="number" placeholder={t("quantity")} required value={line.quantity} onChange={(event) => updateLine(index, { quantity: event.target.value })} />
+                          <Input min="0" step="0.01" type="number" placeholder={t("buyingCostOptional")} value={line.acquisition_unit_cost} onChange={(event) => updateLine(index, { acquisition_unit_cost: event.target.value })} />
+                          <Input min="0" step="0.01" type="number" placeholder={t("sellingPrice")} required value={line.unit_price} onChange={(event) => updateLine(index, { unit_price: event.target.value })} />
+                        </div>
+                        <div className="flex justify-end"><Button disabled={lines.length === 1} type="button" variant="outline" onClick={() => setLines((current) => current.filter((_, itemIndex) => itemIndex !== index))}>{t("remove")}</Button></div>
+                      </>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
 
-        <Button type="button" variant="outline" onClick={() => setLines((current) => [...current, emptyLine()])}>{t("addLine")}</Button>
-        <div className="grid gap-3 sm:grid-cols-3">
-          <label className={field}>{t("discount")}<Input min="0" step="0.01" type="number" value={discount} onChange={(event) => setDiscount(event.target.value)} /></label>
-          <label className={field}>{t("payment")}<Select value={paymentStatus} onChange={(event) => setPaymentStatus(event.target.value as "paid" | "partial" | "unpaid")}><option value="paid">{t("paid")}</option><option value="partial">{t("partial")}</option><option value="unpaid">{t("unpaid")}</option></Select></label>
-          <label className={field}>{t("date")}<Input type="datetime-local" value={soldAt} onChange={(event) => setSoldAt(event.target.value)} /></label>
+            <Button type="button" variant="outline" onClick={() => setLines((current) => [...current, emptyLine()])}>{t("addLine")}</Button>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <label className={field}>{t("discount")}<Input min="0" step="0.01" type="number" value={discount} onChange={(event) => setDiscount(event.target.value)} /></label>
+              <label className={field}>{t("payment")}<Select value={paymentStatus} onChange={(event) => setPaymentStatus(event.target.value as "paid" | "partial" | "unpaid")}><option value="paid">{t("paid")}</option><option value="partial">{t("partial")}</option><option value="unpaid">{t("unpaid")}</option></Select></label>
+              <label className={field}>{t("date")}<Input type="datetime-local" value={soldAt} onChange={(event) => setSoldAt(event.target.value)} /></label>
+            </div>
+            <Button disabled={busy || !accessToken || !validate()} type="submit">{editing ? t("saveEdit") : t("save")}</Button>
+          </form>
         </div>
-        <Button disabled={busy || !accessToken || !validate()} type="submit">{editing ? t("saveEdit") : t("save")}</Button>
-      </form>
+      ) : null}
 
-      <section className="space-y-3">
+      <section className="scroll-mt-5 space-y-3" ref={historyRef}>
         <h2 className="text-xl font-bold">{t("recentSales")}</h2>
-        {sales.map((sale) => (
-          <article className={panel} key={sale.id}>
+        {sales.map((sale, index) => (
+          <article
+            className={panel}
+            key={sale.id}
+            style={{
+              borderInlineStartColor:
+                index % 2 === 0
+                  ? "var(--workspace-primary, var(--brand-navy))"
+                  : "var(--workspace-secondary, var(--brand-orange))",
+              borderInlineStartWidth: 3,
+            }}
+          >
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="min-w-0 flex-1 space-y-3">
                 {sale.items.map((item) => (
