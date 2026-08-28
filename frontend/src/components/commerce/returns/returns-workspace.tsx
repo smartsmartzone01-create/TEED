@@ -114,8 +114,14 @@ function ReturnsWorkspace({ businessId }: { businessId: string }) {
 
   useEffect(() => {
     const controller = new AbortController();
-    void loadHistory(controller.signal);
-    return () => controller.abort();
+    const task = window.setTimeout(() => {
+      void loadHistory(controller.signal);
+    }, 0);
+
+    return () => {
+      window.clearTimeout(task);
+      controller.abort();
+    };
   }, [loadHistory]);
 
   const searchSales = useCallback(
@@ -165,7 +171,9 @@ function ReturnsWorkspace({ businessId }: { businessId: string }) {
 
   const selectedItems = useMemo(() => {
     if (!selectedSale) return [];
-    return selectedSale.items.filter((item) => Number(lines[item.id]?.quantity || 0) > 0);
+    return selectedSale.items.filter(
+      (item) => Number(lines[item.id]?.quantity || 0) > 0,
+    );
   }, [lines, selectedSale]);
 
   const updateLine = (itemId: string, change: Partial<ReturnLineDraft>) => {
@@ -359,7 +367,9 @@ function ReturnsWorkspace({ businessId }: { businessId: string }) {
                       {item.product_name || item.item_name}
                     </p>
                     <p className="mt-1 text-xs text-slate-500">
-                      {item.product_sku || item.tracked_unit_reference || t("independentItem")}
+                      {item.product_sku ||
+                        item.tracked_unit_reference ||
+                        t("independentItem")}
                     </p>
                     <p className="mt-2 text-xs text-slate-600 dark:text-slate-300">
                       {t("soldAndRemaining", {
@@ -397,7 +407,9 @@ function ReturnsWorkspace({ businessId }: { businessId: string }) {
                           condition: event.target.value as ReturnCondition,
                         })
                       }
-                      value={draft?.condition ?? (independent ? "damaged" : "sellable")}
+                      value={
+                        draft?.condition ?? (independent ? "damaged" : "sellable")
+                      }
                     >
                       {!independent ? (
                         <option value="sellable">{t("sellable")}</option>
@@ -487,7 +499,9 @@ function ReturnsWorkspace({ businessId }: { businessId: string }) {
                   <p className="text-xs text-slate-500">{record.reason}</p>
                 </div>
                 <div>
-                  <p className="font-medium">{t(`resolutionValues.${record.resolution}`)}</p>
+                  <p className="font-medium">
+                    {t(`resolutionValues.${record.resolution}`)}
+                  </p>
                   <p className="text-xs text-slate-500">
                     {new Date(record.returned_at).toLocaleString()}
                   </p>
