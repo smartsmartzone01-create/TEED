@@ -12,15 +12,15 @@
     "notificationsSoon": "Kikasha cha arifa kitafuata",
     "logout": "Toka",
     "loggingOut": "Inatoka…",
-    "subnavigation": {"workspaces": {"overview": "Muhtasari wa maeneo ya kazi", "create": "Unda biashara", "requestAccess": "Omba ufikiaji"}},
+    "subnavigation": {"workspaces": {"overview": "Orodha ya workspace", "create": "Unda workspace", "requestAccess": "Omba ufikiaji"}},
     "navigation": {
       "overview": "Muhtasari",
-      "ai": "TEED AI",
+      "ai": "Tunakuza AI",
       "profile": "Wasifu",
       "preferences": "Mapendeleo",
       "security": "Usalama na ufikiaji",
       "notifications": "Arifa",
-      "workspaces": "Eneo la kazi",
+      "workspaces": "Workspace",
       "billing": "Mpango na malipo",
       "help": "Msaada na maswali"
     }
@@ -28,23 +28,23 @@
   "DashboardOverview": {
     "accountFallback": "hapo",
     "welcome": "Karibu, {name}",
-    "createBusiness": "Unda biashara",
-    "createBusinessTooltip": "Anza kuunda biashara mpya pamoja na eneo lake la kazi.",
+    "createBusiness": "Unda workspace",
+    "createBusinessTooltip": "Unda workspace ya Biashara au Binafsi.",
     "requestAccess": "Omba ufikiaji",
-    "requestAccessTooltip": "Omba kujiunga na biashara au eneo la kazi unaloruhusiwa kufikia.",
+    "requestAccessTooltip": "Omba kujiunga na workspace ya Biashara unayoruhusiwa kufikia.",
     "stateTitle": "Hali ya akaunti",
     "cards": {
       "profile": {"title": "Wasifu", "pending": "API ya wasifu haijaunganishwa", "progress": "Imekamilika kwa {percentage}%", "action": "Fungua wasifu", "tooltip": "Fungua taarifa binafsi, picha ya wasifu na mawasiliano yako."},
       "security": {"title": "Usalama na ufikiaji", "pending": "Hali ya usalama haipatikani", "state": "Barua pepe {email} · vipindi {count}", "verified": "imethibitishwa", "unverified": "haijathibitishwa", "action": "Fungua usalama na ufikiaji", "tooltip": "Kagua nenosiri, mawasiliano yaliyothibitishwa, vipindi na njia za urejeshaji."},
       "notifications": {"title": "Arifa", "pending": "Kikasha hakipatikani", "unread": "Arifa ambazo hazijasomwa: {count}", "action": "Fungua arifa", "tooltip": "Fungua arifa muhimu pamoja na viungo vya hatua vinavyohusiana nazo."},
-      "workspaces": {"title": "Eneo la kazi", "pending": "Hali ya eneo la kazi haipatikani", "state": "Biashara: {businesses} · mialiko: {invitations}", "action": "Fungua eneo la kazi", "tooltip": "Kagua biashara, majukumu, mialiko na uanachama wa eneo la kazi."}
+      "workspaces": {"title": "Workspace", "pending": "Hali ya workspace haipatikani", "state": "Workspace: {businesses} · mialiko: {invitations}", "action": "Fungua workspace", "tooltip": "Chagua workspace na kagua majukumu, mialiko au ufikiaji wa Workspace Binafsi wa mmiliki pekee."}
     },
     "destinationsTitle": "Viungo vingine",
     "destinations": {
-      "ai": {"title": "TEED AI", "description": "Msaada wa akili bandia wa baadaye kwenye moduli za TEED.", "tooltip": "Zana za AI zitaonekana hapa baada ya ruhusa na mikataba yake ya data kufafanuliwa."},
-      "preferences": {"title": "Mapendeleo", "description": "Lugha, mwonekano, ukanda wa saa, miundo ya tarehe na saa, pamoja na ufikivu.", "tooltip": "Dhibiti mwonekano wa TEED na jinsi taarifa zinavyoonyeshwa kwenye akaunti yako."},
-      "billing": {"title": "Mpango na malipo", "description": "Mpango, usajili na taarifa za malipo.", "tooltip": "Kagua mpango na malipo ya TEED huduma ya malipo itakapopatikana."},
-      "help": {"title": "Msaada na maswali", "description": "Maelekezo na majibu kuhusu matumizi ya TEED.", "tooltip": "Pata maelekezo yaliyo wazi kuhusu vipengele na kazi za kawaida za TEED."}
+      "ai": {"title": "Tunakuza AI", "description": "Msaada wa akili bandia wa baadaye kwenye moduli za Tunakuza.", "tooltip": "Zana za AI zitaonekana hapa baada ya ruhusa na mikataba yake ya data kufafanuliwa."},
+      "preferences": {"title": "Mapendeleo", "description": "Lugha, mwonekano, ukanda wa saa, miundo ya tarehe na saa, pamoja na ufikivu.", "tooltip": "Dhibiti mwonekano wa Tunakuza na jinsi taarifa zinavyoonyeshwa kwenye akaunti yako."},
+      "billing": {"title": "Mpango na malipo", "description": "Mpango, usajili na taarifa za malipo.", "tooltip": "Kagua mpango na malipo ya Tunakuza huduma ya malipo itakapopatikana."},
+      "help": {"title": "Msaada na maswali", "description": "Maelekezo na majibu kuhusu matumizi ya Tunakuza.", "tooltip": "Pata maelekezo yaliyo wazi kuhusu vipengele na kazi za kawaida za Tunakuza."}
     }
   },
   "DashboardPlaceholder": {
