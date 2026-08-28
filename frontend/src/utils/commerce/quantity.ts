@@ -1,23 +1,15 @@
-const wholeQuantityUnits = new Set([
-  "item",
-  "piece",
-  "pair",
-  "packet",
-  "box",
-  "carton",
-  "crate",
-  "bottle",
-  "can",
-  "bag",
-  "sack",
-  "bundle",
-  "set",
-  "dozen",
-  "roll",
+const measuredQuantityUnits = new Set([
+  "meter",
+  "kilogram",
+  "gram",
+  "liter",
+  "milliliter",
+  "tonne",
 ]);
 
 function isWholeQuantityUnit(unit: string | null | undefined) {
-  return wholeQuantityUnits.has((unit ?? "").trim().toLowerCase());
+  const normalized = (unit ?? "").trim().toLowerCase();
+  return Boolean(normalized) && !measuredQuantityUnits.has(normalized);
 }
 
 function quantityInputStep(unit: string | null | undefined) {
