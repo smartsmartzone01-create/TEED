@@ -7,6 +7,7 @@ import {
   useEffect,
   useMemo,
   useState,
+  type CSSProperties,
   type FormEvent,
 } from "react";
 
@@ -24,14 +25,21 @@ import {
   getReturnsWorkspace,
   type ReturnLookupFilters,
 } from "@/services/commerce/returns";
+import { getSalesAvailability } from "@/services/commerce/sales";
 import { isRequestCancelled } from "@/services/global/api-client";
 import type {
   ReturnCondition,
   ReturnReason,
+  ReturnReplacementSource,
   ReturnResolution,
   SaleReturnSummary,
 } from "@/types/commerce/returns";
-import type { Sale, SaleItem } from "@/types/commerce/sales";
+import type {
+  Sale,
+  SaleAvailabilityProduct,
+  SaleAvailabilityUnit,
+  SaleItem,
+} from "@/types/commerce/sales";
 
 const panel =
   "rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950";
@@ -92,8 +100,35 @@ function saleObjectNames(sale: Sale) {
   return `${names.slice(0, 3).join(" · ")} +${names.length - 3}`;
 }
 
+function unitLabel(unit: SaleAvailabilityUnit) {
+  const identification = unit.identifiers
+    .map((item) => `${item.kind}: ${item.value}`)
+    .join(" · ");
+  return [
+    unit.model_name,
+    unit.brand,
+    unit.color,
+    unit.capacity,
+    identification || unit.internal_serial,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+}
+
 function isReturnReason(value: string): value is ReturnReason {
   return returnReasons.includes(value as ReturnReason);
+}
+
+function badgeStyle(kind: "primary" | "secondary"): CSSProperties {
+  const color =
+    kind === "primary"
+      ? "var(--workspace-primary, var(--brand-navy))"
+      : "var(--workspace-secondary, var(--brand-orange))";
+  return {
+    borderColor: `color-mix(in srgb, ${color} 38%, transparent)`,
+    backgroundColor: `color-mix(in srgb, ${color} 10%, transparent)`,
+    color,
+  };
 }
 
 function HelpTip({ content, label }: { content: string; label: string }) {
@@ -119,32 +154,43 @@ function ReturnsWorkspace({ businessId }: { businessId: string }) {
   const t = useTranslations("CommerceReturns");
   const { accessToken } = useIdentitySession();
   const { notify } = useNotification();
+
   const [lookupDate, setLookupDate] = useState(todayLocal());
   const [lookupReceipt, setLookupReceipt] = useState("");
   const [lastLookup, setLastLookup] = useState<ReturnLookupFilters | null>(null);
   const [sales, setSales] = useState<Sale[]>([]);
   const [returns, setReturns] = useState<SaleReturnSummary[]>([]);
+  const [availability, setAvailability] = useState<SaleAvailabilityProduct[]>([]);
   const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
+  const [savedReturn, setSavedReturn] = useState<SaleReturnSummary | null>(null);
   const [lines, setLines] = useState<Record<string, ReturnLineDraft>>({});
   const [resolution, setResolution] = useState<ReturnResolution>("refund");
   const [reason, setReason] = useState<ReturnReason>("damaged");
   const [returnedAt, setReturnedAt] = useState(nowLocal());
+
+  const [replacementSource, setReplacementSource] =
+    useState<ReturnReplacementSource>("stock");
+  const [replacementProductId, setReplacementProductId] = useState("");
+  const [replacementUnitId, setReplacementUnitId] = useState("");
+  const [replacementQuantity, setReplacementQuantity] = useState("1");
+  const [replacementItemName, setReplacementItemName] = useState("");
+  const [replacementUnitCost, setReplacementUnitCost] = useState("");
+
   const [loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false);
   const [busy, setBusy] = useState(false);
   const [searched, setSearched] = useState(false);
 
-  const loadHistory = useCallback(
+  const loadContext = useCallback(
     async (signal?: AbortSignal) => {
       if (!accessToken) return;
       try {
-        const response = await getReturnsWorkspace(
-          businessId,
-          accessToken,
-          {},
-          signal,
-        );
-        setReturns(response.data?.returns ?? []);
+        const [returnResponse, availabilityResponse] = await Promise.all([
+          getReturnsWorkspace(businessId, accessToken, {}, signal),
+          getSalesAvailability(businessId, accessToken, signal),
+        ]);
+        setReturns(returnResponse.data?.returns ?? []);
+        setAvailability(availabilityResponse.data?.products ?? []);
       } catch (error) {
         if (!isRequestCancelled(error)) {
           notify({
@@ -162,14 +208,14 @@ function ReturnsWorkspace({ businessId }: { businessId: string }) {
   useEffect(() => {
     const controller = new AbortController();
     const task = window.setTimeout(() => {
-      void loadHistory(controller.signal);
+      void loadContext(controller.signal);
     }, 0);
 
     return () => {
       window.clearTimeout(task);
       controller.abort();
     };
-  }, [loadHistory]);
+  }, [loadContext]);
 
   const searchSales = useCallback(
     async (filters: ReturnLookupFilters, signal?: AbortSignal) => {
@@ -216,7 +262,20 @@ function ReturnsWorkspace({ businessId }: { businessId: string }) {
     [accessToken, businessId, notify, t],
   );
 
+  const selectedReplacementProduct = useMemo(
+    () => availability.find((product) => product.id === replacementProductId),
+    [availability, replacementProductId],
+  );
+
+  const selectedItems = useMemo(() => {
+    if (!selectedSale) return [];
+    return selectedSale.items.filter(
+      (item) => Number(lines[item.id]?.quantity || 0) > 0,
+    );
+  }, [lines, selectedSale]);
+
   const chooseSale = (sale: Sale) => {
+    setSavedReturn(null);
     setSelectedSale(sale);
     setLines(
       Object.fromEntries(
@@ -231,13 +290,6 @@ function ReturnsWorkspace({ businessId }: { businessId: string }) {
     );
   };
 
-  const selectedItems = useMemo(() => {
-    if (!selectedSale) return [];
-    return selectedSale.items.filter(
-      (item) => Number(lines[item.id]?.quantity || 0) > 0,
-    );
-  }, [lines, selectedSale]);
-
   const updateLine = (itemId: string, change: Partial<ReturnLineDraft>) => {
     setLines((current) => ({
       ...current,
@@ -247,6 +299,31 @@ function ReturnsWorkspace({ businessId }: { businessId: string }) {
         ...change,
       },
     }));
+  };
+
+  const resetReplacement = () => {
+    setReplacementSource("stock");
+    setReplacementProductId("");
+    setReplacementUnitId("");
+    setReplacementQuantity("1");
+    setReplacementItemName("");
+    setReplacementUnitCost("");
+  };
+
+  const replacementValid = () => {
+    if (resolution !== "replacement") return true;
+    if (replacementSource === "independent") {
+      return Boolean(
+        replacementItemName.trim() &&
+          replacementUnitCost !== "" &&
+          Number(replacementQuantity) > 0,
+      );
+    }
+    if (!selectedReplacementProduct || Number(replacementQuantity) <= 0) return false;
+    if (selectedReplacementProduct.tracking_mode === "individual") {
+      return Boolean(replacementUnitId);
+    }
+    return Number(replacementQuantity) <= Number(selectedReplacementProduct.current_quantity);
   };
 
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -262,23 +339,56 @@ function ReturnsWorkspace({ businessId }: { businessId: string }) {
       notify({ message: t("chooseItemError"), tone: "error" });
       return;
     }
+    if (!replacementValid()) {
+      notify({ message: t("replacementValidation"), tone: "error" });
+      return;
+    }
+
+    const replacement =
+      resolution !== "replacement"
+        ? undefined
+        : replacementSource === "stock"
+          ? {
+              source: "stock" as const,
+              product_id: replacementProductId,
+              ...(replacementUnitId
+                ? { tracked_unit_id: replacementUnitId }
+                : {}),
+              quantity:
+                selectedReplacementProduct?.tracking_mode === "individual"
+                  ? "1"
+                  : replacementQuantity,
+            }
+          : {
+              source: "independent" as const,
+              item_name: replacementItemName.trim(),
+              quantity: replacementQuantity,
+              acquisition_unit_cost: replacementUnitCost,
+            };
 
     setBusy(true);
     try {
-      await createReturn(businessId, accessToken, {
+      const response = await createReturn(businessId, accessToken, {
         sale_id: selectedSale.id,
         resolution,
         reason,
         returned_at: new Date(returnedAt).toISOString(),
         items,
+        ...(replacement ? { replacement } : {}),
       });
+      const recorded = response.data ?? null;
+      setSavedReturn(recorded);
       notify({ message: t("success"), tone: "success" });
       setSelectedSale(null);
       setLines({});
       setReason("damaged");
       setResolution("refund");
       setReturnedAt(nowLocal());
-      await searchSales(lastLookup ?? periodForDate(lookupDate));
+      resetReplacement();
+      await Promise.all([
+        searchSales(lastLookup ?? periodForDate(lookupDate)),
+        loadContext(),
+      ]);
     } catch (error) {
       notify({
         message: error instanceof Error ? error.message : t("saveError"),
@@ -300,6 +410,8 @@ function ReturnsWorkspace({ businessId }: { businessId: string }) {
             {t("title")}
           </h1>
         </header>
+
+        {savedReturn ? <ReturnReceipt record={savedReturn} /> : null}
 
         <section className={`${panel} space-y-4`}>
           <div className="flex items-center gap-2">
@@ -428,13 +540,23 @@ function ReturnsWorkspace({ businessId }: { businessId: string }) {
                           {sale.customer_name || t("walkInCustomer")}
                         </p>
                       </div>
-                      <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-600 dark:text-slate-300">
-                        <span>{t("itemsCount", { count: sale.items.length })}</span>
-                        <span className="text-right">{money(sale.total)}</span>
-                        <span>
+                      <div className="mt-3 flex flex-wrap items-center gap-2">
+                        <span
+                          className="inline-flex rounded-full border px-2.5 py-1 text-xs font-bold"
+                          style={badgeStyle("primary")}
+                        >
+                          {t("itemsCount", { count: sale.items.length })}
+                        </span>
+                        <span
+                          className="inline-flex rounded-full border px-2.5 py-1 text-xs font-bold"
+                          style={badgeStyle("secondary")}
+                        >
                           {disabled
                             ? t("fullyReturned")
                             : t("returnableCount", { count: returnable.length })}
+                        </span>
+                        <span className="ml-auto text-xs font-semibold text-slate-700 dark:text-slate-200">
+                          {money(sale.total)}
                         </span>
                       </div>
                     </button>
@@ -556,9 +678,11 @@ function ReturnsWorkspace({ businessId }: { businessId: string }) {
                   />
                 </span>
                 <Select
-                  onChange={(event) =>
-                    setResolution(event.target.value as ReturnResolution)
-                  }
+                  onChange={(event) => {
+                    const next = event.target.value as ReturnResolution;
+                    setResolution(next);
+                    if (next !== "replacement") resetReplacement();
+                  }}
                   value={resolution}
                 >
                   <option value="refund">{t("refund")}</option>
@@ -597,6 +721,164 @@ function ReturnsWorkspace({ businessId }: { businessId: string }) {
                 />
               </label>
             </div>
+
+            {resolution === "replacement" ? (
+              <section className="space-y-4 rounded-xl border border-slate-200 bg-slate-50/60 p-4 dark:border-slate-800 dark:bg-slate-900/40">
+                <div className="flex items-center gap-2">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-500">
+                      {t("replacementDetails")}
+                    </p>
+                    <h3 className="mt-1 font-bold text-slate-950 dark:text-white">
+                      {t("replacementSource")}
+                    </h3>
+                  </div>
+                  <HelpTip
+                    content={t("tooltips.replacementSource")}
+                    label={t("tooltips.replacementSource")}
+                  />
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {(["stock", "independent"] as const).map((source) => (
+                    <label
+                      className={[
+                        "cursor-pointer rounded-xl border p-3 text-sm",
+                        replacementSource === source
+                          ? "border-brand-orange bg-brand-orange/5"
+                          : "border-slate-200 dark:border-slate-800",
+                      ].join(" ")}
+                      key={source}
+                    >
+                      <input
+                        checked={replacementSource === source}
+                        className="mr-2"
+                        name="replacement-source"
+                        onChange={() => {
+                          setReplacementSource(source);
+                          setReplacementProductId("");
+                          setReplacementUnitId("");
+                          setReplacementItemName("");
+                          setReplacementUnitCost("");
+                          setReplacementQuantity("1");
+                        }}
+                        type="radio"
+                      />
+                      <strong>{t(`replacementSources.${source}`)}</strong>
+                      <p className="mt-1 text-xs text-slate-500">
+                        {t(`replacementSourceHelp.${source}`)}
+                      </p>
+                    </label>
+                  ))}
+                </div>
+
+                {replacementSource === "stock" ? (
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <label className={field}>
+                      <span>{t("replacementSku")}</span>
+                      <Select
+                        onChange={(event) => {
+                          setReplacementProductId(event.target.value);
+                          setReplacementUnitId("");
+                          setReplacementQuantity("1");
+                        }}
+                        value={replacementProductId}
+                      >
+                        <option value="">{t("chooseReplacementSku")}</option>
+                        {availability
+                          .filter(
+                            (product) =>
+                              product.is_active !== false &&
+                              Number(product.current_quantity) > 0,
+                          )
+                          .map((product) => (
+                            <option key={product.id} value={product.id}>
+                              {product.name} · {product.sku} · {product.current_quantity}{" "}
+                              {product.unit}
+                            </option>
+                          ))}
+                      </Select>
+                    </label>
+                    {selectedReplacementProduct?.tracking_mode === "individual" ? (
+                      <label className={field}>
+                        <span>{t("replacementUnit")}</span>
+                        <Select
+                          onChange={(event) =>
+                            setReplacementUnitId(event.target.value)
+                          }
+                          value={replacementUnitId}
+                        >
+                          <option value="">{t("chooseReplacementUnit")}</option>
+                          {selectedReplacementProduct.available_units.map((unit) => (
+                            <option key={unit.id} value={unit.id}>
+                              {unitLabel(unit)}
+                            </option>
+                          ))}
+                        </Select>
+                      </label>
+                    ) : (
+                      <label className={field}>
+                        <span>{t("replacementQuantity")}</span>
+                        <Input
+                          max={selectedReplacementProduct?.current_quantity}
+                          min="0.001"
+                          onChange={(event) =>
+                            setReplacementQuantity(event.target.value)
+                          }
+                          step="0.001"
+                          type="number"
+                          value={replacementQuantity}
+                        />
+                      </label>
+                    )}
+                  </div>
+                ) : (
+                  <div className="grid gap-3 md:grid-cols-3">
+                    <label className={field}>
+                      <span>{t("replacementItem")}</span>
+                      <Input
+                        onChange={(event) =>
+                          setReplacementItemName(event.target.value)
+                        }
+                        placeholder={t("replacementItemPlaceholder")}
+                        value={replacementItemName}
+                      />
+                    </label>
+                    <label className={field}>
+                      <span>{t("replacementQuantity")}</span>
+                      <Input
+                        min="0.001"
+                        onChange={(event) =>
+                          setReplacementQuantity(event.target.value)
+                        }
+                        step="0.001"
+                        type="number"
+                        value={replacementQuantity}
+                      />
+                    </label>
+                    <label className={field}>
+                      <span className="flex items-center gap-1">
+                        {t("replacementCost")}
+                        <HelpTip
+                          content={t("tooltips.replacementCost")}
+                          label={t("tooltips.replacementCost")}
+                        />
+                      </span>
+                      <Input
+                        min="0"
+                        onChange={(event) =>
+                          setReplacementUnitCost(event.target.value)
+                        }
+                        step="0.01"
+                        type="number"
+                        value={replacementUnitCost}
+                      />
+                    </label>
+                  </div>
+                )}
+              </section>
+            ) : null}
+
             <div className="flex flex-wrap gap-3">
               <Button disabled={busy || selectedItems.length === 0} type="submit">
                 {busy ? t("saving") : t("recordReturn")}
@@ -630,14 +912,15 @@ function ReturnsWorkspace({ businessId }: { businessId: string }) {
             <div className="divide-y divide-slate-200 dark:divide-slate-800">
               {returns.map((record) => (
                 <div
-                  className="grid gap-2 py-3 text-sm sm:grid-cols-[1fr_.7fr_.7fr] sm:items-center"
+                  className="grid gap-2 py-3 text-sm sm:grid-cols-[1fr_.8fr_.8fr] sm:items-center"
                   key={record.id}
                 >
                   <div>
                     <p className="font-semibold text-slate-950 dark:text-white">
-                      {record.receipt_number}
+                      {record.return_number || record.receipt_number}
                     </p>
                     <p className="text-xs text-slate-500">
+                      {t("originalReceipt")}: {record.receipt_number} ·{" "}
                       {isReturnReason(record.reason)
                         ? t(`reasonValues.${record.reason}`)
                         : record.reason}
@@ -651,7 +934,15 @@ function ReturnsWorkspace({ businessId }: { businessId: string }) {
                       {new Date(record.returned_at).toLocaleString()}
                     </p>
                   </div>
-                  <p className="sm:text-right">{money(record.total)}</p>
+                  <div className="text-xs sm:text-right">
+                    <p>{t("returnedValue")}: {money(record.total)}</p>
+                    {Number(record.damaged_loss) > 0 ? (
+                      <p>{t("damagedLoss")}: {money(record.damaged_loss)}</p>
+                    ) : null}
+                    {Number(record.replacement_cost) > 0 ? (
+                      <p>{t("replacementCost")}: {money(record.replacement_cost)}</p>
+                    ) : null}
+                  </div>
                 </div>
               ))}
             </div>
@@ -661,6 +952,81 @@ function ReturnsWorkspace({ businessId }: { businessId: string }) {
         </section>
       </div>
     </TooltipProvider>
+  );
+}
+
+function ReturnReceipt({ record }: { record: SaleReturnSummary }) {
+  const t = useTranslations("CommerceReturns");
+  const adjustment =
+    Number(record.recovered_inventory_cost) -
+    Number(record.refund_amount) -
+    Number(record.credit_amount) -
+    Number(record.replacement_cost);
+  const replacementName = record.replacement
+    ? record.replacement.product_name || record.replacement.item_name
+    : "";
+
+  return (
+    <section className={`${panel} space-y-4`}>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
+            {t("returnReceipt")}
+          </p>
+          <h2 className="mt-1 text-lg font-black text-slate-950 dark:text-white">
+            {record.return_number}
+          </h2>
+          <p className="mt-1 text-xs text-slate-500">
+            {t("originalReceipt")}: {record.receipt_number}
+          </p>
+        </div>
+        <span
+          className="inline-flex rounded-full border px-3 py-1 text-xs font-bold"
+          style={badgeStyle("secondary")}
+        >
+          {t(`resolutionValues.${record.resolution}`)}
+        </span>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <ReceiptMetric label={t("returnedValue")} value={record.total} />
+        <ReceiptMetric
+          label={t("recoveredInventory")}
+          value={record.recovered_inventory_cost}
+        />
+        <ReceiptMetric label={t("damagedLoss")} value={record.damaged_loss} />
+        <ReceiptMetric label={t("replacementCost")} value={record.replacement_cost} />
+      </div>
+
+      {record.replacement ? (
+        <div className="rounded-xl border border-slate-200 p-3 text-sm dark:border-slate-800">
+          <p className="font-semibold text-slate-950 dark:text-white">
+            {t("replacementGiven")}: {replacementName}
+          </p>
+          <p className="mt-1 text-xs text-slate-500">
+            {t(`replacementSources.${record.replacement.source}`)} ·{" "}
+            {record.replacement.quantity}
+            {record.replacement.product_sku
+              ? ` · ${record.replacement.product_sku}`
+              : ""}
+          </p>
+        </div>
+      ) : null}
+
+      <div className="rounded-xl bg-slate-50 p-3 text-xs text-slate-600 dark:bg-slate-900 dark:text-slate-300">
+        <strong>{t("profitAdjustment")}: {money(adjustment)}</strong>
+        <p className="mt-1">{t("profitAdjustmentHelp")}</p>
+      </div>
+    </section>
+  );
+}
+
+function ReceiptMetric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl border border-slate-200 p-3 dark:border-slate-800">
+      <p className="text-xs text-slate-500">{label}</p>
+      <p className="mt-1 font-bold text-slate-950 dark:text-white">{money(value)}</p>
+    </div>
   );
 }
 
