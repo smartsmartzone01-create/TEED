@@ -8,6 +8,7 @@ from apps.workspaces.policy import WorkspacePermission
 
 from ..catalog.models import Product
 from ..inventory.models import StockBatch, TrackedUnit
+from ..quantity_rules import require_valid_quantity
 from ..sales.models import SaleItem
 from ..services import (
     commerce_membership,
@@ -120,6 +121,16 @@ def _record_replacement(*, business, return_record, replacement_values):
     quantity = replacement_values["quantity"]
 
     if source == ReturnReplacement.Source.INDEPENDENT:
+        details = replacement_values.get("item_details", {})
+        if details.get("identifier_value") and quantity != Decimal("1"):
+            raise ValidationError(
+                {
+                    "replacement": [
+                        "An independently sourced item with a serial, IMEI, or other "
+                        "unique identifier must be recorded as one unit."
+                    ]
+                }
+            )
         unit_cost = replacement_values["acquisition_unit_cost"]
         cost_total = quantity * unit_cost
         return ReturnReplacement.objects.create(
@@ -127,7 +138,7 @@ def _record_replacement(*, business, return_record, replacement_values):
             source=source,
             acquisition_source=replacement_values["acquisition_source"].strip(),
             item_name=replacement_values["item_name"].strip(),
-            item_details=replacement_values.get("item_details", {}),
+            item_details=details,
             quantity=quantity,
             acquisition_unit_cost=unit_cost,
             cost_total=cost_total,
@@ -144,6 +155,12 @@ def _record_replacement(*, business, return_record, replacement_values):
     )
     if product is None:
         raise ValidationError({"replacement": ["Choose an available replacement SKU."]})
+
+    require_valid_quantity(
+        quantity=quantity,
+        unit=product.unit,
+        field="replacement",
+    )
 
     tracked_unit_id = replacement_values.get("tracked_unit_id")
     if product.tracking_mode == Product.TrackingMode.INDIVIDUAL and not tracked_unit_id:
@@ -216,7 +233,9 @@ def record_return(
 
     sale_items = {
         str(item.id): item
-        for item in SaleItem.objects.select_for_update().filter(
+        for item in SaleItem.objects.select_for_update()
+        .select_related("product")
+        .filter(
             sale_id=sale_id,
             id__in=[item["sale_item_id"] for item in items],
         )
@@ -226,6 +245,12 @@ def record_return(
         sale_item = sale_items.get(str(item["sale_item_id"]))
         if sale_item is None:
             continue
+        if sale_item.product_id is not None:
+            require_valid_quantity(
+                quantity=item["quantity"],
+                unit=sale_item.product.unit,
+                field="items",
+            )
         if item["condition"] == "sellable" and sale_item.product_id is None:
             raise ValidationError(
                 {
