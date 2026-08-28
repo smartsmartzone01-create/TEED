@@ -77,6 +77,7 @@ class ReturnReplacement(BaseModel):
         null=True,
         blank=True,
     )
+    acquisition_source = models.CharField(max_length=160, blank=True, default="")
     item_name = models.CharField(max_length=160, blank=True, default="")
     item_details = models.JSONField(default=dict, blank=True)
     quantity = models.DecimalField(max_digits=14, decimal_places=3)
