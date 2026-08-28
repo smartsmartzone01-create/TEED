@@ -4,7 +4,11 @@ from .catalog.api import (
     ActiveProductListCreatePolishAPIView,
     ProductDetailOperationsPolishAPIView,
 )
-from .finance.api import BudgetListCreateAPIView, ExpenseListCreateAPIView
+from .finance.api import (
+    BudgetListCreateAPIView,
+    ExpenseDetailAPIView,
+    ExpenseListCreateAPIView,
+)
 from .inventory.api import (
     ActiveStockReceiptListCreatePolishAPIView,
     AdjustmentCreateAPIView,
@@ -98,6 +102,11 @@ urlpatterns = [
         "businesses/<uuid:business_id>/expenses/",
         ExpenseListCreateAPIView.as_view(),
         name="expenses",
+    ),
+    path(
+        "businesses/<uuid:business_id>/expenses/<uuid:expense_id>/",
+        ExpenseDetailAPIView.as_view(),
+        name="expense-detail",
     ),
     path(
         "businesses/<uuid:business_id>/budgets/",
