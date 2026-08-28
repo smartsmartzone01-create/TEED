@@ -10,7 +10,7 @@ from apps.workspaces.policy import WorkspacePermission
 
 from ..api import CommerceBaseAPIView
 from ..services import commerce_membership
-from .models import Budget, Expense
+from .models import Budget
 from .selectors import budget_financial_state, operating_expenses
 from .serializers import (
     BudgetCreateSerializer,
@@ -24,6 +24,19 @@ from .services import create_expense, set_budget, update_expense
 
 def _money_string(value):
     return str((value or Decimal("0")).quantize(Decimal("0.01")))
+
+
+def _budget_payload(budget):
+    financial_state = budget_financial_state(budget=budget)
+    return {
+        **BudgetSerializer(budget).data,
+        "operating_expenses": _money_string(financial_state["operating_expenses"]),
+        "stock_purchases": _money_string(financial_state["stock_purchases"]),
+        "actual_amount": _money_string(financial_state["actual_amount"]),
+        "remaining_amount": _money_string(financial_state["remaining_amount"]),
+        "utilization_percent": str(financial_state["utilization_percent"]),
+        "status": financial_state["status"],
+    }
 
 
 class ExpenseListCreateAPIView(CommerceBaseAPIView):
@@ -107,22 +120,11 @@ class BudgetListCreateAPIView(CommerceBaseAPIView):
         )
         budgets = Budget.objects.filter(
             business=membership.business,
-        ).exclude(category=Expense.Category.STOCK_EXPENSE)
-        payload = []
-        for budget in budgets:
-            financial_state = budget_financial_state(budget=budget)
-            payload.append(
-                {
-                    **BudgetSerializer(budget).data,
-                    "actual_amount": _money_string(financial_state["actual_amount"]),
-                    "remaining_amount": _money_string(financial_state["remaining_amount"]),
-                    "utilization_percent": str(financial_state["utilization_percent"]),
-                    "status": financial_state["status"],
-                }
-            )
+            period_start__isnull=False,
+        )
         return SuccessResponse(
             message="Budgets retrieved successfully.",
-            data={"budgets": payload},
+            data={"budgets": [_budget_payload(budget) for budget in budgets]},
         )
 
     @method_decorator(csrf_protect)
@@ -136,7 +138,7 @@ class BudgetListCreateAPIView(CommerceBaseAPIView):
         )
         return SuccessResponse(
             message="Budget saved successfully.",
-            data=BudgetSerializer(budget).data,
+            data=_budget_payload(budget),
             status_code=status.HTTP_201_CREATED,
         )
 
