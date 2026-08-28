@@ -10,13 +10,9 @@ from ..services import record_return as legacy_record_return
 def record_return(*, actor, business_id, sale_id, items, **values):
     sale_items = {
         str(item.id): item
-        for item in (
-            SaleItem.objects.select_for_update()
-            .select_related("tracked_unit")
-            .filter(
-                sale_id=sale_id,
-                id__in=[item["sale_item_id"] for item in items],
-            )
+        for item in SaleItem.objects.select_for_update().filter(
+            sale_id=sale_id,
+            id__in=[item["sale_item_id"] for item in items],
         )
     }
 
@@ -58,7 +54,9 @@ def record_return(*, actor, business_id, sale_id, items, **values):
         sale_item = sale_items.get(str(item["sale_item_id"]))
         if sale_item is None or sale_item.tracked_unit_id is None:
             continue
-        tracked_unit = sale_item.tracked_unit
+        tracked_unit = TrackedUnit.objects.select_for_update().get(
+            pk=sale_item.tracked_unit_id
+        )
         tracked_unit.status = (
             TrackedUnit.Status.AVAILABLE
             if item["condition"] == "sellable"
