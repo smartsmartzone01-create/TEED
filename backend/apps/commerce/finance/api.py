@@ -46,17 +46,17 @@ class ExpenseListCreateAPIView(CommerceBaseAPIView):
         if category:
             expenses = expenses.filter(category=category)
 
-        expenses = expenses[:200]
         total = expenses.aggregate(total=Sum("amount"))["total"] or Decimal("0")
         category_totals = list(
             expenses.values("category")
             .annotate(total=Sum("amount"))
             .order_by("category")
         )
+        expense_rows = expenses[:200]
         return SuccessResponse(
             message="Expenses retrieved successfully.",
             data={
-                "expenses": ExpenseSerializer(expenses, many=True).data,
+                "expenses": ExpenseSerializer(expense_rows, many=True).data,
                 "summary": {
                     "total": total,
                     "category_totals": category_totals,
