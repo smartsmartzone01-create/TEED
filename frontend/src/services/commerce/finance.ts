@@ -53,6 +53,24 @@ function createExpense(
   );
 }
 
+function updateExpense(
+  businessId: string,
+  expenseId: string,
+  accessToken: string,
+  body: ExpenseCreateInput,
+) {
+  return withCsrfRetry((csrfToken) =>
+    requestApi({
+      accessToken,
+      body,
+      csrfToken,
+      method: "PATCH",
+      path: `${commerceBase(businessId)}/expenses/${expenseId}/`,
+      schema: expenseResponseSchema,
+    }),
+  );
+}
+
 function getBudgets(
   businessId: string,
   accessToken: string,
@@ -83,5 +101,5 @@ function saveBudget(
   );
 }
 
-export { createExpense, getBudgets, getExpenses, saveBudget };
+export { createExpense, getBudgets, getExpenses, saveBudget, updateExpense };
 export type { ExpenseFilters };
