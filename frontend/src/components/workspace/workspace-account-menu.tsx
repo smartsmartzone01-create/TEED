@@ -1,6 +1,6 @@
 "use client";
 
-import { CircleHelp, LogOut, Settings2, ShieldCheck, UserRound } from "lucide-react";
+import { CircleHelp, LayoutDashboard, LogOut } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 
@@ -24,6 +24,7 @@ type WorkspaceAccountMenuProps = {
 
 function WorkspaceAccountMenu({ compact }: WorkspaceAccountMenuProps) {
   const t = useTranslations("WorkspaceShell");
+  const directoryT = useTranslations("WorkspaceRefinement.directory");
   const errorsT = useTranslations("IdentityErrors");
   const router = useRouter();
   const { notify } = useNotification();
@@ -69,17 +70,9 @@ function WorkspaceAccountMenu({ compact }: WorkspaceAccountMenuProps) {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-64" side="top">
         <DropdownMenuLabel>{user?.email || t("account")}</DropdownMenuLabel>
-        <DropdownMenuItem onSelect={() => router.push("/dashboard/profile")}>
-          <UserRound className="size-4" />
-          {t("accountLinks.profile")}
-        </DropdownMenuItem>
-        <DropdownMenuItem onSelect={() => router.push("/dashboard/preferences")}>
-          <Settings2 className="size-4" />
-          {t("accountLinks.preferences")}
-        </DropdownMenuItem>
-        <DropdownMenuItem onSelect={() => router.push("/dashboard/security")}>
-          <ShieldCheck className="size-4" />
-          {t("accountLinks.security")}
+        <DropdownMenuItem onSelect={() => router.push("/dashboard")}>
+          <LayoutDashboard className="size-4" />
+          {directoryT("personalDashboard")}
         </DropdownMenuItem>
         <DropdownMenuItem onSelect={() => router.push("/dashboard/help")}>
           <CircleHelp className="size-4" />
