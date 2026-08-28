@@ -64,15 +64,18 @@ type ExpenseCreateInput = {
   incurred_at: string;
 };
 
+type BudgetPeriodType = "daily" | "weekly" | "monthly";
 type BudgetStatus = "on_track" | "approaching_limit" | "over_budget";
 
 type BudgetRecord = {
   id: string;
-  category: string;
-  category_label: string;
-  month: string;
+  period_type: BudgetPeriodType;
+  period_type_label: string;
+  period_start: string;
   planned_amount: string;
   notes: string;
+  operating_expenses: string;
+  stock_purchases: string;
   actual_amount: string;
   remaining_amount: string;
   utilization_percent: string;
@@ -82,14 +85,15 @@ type BudgetRecord = {
 };
 
 type BudgetCreateInput = {
-  category: ExpenseCategory;
-  month: string;
+  period_type: BudgetPeriodType;
+  period_start: string;
   planned_amount: string;
   notes: string;
 };
 
 export type {
   BudgetCreateInput,
+  BudgetPeriodType,
   BudgetRecord,
   BudgetStatus,
   ExpenseCategory,
