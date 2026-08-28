@@ -15,6 +15,13 @@
       "month": "Month",
       "plannedAmount": "Planned amount"
     },
+    "actions": {
+      "edit": "Edit",
+      "cancel": "Cancel",
+      "close": "Close receipt",
+      "receipt": "Receipt",
+      "saveChanges": "Save changes"
+    },
     "placeholders": {
       "category": "Select an expense category",
       "payee": "Person, employee, supplier or provider",
@@ -59,15 +66,22 @@
       "description": "Record the operating costs that reduce the business result. Stock purchases and returns are handled by their own Commerce records.",
       "tooltip": "Use Expenses for money the business spends to operate. Do not manually record stock buying value or returns here because Commerce already accounts for those events.",
       "formTitle": "Record an expense",
+      "editFormTitle": "Edit {number}",
+      "editHelp": "Correct the original expense details without creating a second expense record.",
       "record": "Record expense",
       "saved": "Expense recorded.",
+      "updated": "Expense updated.",
       "saveError": "Tunakuza could not record this expense.",
+      "updateError": "Tunakuza could not update this expense.",
       "loadError": "Tunakuza could not load expenses.",
       "periodTotal": "Expenses in this view",
       "history": "Expense history",
       "empty": "No expenses match this period and category.",
       "expense": "Expense",
-      "noDescription": "No payee or description recorded."
+      "noDescription": "No payee or description recorded.",
+      "receiptEyebrow": "Expense receipt",
+      "receiptHelp": "Tunakuza's audit record for this business expense.",
+      "recordedBy": "Recorded by"
     },
     "budgets": {
       "title": "Budgets",
