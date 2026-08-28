@@ -39,6 +39,7 @@
       "loading": "Inapakia workspace zako…",
       "loadError": "Tunakuza haikuweza kupakia orodha ya workspace.",
       "retry": "Jaribu tena",
+      "currentBusinessTitle": "Workspace zako za biashara",
       "businessTitle": "Workspace za biashara",
       "personalTitle": "Workspace binafsi",
       "businessEmpty": "Bado hujaunganishwa na workspace ya Biashara.",
