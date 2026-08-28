@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { BriefcaseBusiness, LockKeyhole, UserRound } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useMemo } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 
 import { Button } from "@/components/global/primitives/button";
 import { FormField } from "@/components/global/primitives/form-field";
@@ -45,11 +45,11 @@ function CreateBusinessForm() {
     [t],
   );
   const {
+    control,
     formState: { errors, isSubmitting },
     handleSubmit,
     register,
     setError,
-    watch,
   } = useForm<CreateBusinessValues>({
     defaultValues: {
       countryCode: "TZ",
@@ -58,7 +58,10 @@ function CreateBusinessForm() {
     },
     resolver: zodResolver(schema),
   });
-  const workspaceType = watch("workspaceType");
+  const workspaceType = useWatch({
+    control,
+    name: "workspaceType",
+  });
 
   const onSubmit = handleSubmit(async (values) => {
     try {
