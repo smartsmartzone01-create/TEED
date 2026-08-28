@@ -27,6 +27,9 @@ class ReturnReplacementInputSerializer(serializers.Serializer):
     source = serializers.ChoiceField(choices=ReturnReplacement.Source.choices)
     product_id = serializers.UUIDField(required=False)
     tracked_unit_id = serializers.UUIDField(required=False)
+    acquisition_source = serializers.CharField(
+        max_length=160, required=False, allow_blank=True
+    )
     item_name = serializers.CharField(max_length=160, required=False, allow_blank=True)
     item_details = serializers.JSONField(required=False, default=dict)
     quantity = serializers.DecimalField(
@@ -53,6 +56,14 @@ class ReturnReplacementInputSerializer(serializers.Serializer):
                 )
             return attrs
 
+        if not attrs.get("acquisition_source", "").strip():
+            raise serializers.ValidationError(
+                {
+                    "acquisition_source": (
+                        "Record where the independent replacement was acquired from."
+                    )
+                }
+            )
         if not attrs.get("item_name", "").strip():
             raise serializers.ValidationError(
                 {"item_name": "Enter the independent replacement item."}
@@ -76,6 +87,13 @@ class ReturnCreateSerializer(serializers.Serializer):
     sale_id = serializers.UUIDField()
     resolution = serializers.ChoiceField(choices=SaleReturn.Resolution.choices)
     reason = serializers.ChoiceField(choices=RETURN_REASONS)
+    refund_amount = serializers.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        min_value=Decimal("0"),
+        required=False,
+        allow_null=True,
+    )
     returned_at = serializers.DateTimeField()
     items = ReturnItemInputSerializer(many=True, min_length=1)
     replacement = ReturnReplacementInputSerializer(required=False, allow_null=True)
@@ -83,6 +101,16 @@ class ReturnCreateSerializer(serializers.Serializer):
     def validate(self, attrs):
         resolution = attrs["resolution"]
         replacement = attrs.get("replacement")
+        refund_amount = attrs.get("refund_amount")
+
+        if resolution == SaleReturn.Resolution.REFUND and refund_amount is None:
+            raise serializers.ValidationError(
+                {"refund_amount": "Enter the amount actually refunded to the customer."}
+            )
+        if resolution != SaleReturn.Resolution.REFUND and refund_amount is not None:
+            raise serializers.ValidationError(
+                {"refund_amount": "Only refund returns can include a refund amount."}
+            )
         if resolution == SaleReturn.Resolution.REPLACEMENT and not replacement:
             raise serializers.ValidationError(
                 {"replacement": "Describe the item given as the replacement."}
@@ -135,6 +163,7 @@ class ReturnReplacementSerializer(serializers.ModelSerializer):
             "product_sku",
             "tracked_unit",
             "tracked_unit_reference",
+            "acquisition_source",
             "item_name",
             "item_details",
             "quantity",
