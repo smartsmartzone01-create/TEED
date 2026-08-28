@@ -71,6 +71,19 @@ class ReturnsContractTests(TestCase):
 
         self.assertEqual([sale.id for sale in sales], [inside.id])
 
+    def test_return_candidates_can_be_found_by_receipt_number(self):
+        target = self.create_sale(sequence=4, sold_at=timezone.now())
+        self.create_sale(sequence=5, sold_at=timezone.now())
+
+        sales = list(
+            returnable_sales_for_period(
+                business=self.business,
+                receipt_number=target.receipt_number.lower(),
+            )
+        )
+
+        self.assertEqual([sale.id for sale in sales], [target.id])
+
     def test_sellable_tracked_return_makes_the_original_unit_available_again(self):
         product = Product.objects.create(
             business=self.business,
@@ -96,7 +109,7 @@ class ReturnsContractTests(TestCase):
             internal_serial="UNIT-RETURN-1",
             status=TrackedUnit.Status.SOLD,
         )
-        sale = self.create_sale(sequence=4, sold_at=timezone.now())
+        sale = self.create_sale(sequence=6, sold_at=timezone.now())
         sale.sale_mode = Sale.SaleMode.STOCK
         sale.save(update_fields=["sale_mode", "updated_at"])
         line = SaleItem.objects.create(
@@ -115,7 +128,7 @@ class ReturnsContractTests(TestCase):
             business_id=self.business.id,
             sale_id=sale.id,
             resolution="refund",
-            reason="Customer returned the phone.",
+            reason="damaged",
             returned_at=timezone.now(),
             items=[
                 {
