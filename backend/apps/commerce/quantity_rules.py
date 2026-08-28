@@ -36,7 +36,8 @@ def normalize_unit(unit):
 
 
 def is_countable_unit(unit):
-    return normalize_unit(unit) in COUNTABLE_UNITS
+    normalized = normalize_unit(unit)
+    return bool(normalized) and normalized not in MEASURED_UNITS
 
 
 def quantity_step_for_unit(unit):
