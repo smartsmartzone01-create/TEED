@@ -152,6 +152,7 @@ class ReturnsContractTests(TestCase):
             sale_id=sale.id,
             resolution="refund",
             reason="damaged",
+            refund_amount=Decimal("750000"),
             returned_at=timezone.now(),
             items=[
                 {
@@ -171,6 +172,58 @@ class ReturnsContractTests(TestCase):
         self.assertEqual(record.recovered_inventory_cost, Decimal("500000"))
         self.assertEqual(record.damaged_loss, Decimal("0"))
 
+    def test_partial_refund_records_actual_cash_without_changing_recovered_cost(self):
+        product = Product.objects.create(
+            business=self.business,
+            name="Refundable charger",
+            sku="ITM-REFUND",
+            unit="piece",
+            tracking_mode=Product.TrackingMode.QUANTITY,
+            current_quantity=Decimal("0"),
+        )
+        batch = StockBatch.objects.create(
+            product=product,
+            tracking_mode=Product.TrackingMode.QUANTITY,
+            quantity_received=Decimal("1"),
+            quantity_remaining=Decimal("0"),
+            unit_cost=Decimal("6000"),
+            received_unit="piece",
+            received_at=timezone.now(),
+            recorded_by=self.owner,
+        )
+        sale, line = self.create_catalog_sale_line(
+            sequence=7,
+            product=product,
+            unit_price=Decimal("10000"),
+            cost_total=Decimal("6000"),
+        )
+
+        record = record_return(
+            actor=self.owner,
+            business_id=self.business.id,
+            sale_id=sale.id,
+            resolution="refund",
+            reason="defective",
+            refund_amount=Decimal("8000"),
+            returned_at=timezone.now(),
+            items=[
+                {
+                    "sale_item_id": line.id,
+                    "quantity": Decimal("1"),
+                    "condition": "sellable",
+                }
+            ],
+        )
+
+        product.refresh_from_db()
+        batch.refresh_from_db()
+        record.refresh_from_db()
+        self.assertEqual(record.total, Decimal("10000"))
+        self.assertEqual(record.refund_amount, Decimal("8000"))
+        self.assertEqual(record.recovered_inventory_cost, Decimal("6000"))
+        self.assertEqual(product.current_quantity, Decimal("1"))
+        self.assertEqual(batch.quantity_remaining, Decimal("1"))
+
     def test_stock_replacement_consumes_fifo_and_records_exact_cost(self):
         returned_product = Product.objects.create(
             business=self.business,
@@ -180,7 +233,7 @@ class ReturnsContractTests(TestCase):
             current_quantity=Decimal("0"),
         )
         sale, line = self.create_catalog_sale_line(
-            sequence=7,
+            sequence=8,
             product=returned_product,
             cost_total=Decimal("10000"),
         )
@@ -251,7 +304,7 @@ class ReturnsContractTests(TestCase):
             [Decimal("10000"), Decimal("12000")],
         )
 
-    def test_independent_replacement_records_cost_without_touching_stock(self):
+    def test_independent_replacement_records_cost_and_provenance_without_touching_stock(self):
         returned_product = Product.objects.create(
             business=self.business,
             name="Returned cable",
@@ -260,7 +313,7 @@ class ReturnsContractTests(TestCase):
             current_quantity=Decimal("0"),
         )
         sale, line = self.create_catalog_sale_line(
-            sequence=8,
+            sequence=9,
             product=returned_product,
             cost_total=Decimal("5000"),
         )
@@ -281,8 +334,15 @@ class ReturnsContractTests(TestCase):
             ],
             replacement={
                 "source": "independent",
+                "acquisition_source": "Nearby supplier",
                 "item_name": "Emergency replacement cable",
-                "item_details": {"source": "nearby supplier"},
+                "item_details": {
+                    "brand": "CableCo",
+                    "model": "Fast-1",
+                    "color": "Black",
+                    "identifier_kind": "serial",
+                    "identifier_value": "CAB-0001",
+                },
                 "quantity": Decimal("1"),
                 "acquisition_unit_cost": Decimal("7000"),
             },
@@ -290,7 +350,10 @@ class ReturnsContractTests(TestCase):
 
         record.refresh_from_db()
         self.assertEqual(record.replacement.source, "independent")
+        self.assertEqual(record.replacement.acquisition_source, "Nearby supplier")
         self.assertEqual(record.replacement.item_name, "Emergency replacement cable")
+        self.assertEqual(record.replacement.item_details["brand"], "CableCo")
+        self.assertEqual(record.replacement.item_details["identifier_value"], "CAB-0001")
         self.assertEqual(record.replacement.cost_total, Decimal("7000"))
         self.assertEqual(record.replacement_cost, Decimal("7000"))
         self.assertEqual(record.damaged_loss, Decimal("5000"))
