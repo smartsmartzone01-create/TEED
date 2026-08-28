@@ -19,7 +19,11 @@ from .serializers import (
     ExpenseListQuerySerializer,
     ExpenseSerializer,
 )
-from .services import create_expense, set_budget
+from .services import create_expense, set_budget, update_expense
+
+
+def _money_string(value):
+    return str((value or Decimal("0")).quantize(Decimal("0.01")))
 
 
 class ExpenseListCreateAPIView(CommerceBaseAPIView):
@@ -38,17 +42,24 @@ class ExpenseListCreateAPIView(CommerceBaseAPIView):
             category=query.validated_data.get("category", ""),
         )
         total = expenses.aggregate(total=Sum("amount"))["total"] or Decimal("0")
-        category_totals = list(
+        raw_category_totals = list(
             expenses.values("category")
             .annotate(total=Sum("amount"))
             .order_by("category")
         )
+        category_totals = [
+            {
+                "category": row["category"],
+                "total": _money_string(row["total"]),
+            }
+            for row in raw_category_totals
+        ]
         return SuccessResponse(
             message="Expenses retrieved successfully.",
             data={
                 "expenses": ExpenseSerializer(expenses[:200], many=True).data,
                 "summary": {
-                    "total": total,
+                    "total": _money_string(total),
                     "category_totals": category_totals,
                 },
             },
@@ -70,6 +81,23 @@ class ExpenseListCreateAPIView(CommerceBaseAPIView):
         )
 
 
+class ExpenseDetailAPIView(CommerceBaseAPIView):
+    @method_decorator(csrf_protect)
+    def patch(self, request, business_id, expense_id):
+        serializer = ExpenseCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        expense = update_expense(
+            actor=request.user,
+            business_id=business_id,
+            expense_id=expense_id,
+            **serializer.validated_data,
+        )
+        return SuccessResponse(
+            message="Expense updated successfully.",
+            data=ExpenseSerializer(expense).data,
+        )
+
+
 class BudgetListCreateAPIView(CommerceBaseAPIView):
     def get(self, request, business_id):
         membership = commerce_membership(
@@ -80,13 +108,18 @@ class BudgetListCreateAPIView(CommerceBaseAPIView):
         budgets = Budget.objects.filter(
             business=membership.business,
         ).exclude(category=Expense.Category.STOCK_EXPENSE)
-        payload = [
-            {
-                **BudgetSerializer(budget).data,
-                **budget_financial_state(budget=budget),
-            }
-            for budget in budgets
-        ]
+        payload = []
+        for budget in budgets:
+            financial_state = budget_financial_state(budget=budget)
+            payload.append(
+                {
+                    **BudgetSerializer(budget).data,
+                    "actual_amount": _money_string(financial_state["actual_amount"]),
+                    "remaining_amount": _money_string(financial_state["remaining_amount"]),
+                    "utilization_percent": str(financial_state["utilization_percent"]),
+                    "status": financial_state["status"],
+                }
+            )
         return SuccessResponse(
             message="Budgets retrieved successfully.",
             data={"budgets": payload},
@@ -108,4 +141,8 @@ class BudgetListCreateAPIView(CommerceBaseAPIView):
         )
 
 
-__all__ = ["BudgetListCreateAPIView", "ExpenseListCreateAPIView"]
+__all__ = [
+    "BudgetListCreateAPIView",
+    "ExpenseDetailAPIView",
+    "ExpenseListCreateAPIView",
+]
