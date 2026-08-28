@@ -15,6 +15,13 @@
       "month": "Mwezi",
       "plannedAmount": "Kiasi kilichopangwa"
     },
+    "actions": {
+      "edit": "Hariri",
+      "cancel": "Ghairi",
+      "close": "Funga risiti",
+      "receipt": "Risiti",
+      "saveChanges": "Hifadhi mabadiliko"
+    },
     "placeholders": {
       "category": "Chagua aina ya gharama",
       "payee": "Mtu, mfanyakazi, msambazaji au mtoa huduma",
@@ -59,15 +66,22 @@
       "description": "Rekodi gharama za uendeshaji zinazopunguza matokeo ya biashara. Ununuzi wa stock na returns hushughulikiwa na kumbukumbu zao za Commerce.",
       "tooltip": "Tumia Gharama kwa pesa ambazo biashara inatumia kujiendesha. Usirekodi tena thamani ya kununua stock au returns hapa kwa sababu Commerce tayari inazihesabu.",
       "formTitle": "Rekodi gharama",
+      "editFormTitle": "Hariri {number}",
+      "editHelp": "Sahihisha maelezo ya gharama ya awali bila kuunda gharama nyingine.",
       "record": "Rekodi gharama",
       "saved": "Gharama imerekodiwa.",
+      "updated": "Gharama imesasishwa.",
       "saveError": "Tunakuza haikuweza kurekodi gharama hii.",
+      "updateError": "Tunakuza haikuweza kusasisha gharama hii.",
       "loadError": "Tunakuza haikuweza kupakia gharama.",
       "periodTotal": "Jumla ya gharama kwenye mwonekano huu",
       "history": "Historia ya gharama",
       "empty": "Hakuna gharama zinazolingana na kipindi na aina hii.",
       "expense": "Gharama",
-      "noDescription": "Hakuna mlipwaji wala maelezo yaliyorekodiwa."
+      "noDescription": "Hakuna mlipwaji wala maelezo yaliyorekodiwa.",
+      "receiptEyebrow": "Risiti ya gharama",
+      "receiptHelp": "Kumbukumbu ya ukaguzi ya Tunakuza kwa gharama hii ya biashara.",
+      "recordedBy": "Imerekodiwa na"
     },
     "budgets": {
       "title": "Bajeti",
