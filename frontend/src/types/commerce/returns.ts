@@ -31,6 +31,7 @@ type ReturnReplacementSummary = {
   product_sku: string;
   tracked_unit: string | null;
   tracked_unit_reference: string;
+  acquisition_source: string;
   item_name: string;
   item_details: Record<string, string>;
   quantity: string;
@@ -76,6 +77,7 @@ type StockReplacementInput = {
 
 type IndependentReplacementInput = {
   source: "independent";
+  acquisition_source: string;
   item_name: string;
   item_details?: Record<string, string>;
   quantity: string;
@@ -88,6 +90,7 @@ type ReturnCreateInput = {
   sale_id: string;
   resolution: ReturnResolution;
   reason: ReturnReason;
+  refund_amount?: string;
   returned_at: string;
   items: ReturnItemInput[];
   replacement?: ReturnReplacementInput;
