@@ -258,7 +258,7 @@ function ExpensesWorkspace({ businessId }: { businessId: string }) {
                         <div className="flex flex-wrap items-center gap-2">
                           <strong className="text-sm">{expense.expense_number || t("expenses.expense")}</strong>
                           <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold dark:bg-slate-900">
-                            {t(`categories.${expense.category}`)}
+                            {expense.category_label}
                           </span>
                         </div>
                         <p className="mt-1 text-xs text-slate-500">
