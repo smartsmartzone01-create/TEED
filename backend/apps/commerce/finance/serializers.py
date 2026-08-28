@@ -65,7 +65,7 @@ class ExpenseSerializer(serializers.ModelSerializer):
 
 
 class BudgetCreateSerializer(serializers.ModelSerializer):
-    category = serializers.ChoiceField(choices=MANUAL_EXPENSE_CATEGORIES)
+    period_type = serializers.ChoiceField(choices=Budget.PeriodType.choices)
     planned_amount = serializers.DecimalField(
         max_digits=14,
         decimal_places=2,
@@ -74,19 +74,22 @@ class BudgetCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Budget
-        fields = ["category", "month", "planned_amount", "notes"]
+        fields = ["period_type", "period_start", "planned_amount", "notes"]
 
 
 class BudgetSerializer(serializers.ModelSerializer):
-    category_label = serializers.CharField(source="get_category_display", read_only=True)
+    period_type_label = serializers.CharField(
+        source="get_period_type_display",
+        read_only=True,
+    )
 
     class Meta:
         model = Budget
         fields = [
             "id",
-            "category",
-            "category_label",
-            "month",
+            "period_type",
+            "period_type_label",
+            "period_start",
             "planned_amount",
             "notes",
             "created_at",
