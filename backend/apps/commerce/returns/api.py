@@ -39,7 +39,10 @@ class ReturnListCreateAPIView(CommerceBaseAPIView):
         )
         filters = query.validated_data
         sales = []
-        if filters.get("sold_from") is not None or filters.get("sold_before") is not None:
+        if (
+            filters.get("sold_from") is not None
+            or filters.get("sold_before") is not None
+        ):
             sales = returnable_sales_for_period(
                 business=membership.business,
                 sold_from=filters.get("sold_from"),
