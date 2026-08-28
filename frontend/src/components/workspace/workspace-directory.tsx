@@ -120,8 +120,15 @@ function WorkspaceDirectory({ surface = "standalone" }: WorkspaceDirectoryProps)
   }
 
   return (
-    <div className={surface === "standalone" ? "mx-auto w-full max-w-6xl space-y-6 p-4 sm:p-6 lg:p-8" : "space-y-6"}>
-      <section className="flex flex-col gap-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+    <div className="space-y-6">
+      <section
+        className={[
+          "flex flex-col gap-5 rounded-3xl border p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-6",
+          surface === "standalone"
+            ? "border-white/60 bg-white/90 backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/88"
+            : "border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950",
+        ].join(" ")}
+      >
         <div>
           {surface === "standalone" ? (
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-brand-orange">
@@ -135,21 +142,22 @@ function WorkspaceDirectory({ surface = "standalone" }: WorkspaceDirectoryProps)
             {surface === "standalone" ? t("description") : t("embeddedDescription")}
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Button asChild>
+
+        <div className="grid w-full shrink-0 gap-2 sm:w-72">
+          <Button asChild className="w-full justify-center">
             <Link href="/dashboard/workspaces/create">
               <Plus className="size-4" />
               {t("create")}
             </Link>
           </Button>
-          <Button asChild variant="outline">
+          <Button asChild className="w-full justify-center" variant="outline">
             <Link href="/dashboard/workspaces/access">
               <UserPlus className="size-4" />
               {t("request")}
             </Link>
           </Button>
           {surface === "standalone" ? (
-            <Button asChild variant="ghost">
+            <Button asChild className="w-full justify-center" variant="ghost">
               <Link href="/dashboard">
                 <LayoutDashboard className="size-4" />
                 {t("personalDashboard")}
@@ -185,7 +193,7 @@ function WorkspaceDirectory({ surface = "standalone" }: WorkspaceDirectoryProps)
                 ))}
               </div>
             ) : (
-              <div className="rounded-2xl border border-dashed border-slate-300 p-6 text-sm text-slate-500 dark:border-slate-700">
+              <div className="rounded-2xl border border-dashed border-slate-300 bg-white/70 p-6 text-sm text-slate-500 backdrop-blur dark:border-slate-700 dark:bg-slate-950/70">
                 {t("businessEmpty")}
               </div>
             )}
@@ -205,7 +213,7 @@ function WorkspaceDirectory({ surface = "standalone" }: WorkspaceDirectoryProps)
                 ))}
               </div>
             ) : (
-              <div className="rounded-2xl border border-dashed border-slate-300 p-6 text-sm text-slate-500 dark:border-slate-700">
+              <div className="rounded-2xl border border-dashed border-slate-300 bg-white/70 p-6 text-sm text-slate-500 backdrop-blur dark:border-slate-700 dark:bg-slate-950/70">
                 {t("personalEmpty")}
               </div>
             )}
