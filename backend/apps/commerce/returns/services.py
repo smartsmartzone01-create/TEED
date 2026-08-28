@@ -25,9 +25,9 @@ def _effective_batch_unit_cost(batch):
 
 def _return_number(*, business):
     sequence = (
-        SaleReturn.objects.select_for_update()
-        .filter(sale__business=business)
-        .aggregate(value=Max("return_sequence"))["value"]
+        SaleReturn.objects.filter(sale__business=business).aggregate(
+            value=Max("return_sequence")
+        )["value"]
         or 0
     ) + 1
     handle = (
