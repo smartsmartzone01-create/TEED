@@ -70,7 +70,7 @@ function WorkspaceShell({ children }: WorkspaceShellProps) {
       <div
         className={cn(
           "min-h-svh transition-[padding] duration-300 ease-out",
-          collapsed ? "lg:pl-[5.25rem]" : "lg:pl-72",
+          collapsed ? "lg:pl-[5.25rem]" : "lg:pl-64",
         )}
       >
         <WorkspaceHeader businessId={businessId} onOpenNavigation={() => setMobileOpen(true)} />
