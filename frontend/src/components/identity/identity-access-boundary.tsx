@@ -20,19 +20,14 @@ function getRedirectTarget(
   onboardingComplete: boolean,
 ) {
   if (access === "guest") {
-    if (!authenticated) {
-      return null;
-    }
-
-    return onboardingComplete ? "/dashboard" : "/onboarding";
+    if (!authenticated) return null;
+    return onboardingComplete ? "/home" : "/onboarding";
   }
 
-  if (!authenticated) {
-    return "/login";
-  }
+  if (!authenticated) return "/login";
 
   if (access === "onboarding") {
-    return onboardingComplete ? "/dashboard" : null;
+    return onboardingComplete ? "/home" : null;
   }
 
   return onboardingComplete ? null : "/onboarding";
@@ -55,9 +50,7 @@ function IdentityAccessBoundary({
         );
 
   useEffect(() => {
-    if (redirectTarget) {
-      router.replace(redirectTarget);
-    }
+    if (redirectTarget) router.replace(redirectTarget);
   }, [redirectTarget, router]);
 
   if (status === "initializing" || redirectTarget) {
@@ -67,15 +60,8 @@ function IdentityAccessBoundary({
         className="flex min-h-[50svh] items-center justify-center gap-2 text-sm text-muted-foreground"
         role="status"
       >
-        <LoaderCircle
-          aria-hidden="true"
-          className="size-4 animate-spin"
-        />
-        {common(
-          status === "initializing"
-            ? "restoringSession"
-            : "redirecting",
-        )}
+        <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />
+        {common(status === "initializing" ? "restoringSession" : "redirecting")}
       </div>
     );
   }

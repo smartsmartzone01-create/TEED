@@ -21,16 +21,16 @@ function BrandMark({
 
   return (
     <Link
-      aria-label="TEED"
+      aria-label="Tunakuza"
       className={cn(
-        "inline-flex items-center font-black leading-none tracking-[-0.06em]",
+        "inline-flex items-center font-black leading-none tracking-[-0.045em]",
         className,
       )}
       href={href}
     >
       <span aria-hidden="true">
-        <span className={firstHalfClassName}>TE</span>
-        <span className="text-brand-orange">ED</span>
+        <span className={firstHalfClassName}>Tuna</span>
+        <span className="text-brand-orange">kuza</span>
       </span>
     </Link>
   );

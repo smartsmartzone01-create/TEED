@@ -8,6 +8,8 @@ import { ThemeSwitcher } from "@/components/global/controls/theme-switcher";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 import { WorkspaceBusinessMenu } from "@/components/workspace/workspace-business-menu";
 import { WorkspaceMobileMenu } from "@/components/workspace/workspace-mobile-menu";
+import { useWorkspace } from "@/providers/workspace/workspace-provider";
+import { workspaceClassForType } from "@/utils/workspace/workspace-class";
 
 type WorkspaceHeaderProps = {
   businessId?: string | null;
@@ -16,6 +18,14 @@ type WorkspaceHeaderProps = {
 
 function WorkspaceHeader({ businessId, onOpenNavigation }: WorkspaceHeaderProps) {
   const t = useTranslations("WorkspaceShell");
+  const directoryT = useTranslations("WorkspaceRefinement.directory");
+  const { businesses } = useWorkspace();
+  const workspace = businessId
+    ? businesses.find((business) => business.id === businessId)
+    : undefined;
+  const workspaceClass = workspace
+    ? workspaceClassForType(workspace.workspace_type)
+    : "business";
 
   return (
     <header className="sticky top-0 z-30 flex h-18 items-center justify-between gap-4 border-b border-slate-200 bg-white px-4 dark:border-slate-800 dark:bg-slate-950 sm:px-6">
@@ -30,17 +40,26 @@ function WorkspaceHeader({ businessId, onOpenNavigation }: WorkspaceHeaderProps)
         </button>
         <div className="min-w-0">
           <p className="truncate text-xs font-medium text-slate-500 dark:text-slate-400">
-            {t("workspaceLabel")}
+            {directoryT(
+              workspaceClass === "personal" ? "personalClass" : "businessClass",
+            )}
           </p>
           <h1 className="truncate text-base font-semibold text-slate-950 dark:text-white">
-            {t("navigation.overview")}
+            {workspace?.name ?? t("navigation.overview")}
           </h1>
         </div>
       </div>
 
       <div className="flex shrink-0 items-center gap-1.5">
         <div className="hidden items-center gap-1.5 sm:flex">
-          <NotificationBell businessId={businessId ?? undefined} href={businessId ? `/workspace/${businessId}/notifications` : "/dashboard/notifications"} />
+          <NotificationBell
+            businessId={businessId ?? undefined}
+            href={
+              businessId
+                ? `/workspace/${businessId}/notifications`
+                : "/dashboard/notifications"
+            }
+          />
           <LanguageSwitcher showTooltip />
           <ThemeSwitcher showTooltip />
         </div>

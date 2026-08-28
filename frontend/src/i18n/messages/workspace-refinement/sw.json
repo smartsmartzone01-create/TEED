@@ -1,0 +1,72 @@
+{
+  "WorkspaceRefinement": {
+    "create": {
+      "eyebrow": "Kuanzisha workspace",
+      "title": "Chagua workspace hii itafanya kazi kwa namna gani",
+      "description": "Aina ya workspace hubadilisha namna ruhusa na ushirikiano unavyofanya kazi. Shughuli za biashara zinaweza kuboreshwa baadaye bila kubadilisha msingi wa workspace.",
+      "name": "Jina la workspace",
+      "country": "Nchi",
+      "class": "Aina ya workspace",
+      "business": {
+        "title": "Workspace ya biashara",
+        "description": "Kwa biashara na mashirika. Inaruhusu wanachama, majukumu, mialiko na moduli za uendeshaji.",
+        "impact": "Timu · majukumu na ruhusa · shughuli za biashara"
+      },
+      "personal": {
+        "title": "Workspace binafsi",
+        "description": "Kwa fedha na shughuli zako binafsi. Ni ya mmiliki pekee: hakuna wanachama, mialiko wala maombi ya kujiunga.",
+        "impact": "Binafsi · mmiliki pekee · msingi wa fedha binafsi"
+      },
+      "countries": {"TZ": "Tanzania", "KE": "Kenya", "UG": "Uganda"},
+      "validation": {
+        "name": "Weka jina la workspace lenye herufi 2 hadi 120.",
+        "country": "Chagua nchi inayotumika.",
+        "class": "Chagua aina ya workspace."
+      },
+      "submit": "Unda workspace",
+      "creating": "Inaunda…",
+      "success": "Workspace imeundwa."
+    },
+    "directory": {
+      "eyebrow": "Workspace za Tunakuza",
+      "title": "Chagua unapotaka kufanya kazi",
+      "description": "Chagua workspace ya Biashara, fungua workspace yako Binafsi, au rudi kwenye dashibodi binafsi.",
+      "embeddedTitle": "Workspace zako",
+      "embeddedDescription": "Fungua workspace, unda nyingine, au shughulikia mialiko inayosubiri.",
+      "create": "Unda workspace",
+      "request": "Omba kujiunga na biashara",
+      "personalDashboard": "Dashibodi binafsi",
+      "loading": "Inapakia workspace zako…",
+      "loadError": "Tunakuza haikuweza kupakia orodha ya workspace.",
+      "retry": "Jaribu tena",
+      "currentBusinessTitle": "Workspace zako za biashara",
+      "businessTitle": "Workspace za biashara",
+      "personalTitle": "Workspace binafsi",
+      "businessEmpty": "Bado hujaunganishwa na workspace ya Biashara.",
+      "personalEmpty": "Bado hujaunda workspace Binafsi.",
+      "open": "Fungua {name}",
+      "businessClass": "Biashara",
+      "personalClass": "Binafsi",
+      "ownerOnly": "Mmiliki pekee",
+      "legacyService": "Biashara · mpangilio wa huduma",
+      "meta": "{country} · {role}",
+      "invitationsTitle": "Mialiko ya biashara inayosubiri",
+      "noInvitations": "Huna mialiko ya Biashara inayosubiri.",
+      "invitation": {
+        "title": "Mwaliko wa biashara",
+        "details": "Biashara {businessId} · {role}",
+        "accept": "Kubali",
+        "decline": "Kataa",
+        "acceptSuccess": "Mwaliko umekubaliwa.",
+        "declineSuccess": "Mwaliko umekataliwa.",
+        "decisionError": "Tunakuza haikuweza kusasisha mwaliko huu."
+      },
+      "roles": {"owner": "Mmiliki", "partner": "Mshirika", "administrator": "Msimamizi mkuu", "manager": "Meneja", "member": "Mwanachama"}
+    },
+    "routing": {
+      "title": "Inafungua Tunakuza",
+      "description": "Inaangalia workspace inayofaa kwa akaunti hii…",
+      "error": "Tunakuza haikuweza kutambua workspace ya kufungua. Dashibodi binafsi itafunguliwa badala yake."
+    }
+  }
+}

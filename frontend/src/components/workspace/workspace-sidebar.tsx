@@ -62,6 +62,9 @@ function WorkspaceSidebar({ collapsed, mobileOpen, onCloseMobile, onToggleCollap
     activeBusiness?.capabilities.includes("business_operations") &&
     activeBusiness.membership.permissions.includes("commerce.view"),
   );
+  const collaborationEnabled = Boolean(
+    activeBusiness?.capabilities.includes("team_collaboration"),
+  );
   const activeGroup = groupForPath(pathname);
   const [accordion, setAccordion] = useState<{
     group: NavigationGroupKey | null;
@@ -84,13 +87,17 @@ function WorkspaceSidebar({ collapsed, mobileOpen, onCloseMobile, onToggleCollap
     <button aria-label={t("closeNavigation")} className={cn("fixed inset-0 z-40 bg-slate-950/25 backdrop-blur-sm lg:hidden", mobileOpen ? "block" : "hidden")} onClick={onCloseMobile} type="button" />
     <aside className={cn("fixed inset-y-0 left-0 z-50 flex w-[min(18rem,88vw)] flex-col border-r border-slate-200 bg-white text-slate-950", "transition-[width,transform] duration-300 ease-out dark:border-slate-800 dark:bg-slate-950 dark:text-white", collapsed ? "lg:w-[5.25rem]" : "lg:w-72", mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0")}>
       <div className="flex h-18 shrink-0 items-center justify-between border-b border-slate-200 px-4 dark:border-slate-800">
-        <BrandMark className={cn("text-2xl", collapsed && "lg:sr-only")} href="/workspace" tone="adaptive" />
+        <BrandMark className={cn("text-2xl", collapsed && "lg:sr-only")} href="/workspaces" tone="adaptive" />
         <button aria-label={t(collapsed ? "expandSidebar" : "collapseSidebar")} className="hidden size-9 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-950 dark:hover:bg-slate-900 dark:hover:text-white lg:inline-flex" onClick={onToggleCollapsed} type="button">{collapsed ? <ChevronRight className="size-4" /> : <ChevronLeft className="size-4" />}</button>
         <button aria-label={t("closeNavigation")} className="inline-flex size-9 items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-slate-900 lg:hidden" onClick={onCloseMobile} type="button"><X className="size-4" /></button>
       </div>
       <nav aria-label={t("primaryNavigation")} className="flex-1 space-y-1 overflow-y-auto px-3 py-5">
         {businessId ? <Tooltip content={t("navigation.overview")}><Link aria-current={pathname === `/workspace/${businessId}` ? "page" : undefined} className={cn("flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-semibold", pathname === `/workspace/${businessId}` ? "bg-slate-100 text-slate-950 dark:bg-slate-900 dark:text-white" : "text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-900", collapsed && "lg:justify-center lg:px-0")} href={`/workspace/${businessId}`} onClick={onCloseMobile}><LayoutDashboard className="size-4.5 shrink-0" /><span className={cn(collapsed && "lg:sr-only")}>{t("navigation.overview")}</span></Link></Tooltip> : null}
-        {businessId ? groups.filter((group) => group.key !== "commerce" || commerceEnabled).map((group) => {
+        {businessId ? groups.filter((group) => {
+          if (group.key === "commerce") return commerceEnabled;
+          if (group.key === "membership") return collaborationEnabled;
+          return true;
+        }).map((group) => {
           const Icon = group.icon;
           const expanded = openGroup === group.key && !collapsed;
           const groupActive = activeGroup === group.key;

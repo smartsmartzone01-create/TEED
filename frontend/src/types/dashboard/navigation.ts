@@ -17,7 +17,8 @@ type DashboardDestination =
   | "/dashboard/security/sessions"
   | "/dashboard/workspaces"
   | "/dashboard/workspaces/access"
-  | "/dashboard/workspaces/create";
+  | "/dashboard/workspaces/create"
+  | "/workspaces";
 
 type DashboardNavigationItem = {
   href: DashboardDestination;
