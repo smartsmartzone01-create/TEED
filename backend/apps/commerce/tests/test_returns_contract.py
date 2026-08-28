@@ -8,9 +8,9 @@ from apps.workspaces.models import Business, BusinessMembership
 
 from ..catalog.models import Product
 from ..inventory.models import StockBatch, TrackedUnit
-from ..sales.models import Sale, SaleItem
 from ..returns.selectors import returnable_sales_for_period
 from ..returns.services import record_return
+from ..sales.models import Sale, SaleItem
 
 
 class ReturnsContractTests(TestCase):
@@ -47,8 +47,14 @@ class ReturnsContractTests(TestCase):
 
     def test_return_candidates_are_scoped_to_the_requested_sale_period(self):
         start = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
-        inside = self.create_sale(sequence=1, sold_at=start + timezone.timedelta(hours=4))
-        self.create_sale(sequence=2, sold_at=start - timezone.timedelta(hours=1))
+        inside = self.create_sale(
+            sequence=1,
+            sold_at=start + timezone.timedelta(hours=4),
+        )
+        self.create_sale(
+            sequence=2,
+            sold_at=start - timezone.timedelta(hours=1),
+        )
         self.create_sale(
             sequence=3,
             sold_at=start + timezone.timedelta(hours=5),
