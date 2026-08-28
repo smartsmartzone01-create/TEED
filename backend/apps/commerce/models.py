@@ -13,7 +13,12 @@ from .inventory.models import (
     TrackedUnitIdentifier,
 )
 from .overview.models import CommerceDecision
-from .returns.models import ReturnItem, SaleReturn
+from .returns.models import (
+    ReturnItem,
+    ReturnReplacement,
+    ReturnReplacementAllocation,
+    SaleReturn,
+)
 from .sales.models import Sale, SaleAllocation, SaleAudit, SaleItem, TradeInDetail
 
 __all__ = [
@@ -23,6 +28,8 @@ __all__ = [
     "InventoryMovement",
     "Product",
     "ReturnItem",
+    "ReturnReplacement",
+    "ReturnReplacementAllocation",
     "Sale",
     "SaleAllocation",
     "SaleAudit",
