@@ -184,7 +184,7 @@ function BudgetsWorkspace({ businessId }: { businessId: string }) {
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div>
                         <div className="flex flex-wrap items-center gap-2">
-                          <strong className="text-sm">{t(`categories.${budget.category}`)}</strong>
+                          <strong className="text-sm">{budget.category_label}</strong>
                           <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${statusClasses(budget.status)}`}>
                             {t(`budgetStatus.${budget.status}`)}
                           </span>
