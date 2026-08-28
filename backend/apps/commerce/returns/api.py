@@ -15,6 +15,12 @@ from .services import record_return
 class ReturnLookupQuerySerializer(serializers.Serializer):
     sold_from = serializers.DateTimeField(required=False)
     sold_before = serializers.DateTimeField(required=False)
+    receipt_number = serializers.CharField(
+        max_length=40,
+        required=False,
+        allow_blank=True,
+        trim_whitespace=True,
+    )
 
     def validate(self, attrs):
         sold_from = attrs.get("sold_from")
@@ -42,11 +48,13 @@ class ReturnListCreateAPIView(CommerceBaseAPIView):
         if (
             filters.get("sold_from") is not None
             or filters.get("sold_before") is not None
+            or filters.get("receipt_number")
         ):
             sales = returnable_sales_for_period(
                 business=membership.business,
                 sold_from=filters.get("sold_from"),
                 sold_before=filters.get("sold_before"),
+                receipt_number=filters.get("receipt_number", ""),
             )
 
         return SuccessResponse(
