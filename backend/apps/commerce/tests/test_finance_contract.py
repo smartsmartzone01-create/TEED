@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 
 from django.test import TestCase
@@ -99,12 +99,13 @@ class FinanceContractTests(TestCase):
             month=date(2026, 8, 1),
             planned_amount=Decimal("100000"),
         )
+        tz = timezone.get_current_timezone()
         Expense.objects.create(
             business=self.business,
             category=Expense.Category.TRANSPORT_TRAVEL,
             description="Delivery fuel",
             amount=Decimal("82000"),
-            incurred_at=timezone.datetime(2026, 8, 15, 9, 0, tzinfo=timezone.get_current_timezone()),
+            incurred_at=datetime(2026, 8, 15, 9, 0, tzinfo=tz),
             recorded_by=self.owner,
         )
         Expense.objects.create(
@@ -112,7 +113,7 @@ class FinanceContractTests(TestCase):
             category=Expense.Category.TRANSPORT_TRAVEL,
             description="Older trip",
             amount=Decimal("20000"),
-            incurred_at=timezone.datetime(2026, 7, 31, 9, 0, tzinfo=timezone.get_current_timezone()),
+            incurred_at=datetime(2026, 7, 31, 9, 0, tzinfo=tz),
             recorded_by=self.owner,
         )
 
