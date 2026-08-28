@@ -2,6 +2,14 @@ import type { Sale } from "@/types/commerce/sales";
 
 type ReturnCondition = "sellable" | "damaged";
 type ReturnResolution = "refund" | "replacement" | "credit";
+type ReturnReason =
+  | "damaged"
+  | "defective"
+  | "wrong_item"
+  | "wrong_size"
+  | "changed_mind"
+  | "not_as_expected"
+  | "other";
 
 type SaleReturnSummary = {
   id: string;
@@ -27,7 +35,7 @@ type ReturnItemInput = {
 type ReturnCreateInput = {
   sale_id: string;
   resolution: ReturnResolution;
-  reason: string;
+  reason: ReturnReason;
   returned_at: string;
   items: ReturnItemInput[];
 };
@@ -36,6 +44,7 @@ export type {
   ReturnCondition,
   ReturnCreateInput,
   ReturnItemInput,
+  ReturnReason,
   ReturnResolution,
   ReturnWorkspaceData,
   SaleReturnSummary,
