@@ -34,6 +34,17 @@ def record_return(*, actor, business_id, sale_id, items, **values):
                     ]
                 }
             )
+        if sale_item.tracked_unit_id is not None:
+            remaining = sale_item.quantity - sale_item.returned_quantity
+            if item["quantity"] != remaining:
+                raise ValidationError(
+                    {
+                        "items": [
+                            "An individually tracked item must be returned as the "
+                            "whole remaining unit."
+                        ]
+                    }
+                )
 
     record = legacy_record_return(
         actor=actor,
