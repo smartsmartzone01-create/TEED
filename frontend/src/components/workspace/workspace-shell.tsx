@@ -45,8 +45,8 @@ function WorkspaceShell({ children }: WorkspaceShellProps) {
       tone: "info",
     });
     knownBusiness.current = null;
-    router.replace(businesses[0] ? `/workspace/${businesses[0].id}` : "/dashboard/workspaces");
-  }, [businessId, businesses, currentBusiness, notify, router, status, t]);
+    router.replace("/workspaces");
+  }, [businessId, currentBusiness, notify, router, status, t]);
 
   useEffect(() => {
     if (!businessId || currentBusiness?.status !== "active") return;
