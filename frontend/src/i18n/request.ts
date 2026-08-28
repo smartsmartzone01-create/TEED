@@ -2,6 +2,22 @@ import { hasLocale } from "next-intl";
 import { getRequestConfig } from "next-intl/server";
 
 import { routing } from "@/i18n/routing";
+import { frontendBrandText } from "@/utils/global/product-brand";
+
+function brandFrontendMessages<T>(value: T): T {
+  if (typeof value === "string") {
+    return frontendBrandText(value) as T;
+  }
+  if (Array.isArray(value)) {
+    return value.map((item) => brandFrontendMessages(item)) as T;
+  }
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, item]) => [key, brandFrontendMessages(item)]),
+    ) as T;
+  }
+  return value;
+}
 
 export default getRequestConfig(async ({ requestLocale }) => {
   const requestedLocale = await requestLocale;
@@ -42,23 +58,25 @@ export default getRequestConfig(async ({ requestLocale }) => {
     import(`@/i18n/messages/commerce-returns/${locale}.json`),
   ]);
 
+  const messages = {
+    ...dashboardMessages.default,
+    ...globalMessages.default,
+    ...identityMessages.default,
+    ...marketingMessages.default,
+    ...preferencesMessages.default,
+    ...profileMessages.default,
+    ...securityMessages.default,
+    ...notificationMessages.default,
+    ...workspaceMessages.default,
+    ...workspaceRefinementMessages.default,
+    ...commerceMessages.default,
+    ...commerceStockMessages.default,
+    ...commerceSalesMessages.default,
+    ...commerceReturnsMessages.default,
+  };
+
   return {
     locale,
-    messages: {
-      ...dashboardMessages.default,
-      ...globalMessages.default,
-      ...identityMessages.default,
-      ...marketingMessages.default,
-      ...preferencesMessages.default,
-      ...profileMessages.default,
-      ...securityMessages.default,
-      ...notificationMessages.default,
-      ...workspaceMessages.default,
-      ...workspaceRefinementMessages.default,
-      ...commerceMessages.default,
-      ...commerceStockMessages.default,
-      ...commerceSalesMessages.default,
-      ...commerceReturnsMessages.default,
-    },
+    messages: brandFrontendMessages(messages),
   };
 });
