@@ -1,12 +1,20 @@
 from ..sales.models import Sale
 
 
-def returnable_sales_for_period(*, business, sold_from=None, sold_before=None):
+def returnable_sales_for_period(
+    *,
+    business,
+    sold_from=None,
+    sold_before=None,
+    receipt_number="",
+):
     sales = Sale.objects.filter(business=business, status=Sale.Status.ACTIVE)
     if sold_from is not None:
         sales = sales.filter(sold_at__gte=sold_from)
     if sold_before is not None:
         sales = sales.filter(sold_at__lt=sold_before)
+    if receipt_number:
+        sales = sales.filter(receipt_number__iexact=receipt_number.strip())
     return (
         sales.select_related(
             "recorded_by",
