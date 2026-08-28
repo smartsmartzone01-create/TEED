@@ -71,7 +71,7 @@ class Migration(migrations.Migration):
         migrations.AddConstraint(
             model_name="budget",
             constraint=models.UniqueConstraint(
-                condition=models.Q(("period_start__isnull", False)),
+                condition=models.Q(period_start__isnull=False),
                 fields=("business", "period_type", "period_start"),
                 name="commerce_budget_general_period_unique",
             ),
