@@ -13,6 +13,14 @@ RETURN_REASONS = [
     "not_as_expected",
     "other",
 ]
+REPLACEMENT_IDENTIFIER_KINDS = {
+    "imei",
+    "serial",
+    "chassis",
+    "barcode",
+    "engine",
+    "registration",
+}
 
 
 class ReturnItemInputSerializer(serializers.Serializer):
@@ -80,6 +88,26 @@ class ReturnReplacementInputSerializer(serializers.Serializer):
             raise serializers.ValidationError(
                 "Independent replacements cannot reference TEED stock."
             )
+
+        details = attrs.get("item_details", {})
+        if not isinstance(details, dict):
+            raise serializers.ValidationError(
+                {"item_details": "Replacement details must be an object."}
+            )
+        identifier_kind = str(details.get("identifier_kind", "")).strip()
+        identifier_value = str(details.get("identifier_value", "")).strip()
+        if bool(identifier_kind) != bool(identifier_value):
+            raise serializers.ValidationError(
+                {
+                    "item_details": (
+                        "Choose an identifier type and enter its value together."
+                    )
+                }
+            )
+        if identifier_kind and identifier_kind not in REPLACEMENT_IDENTIFIER_KINDS:
+            raise serializers.ValidationError(
+                {"item_details": "Choose a supported replacement identifier type."}
+            )
         return attrs
 
 
@@ -140,14 +168,18 @@ class ReturnItemSerializer(serializers.ModelSerializer):
         ]
 
     def get_sale_item_name(self, obj):
-        return obj.sale_item.product.name if obj.sale_item.product_id else obj.sale_item.item_name
+        if obj.sale_item.product_id:
+            return obj.sale_item.product.name
+        return obj.sale_item.item_name
 
     def get_sale_item_sku(self, obj):
         return obj.sale_item.product.sku if obj.sale_item.product_id else ""
 
 
 class ReturnReplacementSerializer(serializers.ModelSerializer):
-    product_name = serializers.CharField(source="product.name", read_only=True, default="")
+    product_name = serializers.CharField(
+        source="product.name", read_only=True, default=""
+    )
     product_sku = serializers.CharField(source="product.sku", read_only=True, default="")
     tracked_unit_reference = serializers.CharField(
         source="tracked_unit.internal_serial", read_only=True, default=""
