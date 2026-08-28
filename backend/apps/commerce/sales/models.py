@@ -104,10 +104,28 @@ class SaleAudit(BaseModel):
         ordering = ["-created_at"]
 
 
+class SaleItemQuerySet(models.QuerySet):
+    def select_for_update(
+        self,
+        nowait=False,
+        skip_locked=False,
+        of=(),
+        no_key=False,
+    ):
+        return super().select_for_update(
+            nowait=nowait,
+            skip_locked=skip_locked,
+            of=of or ("self",),
+            no_key=no_key,
+        )
+
+
 class SaleItem(BaseModel):
     class Source(models.TextChoices):
         CATALOG = "catalog", "TEED product / SKU"
         MANUAL = "manual", "Independent item"
+
+    objects = SaleItemQuerySet.as_manager()
 
     sale = models.ForeignKey(Sale, on_delete=models.CASCADE, related_name="items")
     source = models.CharField(
