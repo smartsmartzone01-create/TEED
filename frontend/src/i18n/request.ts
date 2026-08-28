@@ -23,6 +23,7 @@ export default getRequestConfig(async ({ requestLocale }) => {
     commerceMessages,
     commerceStockMessages,
     commerceSalesMessages,
+    commerceReturnsMessages,
   ] = await Promise.all([
     import(`@/i18n/messages/dashboard/${locale}.json`),
     import(`@/i18n/messages/global/${locale}.json`),
@@ -36,6 +37,7 @@ export default getRequestConfig(async ({ requestLocale }) => {
     import(`@/i18n/messages/commerce/${locale}.json`),
     import(`@/i18n/messages/commerce-stock/${locale}.json`),
     import(`@/i18n/messages/commerce-sales/${locale}.json`),
+    import(`@/i18n/messages/commerce-returns/${locale}.json`),
   ]);
 
   return {
@@ -53,6 +55,7 @@ export default getRequestConfig(async ({ requestLocale }) => {
       ...commerceMessages.default,
       ...commerceStockMessages.default,
       ...commerceSalesMessages.default,
+      ...commerceReturnsMessages.default,
     },
   };
 });
