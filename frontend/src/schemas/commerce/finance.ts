@@ -47,11 +47,13 @@ const expenseResponseSchema = createApiEnvelopeSchema(expenseRecordSchema);
 
 const budgetRecordSchema = z.object({
   id: z.string().uuid(),
-  category: z.string(),
-  category_label: z.string(),
-  month: z.string(),
+  period_type: z.enum(["daily", "weekly", "monthly"]),
+  period_type_label: z.string(),
+  period_start: z.string(),
   planned_amount: z.string(),
   notes: z.string(),
+  operating_expenses: z.string(),
+  stock_purchases: z.string(),
   actual_amount: z.string(),
   remaining_amount: z.string(),
   utilization_percent: z.string(),
@@ -64,14 +66,7 @@ const budgetsWorkspaceResponseSchema = createApiEnvelopeSchema(
   z.object({ budgets: z.array(budgetRecordSchema) }),
 );
 
-const budgetResponseSchema = createApiEnvelopeSchema(
-  budgetRecordSchema.omit({
-    actual_amount: true,
-    remaining_amount: true,
-    utilization_percent: true,
-    status: true,
-  }),
-);
+const budgetResponseSchema = createApiEnvelopeSchema(budgetRecordSchema);
 
 export {
   budgetResponseSchema,
