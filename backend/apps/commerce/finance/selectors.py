@@ -74,7 +74,12 @@ def _stock_purchase_spend(*, business, start, end):
         received_at__date__lt=end,
     ).filter(
         Q(receipt__isnull=True)
-        | Q(receipt__status__in=[StockReceipt.Status.RECEIVED, StockReceipt.Status.ARCHIVED])
+        | Q(
+            receipt__status__in=[
+                StockReceipt.Status.RECEIVED,
+                StockReceipt.Status.ARCHIVED,
+            ]
+        )
     )
     batch_totals = batches.aggregate(
         buying=Sum(line_value),
@@ -83,7 +88,10 @@ def _stock_purchase_spend(*, business, start, end):
     receipt_additional = (
         StockReceipt.objects.filter(
             business=business,
-            status__in=[StockReceipt.Status.RECEIVED, StockReceipt.Status.ARCHIVED],
+            status__in=[
+                StockReceipt.Status.RECEIVED,
+                StockReceipt.Status.ARCHIVED,
+            ],
             received_at__date__gte=start,
             received_at__date__lt=end,
         ).aggregate(total=Sum("additional_cost"))["total"]
