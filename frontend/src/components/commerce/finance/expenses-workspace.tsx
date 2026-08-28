@@ -305,101 +305,53 @@ function ExpensesWorkspace({ businessId }: { businessId: string }) {
           <div className="grid min-w-0 gap-4 md:grid-cols-2">
             <label className={field}>
               {t("fields.category")}
-              <Select
-                defaultValue={editingExpense?.category ?? ""}
-                name="category"
-                required
-              >
-                <option disabled value="">
-                  {t("placeholders.category")}
-                </option>
+              <Select defaultValue={editingExpense?.category ?? ""} name="category" required>
+                <option disabled value="">{t("placeholders.category")}</option>
                 {categories.map((category) => (
-                  <option key={category} value={category}>
-                    {t(`categories.${category}`)}
-                  </option>
+                  <option key={category} value={category}>{t(`categories.${category}`)}</option>
                 ))}
               </Select>
             </label>
             <label className={field}>
               {t("fields.amount")}
-              <Input
-                className="w-full min-w-0"
-                defaultValue={editingExpense?.amount ?? ""}
-                min="0.01"
-                name="amount"
-                required
-                step="0.01"
-                type="number"
-              />
+              <Input className="w-full min-w-0" defaultValue={editingExpense?.amount ?? ""} min="0.01" name="amount" required step="0.01" type="number" />
             </label>
           </div>
 
           <div className="grid min-w-0 gap-4 md:grid-cols-2">
             <label className={field}>
               {t("fields.date")}
-              <Input
-                className="w-full min-w-0"
-                defaultValue={
-                  editingExpense
-                    ? localDateTimeInput(editingExpense.incurred_at)
-                    : nowLocal()
-                }
-                name="incurred_at"
-                required
-                type="datetime-local"
-              />
+              <Input className="w-full min-w-0" defaultValue={editingExpense ? localDateTimeInput(editingExpense.incurred_at) : nowLocal()} name="incurred_at" required type="datetime-local" />
             </label>
             <label className={field}>
               {t("fields.payee")}
-              <Input
-                className="w-full min-w-0"
-                defaultValue={editingExpense?.payee ?? ""}
-                name="payee"
-                placeholder={t("placeholders.payee")}
-              />
+              <Input className="w-full min-w-0" defaultValue={editingExpense?.payee ?? ""} name="payee" placeholder={t("placeholders.payee")} />
             </label>
           </div>
 
           <label className={field}>
             {t("fields.description")}
-            <Input
-              defaultValue={editingExpense?.description ?? ""}
-              name="description"
-              placeholder={t("placeholders.description")}
-            />
+            <Input defaultValue={editingExpense?.description ?? ""} name="description" placeholder={t("placeholders.description")} />
           </label>
 
           <div className="grid min-w-0 gap-4 md:grid-cols-2">
             <label className={field}>
               {t("fields.paymentMethod")}
-              <Select
-                defaultValue={editingExpense?.payment_method ?? "cash"}
-                name="payment_method"
-              >
+              <Select defaultValue={editingExpense?.payment_method ?? "cash"} name="payment_method">
                 {paymentMethods.map((method) => (
-                  <option key={method} value={method}>
-                    {t(`paymentMethods.${method}`)}
-                  </option>
+                  <option key={method} value={method}>{t(`paymentMethods.${method}`)}</option>
                 ))}
               </Select>
             </label>
             <label className={field}>
               {t("fields.reference")}
-              <Input
-                defaultValue={editingExpense?.reference ?? ""}
-                name="reference"
-                placeholder={t("placeholders.reference")}
-              />
+              <Input defaultValue={editingExpense?.reference ?? ""} name="reference" placeholder={t("placeholders.reference")} />
             </label>
           </div>
 
           <label className={field}>
             {t("fields.notes")}
-            <Input
-              defaultValue={editingExpense?.notes ?? ""}
-              name="notes"
-              placeholder={t("placeholders.notes")}
-            />
+            <Input defaultValue={editingExpense?.notes ?? ""} name="notes" placeholder={t("placeholders.notes")} />
           </label>
 
           <Button disabled={busy || !accessToken} loading={busy} type="submit">
@@ -408,120 +360,66 @@ function ExpensesWorkspace({ businessId }: { businessId: string }) {
         </form>
 
         {receiptExpense ? (
-          <ExpenseReceipt
-            expense={receiptExpense}
-            onClose={() => setReceiptExpense(null)}
-            onEdit={beginEdit}
-            t={t}
-          />
+          <ExpenseReceipt expense={receiptExpense} onClose={() => setReceiptExpense(null)} onEdit={beginEdit} t={t} />
         ) : null}
 
         <section className={panel} aria-labelledby="expense-view-title">
           <div className="grid gap-4 md:grid-cols-[1fr_12rem_minmax(12rem,16rem)] md:items-end">
             <div>
-              <p className="text-xs font-semibold text-slate-500" id="expense-view-title">
-                {t("expenses.periodTotal")}
-              </p>
+              <p className="text-xs font-semibold text-slate-500" id="expense-view-title">{t("expenses.periodTotal")}</p>
               <p className="mt-1 text-2xl font-bold">{money(summary.total)}</p>
             </div>
             <label className={field}>
               {t("fields.month")}
-              <Input
-                className="w-full min-w-0"
-                onChange={(event) => setMonth(event.target.value)}
-                type="month"
-                value={month}
-              />
+              <Input className="w-full min-w-0" onChange={(event) => setMonth(event.target.value)} type="month" value={month} />
             </label>
             <label className={field}>
               {t("fields.category")}
-              <Select
-                className="w-full min-w-0"
-                onChange={(event) =>
-                  setCategoryFilter(
-                    event.target.value as "" | ExpenseCategory,
-                  )
-                }
-                value={categoryFilter}
-              >
+              <Select className="w-full min-w-0" onChange={(event) => setCategoryFilter(event.target.value as "" | ExpenseCategory)} value={categoryFilter}>
                 <option value="">{t("filters.allCategories")}</option>
                 {categories.map((category) => (
-                  <option key={category} value={category}>
-                    {t(`categories.${category}`)}
-                  </option>
+                  <option key={category} value={category}>{t(`categories.${category}`)}</option>
                 ))}
               </Select>
             </label>
           </div>
         </section>
 
-        <section className={panel} aria-labelledby="expense-history-title">
-          <div className="flex items-center gap-2">
-            <ReceiptText className="size-5 text-orange-600" />
-            <h2 className="font-bold" id="expense-history-title">
-              {t("expenses.history")}
-            </h2>
-          </div>
-          <div className="mt-4 space-y-3">
-            {loading ? (
-              <p className="text-sm text-slate-500">{t("loading")}</p>
-            ) : null}
-            {!loading && !expenses.length ? (
-              <p className="text-sm text-slate-500">{t("expenses.empty")}</p>
-            ) : null}
-            {expenses.map((expense) => (
-              <article
-                className="rounded-xl border border-slate-200 p-4 dark:border-slate-800"
-                key={expense.id}
-              >
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <strong className="text-sm">
-                        {expense.expense_number || t("expenses.expense")}
-                      </strong>
-                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold dark:bg-slate-900">
-                        {expense.category_label}
-                      </span>
-                    </div>
-                    <p className="mt-1 break-words text-xs text-slate-500">
-                      {[expense.payee, expense.description]
-                        .filter(Boolean)
-                        .join(" · ") || t("expenses.noDescription")}
-                    </p>
-                    <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-slate-500">
-                      <span>{new Date(expense.incurred_at).toLocaleString()}</span>
-                      <span>{expense.payment_method_label}</span>
-                      {expense.reference ? <span>{expense.reference}</span> : null}
-                    </div>
+        <section className="space-y-3" aria-labelledby="expense-history-title">
+          <h2 className="font-bold" id="expense-history-title">{t("expenses.history")}</h2>
+          {loading ? <p className="text-sm text-slate-500">{t("loading")}</p> : null}
+          {!loading && !expenses.length ? <p className="text-sm text-slate-500">{t("expenses.empty")}</p> : null}
+          {expenses.map((expense) => (
+            <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950" key={expense.id}>
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <strong className="text-sm">{expense.expense_number || t("expenses.expense")}</strong>
+                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold dark:bg-slate-900">{expense.category_label}</span>
                   </div>
-                  <div className="flex shrink-0 flex-col items-start gap-2 sm:items-end">
-                    <strong className="text-base">{money(expense.amount)}</strong>
-                    <div className="flex gap-2">
-                      <Button
-                        onClick={() => setReceiptExpense(expense)}
-                        size="small"
-                        type="button"
-                        variant="outline"
-                      >
-                        <ReceiptText className="size-4" />
-                        {t("actions.receipt")}
-                      </Button>
-                      <Button
-                        onClick={() => beginEdit(expense)}
-                        size="small"
-                        type="button"
-                        variant="ghost"
-                      >
-                        <Pencil className="size-4" />
-                        {t("actions.edit")}
-                      </Button>
-                    </div>
+                  <p className="mt-1 break-words text-xs text-slate-500">{[expense.payee, expense.description].filter(Boolean).join(" · ") || t("expenses.noDescription")}</p>
+                  <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-slate-500">
+                    <span>{new Date(expense.incurred_at).toLocaleString()}</span>
+                    <span>{expense.payment_method_label}</span>
+                    {expense.reference ? <span>{expense.reference}</span> : null}
                   </div>
                 </div>
-              </article>
-            ))}
-          </div>
+                <div className="flex shrink-0 flex-col items-start gap-2 sm:items-end">
+                  <strong className="text-base">{money(expense.amount)}</strong>
+                  <div className="flex gap-2">
+                    <Button onClick={() => setReceiptExpense(expense)} size="small" type="button" variant="outline">
+                      <ReceiptText className="size-4" />
+                      {t("actions.receipt")}
+                    </Button>
+                    <Button onClick={() => beginEdit(expense)} size="small" type="button" variant="ghost">
+                      <Pencil className="size-4" />
+                      {t("actions.edit")}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </article>
+          ))}
         </section>
       </section>
     </TooltipProvider>
