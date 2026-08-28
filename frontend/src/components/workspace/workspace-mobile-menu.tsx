@@ -4,13 +4,9 @@ import {
   Bell,
   Building2,
   Check,
-  FolderKanban,
-  LayoutDashboard,
   Monitor,
   Moon,
-  Plus,
   Sun,
-  UserPlus,
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useTheme } from "next-themes";
@@ -71,7 +67,7 @@ function WorkspaceMobileMenu() {
       <DropdownMenuTrigger asChild>
         <button
           aria-label={t("businessMenu")}
-          className="inline-flex size-10 items-center justify-center rounded-xl bg-slate-900 text-xs font-bold tracking-wide text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/40 dark:bg-white dark:text-slate-950"
+          className="inline-flex size-8 items-center justify-center rounded-lg bg-slate-900 text-[10px] font-bold tracking-wide text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/40 dark:bg-white dark:text-slate-950"
           type="button"
         >
           {initials}
@@ -116,24 +112,6 @@ function WorkspaceMobileMenu() {
               </span>
             </DropdownMenuItem>
           ))}
-
-        <DropdownMenuSeparator />
-        <DropdownMenuItem onSelect={() => router.push("/workspaces")}>
-          <FolderKanban className="size-4" />
-          {directoryT("embeddedTitle")}
-        </DropdownMenuItem>
-        <DropdownMenuItem onSelect={() => router.push("/dashboard/workspaces/create")}>
-          <Plus className="size-4" />
-          {directoryT("create")}
-        </DropdownMenuItem>
-        <DropdownMenuItem onSelect={() => router.push("/dashboard/workspaces/access")}>
-          <UserPlus className="size-4" />
-          {directoryT("request")}
-        </DropdownMenuItem>
-        <DropdownMenuItem onSelect={() => router.push("/dashboard")}>
-          <LayoutDashboard className="size-4" />
-          {directoryT("personalDashboard")}
-        </DropdownMenuItem>
 
         <DropdownMenuSeparator />
         <DropdownMenuItem onSelect={() => router.push("/dashboard/notifications")}>
