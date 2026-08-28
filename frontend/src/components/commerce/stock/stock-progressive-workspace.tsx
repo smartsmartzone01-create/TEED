@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, ChevronUp, Pencil, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Pencil, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useTranslations } from "next-intl";
 
@@ -22,7 +22,6 @@ import type { Product } from "@/types/commerce/catalog";
 import type {
   StockCostMode,
   StockReceipt,
-  StockReceiptLine,
   StockTrackingMode,
   StockUnitDefinition,
 } from "@/types/commerce/inventory";
