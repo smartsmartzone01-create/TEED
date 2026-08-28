@@ -1,4 +1,5 @@
 from django.db import transaction
+from rest_framework.exceptions import ValidationError
 
 from apps.workspaces.policy import WorkspacePermission
 
@@ -38,6 +39,36 @@ def create_expense(*, actor, business_id, **values):
         expense_number=expense_number,
         **values,
     )
+
+
+@transaction.atomic
+def update_expense(*, actor, business_id, expense_id, **values):
+    membership = commerce_membership(
+        user=actor,
+        business_id=business_id,
+        permission=WorkspacePermission.MANAGE_FINANCE,
+    )
+    expense = (
+        Expense.objects.select_for_update()
+        .filter(
+            id=expense_id,
+            business=membership.business,
+            stock_receipt__isnull=True,
+        )
+        .first()
+    )
+    if expense is None:
+        raise ValidationError({"expense": ["Expense not found or cannot be edited."]})
+
+    for field, value in values.items():
+        setattr(expense, field, value)
+    expense.save(
+        update_fields=[
+            *values.keys(),
+            "updated_at",
+        ]
+    )
+    return expense
 
 
 @transaction.atomic
