@@ -13,6 +13,9 @@
       "reference": "Reference / receipt",
       "notes": "Notes",
       "month": "Month",
+      "week": "Week containing",
+      "day": "Day",
+      "budgetPeriod": "Budget period",
       "plannedAmount": "Planned amount"
     },
     "actions": {
@@ -28,7 +31,7 @@
       "description": "What was this expense for?",
       "reference": "Receipt, invoice or transaction reference",
       "notes": "Optional internal note",
-      "budgetNotes": "Optional reason or limit guidance"
+      "budgetNotes": "Optional planning note"
     },
     "filters": {
       "allCategories": "All categories"
@@ -83,26 +86,37 @@
       "receiptHelp": "Tunakuza's audit record for this business expense.",
       "recordedBy": "Recorded by"
     },
+    "budgetPeriods": {
+      "daily": "Daily budget",
+      "weekly": "Weekly budget",
+      "monthly": "Monthly business budget"
+    },
     "budgets": {
       "title": "Budgets",
-      "description": "Set monthly spending limits by expense category and compare the plan with actual recorded expenses.",
-      "tooltip": "A budget does not change profit or cash. It is a planning target. Actual spending comes only from recorded Expenses.",
-      "formTitle": "Set a monthly budget",
+      "description": "Set business spending projections and compare them with what actually happened. Budgets report performance; they never block spending.",
+      "formTitle": "Set a budget",
       "save": "Save budget",
       "saved": "Budget saved.",
       "saveError": "Tunakuza could not save this budget.",
       "loadError": "Tunakuza could not load budgets.",
-      "formHelp": "Saving the same category and month updates that budget instead of creating a duplicate.",
       "current": "Budget performance",
+      "reportingHelp": "Tunakuza reports when actual spending approaches or exceeds the plan. It does not stop the business from spending.",
       "empty": "No budgets have been set yet.",
       "planned": "Planned",
       "actual": "Actual spent",
       "remaining": "Remaining",
-      "used": "Used"
+      "used": "Used",
+      "expenseSpend": "Operating expenses",
+      "stockSpend": "Stock purchases",
+      "scope": {
+        "daily": "Daily budgets compare the selected day's recorded operating expenses with the planned amount.",
+        "weekly": "Weekly budgets compare recorded operating expenses for the selected week with the planned amount.",
+        "monthly": "Monthly budgets compare the business plan with operating expenses plus stock acquisition spending recorded during that month."
+      }
     },
     "budgetStatus": {
       "on_track": "On track",
-      "approaching_limit": "Approaching limit",
+      "approaching_limit": "Approaching budget",
       "over_budget": "Over budget"
     }
   }
