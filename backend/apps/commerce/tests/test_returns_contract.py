@@ -10,7 +10,7 @@ from ..catalog.models import Product
 from ..inventory.models import StockBatch, TrackedUnit
 from ..returns.selectors import returnable_sales_for_period
 from ..returns.services import record_return
-from ..sales.models import Sale, SaleItem
+from ..sales.models import Sale, SaleAllocation, SaleItem
 
 
 class ReturnsContractTests(TestCase):
@@ -196,6 +196,12 @@ class ReturnsContractTests(TestCase):
             product=product,
             unit_price=Decimal("10000"),
             cost_total=Decimal("6000"),
+        )
+        SaleAllocation.objects.create(
+            sale_item=line,
+            batch=batch,
+            quantity=Decimal("1"),
+            unit_cost=Decimal("6000"),
         )
 
         record = record_return(
