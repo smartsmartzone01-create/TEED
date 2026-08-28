@@ -10,9 +10,14 @@ from ..services import record_return as legacy_record_return
 def record_return(*, actor, business_id, sale_id, items, **values):
     sale_items = {
         str(item.id): item
-        for item in SaleItem.objects.select_for_update()
-        .select_related("tracked_unit")
-        .filter(sale_id=sale_id, id__in=[item["sale_item_id"] for item in items])
+        for item in (
+            SaleItem.objects.select_for_update()
+            .select_related("tracked_unit")
+            .filter(
+                sale_id=sale_id,
+                id__in=[item["sale_item_id"] for item in items],
+            )
+        )
     }
 
     for item in items:
@@ -23,8 +28,9 @@ def record_return(*, actor, business_id, sale_id, items, **values):
             raise ValidationError(
                 {
                     "items": [
-                        "An independent sale item cannot be restored to stock automatically. "
-                        "Record it as non-sellable here and receive it into stock separately if needed."
+                        "An independent sale item cannot be restored to stock "
+                        "automatically. Record it as non-sellable here and receive "
+                        "it into stock separately if needed."
                     ]
                 }
             )
