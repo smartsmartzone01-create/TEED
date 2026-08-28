@@ -54,6 +54,7 @@ const saleItemSchema = z
     product: z.string().nullable().transform((value) => value ?? ""),
     product_name: z.string(),
     product_sku: z.string(),
+    product_unit: z.string().default(""),
     tracked_unit: z.string().nullable(),
     tracked_unit_reference: z.string(),
     tracked_unit_details: trackedSaleUnitDetailsSchema.nullable(),
