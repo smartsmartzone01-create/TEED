@@ -45,6 +45,29 @@ class ReturnsContractTests(TestCase):
             recorded_by=self.owner,
         )
 
+    def create_catalog_sale_line(
+        self,
+        *,
+        sequence,
+        product,
+        quantity=Decimal("1"),
+        unit_price=Decimal("15000"),
+        cost_total=Decimal("10000"),
+    ):
+        sale = self.create_sale(sequence=sequence, sold_at=timezone.now())
+        sale.sale_mode = Sale.SaleMode.STOCK
+        sale.save(update_fields=["sale_mode", "updated_at"])
+        line = SaleItem.objects.create(
+            sale=sale,
+            source=SaleItem.Source.CATALOG,
+            product=product,
+            quantity=quantity,
+            unit_price=unit_price,
+            line_total=quantity * unit_price,
+            cost_total=cost_total,
+        )
+        return sale, line
+
     def test_return_candidates_are_scoped_to_the_requested_sale_period(self):
         start = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
         inside = self.create_sale(
@@ -123,7 +146,7 @@ class ReturnsContractTests(TestCase):
             cost_total=Decimal("500000"),
         )
 
-        record_return(
+        record = record_return(
             actor=self.owner,
             business_id=self.business.id,
             sale_id=sale.id,
@@ -143,3 +166,131 @@ class ReturnsContractTests(TestCase):
         product.refresh_from_db()
         self.assertEqual(unit.status, TrackedUnit.Status.AVAILABLE)
         self.assertEqual(product.current_quantity, Decimal("1"))
+        self.assertTrue(record.return_number.endswith("-RET-0000001"))
+        self.assertEqual(record.refund_amount, Decimal("750000"))
+        self.assertEqual(record.recovered_inventory_cost, Decimal("500000"))
+        self.assertEqual(record.damaged_loss, Decimal("0"))
+
+    def test_stock_replacement_consumes_fifo_and_records_exact_cost(self):
+        returned_product = Product.objects.create(
+            business=self.business,
+            name="Returned charger",
+            sku="ITM-RETURNED",
+            unit="piece",
+            current_quantity=Decimal("0"),
+        )
+        sale, line = self.create_catalog_sale_line(
+            sequence=7,
+            product=returned_product,
+            cost_total=Decimal("10000"),
+        )
+        replacement_product = Product.objects.create(
+            business=self.business,
+            name="Replacement charger",
+            sku="ITM-REPLACE",
+            unit="piece",
+            tracking_mode=Product.TrackingMode.QUANTITY,
+            current_quantity=Decimal("3"),
+        )
+        old_batch = StockBatch.objects.create(
+            product=replacement_product,
+            tracking_mode=Product.TrackingMode.QUANTITY,
+            quantity_received=Decimal("1"),
+            quantity_remaining=Decimal("1"),
+            unit_cost=Decimal("10000"),
+            received_unit="piece",
+            received_at=timezone.now() - timezone.timedelta(days=10),
+            recorded_by=self.owner,
+        )
+        new_batch = StockBatch.objects.create(
+            product=replacement_product,
+            tracking_mode=Product.TrackingMode.QUANTITY,
+            quantity_received=Decimal("2"),
+            quantity_remaining=Decimal("2"),
+            unit_cost=Decimal("12000"),
+            received_unit="piece",
+            received_at=timezone.now(),
+            recorded_by=self.owner,
+        )
+
+        record = record_return(
+            actor=self.owner,
+            business_id=self.business.id,
+            sale_id=sale.id,
+            resolution="replacement",
+            reason="defective",
+            returned_at=timezone.now(),
+            items=[
+                {
+                    "sale_item_id": line.id,
+                    "quantity": Decimal("1"),
+                    "condition": "damaged",
+                }
+            ],
+            replacement={
+                "source": "stock",
+                "product_id": replacement_product.id,
+                "quantity": Decimal("2"),
+            },
+        )
+
+        replacement_product.refresh_from_db()
+        old_batch.refresh_from_db()
+        new_batch.refresh_from_db()
+        record.refresh_from_db()
+        allocations = list(record.replacement.allocations.order_by("batch__received_at"))
+
+        self.assertEqual(replacement_product.current_quantity, Decimal("1"))
+        self.assertEqual(old_batch.quantity_remaining, Decimal("0"))
+        self.assertEqual(new_batch.quantity_remaining, Decimal("1"))
+        self.assertEqual(record.damaged_loss, Decimal("10000"))
+        self.assertEqual(record.replacement_cost, Decimal("22000"))
+        self.assertEqual([item.quantity for item in allocations], [Decimal("1"), Decimal("1")])
+        self.assertEqual(
+            [item.unit_cost for item in allocations],
+            [Decimal("10000"), Decimal("12000")],
+        )
+
+    def test_independent_replacement_records_cost_without_touching_stock(self):
+        returned_product = Product.objects.create(
+            business=self.business,
+            name="Returned cable",
+            sku="ITM-CABLE",
+            unit="piece",
+            current_quantity=Decimal("0"),
+        )
+        sale, line = self.create_catalog_sale_line(
+            sequence=8,
+            product=returned_product,
+            cost_total=Decimal("5000"),
+        )
+
+        record = record_return(
+            actor=self.owner,
+            business_id=self.business.id,
+            sale_id=sale.id,
+            resolution="replacement",
+            reason="wrong_item",
+            returned_at=timezone.now(),
+            items=[
+                {
+                    "sale_item_id": line.id,
+                    "quantity": Decimal("1"),
+                    "condition": "damaged",
+                }
+            ],
+            replacement={
+                "source": "independent",
+                "item_name": "Emergency replacement cable",
+                "item_details": {"source": "nearby supplier"},
+                "quantity": Decimal("1"),
+                "acquisition_unit_cost": Decimal("7000"),
+            },
+        )
+
+        record.refresh_from_db()
+        self.assertEqual(record.replacement.source, "independent")
+        self.assertEqual(record.replacement.item_name, "Emergency replacement cable")
+        self.assertEqual(record.replacement.cost_total, Decimal("7000"))
+        self.assertEqual(record.replacement_cost, Decimal("7000"))
+        self.assertEqual(record.damaged_loss, Decimal("5000"))
