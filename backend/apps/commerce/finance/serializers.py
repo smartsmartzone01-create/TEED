@@ -66,6 +66,7 @@ class ExpenseSerializer(serializers.ModelSerializer):
 
 class BudgetCreateSerializer(serializers.ModelSerializer):
     period_type = serializers.ChoiceField(choices=Budget.PeriodType.choices)
+    period_start = serializers.DateField(required=True)
     planned_amount = serializers.DecimalField(
         max_digits=14,
         decimal_places=2,
