@@ -187,7 +187,7 @@ function WorkspaceSidebar({
                 <Link
                   aria-current={selected ? "page" : undefined}
                   className={cn(
-                    "rounded-md px-2 py-1 text-[10px] leading-4",
+                    "rounded-md px-2 py-1 text-[11px] leading-4",
                     selected
                       ? "bg-slate-100 font-semibold text-slate-950 dark:bg-slate-900 dark:text-white"
                       : "text-slate-500 hover:bg-slate-50 hover:text-slate-950 dark:hover:bg-slate-900 dark:hover:text-white",
