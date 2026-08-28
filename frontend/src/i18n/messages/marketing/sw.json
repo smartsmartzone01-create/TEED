@@ -10,7 +10,7 @@
     "closeNavigation": "Funga menyu ya urambazaji",
     "primaryNavigation": "Urambazaji mkuu",
     "mobileNavigation": "Urambazaji wa simu",
-    "navigationDescription": "Tumia kurasa za TEED na vitendo vya akaunti.",
+    "navigationDescription": "Tumia kurasa za Tunakuza na vitendo vya akaunti.",
     "openMenu": "Fungua menyu ya {menu}",
     "closeMenu": "Funga menyu ya {menu}",
     "featuresMenu": {
@@ -61,12 +61,12 @@
     "title": "Kuza biashara yako kwa zana zilizo wazi na msaada wa AI.",
     "description": "Simamia shughuli, elewa utendaji, fikia wateja zaidi, na pata mwongozo unaotumia AI kuhusu hatua inayofuata.",
     "primaryAction": "Anza kukua",
-    "secondaryAction": "Chunguza TEED"
+    "secondaryAction": "Chunguza Tunakuza"
   },
   "TeedOverview": {
     "eyebrow": "Kila kitu kinafanya kazi pamoja",
-    "title": "Njia tano ambazo TEED inasaidia biashara yako kukua.",
-    "description": "Kuanzia shughuli za kila siku hadi kufikia wateja zaidi, TEED inaunganisha sehemu muhimu za ukuaji wa biashara katika mfumo mmoja ulio wazi.",
+    "title": "Njia tano ambazo Tunakuza inasaidia biashara yako kukua.",
+    "description": "Kuanzia shughuli za kila siku hadi kufikia wateja zaidi, Tunakuza inaunganisha sehemu muhimu za ukuaji wa biashara katika mfumo mmoja ulio wazi.",
     "manage": {
       "title": "Simamia",
       "description": "Fuatilia mauzo, bidhaa, wateja, na kumbukumbu muhimu za biashara."
@@ -91,7 +91,7 @@
   "PlatformConnections": {
     "eyebrow": "Imejengwa kwa jinsi biashara yako inavyounganika",
     "title": "Kua kupitia majukwaa.",
-    "description": "TEED imeundwa kuleta shughuli zako za kidijitali katika mtazamo mmoja ulio wazi, ili kukusaidia kuelewa utendaji na kufanya maamuzi bora ya biashara.",
-    "platformsLabel": "Majukwaa ya kidijitali ambayo TEED imeundwa kuunganishwa nayo"
+    "description": "Tunakuza imeundwa kuleta shughuli zako za kidijitali katika mtazamo mmoja ulio wazi, ili kukusaidia kuelewa utendaji na kufanya maamuzi bora ya biashara.",
+    "platformsLabel": "Majukwaa ya kidijitali ambayo Tunakuza imeundwa kuunganishwa nayo"
   }
 }
