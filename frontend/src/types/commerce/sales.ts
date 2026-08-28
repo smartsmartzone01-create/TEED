@@ -25,6 +25,7 @@ type SaleAvailabilityProduct = SaleStockTarget & {
   current_quantity: string;
   selling_price: string | null;
   available_units: SaleAvailabilityUnit[];
+  is_active?: boolean;
 };
 
 type TrackedSaleUnitDetails = {
