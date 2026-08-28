@@ -1,6 +1,14 @@
 "use client";
 
-import { Building2, Check, ChevronDown, LayoutDashboard, Plus, UserPlus } from "lucide-react";
+import {
+  Building2,
+  Check,
+  ChevronDown,
+  FolderKanban,
+  LayoutDashboard,
+  Plus,
+  UserPlus,
+} from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { BusinessIcon } from "@/components/workspace/business-icon";
@@ -12,10 +20,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/global/primitives/dropdown-menu";
-import { useRouter } from "@/i18n/navigation";
-import { usePathname } from "@/i18n/navigation";
+import { usePathname, useRouter } from "@/i18n/navigation";
 import { cn } from "@/lib/global/class-names";
 import { useWorkspace } from "@/providers/workspace/workspace-provider";
+import { workspaceClassForType } from "@/utils/workspace/workspace-class";
 
 type WorkspaceBusinessMenuProps = {
   showLabel?: boolean;
@@ -25,13 +33,17 @@ function WorkspaceBusinessMenu({ showLabel = true }: WorkspaceBusinessMenuProps)
   const router = useRouter();
   const pathname = usePathname();
   const t = useTranslations("WorkspaceShell");
+  const directoryT = useTranslations("WorkspaceRefinement.directory");
   const { businesses } = useWorkspace();
   const activeBusinesses = businesses.filter((business) => business.status === "active");
   const activeId = pathname.match(/^\/workspace\/([^/]+)/)?.[1];
   const activeBusiness = activeId
     ? activeBusinesses.find((business) => business.id === activeId)
     : activeBusinesses[0];
-  const businessName = activeBusiness?.name ?? t("businessFallback");
+  const workspaceName = activeBusiness?.name ?? t("businessFallback");
+  const activeClass = activeBusiness
+    ? workspaceClassForType(activeBusiness.workspace_type)
+    : "business";
 
   return (
     <DropdownMenu modal={false}>
@@ -48,17 +60,15 @@ function WorkspaceBusinessMenu({ showLabel = true }: WorkspaceBusinessMenuProps)
         >
           <BusinessIcon
             logoUrl={activeBusiness?.logo_url ?? null}
-            name={businessName}
+            name={workspaceName}
             primaryColor={activeBusiness?.primary_brand_color ?? "#0B1F3A"}
             secondaryColor={activeBusiness?.secondary_brand_color ?? "#F97316"}
           />
           {showLabel ? (
             <span className="min-w-0 flex-1">
-              <span className="block truncate text-sm font-semibold">
-                {businessName}
-              </span>
+              <span className="block truncate text-sm font-semibold">{workspaceName}</span>
               <span className="block truncate text-xs text-slate-500 dark:text-slate-400">
-                {t("previewState")}
+                {directoryT(activeClass === "personal" ? "personalClass" : "businessClass")}
               </span>
             </span>
           ) : null}
@@ -66,37 +76,68 @@ function WorkspaceBusinessMenu({ showLabel = true }: WorkspaceBusinessMenuProps)
         </button>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent
-        align="end"
-        className="w-72"
-      >
-        <DropdownMenuLabel>{t("currentBusiness")}</DropdownMenuLabel>
+      <DropdownMenuContent align="end" className="w-72">
+        <DropdownMenuLabel>{workspaceName}</DropdownMenuLabel>
         <DropdownMenuItem className="justify-between">
           <span className="flex min-w-0 items-center gap-3">
-            {activeBusiness ? <BusinessIcon className="size-7 rounded-lg text-[0.6rem]" logoUrl={activeBusiness.logo_url} name={activeBusiness.name} primaryColor={activeBusiness.primary_brand_color} secondaryColor={activeBusiness.secondary_brand_color} /> : <Building2 className="size-4 shrink-0" />}
-            <span className="truncate">{businessName}</span>
+            {activeBusiness ? (
+              <BusinessIcon
+                className="size-7 rounded-lg text-[0.6rem]"
+                logoUrl={activeBusiness.logo_url}
+                name={activeBusiness.name}
+                primaryColor={activeBusiness.primary_brand_color}
+                secondaryColor={activeBusiness.secondary_brand_color}
+              />
+            ) : (
+              <Building2 className="size-4 shrink-0" />
+            )}
+            <span className="truncate">{workspaceName}</span>
           </span>
           <Check className="size-4 shrink-0" />
         </DropdownMenuItem>
-        {activeBusinesses.filter((business) => business.id !== activeBusiness?.id).map((business) => (
-          <DropdownMenuItem key={business.id} onSelect={() => router.push(`/workspace/${business.id}`)}>
-            <BusinessIcon className="size-7 rounded-lg text-[0.6rem]" logoUrl={business.logo_url} name={business.name} primaryColor={business.primary_brand_color} secondaryColor={business.secondary_brand_color} />
-            <span className="truncate">{business.name}</span>
-          </DropdownMenuItem>
-        ))}
-        {activeBusinesses.length < 2 ? <DropdownMenuItem disabled>{t("noOtherBusinesses")}</DropdownMenuItem> : null}
+
+        {activeBusinesses
+          .filter((business) => business.id !== activeBusiness?.id)
+          .map((business) => (
+            <DropdownMenuItem
+              key={business.id}
+              onSelect={() => router.push(`/workspace/${business.id}`)}
+            >
+              <BusinessIcon
+                className="size-7 rounded-lg text-[0.6rem]"
+                logoUrl={business.logo_url}
+                name={business.name}
+                primaryColor={business.primary_brand_color}
+                secondaryColor={business.secondary_brand_color}
+              />
+              <span className="min-w-0 flex-1 truncate">{business.name}</span>
+              <span className="text-[10px] text-slate-400">
+                {directoryT(
+                  workspaceClassForType(business.workspace_type) === "personal"
+                    ? "personalClass"
+                    : "businessClass",
+                )}
+              </span>
+            </DropdownMenuItem>
+          ))}
+
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onSelect={() => router.push("/workspaces")}>
+          <FolderKanban className="size-4" />
+          {directoryT("embeddedTitle")}
+        </DropdownMenuItem>
         <DropdownMenuItem onSelect={() => router.push("/dashboard/workspaces/create")}>
           <Plus className="size-4" />
-          {t("createBusiness")}
+          {directoryT("create")}
         </DropdownMenuItem>
         <DropdownMenuItem onSelect={() => router.push("/dashboard/workspaces/access")}>
           <UserPlus className="size-4" />
-          {t("requestAccess")}
+          {directoryT("request")}
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onSelect={() => router.push("/dashboard")}>
           <LayoutDashboard className="size-4" />
-          {t("backToDashboard")}
+          {directoryT("personalDashboard")}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
