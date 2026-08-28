@@ -6,9 +6,9 @@ from rest_framework import serializers, status
 from ..api import CommerceBaseAPIView
 from ..models import SaleReturn
 from ..sales.serializers import SaleSerializer
-from ..serializers import ReturnCreateSerializer, ReturnSerializer
 from ..services import commerce_membership
 from .selectors import returnable_sales_for_period
+from .serializers import ReturnCreateSerializer, ReturnSerializer
 from .services import record_return
 
 
@@ -39,7 +39,13 @@ class ReturnListCreateAPIView(CommerceBaseAPIView):
         query.is_valid(raise_exception=True)
 
         records = (
-            SaleReturn.objects.select_related("sale")
+            SaleReturn.objects.select_related(
+                "sale",
+                "replacement",
+                "replacement__product",
+                "replacement__tracked_unit",
+            )
+            .prefetch_related("items__sale_item__product")
             .filter(sale__business=membership.business)
             .order_by("-returned_at", "-created_at")[:100]
         )
