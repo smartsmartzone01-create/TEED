@@ -7,20 +7,22 @@ import { requestApi } from "@/services/global/api-client";
 import { withCsrfRetry } from "@/services/identity/csrf";
 import type { ReturnCreateInput } from "@/types/commerce/returns";
 
-type ReturnLookupPeriod = {
+type ReturnLookupFilters = {
   soldFrom?: string;
   soldBefore?: string;
+  receiptNumber?: string;
 };
 
 function getReturnsWorkspace(
   businessId: string,
   accessToken: string,
-  period: ReturnLookupPeriod = {},
+  filters: ReturnLookupFilters = {},
   signal?: AbortSignal,
 ) {
   const query = new URLSearchParams();
-  if (period.soldFrom) query.set("sold_from", period.soldFrom);
-  if (period.soldBefore) query.set("sold_before", period.soldBefore);
+  if (filters.soldFrom) query.set("sold_from", filters.soldFrom);
+  if (filters.soldBefore) query.set("sold_before", filters.soldBefore);
+  if (filters.receiptNumber) query.set("receipt_number", filters.receiptNumber);
   const queryString = query.toString();
   const suffix = queryString ? `?${queryString}` : "";
 
@@ -50,4 +52,4 @@ function createReturn(
 }
 
 export { createReturn, getReturnsWorkspace };
-export type { ReturnLookupPeriod };
+export type { ReturnLookupFilters };
