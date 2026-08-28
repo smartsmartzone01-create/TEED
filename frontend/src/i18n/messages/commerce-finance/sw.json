@@ -13,6 +13,9 @@
       "reference": "Kumbukumbu / risiti",
       "notes": "Dokezo",
       "month": "Mwezi",
+      "week": "Wiki inayojumuisha",
+      "day": "Siku",
+      "budgetPeriod": "Kipindi cha bajeti",
       "plannedAmount": "Kiasi kilichopangwa"
     },
     "actions": {
@@ -28,7 +31,7 @@
       "description": "Gharama hii ilikuwa ya nini?",
       "reference": "Risiti, ankara au kumbukumbu ya muamala",
       "notes": "Dokezo la ndani la hiari",
-      "budgetNotes": "Sababu au mwongozo wa kikomo wa hiari"
+      "budgetNotes": "Dokezo la hiari la mpango"
     },
     "filters": {
       "allCategories": "Aina zote"
@@ -83,26 +86,37 @@
       "receiptHelp": "Kumbukumbu ya ukaguzi ya Tunakuza kwa gharama hii ya biashara.",
       "recordedBy": "Imerekodiwa na"
     },
+    "budgetPeriods": {
+      "daily": "Bajeti ya siku",
+      "weekly": "Bajeti ya wiki",
+      "monthly": "Bajeti ya mwezi ya biashara"
+    },
     "budgets": {
       "title": "Bajeti",
-      "description": "Weka mipaka ya matumizi ya kila mwezi kwa kila aina ya gharama na linganisha mpango na gharama halisi zilizorekodiwa.",
-      "tooltip": "Bajeti haibadilishi faida wala fedha taslimu. Ni lengo la kupanga. Matumizi halisi yanatokana tu na Gharama zilizorekodiwa.",
-      "formTitle": "Weka bajeti ya mwezi",
+      "description": "Weka makadirio ya matumizi ya biashara na ulinganishe na kilichotokea kweli. Bajeti ni ya taarifa; haizuii matumizi.",
+      "formTitle": "Weka bajeti",
       "save": "Hifadhi bajeti",
       "saved": "Bajeti imehifadhiwa.",
       "saveError": "Tunakuza haikuweza kuhifadhi bajeti hii.",
       "loadError": "Tunakuza haikuweza kupakia bajeti.",
-      "formHelp": "Kuhifadhi aina na mwezi uleule husasisha bajeti iliyopo badala ya kuunda nakala nyingine.",
       "current": "Utendaji wa bajeti",
+      "reportingHelp": "Tunakuza huripoti matumizi yanapokaribia au kuzidi mpango. Haizuii biashara kutumia fedha.",
       "empty": "Bado hakuna bajeti iliyowekwa.",
       "planned": "Iliyopangwa",
       "actual": "Iliyotumika",
       "remaining": "Iliyobaki",
-      "used": "Imetumika"
+      "used": "Imetumika",
+      "expenseSpend": "Gharama za uendeshaji",
+      "stockSpend": "Ununuzi wa stock",
+      "scope": {
+        "daily": "Bajeti ya siku inalinganisha gharama za uendeshaji zilizorekodiwa siku hiyo na kiasi kilichopangwa.",
+        "weekly": "Bajeti ya wiki inalinganisha gharama za uendeshaji zilizorekodiwa katika wiki hiyo na kiasi kilichopangwa.",
+        "monthly": "Bajeti ya mwezi inalinganisha mpango wa biashara na gharama za uendeshaji pamoja na matumizi ya kununua stock yaliyorekodiwa mwezi huo."
+      }
     },
     "budgetStatus": {
       "on_track": "Inaenda sawa",
-      "approaching_limit": "Inakaribia kikomo",
+      "approaching_limit": "Inakaribia bajeti",
       "over_budget": "Imezidi bajeti"
     }
   }
