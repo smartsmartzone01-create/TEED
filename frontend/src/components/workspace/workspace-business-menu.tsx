@@ -1,14 +1,6 @@
 "use client";
 
-import {
-  Building2,
-  Check,
-  ChevronDown,
-  FolderKanban,
-  LayoutDashboard,
-  Plus,
-  UserPlus,
-} from "lucide-react";
+import { Building2, Check, ChevronDown } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { BusinessIcon } from "@/components/workspace/business-icon";
@@ -17,7 +9,6 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/global/primitives/dropdown-menu";
 import { usePathname, useRouter } from "@/i18n/navigation";
@@ -121,25 +112,6 @@ function WorkspaceBusinessMenu({ showLabel = true }: WorkspaceBusinessMenuProps)
               </span>
             </DropdownMenuItem>
           ))}
-
-        <DropdownMenuSeparator />
-        <DropdownMenuItem onSelect={() => router.push("/workspaces")}>
-          <FolderKanban className="size-4" />
-          {directoryT("embeddedTitle")}
-        </DropdownMenuItem>
-        <DropdownMenuItem onSelect={() => router.push("/dashboard/workspaces/create")}>
-          <Plus className="size-4" />
-          {directoryT("create")}
-        </DropdownMenuItem>
-        <DropdownMenuItem onSelect={() => router.push("/dashboard/workspaces/access")}>
-          <UserPlus className="size-4" />
-          {directoryT("request")}
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem onSelect={() => router.push("/dashboard")}>
-          <LayoutDashboard className="size-4" />
-          {directoryT("personalDashboard")}
-        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
