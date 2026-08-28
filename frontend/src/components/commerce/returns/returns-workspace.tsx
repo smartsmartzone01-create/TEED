@@ -40,6 +40,12 @@ import type {
   SaleAvailabilityUnit,
   SaleItem,
 } from "@/types/commerce/sales";
+import {
+  acceptsQuantityInput,
+  isWholeQuantityUnit,
+  quantityInputMode,
+  quantityInputStep,
+} from "@/utils/commerce/quantity";
 
 const panel =
   "rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950";
@@ -366,15 +372,24 @@ function ReturnsWorkspace({ businessId }: { businessId: string }) {
       const identifierComplete =
         (!replacementIdentifierKind && !replacementIdentifierValue.trim()) ||
         Boolean(replacementIdentifierKind && replacementIdentifierValue.trim());
+      const identifierQuantityValid =
+        !replacementIdentifierValue.trim() || replacementQuantity === "1";
       return Boolean(
         replacementAcquisitionSource.trim() &&
           replacementItemName.trim() &&
           replacementUnitCost !== "" &&
           Number(replacementQuantity) > 0 &&
-          identifierComplete,
+          identifierComplete &&
+          identifierQuantityValid,
       );
     }
     if (!selectedReplacementProduct || Number(replacementQuantity) <= 0) return false;
+    if (
+      isWholeQuantityUnit(selectedReplacementProduct.unit) &&
+      !Number.isInteger(Number(replacementQuantity))
+    ) {
+      return false;
+    }
     if (selectedReplacementProduct.tracking_mode === "individual") {
       return Boolean(replacementUnitId);
     }
@@ -665,6 +680,7 @@ function ReturnsWorkspace({ businessId }: { businessId: string }) {
                 const remaining = remainingQuantity(item);
                 const draft = lines[item.id];
                 const independent = !item.product;
+                const wholeQuantity = isWholeQuantityUnit(item.product_unit);
                 return (
                   <div
                     className="grid gap-3 rounded-xl border border-slate-200 p-4 md:grid-cols-[1.4fr_.55fr_.65fr] md:items-end dark:border-slate-800"
@@ -702,12 +718,16 @@ function ReturnsWorkspace({ businessId }: { businessId: string }) {
                       </span>
                       <Input
                         disabled={remaining <= 0}
+                        inputMode={quantityInputMode(item.product_unit)}
                         max={remaining}
-                        min="0"
-                        onChange={(event) =>
-                          updateLine(item.id, { quantity: event.target.value })
-                        }
-                        step="0.001"
+                        min={wholeQuantity ? "1" : "0.001"}
+                        onChange={(event) => {
+                          const value = event.target.value;
+                          if (acceptsQuantityInput(value, item.product_unit)) {
+                            updateLine(item.id, { quantity: value });
+                          }
+                        }}
+                        step={quantityInputStep(item.product_unit)}
                         type="number"
                         value={draft?.quantity ?? ""}
                       />
@@ -936,12 +956,25 @@ function ReturnsWorkspace({ businessId }: { businessId: string }) {
                       <label className={field}>
                         <span>{t("replacementQuantity")}</span>
                         <Input
+                          inputMode={quantityInputMode(selectedReplacementProduct?.unit)}
                           max={selectedReplacementProduct?.current_quantity}
-                          min="0.001"
-                          onChange={(event) =>
-                            setReplacementQuantity(event.target.value)
+                          min={
+                            isWholeQuantityUnit(selectedReplacementProduct?.unit)
+                              ? "1"
+                              : "0.001"
                           }
-                          step="0.001"
+                          onChange={(event) => {
+                            const value = event.target.value;
+                            if (
+                              acceptsQuantityInput(
+                                value,
+                                selectedReplacementProduct?.unit,
+                              )
+                            ) {
+                              setReplacementQuantity(value);
+                            }
+                          }}
+                          step={quantityInputStep(selectedReplacementProduct?.unit)}
                           type="number"
                           value={replacementQuantity}
                         />
@@ -1009,11 +1042,13 @@ function ReturnsWorkspace({ businessId }: { businessId: string }) {
                     <label className={field}>
                       <span>{t("replacementIdentifierType")}</span>
                       <Select
-                        onChange={(event) =>
-                          setReplacementIdentifierKind(
-                            event.target.value as ReplacementIdentifierKind,
-                          )
-                        }
+                        onChange={(event) => {
+                          const next = event.target.value as ReplacementIdentifierKind;
+                          setReplacementIdentifierKind(next);
+                          if (next && Number(replacementQuantity) !== 1) {
+                            setReplacementQuantity("1");
+                          }
+                        }}
                         value={replacementIdentifierKind}
                       >
                         <option value="">{t("chooseIdentifierType")}</option>
@@ -1027,20 +1062,27 @@ function ReturnsWorkspace({ businessId }: { businessId: string }) {
                     <label className={field}>
                       <span>{t("replacementIdentifierValue")}</span>
                       <Input
-                        onChange={(event) =>
-                          setReplacementIdentifierValue(event.target.value)
-                        }
+                        onChange={(event) => {
+                          setReplacementIdentifierValue(event.target.value);
+                          if (event.target.value && Number(replacementQuantity) !== 1) {
+                            setReplacementQuantity("1");
+                          }
+                        }}
                         value={replacementIdentifierValue}
                       />
                     </label>
                     <label className={field}>
                       <span>{t("replacementQuantity")}</span>
                       <Input
-                        min="0.001"
-                        onChange={(event) =>
-                          setReplacementQuantity(event.target.value)
-                        }
-                        step="0.001"
+                        inputMode={replacementIdentifierValue ? "numeric" : "decimal"}
+                        min={replacementIdentifierValue ? "1" : "0.001"}
+                        onChange={(event) => {
+                          const value = event.target.value;
+                          if (!replacementIdentifierValue || /^\d*$/.test(value)) {
+                            setReplacementQuantity(value);
+                          }
+                        }}
+                        step={replacementIdentifierValue ? "1" : "0.001"}
                         type="number"
                         value={replacementQuantity}
                       />
