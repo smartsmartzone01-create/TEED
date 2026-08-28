@@ -24,6 +24,7 @@ class CommerceQuantityRuleTests(SimpleTestCase):
             "set",
             "dozen",
             "roll",
+            "car",
         ]:
             with self.subTest(unit=unit):
                 self.assertTrue(is_countable_unit(unit))
