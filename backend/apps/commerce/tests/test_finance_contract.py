@@ -10,7 +10,7 @@ from apps.workspaces.models import Business, BusinessMembership
 from ..finance.models import Budget, Expense
 from ..finance.selectors import budget_financial_state
 from ..finance.serializers import ExpenseCreateSerializer
-from ..finance.services import create_expense, set_budget
+from ..finance.services import create_expense, set_budget, update_expense
 
 
 class FinanceContractTests(TestCase):
@@ -53,6 +53,40 @@ class FinanceContractTests(TestCase):
         self.assertEqual(expense.amount, Decimal("450000"))
         self.assertEqual(expense.payee, "Building owner")
         self.assertEqual(expense.reference, "BANK-8891")
+
+    def test_expense_edit_preserves_audit_number_and_updates_financial_reality(self):
+        expense = create_expense(
+            actor=self.owner,
+            business_id=self.business.id,
+            category=Expense.Category.TRANSPORT_TRAVEL,
+            description="Fuel estimate",
+            amount=Decimal("50000"),
+            payee="Fuel station",
+            payment_method=Expense.PaymentMethod.CASH,
+            reference="",
+            notes="",
+            incurred_at=timezone.now(),
+        )
+
+        updated = update_expense(
+            actor=self.owner,
+            business_id=self.business.id,
+            expense_id=expense.id,
+            category=Expense.Category.TRANSPORT_TRAVEL,
+            description="Fuel receipt corrected",
+            amount=Decimal("47000"),
+            payee="Fuel station",
+            payment_method=Expense.PaymentMethod.MOBILE_MONEY,
+            reference="MPESA-8891",
+            notes="Corrected from receipt",
+            incurred_at=expense.incurred_at,
+        )
+
+        self.assertEqual(updated.id, expense.id)
+        self.assertEqual(updated.expense_number, "EXP-000001")
+        self.assertEqual(updated.amount, Decimal("47000"))
+        self.assertEqual(updated.reference, "MPESA-8891")
+        self.assertEqual(updated.payment_method, Expense.PaymentMethod.MOBILE_MONEY)
 
     def test_manual_expense_cannot_use_internal_stock_expense_category(self):
         serializer = ExpenseCreateSerializer(
