@@ -154,21 +154,21 @@ function WorkspaceSidebar({
             aria-controls={panelId}
             aria-expanded={expanded}
             className={cn(
-              "flex min-h-9 w-full items-center gap-2.5 rounded-lg px-2.5 text-left text-[13px] font-medium",
+              "flex min-h-8 w-full items-center gap-2 rounded-md px-2.5 text-left text-xs font-semibold",
               groupActive
                 ? "bg-slate-100 text-slate-950 dark:bg-slate-900 dark:text-white"
-                : "text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-900",
+                : "text-slate-800 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-900",
               collapsed && "lg:justify-center lg:px-0",
             )}
             onClick={() => toggleGroup(group.key)}
             type="button"
           >
-            <Icon className="size-4 shrink-0" />
+            <Icon className="size-3.5 shrink-0" />
             <span className={cn(collapsed && "lg:sr-only")}>{groupLabel(group.key)}</span>
             {!collapsed ? (
               <ChevronDown
                 className={cn(
-                  "ml-auto size-3.5 text-slate-400 transition-transform",
+                  "ml-auto size-3 text-slate-400 transition-transform",
                   expanded && "rotate-180",
                 )}
               />
@@ -177,7 +177,7 @@ function WorkspaceSidebar({
         </Tooltip>
         {expanded ? (
           <div
-            className="ml-5 mt-1 grid gap-0.5 border-l border-slate-200 pl-3 dark:border-slate-800"
+            className="ml-4.5 mt-1 grid gap-0.5 border-l border-slate-200 pl-2.5 dark:border-slate-800"
             id={panelId}
           >
             {group.items.map((item) => {
@@ -187,7 +187,7 @@ function WorkspaceSidebar({
                 <Link
                   aria-current={selected ? "page" : undefined}
                   className={cn(
-                    "rounded-md px-2.5 py-1.5 text-xs",
+                    "rounded-md px-2 py-1.5 text-[11px] leading-4",
                     selected
                       ? "bg-slate-100 font-semibold text-slate-950 dark:bg-slate-900 dark:text-white"
                       : "text-slate-500 hover:bg-slate-50 hover:text-slate-950 dark:hover:bg-slate-900 dark:hover:text-white",
@@ -219,37 +219,37 @@ function WorkspaceSidebar({
       />
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-[min(18rem,88vw)] flex-col border-r border-slate-200 bg-white text-slate-950",
+          "fixed inset-y-0 left-0 z-50 flex w-[min(16rem,88vw)] flex-col border-r border-slate-200 bg-white text-slate-950",
           "transition-[width,transform] duration-300 ease-out dark:border-slate-800 dark:bg-slate-950 dark:text-white",
-          collapsed ? "lg:w-[5.25rem]" : "lg:w-72",
+          collapsed ? "lg:w-[5.25rem]" : "lg:w-64",
           mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
         )}
       >
-        <div className="flex h-18 shrink-0 items-center justify-between border-b border-slate-200 px-4 dark:border-slate-800">
+        <div className="flex h-14 shrink-0 items-center justify-between border-b border-slate-200 px-3 dark:border-slate-800">
           <BrandMark
-            className={cn("text-2xl", collapsed && "lg:sr-only")}
+            className={cn("text-xl", collapsed && "lg:sr-only")}
             href="/workspaces"
             tone="adaptive"
           />
           <button
             aria-label={t(collapsed ? "expandSidebar" : "collapseSidebar")}
-            className="hidden size-9 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-950 dark:hover:bg-slate-900 dark:hover:text-white lg:inline-flex"
+            className="hidden size-8 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-950 dark:hover:bg-slate-900 dark:hover:text-white lg:inline-flex"
             onClick={onToggleCollapsed}
             type="button"
           >
             {collapsed ? (
-              <ChevronRight className="size-4" />
+              <ChevronRight className="size-3.5" />
             ) : (
-              <ChevronLeft className="size-4" />
+              <ChevronLeft className="size-3.5" />
             )}
           </button>
           <button
             aria-label={t("closeNavigation")}
-            className="inline-flex size-9 items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-slate-900 lg:hidden"
+            className="inline-flex size-8 items-center justify-center rounded-md hover:bg-slate-100 dark:hover:bg-slate-900 lg:hidden"
             onClick={onCloseMobile}
             type="button"
           >
-            <X className="size-4" />
+            <X className="size-3.5" />
           </button>
         </div>
 
@@ -262,46 +262,46 @@ function WorkspaceSidebar({
               <Link
                 aria-current={pathname === `/workspace/${businessId}` ? "page" : undefined}
                 className={cn(
-                  "flex min-h-9 items-center gap-2.5 rounded-lg px-2.5 text-[13px] font-medium",
+                  "flex min-h-8 items-center gap-2 rounded-md px-2.5 text-xs font-semibold",
                   pathname === `/workspace/${businessId}`
                     ? "bg-slate-100 text-slate-950 dark:bg-slate-900 dark:text-white"
-                    : "text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-900",
+                    : "text-slate-800 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-900",
                   collapsed && "lg:justify-center lg:px-0",
                 )}
                 href={`/workspace/${businessId}`}
                 onClick={onCloseMobile}
               >
-                <LayoutDashboard className="size-4 shrink-0" />
+                <LayoutDashboard className="size-3.5 shrink-0" />
                 <span className={cn(collapsed && "lg:sr-only")}>{homeLabel}</span>
               </Link>
             </Tooltip>
           ) : null}
 
           {businessId && commerceEnabled ? (
-            <div className="mt-6">
+            <div className="mt-5">
               <p
                 className={cn(
-                  "mb-2 px-2.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400",
+                  "mb-1.5 px-2.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-400",
                   collapsed && "lg:sr-only",
                 )}
               >
                 {operationsLabel}
               </p>
-              <div className="grid gap-1">{operationsGroups.map(renderGroup)}</div>
+              <div className="grid gap-0.5">{operationsGroups.map(renderGroup)}</div>
             </div>
           ) : null}
 
           {businessId ? (
-            <div className="mt-6">
+            <div className="mt-5">
               <p
                 className={cn(
-                  "mb-2 px-2.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400",
+                  "mb-1.5 px-2.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-400",
                   collapsed && "lg:sr-only",
                 )}
               >
                 {administrationLabel}
               </p>
-              <div className="grid gap-1">
+              <div className="grid gap-0.5">
                 {administrationGroups
                   .filter((group) => group.key !== "membership" || collaborationEnabled)
                   .map(renderGroup)}
@@ -309,10 +309,10 @@ function WorkspaceSidebar({
             </div>
           ) : null}
 
-          <div className="mt-6">
+          <div className="mt-5">
             <p
               className={cn(
-                "mb-2 px-2.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400",
+                "mb-1.5 px-2.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-400",
                 collapsed && "lg:sr-only",
               )}
             >
@@ -322,39 +322,39 @@ function WorkspaceSidebar({
               <Tooltip content={directoryT("embeddedTitle")}>
                 <Link
                   className={cn(
-                    "flex min-h-9 items-center gap-2.5 rounded-lg px-2.5 text-[13px] font-medium text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-900",
+                    "flex min-h-8 items-center gap-2 rounded-md px-2.5 text-xs font-medium text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-900",
                     collapsed && "lg:justify-center lg:px-0",
                   )}
                   href="/workspaces"
                   onClick={onCloseMobile}
                 >
-                  <FolderKanban className="size-4 shrink-0" />
+                  <FolderKanban className="size-3.5 shrink-0" />
                   <span className={cn(collapsed && "lg:sr-only")}>{directoryT("embeddedTitle")}</span>
                 </Link>
               </Tooltip>
               <Tooltip content={directoryT("create")}>
                 <Link
                   className={cn(
-                    "flex min-h-9 items-center gap-2.5 rounded-lg px-2.5 text-[13px] font-medium text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-900",
+                    "flex min-h-8 items-center gap-2 rounded-md px-2.5 text-xs font-medium text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-900",
                     collapsed && "lg:justify-center lg:px-0",
                   )}
                   href="/dashboard/workspaces/create"
                   onClick={onCloseMobile}
                 >
-                  <Plus className="size-4 shrink-0" />
+                  <Plus className="size-3.5 shrink-0" />
                   <span className={cn(collapsed && "lg:sr-only")}>{directoryT("create")}</span>
                 </Link>
               </Tooltip>
               <Tooltip content={directoryT("request")}>
                 <Link
                   className={cn(
-                    "flex min-h-9 items-center gap-2.5 rounded-lg px-2.5 text-[13px] font-medium text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-900",
+                    "flex min-h-8 items-center gap-2 rounded-md px-2.5 text-xs font-medium text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-900",
                     collapsed && "lg:justify-center lg:px-0",
                   )}
                   href="/dashboard/workspaces/access"
                   onClick={onCloseMobile}
                 >
-                  <UserPlus className="size-4 shrink-0" />
+                  <UserPlus className="size-3.5 shrink-0" />
                   <span className={cn(collapsed && "lg:sr-only")}>{directoryT("request")}</span>
                 </Link>
               </Tooltip>
