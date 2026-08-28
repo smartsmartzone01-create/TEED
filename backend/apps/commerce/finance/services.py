@@ -5,6 +5,7 @@ from apps.workspaces.policy import WorkspacePermission
 
 from ..services import commerce_membership
 from .models import Budget, Expense
+from .selectors import normalize_budget_period_start
 
 
 @transaction.atomic
@@ -62,17 +63,20 @@ def update_expense(*, actor, business_id, expense_id, **values):
 
     for field, value in values.items():
         setattr(expense, field, value)
-    expense.save(
-        update_fields=[
-            *values.keys(),
-            "updated_at",
-        ]
-    )
+    expense.save(update_fields=[*values.keys(), "updated_at"])
     return expense
 
 
 @transaction.atomic
-def set_budget(*, actor, business_id, category, month, planned_amount, notes=""):
+def set_budget(
+    *,
+    actor,
+    business_id,
+    period_type,
+    period_start,
+    planned_amount,
+    notes="",
+):
     membership = commerce_membership(
         user=actor,
         business_id=business_id,
@@ -82,11 +86,19 @@ def set_budget(*, actor, business_id, category, month, planned_amount, notes="")
         pk=membership.business_id
     )
 
-    month = month.replace(day=1)
+    normalized_start = normalize_budget_period_start(
+        period_type=period_type,
+        period_start=period_start,
+    )
     budget, _ = Budget.objects.update_or_create(
         business=membership.business,
-        category=category,
-        month=month,
-        defaults={"planned_amount": planned_amount, "notes": notes},
+        period_type=period_type,
+        period_start=normalized_start,
+        defaults={
+            "planned_amount": planned_amount,
+            "notes": notes,
+            "category": "",
+            "month": None,
+        },
     )
     return budget
