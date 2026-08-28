@@ -70,20 +70,41 @@ class Expense(BaseModel):
 
 
 class Budget(BaseModel):
+    class PeriodType(models.TextChoices):
+        DAILY = "daily", "Daily"
+        WEEKLY = "weekly", "Weekly"
+        MONTHLY = "monthly", "Monthly"
+
     business = models.ForeignKey(
         "workspaces.Business", on_delete=models.CASCADE, related_name="budgets"
     )
-    category = models.CharField(max_length=48, choices=Expense.Category.choices)
-    month = models.DateField()
+
+    # Legacy category/month fields remain nullable so existing category budgets are
+    # preserved. New budgets use period_type + period_start only.
+    category = models.CharField(
+        max_length=48,
+        choices=Expense.Category.choices,
+        blank=True,
+        default="",
+    )
+    month = models.DateField(null=True, blank=True)
+
+    period_type = models.CharField(
+        max_length=12,
+        choices=PeriodType.choices,
+        default=PeriodType.MONTHLY,
+    )
+    period_start = models.DateField(null=True, blank=True, db_index=True)
     planned_amount = models.DecimalField(max_digits=14, decimal_places=2)
     notes = models.CharField(max_length=300, blank=True, default="")
 
     class Meta:
         db_table = "commerce_budgets"
-        ordering = ["-month", "category"]
+        ordering = ["-period_start", "period_type", "-created_at"]
         constraints = [
             models.UniqueConstraint(
-                fields=["business", "category", "month"],
-                name="commerce_budget_period_unique",
+                fields=["business", "period_type", "period_start"],
+                condition=models.Q(period_start__isnull=False),
+                name="commerce_budget_general_period_unique",
             )
         ]
