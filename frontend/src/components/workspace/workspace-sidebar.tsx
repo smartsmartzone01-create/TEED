@@ -154,21 +154,21 @@ function WorkspaceSidebar({
             aria-controls={panelId}
             aria-expanded={expanded}
             className={cn(
-              "flex min-h-8 w-full items-center gap-2 rounded-md px-2.5 text-left text-xs font-semibold",
+              "flex min-h-7 w-full items-center gap-2 rounded-md px-2.5 text-left text-[11px] font-semibold leading-4",
               groupActive
                 ? "bg-slate-100 text-slate-950 dark:bg-slate-900 dark:text-white"
-                : "text-slate-800 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-900",
+                : "text-slate-900 hover:bg-slate-50 dark:text-slate-100 dark:hover:bg-slate-900",
               collapsed && "lg:justify-center lg:px-0",
             )}
             onClick={() => toggleGroup(group.key)}
             type="button"
           >
-            <Icon className="size-3.5 shrink-0" />
+            <Icon className="size-3 shrink-0" />
             <span className={cn(collapsed && "lg:sr-only")}>{groupLabel(group.key)}</span>
             {!collapsed ? (
               <ChevronDown
                 className={cn(
-                  "ml-auto size-3 text-slate-400 transition-transform",
+                  "ml-auto size-2.5 text-slate-400 transition-transform",
                   expanded && "rotate-180",
                 )}
               />
@@ -177,7 +177,7 @@ function WorkspaceSidebar({
         </Tooltip>
         {expanded ? (
           <div
-            className="ml-4.5 mt-1 grid gap-0.5 border-l border-slate-200 pl-2.5 dark:border-slate-800"
+            className="ml-4 mt-0.5 grid gap-0.5 border-l border-slate-200 pl-2.5 dark:border-slate-800"
             id={panelId}
           >
             {group.items.map((item) => {
@@ -187,7 +187,7 @@ function WorkspaceSidebar({
                 <Link
                   aria-current={selected ? "page" : undefined}
                   className={cn(
-                    "rounded-md px-2 py-1.5 text-[11px] leading-4",
+                    "rounded-md px-2 py-1 text-[10px] leading-4",
                     selected
                       ? "bg-slate-100 font-semibold text-slate-950 dark:bg-slate-900 dark:text-white"
                       : "text-slate-500 hover:bg-slate-50 hover:text-slate-950 dark:hover:bg-slate-900 dark:hover:text-white",
@@ -262,16 +262,16 @@ function WorkspaceSidebar({
               <Link
                 aria-current={pathname === `/workspace/${businessId}` ? "page" : undefined}
                 className={cn(
-                  "flex min-h-8 items-center gap-2 rounded-md px-2.5 text-xs font-semibold",
+                  "flex min-h-7 items-center gap-2 rounded-md px-2.5 text-[11px] font-semibold leading-4",
                   pathname === `/workspace/${businessId}`
                     ? "bg-slate-100 text-slate-950 dark:bg-slate-900 dark:text-white"
-                    : "text-slate-800 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-900",
+                    : "text-slate-900 hover:bg-slate-50 dark:text-slate-100 dark:hover:bg-slate-900",
                   collapsed && "lg:justify-center lg:px-0",
                 )}
                 href={`/workspace/${businessId}`}
                 onClick={onCloseMobile}
               >
-                <LayoutDashboard className="size-3.5 shrink-0" />
+                <LayoutDashboard className="size-3 shrink-0" />
                 <span className={cn(collapsed && "lg:sr-only")}>{homeLabel}</span>
               </Link>
             </Tooltip>
@@ -281,7 +281,7 @@ function WorkspaceSidebar({
             <div className="mt-5">
               <p
                 className={cn(
-                  "mb-1.5 px-2.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-400",
+                  "mb-1.5 px-2.5 text-[8px] font-semibold uppercase tracking-[0.12em] text-slate-400",
                   collapsed && "lg:sr-only",
                 )}
               >
@@ -295,7 +295,7 @@ function WorkspaceSidebar({
             <div className="mt-5">
               <p
                 className={cn(
-                  "mb-1.5 px-2.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-400",
+                  "mb-1.5 px-2.5 text-[8px] font-semibold uppercase tracking-[0.12em] text-slate-400",
                   collapsed && "lg:sr-only",
                 )}
               >
@@ -312,7 +312,7 @@ function WorkspaceSidebar({
           <div className="mt-5">
             <p
               className={cn(
-                "mb-1.5 px-2.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-400",
+                "mb-1.5 px-2.5 text-[8px] font-semibold uppercase tracking-[0.12em] text-slate-400",
                 collapsed && "lg:sr-only",
               )}
             >
@@ -322,39 +322,39 @@ function WorkspaceSidebar({
               <Tooltip content={directoryT("embeddedTitle")}>
                 <Link
                   className={cn(
-                    "flex min-h-8 items-center gap-2 rounded-md px-2.5 text-xs font-medium text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-900",
+                    "flex min-h-7 items-center gap-2 rounded-md px-2.5 text-[11px] font-medium leading-4 text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-900",
                     collapsed && "lg:justify-center lg:px-0",
                   )}
                   href="/workspaces"
                   onClick={onCloseMobile}
                 >
-                  <FolderKanban className="size-3.5 shrink-0" />
+                  <FolderKanban className="size-3 shrink-0" />
                   <span className={cn(collapsed && "lg:sr-only")}>{directoryT("embeddedTitle")}</span>
                 </Link>
               </Tooltip>
               <Tooltip content={directoryT("create")}>
                 <Link
                   className={cn(
-                    "flex min-h-8 items-center gap-2 rounded-md px-2.5 text-xs font-medium text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-900",
+                    "flex min-h-7 items-center gap-2 rounded-md px-2.5 text-[11px] font-medium leading-4 text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-900",
                     collapsed && "lg:justify-center lg:px-0",
                   )}
                   href="/dashboard/workspaces/create"
                   onClick={onCloseMobile}
                 >
-                  <Plus className="size-3.5 shrink-0" />
+                  <Plus className="size-3 shrink-0" />
                   <span className={cn(collapsed && "lg:sr-only")}>{directoryT("create")}</span>
                 </Link>
               </Tooltip>
               <Tooltip content={directoryT("request")}>
                 <Link
                   className={cn(
-                    "flex min-h-8 items-center gap-2 rounded-md px-2.5 text-xs font-medium text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-900",
+                    "flex min-h-7 items-center gap-2 rounded-md px-2.5 text-[11px] font-medium leading-4 text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-900",
                     collapsed && "lg:justify-center lg:px-0",
                   )}
                   href="/dashboard/workspaces/access"
                   onClick={onCloseMobile}
                 >
-                  <UserPlus className="size-3.5 shrink-0" />
+                  <UserPlus className="size-3 shrink-0" />
                   <span className={cn(collapsed && "lg:sr-only")}>{directoryT("request")}</span>
                 </Link>
               </Tooltip>
