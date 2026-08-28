@@ -44,6 +44,7 @@ type SaleItem = {
   product: string;
   product_name: string;
   product_sku: string;
+  product_unit: string;
   tracked_unit: string | null;
   tracked_unit_reference: string;
   tracked_unit_details: TrackedSaleUnitDetails | null;
