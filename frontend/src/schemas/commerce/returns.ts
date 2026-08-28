@@ -23,6 +23,7 @@ const returnReplacementSchema = z.object({
   product_sku: z.string(),
   tracked_unit: z.string().nullable(),
   tracked_unit_reference: z.string(),
+  acquisition_source: z.string(),
   item_name: z.string(),
   item_details: z.record(z.string(), z.string()),
   quantity: decimal,
