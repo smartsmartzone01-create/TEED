@@ -54,6 +54,20 @@ const returnReasons: ReturnReason[] = [
   "not_as_expected",
   "other",
 ];
+const identifierKinds = [
+  "imei",
+  "serial",
+  "chassis",
+  "barcode",
+  "engine",
+  "registration",
+] as const;
+
+type ReplacementIdentifierKind = "" | (typeof identifierKinds)[number];
+type ReturnLineDraft = {
+  condition: ReturnCondition;
+  quantity: string;
+};
 
 const todayLocal = () => {
   const date = new Date();
@@ -145,11 +159,6 @@ function HelpTip({ content, label }: { content: string; label: string }) {
   );
 }
 
-type ReturnLineDraft = {
-  condition: ReturnCondition;
-  quantity: string;
-};
-
 function ReturnsWorkspace({ businessId }: { businessId: string }) {
   const t = useTranslations("CommerceReturns");
   const { accessToken } = useIdentitySession();
@@ -167,13 +176,24 @@ function ReturnsWorkspace({ businessId }: { businessId: string }) {
   const [resolution, setResolution] = useState<ReturnResolution>("refund");
   const [reason, setReason] = useState<ReturnReason>("damaged");
   const [returnedAt, setReturnedAt] = useState(nowLocal());
+  const [refundAmount, setRefundAmount] = useState("");
 
   const [replacementSource, setReplacementSource] =
     useState<ReturnReplacementSource>("stock");
   const [replacementProductId, setReplacementProductId] = useState("");
   const [replacementUnitId, setReplacementUnitId] = useState("");
   const [replacementQuantity, setReplacementQuantity] = useState("1");
+  const [replacementAcquisitionSource, setReplacementAcquisitionSource] =
+    useState("");
   const [replacementItemName, setReplacementItemName] = useState("");
+  const [replacementBrand, setReplacementBrand] = useState("");
+  const [replacementModel, setReplacementModel] = useState("");
+  const [replacementColor, setReplacementColor] = useState("");
+  const [replacementCapacity, setReplacementCapacity] = useState("");
+  const [replacementIdentifierKind, setReplacementIdentifierKind] =
+    useState<ReplacementIdentifierKind>("");
+  const [replacementIdentifierValue, setReplacementIdentifierValue] =
+    useState("");
   const [replacementUnitCost, setReplacementUnitCost] = useState("");
 
   const [loading, setLoading] = useState(true);
@@ -274,9 +294,25 @@ function ReturnsWorkspace({ businessId }: { businessId: string }) {
     );
   }, [lines, selectedSale]);
 
+  const refundableValue = useMemo(
+    () =>
+      selectedItems.reduce(
+        (total, item) =>
+          total + Number(lines[item.id]?.quantity || 0) * Number(item.unit_price),
+        0,
+      ),
+    [lines, selectedItems],
+  );
+
+  const refundRetained = Math.max(
+    0,
+    refundableValue - Number(refundAmount || 0),
+  );
+
   const chooseSale = (sale: Sale) => {
     setSavedReturn(null);
     setSelectedSale(sale);
+    setRefundAmount("");
     setLines(
       Object.fromEntries(
         sale.items.map((item) => [
@@ -306,17 +342,36 @@ function ReturnsWorkspace({ businessId }: { businessId: string }) {
     setReplacementProductId("");
     setReplacementUnitId("");
     setReplacementQuantity("1");
+    setReplacementAcquisitionSource("");
     setReplacementItemName("");
+    setReplacementBrand("");
+    setReplacementModel("");
+    setReplacementColor("");
+    setReplacementCapacity("");
+    setReplacementIdentifierKind("");
+    setReplacementIdentifierValue("");
     setReplacementUnitCost("");
+  };
+
+  const refundValid = () => {
+    if (resolution !== "refund") return true;
+    if (refundAmount === "") return false;
+    const amount = Number(refundAmount);
+    return Number.isFinite(amount) && amount >= 0 && amount <= refundableValue;
   };
 
   const replacementValid = () => {
     if (resolution !== "replacement") return true;
     if (replacementSource === "independent") {
+      const identifierComplete =
+        (!replacementIdentifierKind && !replacementIdentifierValue.trim()) ||
+        Boolean(replacementIdentifierKind && replacementIdentifierValue.trim());
       return Boolean(
-        replacementItemName.trim() &&
+        replacementAcquisitionSource.trim() &&
+          replacementItemName.trim() &&
           replacementUnitCost !== "" &&
-          Number(replacementQuantity) > 0,
+          Number(replacementQuantity) > 0 &&
+          identifierComplete,
       );
     }
     if (!selectedReplacementProduct || Number(replacementQuantity) <= 0) return false;
@@ -325,6 +380,18 @@ function ReturnsWorkspace({ businessId }: { businessId: string }) {
     }
     return Number(replacementQuantity) <= Number(selectedReplacementProduct.current_quantity);
   };
+
+  const independentReplacementDetails = () =>
+    Object.fromEntries(
+      [
+        ["brand", replacementBrand.trim()],
+        ["model", replacementModel.trim()],
+        ["color", replacementColor.trim()],
+        ["capacity", replacementCapacity.trim()],
+        ["identifier_kind", replacementIdentifierKind],
+        ["identifier_value", replacementIdentifierValue.trim()],
+      ].filter(([, value]) => Boolean(value)),
+    );
 
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -337,6 +404,10 @@ function ReturnsWorkspace({ businessId }: { businessId: string }) {
     }));
     if (!items.length) {
       notify({ message: t("chooseItemError"), tone: "error" });
+      return;
+    }
+    if (!refundValid()) {
+      notify({ message: t("refundValidation"), tone: "error" });
       return;
     }
     if (!replacementValid()) {
@@ -361,7 +432,9 @@ function ReturnsWorkspace({ businessId }: { businessId: string }) {
             }
           : {
               source: "independent" as const,
+              acquisition_source: replacementAcquisitionSource.trim(),
               item_name: replacementItemName.trim(),
+              item_details: independentReplacementDetails(),
               quantity: replacementQuantity,
               acquisition_unit_cost: replacementUnitCost,
             };
@@ -372,6 +445,7 @@ function ReturnsWorkspace({ businessId }: { businessId: string }) {
         sale_id: selectedSale.id,
         resolution,
         reason,
+        ...(resolution === "refund" ? { refund_amount: refundAmount } : {}),
         returned_at: new Date(returnedAt).toISOString(),
         items,
         ...(replacement ? { replacement } : {}),
@@ -383,6 +457,7 @@ function ReturnsWorkspace({ businessId }: { businessId: string }) {
       setLines({});
       setReason("damaged");
       setResolution("refund");
+      setRefundAmount("");
       setReturnedAt(nowLocal());
       resetReplacement();
       await Promise.all([
@@ -682,6 +757,7 @@ function ReturnsWorkspace({ businessId }: { businessId: string }) {
                     const next = event.target.value as ReturnResolution;
                     setResolution(next);
                     if (next !== "replacement") resetReplacement();
+                    if (next !== "refund") setRefundAmount("");
                   }}
                   value={resolution}
                 >
@@ -722,6 +798,50 @@ function ReturnsWorkspace({ businessId }: { businessId: string }) {
               </label>
             </div>
 
+            {resolution === "refund" ? (
+              <section className="space-y-4 rounded-xl border border-slate-200 bg-slate-50/60 p-4 dark:border-slate-800 dark:bg-slate-900/40">
+                <div className="flex items-center gap-2">
+                  <h3 className="font-bold text-slate-950 dark:text-white">
+                    {t("refundDetails")}
+                  </h3>
+                  <HelpTip
+                    content={t("tooltips.refundAmount")}
+                    label={t("tooltips.refundAmount")}
+                  />
+                </div>
+                <div className="grid gap-3 md:grid-cols-3">
+                  <ReceiptMetric
+                    label={t("refundableValue")}
+                    value={String(refundableValue)}
+                  />
+                  <label className={field}>
+                    <span>{t("actualRefund")}</span>
+                    <Input
+                      max={refundableValue}
+                      min="0"
+                      onChange={(event) => setRefundAmount(event.target.value)}
+                      step="0.01"
+                      type="number"
+                      value={refundAmount}
+                    />
+                  </label>
+                  <ReceiptMetric
+                    label={t("refundRetained")}
+                    value={String(refundRetained)}
+                  />
+                </div>
+                <Button
+                  disabled={refundableValue <= 0}
+                  onClick={() => setRefundAmount(refundableValue.toFixed(2))}
+                  size="small"
+                  type="button"
+                  variant="outline"
+                >
+                  {t("useFullRefund")}
+                </Button>
+              </section>
+            ) : null}
+
             {resolution === "replacement" ? (
               <section className="space-y-4 rounded-xl border border-slate-200 bg-slate-50/60 p-4 dark:border-slate-800 dark:bg-slate-900/40">
                 <div className="flex items-center gap-2">
@@ -755,12 +875,8 @@ function ReturnsWorkspace({ businessId }: { businessId: string }) {
                         className="mr-2"
                         name="replacement-source"
                         onChange={() => {
+                          resetReplacement();
                           setReplacementSource(source);
-                          setReplacementProductId("");
-                          setReplacementUnitId("");
-                          setReplacementItemName("");
-                          setReplacementUnitCost("");
-                          setReplacementQuantity("1");
                         }}
                         type="radio"
                       />
@@ -833,7 +949,23 @@ function ReturnsWorkspace({ businessId }: { businessId: string }) {
                     )}
                   </div>
                 ) : (
-                  <div className="grid gap-3 md:grid-cols-3">
+                  <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                    <label className={field}>
+                      <span className="flex items-center gap-1">
+                        {t("replacementAcquisitionSource")}
+                        <HelpTip
+                          content={t("tooltips.acquisitionSource")}
+                          label={t("tooltips.acquisitionSource")}
+                        />
+                      </span>
+                      <Input
+                        onChange={(event) =>
+                          setReplacementAcquisitionSource(event.target.value)
+                        }
+                        placeholder={t("replacementAcquisitionPlaceholder")}
+                        value={replacementAcquisitionSource}
+                      />
+                    </label>
                     <label className={field}>
                       <span>{t("replacementItem")}</span>
                       <Input
@@ -842,6 +974,63 @@ function ReturnsWorkspace({ businessId }: { businessId: string }) {
                         }
                         placeholder={t("replacementItemPlaceholder")}
                         value={replacementItemName}
+                      />
+                    </label>
+                    <label className={field}>
+                      <span>{t("replacementBrand")}</span>
+                      <Input
+                        onChange={(event) => setReplacementBrand(event.target.value)}
+                        value={replacementBrand}
+                      />
+                    </label>
+                    <label className={field}>
+                      <span>{t("replacementModel")}</span>
+                      <Input
+                        onChange={(event) => setReplacementModel(event.target.value)}
+                        value={replacementModel}
+                      />
+                    </label>
+                    <label className={field}>
+                      <span>{t("replacementColor")}</span>
+                      <Input
+                        onChange={(event) => setReplacementColor(event.target.value)}
+                        value={replacementColor}
+                      />
+                    </label>
+                    <label className={field}>
+                      <span>{t("replacementCapacity")}</span>
+                      <Input
+                        onChange={(event) =>
+                          setReplacementCapacity(event.target.value)
+                        }
+                        value={replacementCapacity}
+                      />
+                    </label>
+                    <label className={field}>
+                      <span>{t("replacementIdentifierType")}</span>
+                      <Select
+                        onChange={(event) =>
+                          setReplacementIdentifierKind(
+                            event.target.value as ReplacementIdentifierKind,
+                          )
+                        }
+                        value={replacementIdentifierKind}
+                      >
+                        <option value="">{t("chooseIdentifierType")}</option>
+                        {identifierKinds.map((kind) => (
+                          <option key={kind} value={kind}>
+                            {t(`identifierTypes.${kind}`)}
+                          </option>
+                        ))}
+                      </Select>
+                    </label>
+                    <label className={field}>
+                      <span>{t("replacementIdentifierValue")}</span>
+                      <Input
+                        onChange={(event) =>
+                          setReplacementIdentifierValue(event.target.value)
+                        }
+                        value={replacementIdentifierValue}
                       />
                     </label>
                     <label className={field}>
@@ -887,6 +1076,7 @@ function ReturnsWorkspace({ businessId }: { businessId: string }) {
                 onClick={() => {
                   setSelectedSale(null);
                   setLines({});
+                  setRefundAmount("");
                 }}
                 type="button"
                 variant="outline"
@@ -898,53 +1088,66 @@ function ReturnsWorkspace({ businessId }: { businessId: string }) {
         ) : null}
 
         <section className={`${panel} space-y-4`}>
-          <div>
+          <div className="flex items-center gap-2">
             <h2 className="text-lg font-bold text-slate-950 dark:text-white">
               {t("historyTitle")}
             </h2>
-            <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-              {t("historyHelp")}
-            </p>
+            <HelpTip
+              content={t("tooltips.historyRelationship")}
+              label={t("tooltips.historyRelationship")}
+            />
           </div>
           {loading ? (
             <p className="text-sm text-slate-500">{t("loading")}</p>
           ) : returns.length ? (
             <div className="divide-y divide-slate-200 dark:divide-slate-800">
-              {returns.map((record) => (
-                <div
-                  className="grid gap-2 py-3 text-sm sm:grid-cols-[1fr_.8fr_.8fr] sm:items-center"
-                  key={record.id}
-                >
-                  <div>
-                    <p className="font-semibold text-slate-950 dark:text-white">
-                      {record.return_number || record.receipt_number}
-                    </p>
-                    <p className="text-xs text-slate-500">
-                      {t("originalReceipt")}: {record.receipt_number} ·{" "}
-                      {isReturnReason(record.reason)
-                        ? t(`reasonValues.${record.reason}`)
-                        : record.reason}
-                    </p>
+              {returns.map((record) => {
+                const retained = Math.max(
+                  0,
+                  Number(record.total) - Number(record.refund_amount),
+                );
+                return (
+                  <div
+                    className="grid gap-2 py-3 text-sm sm:grid-cols-[1fr_.8fr_.8fr] sm:items-center"
+                    key={record.id}
+                  >
+                    <div>
+                      <p className="font-semibold text-slate-950 dark:text-white">
+                        {record.return_number || record.receipt_number}
+                      </p>
+                      <p className="text-xs text-slate-500">
+                        {t("originalReceipt")}: {record.receipt_number} ·{" "}
+                        {isReturnReason(record.reason)
+                          ? t(`reasonValues.${record.reason}`)
+                          : record.reason}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="font-medium">
+                        {t(`resolutionValues.${record.resolution}`)}
+                      </p>
+                      <p className="text-xs text-slate-500">
+                        {new Date(record.returned_at).toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="text-xs sm:text-right">
+                      <p>{t("returnedValue")}: {money(record.total)}</p>
+                      {record.resolution === "refund" ? (
+                        <>
+                          <p>{t("actualRefund")}: {money(record.refund_amount)}</p>
+                          <p>{t("refundRetained")}: {money(retained)}</p>
+                        </>
+                      ) : null}
+                      {Number(record.damaged_loss) > 0 ? (
+                        <p>{t("damagedLoss")}: {money(record.damaged_loss)}</p>
+                      ) : null}
+                      {Number(record.replacement_cost) > 0 ? (
+                        <p>{t("replacementCost")}: {money(record.replacement_cost)}</p>
+                      ) : null}
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-medium">
-                      {t(`resolutionValues.${record.resolution}`)}
-                    </p>
-                    <p className="text-xs text-slate-500">
-                      {new Date(record.returned_at).toLocaleString()}
-                    </p>
-                  </div>
-                  <div className="text-xs sm:text-right">
-                    <p>{t("returnedValue")}: {money(record.total)}</p>
-                    {Number(record.damaged_loss) > 0 ? (
-                      <p>{t("damagedLoss")}: {money(record.damaged_loss)}</p>
-                    ) : null}
-                    {Number(record.replacement_cost) > 0 ? (
-                      <p>{t("replacementCost")}: {money(record.replacement_cost)}</p>
-                    ) : null}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <p className="text-sm text-slate-500">{t("emptyHistory")}</p>
@@ -962,8 +1165,26 @@ function ReturnReceipt({ record }: { record: SaleReturnSummary }) {
     Number(record.refund_amount) -
     Number(record.credit_amount) -
     Number(record.replacement_cost);
+  const retained = Math.max(
+    0,
+    Number(record.total) - Number(record.refund_amount),
+  );
   const replacementName = record.replacement
     ? record.replacement.product_name || record.replacement.item_name
+    : "";
+  const replacementDetails = record.replacement
+    ? [
+        record.replacement.item_details.brand,
+        record.replacement.item_details.model,
+        record.replacement.item_details.color,
+        record.replacement.item_details.capacity,
+        record.replacement.item_details.identifier_kind &&
+        record.replacement.item_details.identifier_value
+          ? `${record.replacement.item_details.identifier_kind}: ${record.replacement.item_details.identifier_value}`
+          : "",
+      ]
+        .filter(Boolean)
+        .join(" · ")
     : "";
 
   return (
@@ -990,6 +1211,12 @@ function ReturnReceipt({ record }: { record: SaleReturnSummary }) {
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <ReceiptMetric label={t("returnedValue")} value={record.total} />
+        {record.resolution === "refund" ? (
+          <ReceiptMetric label={t("actualRefund")} value={record.refund_amount} />
+        ) : null}
+        {record.resolution === "refund" ? (
+          <ReceiptMetric label={t("refundRetained")} value={String(retained)} />
+        ) : null}
         <ReceiptMetric
           label={t("recoveredInventory")}
           value={record.recovered_inventory_cost}
@@ -1010,6 +1237,14 @@ function ReturnReceipt({ record }: { record: SaleReturnSummary }) {
               ? ` · ${record.replacement.product_sku}`
               : ""}
           </p>
+          {record.replacement.acquisition_source ? (
+            <p className="mt-1 text-xs text-slate-500">
+              {t("replacementAcquisitionSource")}: {record.replacement.acquisition_source}
+            </p>
+          ) : null}
+          {replacementDetails ? (
+            <p className="mt-1 text-xs text-slate-500">{replacementDetails}</p>
+          ) : null}
         </div>
       ) : null}
 
