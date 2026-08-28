@@ -1,4 +1,6 @@
 from common.database.base_model import BaseModel
+from common.database.managers import BaseManager
+from common.database.querysets import BaseQuerySet
 from django.conf import settings
 from django.db import models
 
@@ -104,7 +106,7 @@ class SaleAudit(BaseModel):
         ordering = ["-created_at"]
 
 
-class SaleItemQuerySet(models.QuerySet):
+class SaleItemQuerySet(BaseQuerySet):
     def select_for_update(
         self,
         nowait=False,
@@ -120,12 +122,16 @@ class SaleItemQuerySet(models.QuerySet):
         )
 
 
+class SaleItemManager(BaseManager.from_queryset(SaleItemQuerySet)):
+    pass
+
+
 class SaleItem(BaseModel):
     class Source(models.TextChoices):
         CATALOG = "catalog", "TEED product / SKU"
         MANUAL = "manual", "Independent item"
 
-    objects = SaleItemQuerySet.as_manager()
+    objects = SaleItemManager()
 
     sale = models.ForeignKey(Sale, on_delete=models.CASCADE, related_name="items")
     source = models.CharField(
