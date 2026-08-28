@@ -2,6 +2,7 @@ import { setRequestLocale } from "next-intl/server";
 
 import { IdentityAccessBoundary } from "@/components/identity/identity-access-boundary";
 import { WorkspaceDirectory } from "@/components/workspace/workspace-directory";
+import { WorkspaceDirectoryShell } from "@/components/workspace/workspace-directory-shell";
 import { WorkspaceProvider } from "@/providers/workspace/workspace-provider";
 
 type PageProps = { params: Promise<{ locale: string }> };
@@ -13,9 +14,9 @@ export default async function WorkspaceDirectoryPage({ params }: PageProps) {
   return (
     <IdentityAccessBoundary access="dashboard">
       <WorkspaceProvider>
-        <main className="min-h-svh bg-slate-50 dark:bg-slate-950">
+        <WorkspaceDirectoryShell>
           <WorkspaceDirectory surface="standalone" />
-        </main>
+        </WorkspaceDirectoryShell>
       </WorkspaceProvider>
     </IdentityAccessBoundary>
   );
