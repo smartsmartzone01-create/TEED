@@ -2,27 +2,6 @@ import { z } from "zod";
 
 import { createApiEnvelopeSchema } from "@/schemas/global/api";
 
-const expenseCategorySchema = z.enum([
-  "salaries_wages",
-  "rent",
-  "utilities",
-  "internet_phone",
-  "transport_travel",
-  "marketing_advertising",
-  "repairs_maintenance",
-  "software_subscriptions",
-  "professional_services",
-  "bank_payment_fees",
-  "insurance",
-  "licenses_permits",
-  "office_admin",
-  "security_cleaning",
-  "taxes_duties",
-  "interest_finance",
-  "meals_hospitality",
-  "other",
-]);
-
 const expensePaymentMethodSchema = z.enum([
   "cash",
   "bank_transfer",
@@ -35,7 +14,7 @@ const expensePaymentMethodSchema = z.enum([
 const expenseRecordSchema = z.object({
   id: z.string().uuid(),
   expense_number: z.string(),
-  category: expenseCategorySchema,
+  category: z.string(),
   category_label: z.string(),
   description: z.string(),
   amount: z.string(),
@@ -56,7 +35,7 @@ const expensesWorkspaceResponseSchema = createApiEnvelopeSchema(
       total: z.string(),
       category_totals: z.array(
         z.object({
-          category: expenseCategorySchema,
+          category: z.string(),
           total: z.string(),
         }),
       ),
@@ -68,7 +47,7 @@ const expenseResponseSchema = createApiEnvelopeSchema(expenseRecordSchema);
 
 const budgetRecordSchema = z.object({
   id: z.string().uuid(),
-  category: expenseCategorySchema,
+  category: z.string(),
   category_label: z.string(),
   month: z.string(),
   planned_amount: z.string(),
