@@ -21,7 +21,8 @@ function getReturnsWorkspace(
   const query = new URLSearchParams();
   if (period.soldFrom) query.set("sold_from", period.soldFrom);
   if (period.soldBefore) query.set("sold_before", period.soldBefore);
-  const suffix = query.size ? `?${query.toString()}` : "";
+  const queryString = query.toString();
+  const suffix = queryString ? `?${queryString}` : "";
 
   return requestApi({
     accessToken,
