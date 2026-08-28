@@ -125,6 +125,7 @@ def _record_replacement(*, business, return_record, replacement_values):
         return ReturnReplacement.objects.create(
             return_record=return_record,
             source=source,
+            acquisition_source=replacement_values["acquisition_source"].strip(),
             item_name=replacement_values["item_name"].strip(),
             item_details=replacement_values.get("item_details", {}),
             quantity=quantity,
@@ -192,8 +193,18 @@ def record_return(
     resolution,
     reason,
     returned_at,
+    refund_amount=None,
     replacement=None,
 ):
+    if resolution == SaleReturn.Resolution.REFUND and refund_amount is None:
+        raise ValidationError(
+            {"refund_amount": ["Enter the amount actually refunded to the customer."]}
+        )
+    if resolution != SaleReturn.Resolution.REFUND and refund_amount is not None:
+        raise ValidationError(
+            {"refund_amount": ["Only refund returns can include a refund amount."]}
+        )
+
     membership = commerce_membership(
         user=actor,
         business_id=business_id,
@@ -273,9 +284,19 @@ def record_return(
         (item.cost_total for item in returned_items if item.condition == "damaged"),
         Decimal("0"),
     )
-    refund_amount = (
-        record.total if resolution == SaleReturn.Resolution.REFUND else Decimal("0")
-    )
+
+    actual_refund_amount = Decimal("0")
+    if resolution == SaleReturn.Resolution.REFUND:
+        actual_refund_amount = refund_amount
+        if actual_refund_amount > record.total:
+            raise ValidationError(
+                {
+                    "refund_amount": [
+                        "The refund cannot exceed the value of the returned items."
+                    ]
+                }
+            )
+
     credit_amount = (
         record.total if resolution == SaleReturn.Resolution.CREDIT else Decimal("0")
     )
@@ -291,7 +312,7 @@ def record_return(
             replacement_values=replacement,
         )
 
-    record.refund_amount = refund_amount
+    record.refund_amount = actual_refund_amount
     record.credit_amount = credit_amount
     record.recovered_inventory_cost = recovered_inventory_cost
     record.damaged_loss = damaged_loss
