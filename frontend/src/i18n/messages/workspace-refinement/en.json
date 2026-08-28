@@ -39,6 +39,7 @@
       "loading": "Loading your workspaces…",
       "loadError": "Tunakuza could not load your workspace directory.",
       "retry": "Try again",
+      "currentBusinessTitle": "Current business workspaces",
       "businessTitle": "Business workspaces",
       "personalTitle": "Personal workspaces",
       "businessEmpty": "You do not belong to a Business workspace yet.",
