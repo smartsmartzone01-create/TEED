@@ -27,8 +27,7 @@ function LoginForm() {
   const router = useRouter();
   const { notify } = useNotification();
   const { establishSession } = useIdentitySession();
-  const { getErrorMessage, getFieldMessage } =
-    useApiErrorMessages();
+  const { getErrorMessage, getFieldMessage } = useApiErrorMessages();
 
   const schema = useMemo(
     () =>
@@ -58,41 +57,24 @@ function LoginForm() {
       const response = await loginWithEmail(values);
       const data = response.data;
 
-      if (!data) {
-        throw new Error("Login response data missing.");
-      }
+      if (!data) throw new Error("Login response data missing.");
 
       establishSession({
         accessToken: data.tokens.access,
         user: {
           email: data.email,
-          isOnboardingComplete:
-            data.is_onboarding_complete,
+          isOnboardingComplete: data.is_onboarding_complete,
           userId: data.user_id,
           username: data.username,
         },
       });
 
-      notify({
-        message: t("success"),
-        tone: "success",
-      });
-
-      router.push(
-        data.next_step === "dashboard"
-          ? "/dashboard"
-          : "/onboarding",
-      );
+      notify({ message: t("success"), tone: "success" });
+      router.push(data.next_step === "dashboard" ? "/home" : "/onboarding");
     } catch (error) {
       if (error instanceof ApiClientError) {
-        if (
-          error.details.code ===
-          "email_verification_required"
-        ) {
-          notify({
-            message: getErrorMessage(error.details),
-            tone: "info",
-          });
+        if (error.details.code === "email_verification_required") {
+          notify({ message: getErrorMessage(error.details), tone: "info" });
           router.push(
             `/verify-email?email=${encodeURIComponent(
               values.email.trim().toLowerCase(),
@@ -101,47 +83,28 @@ function LoginForm() {
           return;
         }
 
-        const emailIssue = firstFieldIssue(
-          error.details.fieldErrors,
-          "email",
-        );
-        const passwordIssue = firstFieldIssue(
-          error.details.fieldErrors,
-          "password",
-        );
+        const emailIssue = firstFieldIssue(error.details.fieldErrors, "email");
+        const passwordIssue = firstFieldIssue(error.details.fieldErrors, "password");
 
         if (emailIssue) {
-          setError("email", {
-            message: getFieldMessage(emailIssue),
-          });
+          setError("email", { message: getFieldMessage(emailIssue) });
         }
-
         if (passwordIssue) {
-          setError("password", {
-            message: getFieldMessage(passwordIssue),
-          });
+          setError("password", { message: getFieldMessage(passwordIssue) });
         }
 
-        notify({
-          message: getErrorMessage(error.details),
-          tone: "error",
-        });
+        notify({ message: getErrorMessage(error.details), tone: "error" });
         return;
       }
 
-      notify({
-        message: errorsT("unexpected_error"),
-        tone: "error",
-      });
+      notify({ message: errorsT("unexpected_error"), tone: "error" });
     }
   });
 
   return (
     <>
       <div className="mb-6">
-        <h2 className="text-xl font-semibold tracking-tight">
-          {t("cardTitle")}
-        </h2>
+        <h2 className="text-xl font-semibold tracking-tight">{t("cardTitle")}</h2>
         <p className="mt-2 text-sm leading-6 text-muted-foreground">
           {t("cardDescription")}
         </p>
@@ -155,9 +118,7 @@ function LoginForm() {
           required
         >
           <Input
-            aria-describedby={
-              errors.email ? "login-email-error" : undefined
-            }
+            aria-describedby={errors.email ? "login-email-error" : undefined}
             autoComplete="email"
             id="login-email"
             invalid={Boolean(errors.email)}
@@ -174,9 +135,7 @@ function LoginForm() {
           required
         >
           <PasswordInput
-            aria-describedby={
-              errors.password ? "login-password-error" : undefined
-            }
+            aria-describedby={errors.password ? "login-password-error" : undefined}
             autoComplete="current-password"
             hideLabel={common("hidePassword")}
             id="login-password"
@@ -207,7 +166,7 @@ function LoginForm() {
       </form>
 
       <p className="mt-6 text-center text-sm text-muted-foreground">
-        {t("noAccount")}{" "}
+        {t("noAccount")} {" "}
         <Link
           className="font-semibold text-foreground underline-offset-4 hover:underline"
           href="/register"
