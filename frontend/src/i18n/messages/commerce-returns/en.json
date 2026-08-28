@@ -110,7 +110,7 @@
       "dateSearch": "Use this when you know the day of the sale but not the receipt number.",
       "receiptSearch": "Use this when the customer has the receipt number. TEED will look for that exact active receipt.",
       "receiptResult": "Choose the receipt that contains the item being returned.",
-      "quantity": "Enter only the quantity coming back now. TEED keeps track of quantities already returned.",
+      "quantity": "Enter only the quantity coming back now. Countable units such as pieces, boxes, bottles and cars use whole numbers only. Measured units such as kilograms, grams, meters and liters can use decimals.",
       "condition": "Sellable items return to available stock. Non-sellable items stay out of available stock and their original inventory value is reported as a damaged return.",
       "resolution": "Choose what the customer receives because of this return. A replacement must also record where the replacement came from.",
       "reason": "Choose one short reason so return records stay consistent and easy to analyze later.",
