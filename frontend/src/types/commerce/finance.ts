@@ -29,7 +29,7 @@ type ExpensePaymentMethod =
 type ExpenseRecord = {
   id: string;
   expense_number: string;
-  category: ExpenseCategory;
+  category: string;
   category_label: string;
   description: string;
   amount: string;
@@ -44,7 +44,7 @@ type ExpenseRecord = {
 };
 
 type ExpenseCategoryTotal = {
-  category: ExpenseCategory;
+  category: string;
   total: string;
 };
 
@@ -68,7 +68,7 @@ type BudgetStatus = "on_track" | "approaching_limit" | "over_budget";
 
 type BudgetRecord = {
   id: string;
-  category: ExpenseCategory;
+  category: string;
   category_label: string;
   month: string;
   planned_amount: string;
