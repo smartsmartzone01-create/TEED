@@ -5,37 +5,31 @@ import { useTranslations } from "next-intl";
 import { useEffect, useRef } from "react";
 
 import { useRouter } from "@/i18n/navigation";
-import { useIdentitySession } from "@/providers/identity/identity-session-provider";
-import { getBusinesses } from "@/services/workspace/workspace";
+import { useWorkspace } from "@/providers/workspace/workspace-provider";
 import { workspaceClassForType } from "@/utils/workspace/workspace-class";
 
 function PostAuthRouter() {
   const t = useTranslations("WorkspaceRefinement.routing");
   const router = useRouter();
-  const { accessToken, status } = useIdentitySession();
-  const started = useRef(false);
+  const { businesses, status } = useWorkspace();
+  const resolved = useRef(false);
 
   useEffect(() => {
-    if (status !== "authenticated" || !accessToken || started.current) return;
-    started.current = true;
+    if (resolved.current || status === "loading") return;
+    resolved.current = true;
 
-    const controller = new AbortController();
-    void getBusinesses(accessToken, controller.signal)
-      .then((response) => {
-        const businesses = response.data?.businesses ?? [];
-        const hasBusinessWorkspace = businesses.some(
-          (business) =>
-            business.status === "active" &&
-            workspaceClassForType(business.workspace_type) === "business",
-        );
-        router.replace(hasBusinessWorkspace ? "/workspaces" : "/dashboard");
-      })
-      .catch(() => {
-        if (!controller.signal.aborted) router.replace("/dashboard");
-      });
+    if (status === "error") {
+      router.replace("/dashboard");
+      return;
+    }
 
-    return () => controller.abort();
-  }, [accessToken, router, status]);
+    const hasBusinessWorkspace = businesses.some(
+      (business) =>
+        business.status === "active" &&
+        workspaceClassForType(business.workspace_type) === "business",
+    );
+    router.replace(hasBusinessWorkspace ? "/workspaces" : "/dashboard");
+  }, [businesses, router, status]);
 
   return (
     <main className="flex min-h-svh items-center justify-center bg-slate-50 p-6 dark:bg-slate-950">
