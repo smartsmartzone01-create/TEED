@@ -4,9 +4,16 @@ import { getRequestConfig } from "next-intl/server";
 import { routing } from "@/i18n/routing";
 import { frontendBrandText } from "@/utils/global/product-brand";
 
+function frontendTerminologyText(value: string) {
+  return value
+    .replace(/Available Items/g, "Available Products")
+    .replace(/Available items/g, "Available Products")
+    .replace(/available items/g, "available products");
+}
+
 function brandFrontendMessages<T>(value: T): T {
   if (typeof value === "string") {
-    return frontendBrandText(value) as T;
+    return frontendTerminologyText(frontendBrandText(value)) as T;
   }
   if (Array.isArray(value)) {
     return value.map((item) => brandFrontendMessages(item)) as T;
