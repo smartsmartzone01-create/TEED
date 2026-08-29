@@ -60,7 +60,7 @@ function WorkspaceOverview({ businessId }: { businessId: string }) {
 
   if (error) {
     return (
-      <section className="rounded-2xl border border-red-200 bg-red-50 p-5 dark:border-red-900 dark:bg-red-950/30">
+      <section className="rounded-lg border border-red-200 bg-red-50 p-5 dark:border-red-900 dark:bg-red-950/30">
         <p className="text-sm font-medium text-red-800 dark:text-red-200">{t("loadError")}</p>
         <Button className="mt-3" onClick={() => window.location.reload()} size="small" variant="outline">{t("retry")}</Button>
       </section>
@@ -78,7 +78,7 @@ function WorkspaceOverview({ businessId }: { businessId: string }) {
 
   return (
     <div className="space-y-8">
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_3px_10px_rgba(15,23,42,0.05)] dark:border-slate-800 dark:bg-slate-950 dark:shadow-[0_3px_10px_rgba(0,0,0,0.18)] sm:p-6">
+      <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-[0_3px_10px_rgba(15,23,42,0.05)] dark:border-slate-800 dark:bg-slate-950 dark:shadow-[0_3px_10px_rgba(0,0,0,0.18)] sm:p-6">
         <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
           {t("eyebrow")}
         </p>
@@ -129,7 +129,7 @@ function WorkspaceOverview({ businessId }: { businessId: string }) {
             {t("actionsDescription")}
           </p>
         </div>
-        <div className="divide-y divide-slate-200 overflow-hidden rounded-2xl border border-slate-200 shadow-[0_3px_10px_rgba(15,23,42,0.05)] dark:divide-slate-800 dark:border-slate-800 dark:shadow-[0_3px_10px_rgba(0,0,0,0.18)]">
+        <div className="divide-y divide-slate-200 overflow-hidden rounded-lg border border-slate-200 shadow-[0_3px_10px_rgba(15,23,42,0.05)] dark:divide-slate-800 dark:border-slate-800 dark:shadow-[0_3px_10px_rgba(0,0,0,0.18)]">
           {actions.map((item) => {
             const Icon = item.icon;
             return (
