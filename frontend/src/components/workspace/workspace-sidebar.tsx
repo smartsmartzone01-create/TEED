@@ -6,6 +6,7 @@ import {
   ChevronLeft,
   ChevronRight,
   FolderKanban,
+  Grid2X2,
   Inbox,
   LayoutDashboard,
   LockKeyhole,
@@ -72,8 +73,7 @@ const commerceItems: NavigationItem[] = [
   { icon: ShieldCheck, key: "budgets", path: "/commerce/budgets" },
 ];
 
-const navigationItemClassName =
-  "text-sm font-medium leading-5";
+const navigationItemClassName = "text-sm font-medium leading-5";
 const navigationIconClassName = "size-4 shrink-0";
 
 function groupForPath(pathname: string): NavigationGroupKey | null {
@@ -130,6 +130,7 @@ function WorkspaceSidebar({
   ];
 
   const homeLabel = locale === "sw" ? "Mwanzo" : "Home";
+  const toolsLabel = locale === "sw" ? "Zana zote" : "All Tools";
   const operationsLabel = locale === "sw" ? "Uendeshaji" : "Operations";
   const administrationLabel = locale === "sw" ? "Usimamizi" : "Administration";
   const workspaceLabel = locale === "sw" ? "Eneo la kazi" : "Workspace";
@@ -264,24 +265,44 @@ function WorkspaceSidebar({
           className="flex-1 overflow-y-auto px-3 py-4"
         >
           {businessId ? (
-            <Tooltip content={homeLabel}>
-              <Link
-                aria-current={pathname === `/workspace/${businessId}` ? "page" : undefined}
-                className={cn(
-                  "flex min-h-9 items-center gap-2.5 rounded-lg px-2.5",
-                  navigationItemClassName,
-                  pathname === `/workspace/${businessId}`
-                    ? "bg-interactive-highlight text-slate-950 dark:text-white"
-                    : "text-slate-700 hover:bg-interactive-highlight hover:text-slate-950 dark:text-slate-300 dark:hover:text-white",
-                  collapsed && "lg:justify-center lg:px-0",
-                )}
-                href={`/workspace/${businessId}`}
-                onClick={onCloseMobile}
-              >
-                <LayoutDashboard className={navigationIconClassName} />
-                <span className={cn(collapsed && "lg:sr-only")}>{homeLabel}</span>
-              </Link>
-            </Tooltip>
+            <div className="grid gap-0.5">
+              <Tooltip content={homeLabel}>
+                <Link
+                  aria-current={pathname === `/workspace/${businessId}` ? "page" : undefined}
+                  className={cn(
+                    "flex min-h-9 items-center gap-2.5 rounded-lg px-2.5",
+                    navigationItemClassName,
+                    pathname === `/workspace/${businessId}`
+                      ? "bg-interactive-highlight text-slate-950 dark:text-white"
+                      : "text-slate-700 hover:bg-interactive-highlight hover:text-slate-950 dark:text-slate-300 dark:hover:text-white",
+                    collapsed && "lg:justify-center lg:px-0",
+                  )}
+                  href={`/workspace/${businessId}`}
+                  onClick={onCloseMobile}
+                >
+                  <LayoutDashboard className={navigationIconClassName} />
+                  <span className={cn(collapsed && "lg:sr-only")}>{homeLabel}</span>
+                </Link>
+              </Tooltip>
+              <Tooltip content={toolsLabel}>
+                <Link
+                  aria-current={pathname === `/workspace/${businessId}/directory` ? "page" : undefined}
+                  className={cn(
+                    "flex min-h-9 items-center gap-2.5 rounded-lg px-2.5",
+                    navigationItemClassName,
+                    pathname === `/workspace/${businessId}/directory`
+                      ? "bg-interactive-highlight text-slate-950 dark:text-white"
+                      : "text-slate-700 hover:bg-interactive-highlight hover:text-slate-950 dark:text-slate-300 dark:hover:text-white",
+                    collapsed && "lg:justify-center lg:px-0",
+                  )}
+                  href={`/workspace/${businessId}/directory`}
+                  onClick={onCloseMobile}
+                >
+                  <Grid2X2 className={navigationIconClassName} />
+                  <span className={cn(collapsed && "lg:sr-only")}>{toolsLabel}</span>
+                </Link>
+              </Tooltip>
+            </div>
           ) : null}
 
           {businessId && commerceEnabled ? (
