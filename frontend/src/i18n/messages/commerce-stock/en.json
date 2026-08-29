@@ -13,12 +13,18 @@
       "method": "Choose how to record this stock",
       "review": "Review and save"
     },
+    "launcher": {
+      "title": "Record your stock",
+      "description": "Start a new stock recording. Your progress stays available while you move between the recording steps.",
+      "start": "Record new stock",
+      "close": "Hide recording"
+    },
     "help": {
-      "stock": "Enter the receiving details, then press Enter to continue.",
-      "batch": "Name this batch, then press Enter.",
-      "products": "Add a new product only if it does not already exist in your available items. You can skip this step and use existing products while recording.",
-      "method": "Choose whether this batch will be recorded item by item or through groups.",
-      "individual": "Record one physical item at a time. After Enter, the item is saved and a fresh form is ready for the next one.",
+      "stock": "Enter the receiving details for this stock. You can return to this step while the recording is in progress.",
+      "batch": "Name this batch. You can return here before the stock is saved.",
+      "products": "Add a new product only if it does not already exist in your available products. You can skip this step and use existing products while recording.",
+      "method": "Choose whether this batch will be recorded item by item or through groups. Earlier steps stay available while you record.",
+      "individual": "Record one physical item at a time. Each entered item stays in the current recording until you review and save.",
       "group": "Name the group, choose whether it is recorded by quantity or by individual items, then continue inside that group.",
       "review": "Check what has been recorded. Save a draft or finish and receive the stock."
     },

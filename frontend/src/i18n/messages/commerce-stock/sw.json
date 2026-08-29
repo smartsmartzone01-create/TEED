@@ -13,12 +13,18 @@
       "method": "Chagua namna ya kurekodi mzigo",
       "review": "Kagua na uhifadhi"
     },
+    "launcher": {
+      "title": "Rekodi mzigo wako",
+      "description": "Anza kurekodi mzigo mpya. Taarifa ulizoingiza zitaendelea kuwepo unapohama kati ya hatua za kurekodi.",
+      "start": "Rekodi mzigo mpya",
+      "close": "Ficha rekodi"
+    },
     "help": {
-      "stock": "Weka taarifa za kupokea mzigo, kisha bonyeza Enter kuendelea.",
-      "batch": "Weka jina la fungu, kisha bonyeza Enter.",
+      "stock": "Weka taarifa za kupokea mzigo huu. Unaweza kurudi kwenye hatua hii wakati rekodi bado inaendelea.",
+      "batch": "Weka jina la fungu hili. Unaweza kurudi hapa kabla ya kuhifadhi mzigo.",
       "products": "Ongeza bidhaa mpya tu ikiwa haipo tayari kwenye bidhaa zako zinazopatikana. Unaweza kuruka hatua hii na kutumia bidhaa zilizopo wakati wa kurekodi.",
-      "method": "Chagua kama fungu hili litarekodiwa bidhaa moja moja au kupitia makundi.",
-      "individual": "Rekodi bidhaa moja ya kimwili kwa wakati. Baada ya Enter, bidhaa hiyo inahifadhiwa na fomu mpya inakuwa tayari kwa inayofuata.",
+      "method": "Chagua kama fungu hili litarekodiwa bidhaa moja moja au kupitia makundi. Hatua za awali zitaendelea kupatikana wakati wa kurekodi.",
+      "individual": "Rekodi bidhaa moja ya kimwili kwa wakati. Kila bidhaa uliyoingiza itaendelea kuwepo kwenye rekodi hii hadi ukague na kuhifadhi.",
       "group": "Weka jina la kundi, chagua kama litarekodiwa kwa idadi au bidhaa moja moja, kisha endelea ndani ya kundi hilo.",
       "review": "Kagua kilichorekodiwa. Hifadhi rasimu au maliza na upokee mzigo."
     },
