@@ -216,92 +216,166 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
       : "Currently available products for this business.";
 
   return (
-    <section className="w-full space-y-5 py-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="max-w-3xl text-base font-semibold leading-6 text-slate-950 dark:text-white sm:text-lg">
-          {intro}
-        </p>
-        {emptyProducts.length ? (
-          <Tooltip content={t("tooltips.reviewEmptyItems")}>
-            <Button
-              onClick={() => setShowEmpty((current) => !current)}
-              size="small"
-              type="button"
-              variant="ghost"
-            >
-              {t("actions.reviewEmptyItems", { count: emptyProducts.length })}
-            </Button>
-          </Tooltip>
-        ) : null}
-      </div>
+    <section className="w-full !px-0 py-4">
+      <div className="overflow-hidden rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-4 py-4 dark:border-slate-800 sm:px-5">
+          <p className="max-w-3xl text-base font-semibold leading-6 text-slate-950 dark:text-white sm:text-lg">
+            {intro}
+          </p>
+          {emptyProducts.length ? (
+            <Tooltip content={t("tooltips.reviewEmptyItems")}>
+              <Button
+                onClick={() => setShowEmpty((current) => !current)}
+                size="small"
+                type="button"
+                variant="ghost"
+              >
+                {t("actions.reviewEmptyItems", { count: emptyProducts.length })}
+              </Button>
+            </Tooltip>
+          ) : null}
+        </div>
 
-      <div className="hidden overflow-hidden rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950 md:block">
-        <div className="overflow-x-auto">
-          <table className="mx-auto w-full min-w-[900px] border-collapse text-left text-xs">
-            <thead className="bg-[#EEF1F4] text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-600 dark:bg-slate-900 dark:text-slate-300">
-              <tr>
-                <th className="px-4 py-3">{headers.product}</th>
-                <th className="px-3 py-3">{headers.brand}</th>
-                <th className="px-3 py-3">{headers.variant}</th>
-                <th className="px-3 py-3">{headers.unit}</th>
-                <th className="px-3 py-3">{headers.id}</th>
-                <th className="px-3 py-3 text-right">{headers.quantity}</th>
-                <th className="px-3 py-3">{headers.tracking}</th>
-                <th className="px-4 py-3 text-right">{headers.action}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
-              {availableProducts.map((product, index) => (
-                <tr
-                  className={
-                    index % 2 === 0
-                      ? "bg-white transition-colors hover:bg-slate-50 dark:bg-slate-950 dark:hover:bg-slate-900/60"
-                      : "bg-[#F4F7FA] transition-colors hover:bg-slate-100 dark:bg-slate-900/35 dark:hover:bg-slate-900/70"
-                  }
-                  key={product.id}
-                >
-                  <td className="px-4 py-3">
-                    <div className="min-w-40">
-                      <strong
-                        className="block text-sm font-semibold"
-                        style={{ color: "var(--workspace-primary, var(--brand-navy))" }}
-                      >
-                        {product.name}
-                      </strong>
-                      {product.barcode ? (
-                        <span className="mt-0.5 block text-[11px] text-slate-400">
-                          {product.barcode}
-                        </span>
-                      ) : null}
-                    </div>
-                  </td>
-                  <td className="px-3 py-3 text-slate-600 dark:text-slate-300">
-                    {product.brand || "—"}
-                  </td>
-                  <td className="px-3 py-3 text-slate-600 dark:text-slate-300">
-                    {product.variant || product.group || "—"}
-                  </td>
-                  <td className="px-3 py-3 text-slate-600 dark:text-slate-300">
-                    {product.unit}
-                  </td>
-                  <td className="px-3 py-3 font-mono text-[11px] text-slate-500">
-                    {product.sku}
-                  </td>
-                  <td className="px-3 py-3 text-right">
-                    <strong
-                      className="text-sm font-semibold"
-                      style={{ color: "var(--workspace-primary, var(--brand-navy))" }}
+        <div className="p-4 sm:p-5">
+          <div className="hidden overflow-hidden rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950 md:block">
+            <div className="overflow-x-auto">
+              <table className="mx-auto w-full min-w-[900px] border-collapse text-left text-xs">
+                <thead className="bg-[#EEF1F4] text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-600 dark:bg-slate-900 dark:text-slate-300">
+                  <tr>
+                    <th className="px-4 py-3">{headers.product}</th>
+                    <th className="px-3 py-3">{headers.brand}</th>
+                    <th className="px-3 py-3">{headers.variant}</th>
+                    <th className="px-3 py-3">{headers.unit}</th>
+                    <th className="px-3 py-3">{headers.id}</th>
+                    <th className="px-3 py-3 text-right">{headers.quantity}</th>
+                    <th className="px-3 py-3">{headers.tracking}</th>
+                    <th className="px-4 py-3 text-right">{headers.action}</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+                  {availableProducts.map((product, index) => (
+                    <tr
+                      className={
+                        index % 2 === 0
+                          ? "bg-white transition-colors hover:bg-slate-50 dark:bg-slate-950 dark:hover:bg-slate-900/60"
+                          : "bg-[#F4F7FA] transition-colors hover:bg-slate-100 dark:bg-slate-900/35 dark:hover:bg-slate-900/70"
+                      }
+                      key={product.id}
                     >
-                      {displayQuantity(product.current_quantity, product.unit)}
-                    </strong>
-                  </td>
-                  <td className="px-3 py-3 text-slate-500">
-                    {product.tracking_mode === "individual"
-                      ? t("values.individual")
-                      : t("values.quantity")}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <Tooltip content={t("tooltips.correctItem")}>
+                      <td className="px-4 py-3">
+                        <div className="min-w-40">
+                          <strong
+                            className="block text-sm font-semibold"
+                            style={{ color: "var(--workspace-primary, var(--brand-navy))" }}
+                          >
+                            {product.name}
+                          </strong>
+                          {product.barcode ? (
+                            <span className="mt-0.5 block text-[11px] text-slate-400">
+                              {product.barcode}
+                            </span>
+                          ) : null}
+                        </div>
+                      </td>
+                      <td className="px-3 py-3 text-slate-600 dark:text-slate-300">
+                        {product.brand || "—"}
+                      </td>
+                      <td className="px-3 py-3 text-slate-600 dark:text-slate-300">
+                        {product.variant || product.group || "—"}
+                      </td>
+                      <td className="px-3 py-3 text-slate-600 dark:text-slate-300">
+                        {product.unit}
+                      </td>
+                      <td className="px-3 py-3 font-mono text-[11px] text-slate-500">
+                        {product.sku}
+                      </td>
+                      <td className="px-3 py-3 text-right">
+                        <strong
+                          className="text-sm font-semibold"
+                          style={{ color: "var(--workspace-primary, var(--brand-navy))" }}
+                        >
+                          {displayQuantity(product.current_quantity, product.unit)}
+                        </strong>
+                      </td>
+                      <td className="px-3 py-3 text-slate-500">
+                        {product.tracking_mode === "individual"
+                          ? t("values.individual")
+                          : t("values.quantity")}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <Tooltip content={t("tooltips.correctItem")}>
+                          <Button
+                            onClick={() => openEdit(product)}
+                            size="small"
+                            type="button"
+                            variant="ghost"
+                          >
+                            <Pencil className="size-3.5" />
+                            {t("actions.correctItem")}
+                          </Button>
+                        </Tooltip>
+                      </td>
+                    </tr>
+                  ))}
+                  {!availableProducts.length ? (
+                    <tr>
+                      <td className="px-4 py-7 text-sm text-slate-500" colSpan={8}>
+                        {t("empty.availableItems")}
+                      </td>
+                    </tr>
+                  ) : null}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="overflow-hidden rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950 md:hidden">
+            {availableProducts.length ? (
+              <div className="divide-y divide-slate-200 dark:divide-slate-800">
+                {availableProducts.map((product, index) => (
+                  <div
+                    className={
+                      index % 2 === 0
+                        ? "bg-white p-3.5 dark:bg-slate-950"
+                        : "bg-[#F4F7FA] p-3.5 dark:bg-slate-900/35"
+                    }
+                    key={product.id}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p
+                          className="truncate text-sm font-semibold"
+                          style={{ color: "var(--workspace-primary, var(--brand-navy))" }}
+                        >
+                          {product.name}
+                        </p>
+                        <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">
+                          {[product.brand, product.variant || product.group]
+                            .filter(Boolean)
+                            .join(" · ") || "—"}
+                        </p>
+                      </div>
+                      <div className="shrink-0 text-right">
+                        <strong
+                          className="text-sm font-semibold"
+                          style={{ color: "var(--workspace-primary, var(--brand-navy))" }}
+                        >
+                          {displayQuantity(product.current_quantity, product.unit)}
+                        </strong>
+                        <span className="ml-1 text-[11px] text-slate-500">{product.unit}</span>
+                      </div>
+                    </div>
+
+                    <div className="mt-2 flex items-end justify-between gap-3">
+                      <div className="min-w-0 text-[11px] leading-4 text-slate-500">
+                        <p className="truncate font-mono">{product.sku}</p>
+                        <p>
+                          {product.tracking_mode === "individual"
+                            ? t("values.individual")
+                            : t("values.quantity")}
+                          {product.barcode ? ` · ${product.barcode}` : ""}
+                        </p>
+                      </div>
                       <Button
                         onClick={() => openEdit(product)}
                         size="small"
@@ -311,115 +385,51 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
                         <Pencil className="size-3.5" />
                         {t("actions.correctItem")}
                       </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="p-4 text-sm text-slate-500">{t("empty.availableItems")}</p>
+            )}
+          </div>
+        </div>
+
+        {showEmpty && emptyProducts.length ? (
+          <div className="border-t border-slate-200 px-4 pb-4 pt-3 dark:border-slate-800 sm:px-5 sm:pb-5">
+            <div className="overflow-hidden rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950">
+              <div className="border-b border-slate-200 px-4 py-3 text-xs font-semibold text-slate-500 dark:border-slate-800">
+                {t("emptyItemsTitle")}
+              </div>
+              <div className="divide-y divide-slate-200 dark:divide-slate-800">
+                {emptyProducts.map((product) => (
+                  <div
+                    className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm"
+                    key={product.id}
+                  >
+                    <div>
+                      <strong>{product.name}</strong>
+                      <p className="mt-1 font-mono text-[11px] text-slate-500">{product.sku}</p>
+                    </div>
+                    <Tooltip content={t("tooltips.archiveEmptyItem")}>
+                      <Button
+                        disabled={busy}
+                        onClick={() => void archiveEmptyProduct(product)}
+                        size="small"
+                        type="button"
+                        variant="ghost"
+                      >
+                        <Archive className="size-4" />
+                        {t("actions.archiveItem")}
+                      </Button>
                     </Tooltip>
-                  </td>
-                </tr>
-              ))}
-              {!availableProducts.length ? (
-                <tr>
-                  <td className="px-4 py-7 text-sm text-slate-500" colSpan={8}>
-                    {t("empty.availableItems")}
-                  </td>
-                </tr>
-              ) : null}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <div className="overflow-hidden rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950 md:hidden">
-        {availableProducts.length ? (
-          <div className="divide-y divide-slate-200 dark:divide-slate-800">
-            {availableProducts.map((product, index) => (
-              <div
-                className={index % 2 === 0 ? "bg-white p-3.5 dark:bg-slate-950" : "bg-[#F4F7FA] p-3.5 dark:bg-slate-900/35"}
-                key={product.id}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0 flex-1">
-                    <p
-                      className="truncate text-sm font-semibold"
-                      style={{ color: "var(--workspace-primary, var(--brand-navy))" }}
-                    >
-                      {product.name}
-                    </p>
-                    <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">
-                      {[product.brand, product.variant || product.group]
-                        .filter(Boolean)
-                        .join(" · ") || "—"}
-                    </p>
                   </div>
-                  <div className="shrink-0 text-right">
-                    <strong
-                      className="text-sm font-semibold"
-                      style={{ color: "var(--workspace-primary, var(--brand-navy))" }}
-                    >
-                      {displayQuantity(product.current_quantity, product.unit)}
-                    </strong>
-                    <span className="ml-1 text-[11px] text-slate-500">{product.unit}</span>
-                  </div>
-                </div>
-
-                <div className="mt-2 flex items-end justify-between gap-3">
-                  <div className="min-w-0 text-[11px] leading-4 text-slate-500">
-                    <p className="truncate font-mono">{product.sku}</p>
-                    <p>
-                      {product.tracking_mode === "individual"
-                        ? t("values.individual")
-                        : t("values.quantity")}
-                      {product.barcode ? ` · ${product.barcode}` : ""}
-                    </p>
-                  </div>
-                  <Button
-                    onClick={() => openEdit(product)}
-                    size="small"
-                    type="button"
-                    variant="ghost"
-                  >
-                    <Pencil className="size-3.5" />
-                    {t("actions.correctItem")}
-                  </Button>
-                </div>
+                ))}
               </div>
-            ))}
+            </div>
           </div>
-        ) : (
-          <p className="p-4 text-sm text-slate-500">{t("empty.availableItems")}</p>
-        )}
+        ) : null}
       </div>
-
-      {showEmpty && emptyProducts.length ? (
-        <div className="overflow-hidden rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950">
-          <div className="border-b border-slate-200 px-4 py-3 text-xs font-semibold text-slate-500 dark:border-slate-800">
-            {t("emptyItemsTitle")}
-          </div>
-          <div className="divide-y divide-slate-200 dark:divide-slate-800">
-            {emptyProducts.map((product) => (
-              <div
-                className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm"
-                key={product.id}
-              >
-                <div>
-                  <strong>{product.name}</strong>
-                  <p className="mt-1 font-mono text-[11px] text-slate-500">{product.sku}</p>
-                </div>
-                <Tooltip content={t("tooltips.archiveEmptyItem")}>
-                  <Button
-                    disabled={busy}
-                    onClick={() => void archiveEmptyProduct(product)}
-                    size="small"
-                    type="button"
-                    variant="ghost"
-                  >
-                    <Archive className="size-4" />
-                    {t("actions.archiveItem")}
-                  </Button>
-                </Tooltip>
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : null}
 
       {editingProduct && draft ? (
         <div
@@ -445,23 +455,38 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
               </button>
             </div>
 
-            <form className="grid gap-4 p-4 sm:p-5" onSubmit={(event) => void save(event, editingProduct)}>
+            <form
+              className="grid gap-4 p-4 sm:p-5"
+              onSubmit={(event) => void save(event, editingProduct)}
+            >
               <div className="grid gap-3 sm:grid-cols-2">
                 <label className={field}>
                   {t("fields.name")}
-                  <Input value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} />
+                  <Input
+                    value={draft.name}
+                    onChange={(event) => setDraft({ ...draft, name: event.target.value })}
+                  />
                 </label>
                 <label className={field}>
                   {t("fields.brandOptional")}
-                  <Input value={draft.brand} onChange={(event) => setDraft({ ...draft, brand: event.target.value })} />
+                  <Input
+                    value={draft.brand}
+                    onChange={(event) => setDraft({ ...draft, brand: event.target.value })}
+                  />
                 </label>
                 <label className={field}>
                   {t("fields.variant")}
-                  <Input value={draft.variant} onChange={(event) => setDraft({ ...draft, variant: event.target.value })} />
+                  <Input
+                    value={draft.variant}
+                    onChange={(event) => setDraft({ ...draft, variant: event.target.value })}
+                  />
                 </label>
                 <label className={field}>
                   {t("fields.barcode")}
-                  <Input value={draft.barcode} onChange={(event) => setDraft({ ...draft, barcode: event.target.value })} />
+                  <Input
+                    value={draft.barcode}
+                    onChange={(event) => setDraft({ ...draft, barcode: event.target.value })}
+                  />
                 </label>
                 <label className={field}>
                   <span className="flex items-center gap-1">
@@ -472,7 +497,10 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
                       </span>
                     </Tooltip>
                   </span>
-                  <Select value={draft.unit} onChange={(event) => setDraft({ ...draft, unit: event.target.value })}>
+                  <Select
+                    value={draft.unit}
+                    onChange={(event) => setDraft({ ...draft, unit: event.target.value })}
+                  >
                     {unitOptions.map((unit) => (
                       <option key={unit} value={unit}>
                         {t(`units.${unit}`)}
