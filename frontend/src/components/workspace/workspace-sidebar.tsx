@@ -135,6 +135,8 @@ function WorkspaceSidebar({
   const administrationLabel = locale === "sw" ? "Usimamizi" : "Administration";
   const workspaceLabel = locale === "sw" ? "Eneo la kazi" : "Workspace";
   const commerceLabel = locale === "sw" ? "Biashara" : "Commerce";
+  const commerceOverviewLabel =
+    locale === "sw" ? "Muhtasari wa biashara" : "Business Overview";
 
   function toggleGroup(key: NavigationGroupKey) {
     if (collapsed) onToggleCollapsed();
@@ -189,6 +191,10 @@ function WorkspaceSidebar({
             {group.items.map((item) => {
               const href = `/workspace/${businessId}${item.path}`;
               const selected = pathname === href;
+              const itemLabel =
+                item.key === "commerceOverview"
+                  ? commerceOverviewLabel
+                  : t(`subnavigation.${item.key}`);
               return (
                 <Link
                   aria-current={selected ? "page" : undefined}
@@ -203,7 +209,7 @@ function WorkspaceSidebar({
                   key={item.key}
                   onClick={onCloseMobile}
                 >
-                  {t(`subnavigation.${item.key}`)}
+                  {itemLabel}
                 </Link>
               );
             })}
