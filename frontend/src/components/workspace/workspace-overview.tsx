@@ -217,7 +217,10 @@ function WorkspaceOverview({ businessId }: { businessId: string }) {
                   className="group flex w-full items-center gap-4 bg-white px-4 py-4 text-left transition-colors hover:bg-interactive-highlight dark:bg-slate-950 dark:hover:bg-slate-900 sm:px-5"
                   href={`/workspace/${businessId}/${item.path}`}
                 >
-                  <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-interactive-highlight text-slate-700 dark:bg-slate-900 dark:text-slate-200">
+                  <span
+                    className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl"
+                    style={brandedIconStyle}
+                  >
                     <Icon className="size-4.5" />
                   </span>
                   <span className="min-w-0 flex-1">
