@@ -161,8 +161,8 @@ function WorkspaceSidebar({
               "flex min-h-9 w-full items-center gap-2.5 rounded-lg px-2.5 text-left",
               navigationItemClassName,
               groupActive
-                ? "bg-slate-100 text-slate-950 dark:bg-slate-900 dark:text-white"
-                : "text-slate-600 hover:bg-slate-50 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-slate-900 dark:hover:text-white",
+                ? "bg-interactive-highlight text-slate-950 dark:text-white"
+                : "text-slate-600 hover:bg-interactive-highlight hover:text-slate-950 dark:text-slate-300 dark:hover:text-white",
               collapsed && "lg:justify-center lg:px-0",
             )}
             onClick={() => toggleGroup(group.key)}
@@ -195,8 +195,8 @@ function WorkspaceSidebar({
                     "min-h-9 rounded-lg px-2.5 py-2",
                     navigationItemClassName,
                     selected
-                      ? "bg-slate-100 text-slate-950 dark:bg-slate-900 dark:text-white"
-                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-950 dark:text-slate-400 dark:hover:bg-slate-900 dark:hover:text-white",
+                      ? "bg-interactive-highlight text-slate-950 dark:text-white"
+                      : "text-slate-600 hover:bg-interactive-highlight hover:text-slate-950 dark:text-slate-400 dark:hover:text-white",
                   )}
                   href={href}
                   key={item.key}
@@ -239,7 +239,7 @@ function WorkspaceSidebar({
           />
           <button
             aria-label={t(collapsed ? "expandSidebar" : "collapseSidebar")}
-            className="hidden size-8 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-950 dark:hover:bg-slate-900 dark:hover:text-white lg:inline-flex"
+            className="hidden size-8 items-center justify-center rounded-md text-slate-500 hover:bg-interactive-highlight hover:text-slate-950 dark:hover:text-white lg:inline-flex"
             onClick={onToggleCollapsed}
             type="button"
           >
@@ -251,7 +251,7 @@ function WorkspaceSidebar({
           </button>
           <button
             aria-label={t("closeNavigation")}
-            className="inline-flex size-8 items-center justify-center rounded-md hover:bg-slate-100 dark:hover:bg-slate-900 lg:hidden"
+            className="inline-flex size-8 items-center justify-center rounded-md hover:bg-interactive-highlight lg:hidden"
             onClick={onCloseMobile}
             type="button"
           >
@@ -271,8 +271,8 @@ function WorkspaceSidebar({
                   "flex min-h-9 items-center gap-2.5 rounded-lg px-2.5",
                   navigationItemClassName,
                   pathname === `/workspace/${businessId}`
-                    ? "bg-slate-100 text-slate-950 dark:bg-slate-900 dark:text-white"
-                    : "text-slate-700 hover:bg-slate-50 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-slate-900 dark:hover:text-white",
+                    ? "bg-interactive-highlight text-slate-950 dark:text-white"
+                    : "text-slate-700 hover:bg-interactive-highlight hover:text-slate-950 dark:text-slate-300 dark:hover:text-white",
                   collapsed && "lg:justify-center lg:px-0",
                 )}
                 href={`/workspace/${businessId}`}
@@ -329,7 +329,7 @@ function WorkspaceSidebar({
               <Tooltip content={directoryT("embeddedTitle")}>
                 <Link
                   className={cn(
-                    "flex min-h-9 items-center gap-2.5 rounded-lg px-2.5 text-slate-600 hover:bg-slate-50 hover:text-slate-950 dark:text-slate-400 dark:hover:bg-slate-900 dark:hover:text-white",
+                    "flex min-h-9 items-center gap-2.5 rounded-lg px-2.5 text-slate-600 hover:bg-interactive-highlight hover:text-slate-950 dark:text-slate-400 dark:hover:text-white",
                     navigationItemClassName,
                     collapsed && "lg:justify-center lg:px-0",
                   )}
@@ -343,7 +343,7 @@ function WorkspaceSidebar({
               <Tooltip content={directoryT("create")}>
                 <Link
                   className={cn(
-                    "flex min-h-9 items-center gap-2.5 rounded-lg px-2.5 text-slate-600 hover:bg-slate-50 hover:text-slate-950 dark:text-slate-400 dark:hover:bg-slate-900 dark:hover:text-white",
+                    "flex min-h-9 items-center gap-2.5 rounded-lg px-2.5 text-slate-600 hover:bg-interactive-highlight hover:text-slate-950 dark:text-slate-400 dark:hover:text-white",
                     navigationItemClassName,
                     collapsed && "lg:justify-center lg:px-0",
                   )}
@@ -357,7 +357,7 @@ function WorkspaceSidebar({
               <Tooltip content={directoryT("request")}>
                 <Link
                   className={cn(
-                    "flex min-h-9 items-center gap-2.5 rounded-lg px-2.5 text-slate-600 hover:bg-slate-50 hover:text-slate-950 dark:text-slate-400 dark:hover:bg-slate-900 dark:hover:text-white",
+                    "flex min-h-9 items-center gap-2.5 rounded-lg px-2.5 text-slate-600 hover:bg-interactive-highlight hover:text-slate-950 dark:text-slate-400 dark:hover:text-white",
                     navigationItemClassName,
                     collapsed && "lg:justify-center lg:px-0",
                   )}
