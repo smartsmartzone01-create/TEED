@@ -1,6 +1,6 @@
 "use client";
 
-import { Archive, CircleHelp, Pencil, X } from "lucide-react";
+import { Archive, CircleHelp, Pencil, TrendingUp, X } from "lucide-react";
 import {
   useCallback,
   useEffect,
@@ -292,7 +292,42 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
     locale === "sw" ? "Hakuna bidhaa zinazopatikana sasa." : "No products are currently available.";
 
   return (
-    <section className="w-full !px-0 py-4">
+    <section className="w-full space-y-3 !px-0 py-4 sm:space-y-4">
+      <section
+        aria-label={locale === "sw" ? "Utendaji wa bidhaa" : "Product performance"}
+        className="rounded-lg border border-slate-200 bg-white px-3 py-2.5 dark:border-slate-800 dark:bg-slate-950 sm:px-4 sm:py-3"
+      >
+        <div className="mb-2 flex items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-2">
+            <span className="inline-flex size-7 shrink-0 items-center justify-center rounded-md bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+              <TrendingUp className="size-3.5" />
+            </span>
+            <h2 className="truncate text-sm font-semibold text-slate-950 dark:text-white">
+              {locale === "sw" ? "Bidhaa zinazoongoza" : "Top-performing products"}
+            </h2>
+          </div>
+          <span className="hidden text-[10px] text-slate-400 sm:inline">
+            {locale === "sw" ? "Kulingana na mauzo" : "Based on sales"}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-3 divide-x divide-slate-200 overflow-hidden rounded-md bg-slate-50 dark:divide-slate-800 dark:bg-slate-900/55">
+          {performancePeriods.map((period) => (
+            <div className="min-w-0 px-2 py-2 sm:px-3" key={period.key}>
+              <div className="flex items-center gap-1">
+                <TrendingUp className="size-3 shrink-0 text-slate-400" />
+                <p className="truncate text-[10px] font-semibold uppercase tracking-[0.04em] text-slate-500 dark:text-slate-400">
+                  {period.label}
+                </p>
+              </div>
+              <p className="mt-0.5 truncate text-[11px] font-semibold text-slate-950 dark:text-white sm:text-xs">
+                {performance[period.key] || noPerformance}
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
+
       <div className="overflow-hidden rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-4 py-4 dark:border-slate-800 sm:px-5">
           <p className="max-w-3xl text-base font-semibold leading-6 text-slate-950 dark:text-white sm:text-lg">
@@ -312,33 +347,7 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
           ) : null}
         </div>
 
-        <div className="space-y-3 p-3 sm:space-y-4 sm:p-4">
-          <section
-            aria-label={locale === "sw" ? "Utendaji wa bidhaa" : "Product performance"}
-            className="rounded-md bg-slate-50 p-3 dark:bg-slate-900/55 sm:p-3.5"
-          >
-            <div className="mb-2.5 flex items-center justify-between gap-3">
-              <h2 className="text-sm font-semibold text-slate-950 dark:text-white">
-                {locale === "sw" ? "Bidhaa zinazoongoza" : "Top-performing products"}
-              </h2>
-              <span className="text-[11px] text-slate-500 dark:text-slate-400">
-                {locale === "sw" ? "Kulingana na mauzo" : "Based on sales"}
-              </span>
-            </div>
-            <div className="grid divide-y divide-slate-200 dark:divide-slate-800 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
-              {performancePeriods.map((period) => (
-                <div className="py-2 first:pt-0 last:pb-0 sm:px-3 sm:py-0 sm:first:pl-0 sm:last:pr-0" key={period.key}>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-500 dark:text-slate-400">
-                    {period.label}
-                  </p>
-                  <p className="mt-1 truncate text-sm font-semibold text-slate-950 dark:text-white">
-                    {performance[period.key] || noPerformance}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </section>
-
+        <div className="p-3 sm:p-4">
           <div className="hidden overflow-x-auto rounded-md md:block">
             <table className="mx-auto w-full min-w-[900px] border-collapse text-left text-xs">
               <thead className="bg-[#DDE3E9] text-sm font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-100">
