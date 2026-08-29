@@ -50,7 +50,7 @@ function WorkspaceAccountMenu({ compact }: WorkspaceAccountMenuProps) {
           aria-label={t("accountMenu")}
           className={[
             "flex min-w-0 items-center rounded-xl p-1.5 text-left transition-colors",
-            "hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/40 dark:hover:bg-slate-900",
+            "hover:bg-interactive-highlight focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/40",
             compact ? "justify-center" : "w-full gap-3",
           ].join(" ")}
           type="button"
