@@ -30,12 +30,14 @@ function WorkspaceHeader({ businessId, onOpenNavigation }: WorkspaceHeaderProps)
       : pathname;
 
   const homeLabel = locale === "sw" ? "Mwanzo" : "Home";
+  const directoryLabel = locale === "sw" ? "Orodha" : "Directory";
   const operationsLabel = locale === "sw" ? "Uendeshaji" : "Operations";
   const administrationLabel = locale === "sw" ? "Usimamizi" : "Administration";
   const commerceLabel = locale === "sw" ? "Biashara" : "Commerce";
 
   const routes: Record<string, BreadcrumbItem[]> = {
     "/": [{ label: homeLabel }],
+    "/directory": [{ label: directoryLabel }],
     "/notifications": [{ label: t("notifications") }],
     "/commerce": [
       { label: operationsLabel },
