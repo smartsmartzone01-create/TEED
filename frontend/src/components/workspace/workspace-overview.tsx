@@ -4,7 +4,6 @@ import {
   ArrowRight,
   Building2,
   MailPlus,
-  Plus,
   Settings2,
   ShoppingBag,
   UserRoundCog,
@@ -28,11 +27,11 @@ const actions = [
 
 function WorkspaceOverview({ businessId }: { businessId: string }) {
   const t = useTranslations("WorkspaceOverview");
-  const directoryT = useTranslations("WorkspaceRefinement.directory");
   const locale = useLocale();
   const { loadOverview } = useWorkspace();
   const [overview, setOverview] = useState<WorkspaceOverviewData | null>(null);
   const [error, setError] = useState(false);
+  const [hasStarted, setHasStarted] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -51,6 +50,12 @@ function WorkspaceOverview({ businessId }: { businessId: string }) {
       window.clearInterval(interval);
     };
   }, [businessId, loadOverview]);
+
+  useEffect(() => {
+    setHasStarted(
+      window.localStorage.getItem(`tunakuza:workspace:${businessId}:started`) === "1",
+    );
+  }, [businessId]);
 
   if (error) {
     return (
@@ -117,9 +122,17 @@ function WorkspaceOverview({ businessId }: { businessId: string }) {
       href: `/workspace/${businessId}/settings`,
       icon: Settings2,
       signal: `${t(`statuses.${overview.business.status}`)} · ${t(`roles.${overview.membership.role}`)}`,
-      title: locale === "sw" ? "Workspace" : "Workspace",
+      title: "Workspace",
     },
   ];
+
+  const directoryLabel = hasStarted
+    ? locale === "sw"
+      ? "Orodha"
+      : "Directory"
+    : locale === "sw"
+      ? "Anza sasa"
+      : "Start now";
 
   return (
     <div>
@@ -129,11 +142,11 @@ function WorkspaceOverview({ businessId }: { businessId: string }) {
         </h1>
         <Link
           className="inline-flex h-9 w-fit shrink-0 items-center gap-2 rounded-lg px-3.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/50"
-          href="/dashboard/workspaces/create"
+          href={`/workspace/${businessId}/directory`}
           style={brandedActionStyle}
         >
-          <Plus className="size-4" />
-          {directoryT("create")}
+          {directoryLabel}
+          <ArrowRight className="size-4" />
         </Link>
       </section>
 
