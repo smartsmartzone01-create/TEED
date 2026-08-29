@@ -63,6 +63,8 @@ const field =
   "space-y-1.5 text-[13px] font-semibold text-slate-600 dark:text-slate-300";
 const controlClassName =
   "h-10 rounded-md border-slate-300 bg-white shadow-none dark:border-slate-700 dark:bg-slate-950";
+const primaryAccentClassName =
+  "text-[var(--workspace-primary,var(--brand-navy))] dark:[color:color-mix(in_srgb,var(--workspace-primary,var(--brand-navy))_35%,white)]";
 
 type EditDraft = {
   name: string;
@@ -216,10 +218,7 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
     locale === "sw"
       ? "Bidhaa zinazopatikana kwa sasa katika biashara hii."
       : "Currently available products for this business.";
-
-  const primaryStyle = {
-    color: "var(--workspace-primary, var(--brand-navy))",
-  };
+  const editLabel = locale === "sw" ? "Hariri" : "Edit";
 
   return (
     <section className="w-full !px-0 py-4">
@@ -245,7 +244,7 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
         <div className="p-3 sm:p-4">
           <div className="hidden overflow-x-auto rounded-md md:block">
             <table className="mx-auto w-full min-w-[900px] border-collapse text-left text-xs">
-              <thead className="bg-[#EEF1F4] text-sm font-semibold text-slate-600 dark:bg-slate-900 dark:text-slate-300">
+              <thead className="bg-[#DDE3E9] text-sm font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-100">
                 <tr>
                   <th className="px-4 py-3">{headers.product}</th>
                   <th className="px-3 py-3">{headers.brand}</th>
@@ -292,7 +291,7 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
                       {product.sku}
                     </td>
                     <td className="px-3 py-3 text-center">
-                      <strong className="text-sm font-bold" style={primaryStyle}>
+                      <strong className={`text-sm font-bold ${primaryAccentClassName}`}>
                         {displayQuantity(product.current_quantity, product.unit)}
                       </strong>
                     </td>
@@ -302,7 +301,7 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
                         : t("values.quantity")}
                     </td>
                     <td className="px-4 py-3 text-center">
-                      <Tooltip content={t("tooltips.correctItem")}>
+                      <Tooltip content={editLabel}>
                         <Button
                           onClick={() => openEdit(product)}
                           size="small"
@@ -310,7 +309,7 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
                           variant="outline"
                         >
                           <Pencil className="size-3.5" />
-                          {t("actions.correctItem")}
+                          {editLabel}
                         </Button>
                       </Tooltip>
                     </td>
@@ -351,10 +350,12 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
                         </p>
                       </div>
                       <div className="shrink-0 text-right">
-                        <strong className="text-sm font-bold" style={primaryStyle}>
+                        <strong className={`text-sm font-bold ${primaryAccentClassName}`}>
                           {displayQuantity(product.current_quantity, product.unit)}
                         </strong>
-                        <span className="ml-1 text-[11px] text-slate-500">{product.unit}</span>
+                        <span className="ml-1 text-[11px] text-slate-500 dark:text-slate-400">
+                          {product.unit}
+                        </span>
                       </div>
                     </div>
 
@@ -377,7 +378,7 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
                         variant="outline"
                       >
                         <Pencil className="size-3.5" />
-                        {t("actions.correctItem")}
+                        {editLabel}
                       </Button>
                     </div>
                   </div>
@@ -431,13 +432,15 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
           className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/35 p-0 backdrop-blur-[1px] sm:items-center sm:p-4"
           role="dialog"
         >
-          <div className="max-h-[92svh] w-full overflow-y-auto rounded-t-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-950 sm:max-w-2xl sm:rounded-xl">
-            <div className="flex items-start justify-between gap-3 border-b border-slate-200 px-4 py-3.5 dark:border-slate-800 sm:px-5">
+          <div className="flex h-[88svh] w-full min-h-0 flex-col overflow-hidden rounded-t-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-950 sm:h-auto sm:max-h-[92svh] sm:max-w-2xl sm:rounded-xl">
+            <div className="flex shrink-0 items-start justify-between gap-3 border-b border-slate-200 px-4 py-3.5 dark:border-slate-800 sm:px-5">
               <div>
                 <h2 className="text-sm font-semibold text-slate-950 dark:text-white sm:text-base">
-                  {t("actions.correctItem")}
+                  {editLabel}
                 </h2>
-                <p className="mt-0.5 text-xs text-slate-500">{editingProduct.name}</p>
+                <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                  {editingProduct.name}
+                </p>
               </div>
               <button
                 aria-label={t("actions.cancel")}
@@ -450,66 +453,68 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
             </div>
 
             <form
-              className="grid gap-4 p-4 sm:p-5"
+              className="flex min-h-0 flex-1 flex-col"
               onSubmit={(event) => void save(event, editingProduct)}
             >
-              <div className="grid gap-3 sm:grid-cols-2">
-                <label className={field}>
-                  {t("fields.name")}
-                  <Input
-                    className={controlClassName}
-                    value={draft.name}
-                    onChange={(event) => setDraft({ ...draft, name: event.target.value })}
-                  />
-                </label>
-                <label className={field}>
-                  {t("fields.brandOptional")}
-                  <Input
-                    className={controlClassName}
-                    value={draft.brand}
-                    onChange={(event) => setDraft({ ...draft, brand: event.target.value })}
-                  />
-                </label>
-                <label className={field}>
-                  {t("fields.variant")}
-                  <Input
-                    className={controlClassName}
-                    value={draft.variant}
-                    onChange={(event) => setDraft({ ...draft, variant: event.target.value })}
-                  />
-                </label>
-                <label className={field}>
-                  {t("fields.barcode")}
-                  <Input
-                    className={controlClassName}
-                    value={draft.barcode}
-                    onChange={(event) => setDraft({ ...draft, barcode: event.target.value })}
-                  />
-                </label>
-                <label className={field}>
-                  <span className="flex items-center gap-1">
-                    {t("fields.unit")}
-                    <Tooltip content={t("tooltips.unitCorrection")}>
-                      <span className="inline-flex cursor-help text-slate-400" tabIndex={0}>
-                        <CircleHelp className="size-3.5" />
-                      </span>
-                    </Tooltip>
-                  </span>
-                  <Select
-                    className={controlClassName}
-                    value={draft.unit}
-                    onChange={(event) => setDraft({ ...draft, unit: event.target.value })}
-                  >
-                    {unitOptions.map((unit) => (
-                      <option key={unit} value={unit}>
-                        {t(`units.${unit}`)}
-                      </option>
-                    ))}
-                  </Select>
-                </label>
+              <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:overflow-visible sm:p-5">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <label className={field}>
+                    {t("fields.name")}
+                    <Input
+                      className={controlClassName}
+                      value={draft.name}
+                      onChange={(event) => setDraft({ ...draft, name: event.target.value })}
+                    />
+                  </label>
+                  <label className={field}>
+                    {t("fields.brandOptional")}
+                    <Input
+                      className={controlClassName}
+                      value={draft.brand}
+                      onChange={(event) => setDraft({ ...draft, brand: event.target.value })}
+                    />
+                  </label>
+                  <label className={field}>
+                    {t("fields.variant")}
+                    <Input
+                      className={controlClassName}
+                      value={draft.variant}
+                      onChange={(event) => setDraft({ ...draft, variant: event.target.value })}
+                    />
+                  </label>
+                  <label className={field}>
+                    {t("fields.barcode")}
+                    <Input
+                      className={controlClassName}
+                      value={draft.barcode}
+                      onChange={(event) => setDraft({ ...draft, barcode: event.target.value })}
+                    />
+                  </label>
+                  <label className={field}>
+                    <span className="flex items-center gap-1">
+                      {t("fields.unit")}
+                      <Tooltip content={t("tooltips.unitCorrection")}>
+                        <span className="inline-flex cursor-help text-slate-400" tabIndex={0}>
+                          <CircleHelp className="size-3.5" />
+                        </span>
+                      </Tooltip>
+                    </span>
+                    <Select
+                      className={controlClassName}
+                      value={draft.unit}
+                      onChange={(event) => setDraft({ ...draft, unit: event.target.value })}
+                    >
+                      {unitOptions.map((unit) => (
+                        <option key={unit} value={unit}>
+                          {t(`units.${unit}`)}
+                        </option>
+                      ))}
+                    </Select>
+                  </label>
+                </div>
               </div>
 
-              <div className="flex flex-wrap justify-end gap-2 border-t border-slate-200 pt-4 dark:border-slate-800">
+              <div className="flex shrink-0 flex-wrap justify-end gap-2 border-t border-slate-200 bg-white px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 dark:border-slate-800 dark:bg-slate-950 sm:px-5 sm:pb-4">
                 <Button onClick={closeEdit} size="small" type="button" variant="ghost">
                   {t("actions.cancel")}
                 </Button>
