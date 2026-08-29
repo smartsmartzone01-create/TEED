@@ -74,7 +74,9 @@ function WorkspaceShell({ children }: WorkspaceShellProps) {
         )}
       >
         <WorkspaceHeader businessId={businessId} onOpenNavigation={() => setMobileOpen(true)} />
-        <main className="mx-auto w-full max-w-[96rem] p-4 sm:p-6 lg:p-8">{children}</main>
+        <div className="min-h-[calc(100svh-3.5rem)] bg-[#f4f7fa] dark:bg-slate-950">
+          <main className="mx-auto w-full max-w-[96rem] p-4 sm:p-6 lg:p-8">{children}</main>
+        </div>
       </div>
     </div>
   );
