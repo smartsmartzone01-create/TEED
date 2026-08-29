@@ -220,12 +220,6 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
   const primaryStyle = {
     color: "var(--workspace-primary, var(--brand-navy))",
   };
-  const secondaryStyle = {
-    color: "var(--workspace-secondary, var(--brand-orange))",
-  };
-  const primaryButtonStyle = {
-    backgroundColor: "var(--workspace-primary, var(--brand-navy))",
-  };
 
   return (
     <section className="w-full !px-0 py-4">
@@ -248,98 +242,92 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
           ) : null}
         </div>
 
-        <div className="p-4 sm:p-5">
-          <div className="hidden overflow-hidden rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950 md:block">
-            <div className="overflow-x-auto">
-              <table className="mx-auto w-full min-w-[900px] border-collapse text-left text-xs">
-                <thead className="bg-[#EEF1F4] text-sm font-semibold text-slate-600 dark:bg-slate-900 dark:text-slate-300">
-                  <tr>
-                    <th className="px-4 py-3">{headers.product}</th>
-                    <th className="px-3 py-3">{headers.brand}</th>
-                    <th className="px-3 py-3">{headers.variant}</th>
-                    <th className="px-3 py-3">{headers.unit}</th>
-                    <th className="px-3 py-3">{headers.id}</th>
-                    <th className="px-3 py-3 text-center">{headers.quantity}</th>
-                    <th className="px-3 py-3">{headers.tracking}</th>
-                    <th className="px-4 py-3 text-center">{headers.action}</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
-                  {availableProducts.map((product, index) => (
-                    <tr
-                      className={
-                        index % 2 === 0
-                          ? "bg-white transition-colors hover:bg-slate-50 dark:bg-slate-950 dark:hover:bg-slate-900/60"
-                          : "bg-[#F4F7FA] transition-colors hover:bg-slate-100 dark:bg-slate-900/35 dark:hover:bg-slate-900/70"
-                      }
-                      key={product.id}
-                    >
-                      <td className="px-4 py-3">
-                        <div className="min-w-40">
-                          <strong className="block text-sm font-bold text-slate-950 dark:text-white">
-                            {product.name}
-                          </strong>
-                          {product.barcode ? (
-                            <span className="mt-0.5 block text-[11px] text-slate-400">
-                              {product.barcode}
-                            </span>
-                          ) : null}
-                        </div>
-                      </td>
-                      <td className="px-3 py-3 text-slate-600 dark:text-slate-300">
-                        {product.brand || "—"}
-                      </td>
-                      <td className="px-3 py-3 text-slate-600 dark:text-slate-300">
-                        {product.variant || product.group || "—"}
-                      </td>
-                      <td className="px-3 py-3 text-slate-600 dark:text-slate-300">
-                        {product.unit}
-                      </td>
-                      <td
-                        className="px-3 py-3 font-mono text-[11px] font-semibold"
-                        style={secondaryStyle}
-                      >
-                        {product.sku}
-                      </td>
-                      <td className="px-3 py-3 text-center">
-                        <strong className="text-sm font-bold" style={primaryStyle}>
-                          {displayQuantity(product.current_quantity, product.unit)}
+        <div className="p-3 sm:p-4">
+          <div className="hidden overflow-x-auto rounded-md md:block">
+            <table className="mx-auto w-full min-w-[900px] border-collapse text-left text-xs">
+              <thead className="bg-[#EEF1F4] text-sm font-semibold text-slate-600 dark:bg-slate-900 dark:text-slate-300">
+                <tr>
+                  <th className="px-4 py-3">{headers.product}</th>
+                  <th className="px-3 py-3">{headers.brand}</th>
+                  <th className="px-3 py-3">{headers.variant}</th>
+                  <th className="px-3 py-3">{headers.unit}</th>
+                  <th className="px-3 py-3">{headers.id}</th>
+                  <th className="px-3 py-3 text-center">{headers.quantity}</th>
+                  <th className="px-3 py-3">{headers.tracking}</th>
+                  <th className="px-4 py-3 text-center">{headers.action}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+                {availableProducts.map((product, index) => (
+                  <tr
+                    className={
+                      index % 2 === 0
+                        ? "bg-white transition-colors hover:bg-slate-50 dark:bg-slate-950 dark:hover:bg-slate-900/60"
+                        : "bg-[#F4F7FA] transition-colors hover:bg-slate-100 dark:bg-slate-900/35 dark:hover:bg-slate-900/70"
+                    }
+                    key={product.id}
+                  >
+                    <td className="px-4 py-3">
+                      <div className="min-w-40">
+                        <strong className="block text-sm font-bold text-slate-950 dark:text-white">
+                          {product.name}
                         </strong>
-                      </td>
-                      <td className="px-3 py-3 text-slate-500">
-                        {product.tracking_mode === "individual"
-                          ? t("values.individual")
-                          : t("values.quantity")}
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <Tooltip content={t("tooltips.correctItem")}>
-                          <Button
-                            className="text-white hover:opacity-90"
-                            onClick={() => openEdit(product)}
-                            size="small"
-                            style={primaryButtonStyle}
-                            type="button"
-                          >
-                            <Pencil className="size-3.5" />
-                            {t("actions.correctItem")}
-                          </Button>
-                        </Tooltip>
-                      </td>
-                    </tr>
-                  ))}
-                  {!availableProducts.length ? (
-                    <tr>
-                      <td className="px-4 py-7 text-sm text-slate-500" colSpan={8}>
-                        {t("empty.availableItems")}
-                      </td>
-                    </tr>
-                  ) : null}
-                </tbody>
-              </table>
-            </div>
+                        {product.barcode ? (
+                          <span className="mt-0.5 block text-[11px] text-slate-400">
+                            {product.barcode}
+                          </span>
+                        ) : null}
+                      </div>
+                    </td>
+                    <td className="px-3 py-3 text-slate-600 dark:text-slate-300">
+                      {product.brand || "—"}
+                    </td>
+                    <td className="px-3 py-3 text-slate-600 dark:text-slate-300">
+                      {product.variant || product.group || "—"}
+                    </td>
+                    <td className="px-3 py-3 text-slate-600 dark:text-slate-300">
+                      {product.unit}
+                    </td>
+                    <td className="px-3 py-3 font-mono text-[11px] font-semibold text-[var(--workspace-secondary,var(--brand-orange))] dark:text-slate-200">
+                      {product.sku}
+                    </td>
+                    <td className="px-3 py-3 text-center">
+                      <strong className="text-sm font-bold" style={primaryStyle}>
+                        {displayQuantity(product.current_quantity, product.unit)}
+                      </strong>
+                    </td>
+                    <td className="px-3 py-3 text-slate-500 dark:text-slate-400">
+                      {product.tracking_mode === "individual"
+                        ? t("values.individual")
+                        : t("values.quantity")}
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <Tooltip content={t("tooltips.correctItem")}>
+                        <Button
+                          onClick={() => openEdit(product)}
+                          size="small"
+                          type="button"
+                          variant="outline"
+                        >
+                          <Pencil className="size-3.5" />
+                          {t("actions.correctItem")}
+                        </Button>
+                      </Tooltip>
+                    </td>
+                  </tr>
+                ))}
+                {!availableProducts.length ? (
+                  <tr>
+                    <td className="px-4 py-7 text-sm text-slate-500" colSpan={8}>
+                      {t("empty.availableItems")}
+                    </td>
+                  </tr>
+                ) : null}
+              </tbody>
+            </table>
           </div>
 
-          <div className="overflow-hidden rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950 md:hidden">
+          <div className="overflow-hidden rounded-md md:hidden">
             {availableProducts.length ? (
               <div className="divide-y divide-slate-200 dark:divide-slate-800">
                 {availableProducts.map((product, index) => (
@@ -371,8 +359,8 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
                     </div>
 
                     <div className="mt-2 flex items-end justify-between gap-3">
-                      <div className="min-w-0 text-[11px] leading-4 text-slate-500">
-                        <p className="truncate font-mono font-semibold" style={secondaryStyle}>
+                      <div className="min-w-0 text-[11px] leading-4 text-slate-500 dark:text-slate-400">
+                        <p className="truncate font-mono font-semibold text-[var(--workspace-secondary,var(--brand-orange))] dark:text-slate-200">
                           {product.sku}
                         </p>
                         <p>
@@ -383,11 +371,10 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
                         </p>
                       </div>
                       <Button
-                        className="text-white hover:opacity-90"
                         onClick={() => openEdit(product)}
                         size="small"
-                        style={primaryButtonStyle}
                         type="button"
+                        variant="outline"
                       >
                         <Pencil className="size-3.5" />
                         {t("actions.correctItem")}
@@ -403,36 +390,36 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
         </div>
 
         {showEmpty && emptyProducts.length ? (
-          <div className="border-t border-slate-200 px-4 pb-4 pt-3 dark:border-slate-800 sm:px-5 sm:pb-5">
-            <div className="overflow-hidden rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950">
-              <div className="border-b border-slate-200 px-4 py-3 text-xs font-semibold text-slate-500 dark:border-slate-800">
-                {t("emptyItemsTitle")}
-              </div>
-              <div className="divide-y divide-slate-200 dark:divide-slate-800">
-                {emptyProducts.map((product) => (
-                  <div
-                    className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm"
-                    key={product.id}
-                  >
-                    <div>
-                      <strong>{product.name}</strong>
-                      <p className="mt-1 font-mono text-[11px] text-slate-500">{product.sku}</p>
-                    </div>
-                    <Tooltip content={t("tooltips.archiveEmptyItem")}>
-                      <Button
-                        disabled={busy}
-                        onClick={() => void archiveEmptyProduct(product)}
-                        size="small"
-                        type="button"
-                        variant="ghost"
-                      >
-                        <Archive className="size-4" />
-                        {t("actions.archiveItem")}
-                      </Button>
-                    </Tooltip>
+          <div className="border-t border-slate-200 px-3 pb-3 pt-3 dark:border-slate-800 sm:px-4 sm:pb-4">
+            <div className="mb-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
+              {t("emptyItemsTitle")}
+            </div>
+            <div className="divide-y divide-slate-200 overflow-hidden rounded-md dark:divide-slate-800">
+              {emptyProducts.map((product) => (
+                <div
+                  className="flex flex-wrap items-center justify-between gap-3 bg-white px-3 py-3 text-sm dark:bg-slate-950"
+                  key={product.id}
+                >
+                  <div>
+                    <strong>{product.name}</strong>
+                    <p className="mt-1 font-mono text-[11px] text-slate-500 dark:text-slate-400">
+                      {product.sku}
+                    </p>
                   </div>
-                ))}
-              </div>
+                  <Tooltip content={t("tooltips.archiveEmptyItem")}>
+                    <Button
+                      disabled={busy}
+                      onClick={() => void archiveEmptyProduct(product)}
+                      size="small"
+                      type="button"
+                      variant="ghost"
+                    >
+                      <Archive className="size-4" />
+                      {t("actions.archiveItem")}
+                    </Button>
+                  </Tooltip>
+                </div>
+              ))}
             </div>
           </div>
         ) : null}
@@ -526,13 +513,7 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
                 <Button onClick={closeEdit} size="small" type="button" variant="ghost">
                   {t("actions.cancel")}
                 </Button>
-                <Button
-                  className="text-white hover:opacity-90"
-                  disabled={busy}
-                  size="small"
-                  style={primaryButtonStyle}
-                  type="submit"
-                >
+                <Button disabled={busy} size="small" type="submit">
                   {t("actions.saveCorrection")}
                 </Button>
               </div>
