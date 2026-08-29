@@ -87,8 +87,8 @@ function WorkspaceOverview({ businessId }: { businessId: string }) {
   } as CSSProperties;
 
   return (
-    <div className="space-y-5">
-      <section className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <section className="mb-4 flex flex-col gap-3 sm:mb-6 sm:flex-row sm:items-center sm:justify-between lg:mb-8">
         <h1 className="text-xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-2xl">
           {welcomeLabel}
         </h1>
@@ -102,7 +102,7 @@ function WorkspaceOverview({ businessId }: { businessId: string }) {
         </Link>
       </section>
 
-      <section aria-label={t("stateLabel")}>
+      <section aria-label={t("stateLabel")} className="mb-5">
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3 xl:grid-cols-4">
           {states.map((item, index) => {
             const Icon = item.icon;
