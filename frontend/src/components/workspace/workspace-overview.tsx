@@ -128,8 +128,8 @@ function WorkspaceOverview({ businessId }: { businessId: string }) {
 
   const directoryLabel = hasStarted
     ? locale === "sw"
-      ? "Orodha"
-      : "Directory"
+      ? "Zana zote"
+      : "All Tools"
     : locale === "sw"
       ? "Anza sasa"
       : "Start now";
