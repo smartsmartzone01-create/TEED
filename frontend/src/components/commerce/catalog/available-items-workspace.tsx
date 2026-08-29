@@ -60,7 +60,9 @@ const unitOptions = [
 ] as const;
 
 const field =
-  "space-y-1 text-xs font-semibold text-slate-600 dark:text-slate-300";
+  "space-y-1.5 text-[13px] font-semibold text-slate-600 dark:text-slate-300";
+const controlClassName =
+  "h-10 rounded-md border-slate-300 bg-white shadow-none dark:border-slate-700 dark:bg-slate-950";
 
 type EditDraft = {
   name: string;
@@ -215,6 +217,16 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
       ? "Bidhaa zinazopatikana kwa sasa katika biashara hii."
       : "Currently available products for this business.";
 
+  const primaryStyle = {
+    color: "var(--workspace-primary, var(--brand-navy))",
+  };
+  const secondaryStyle = {
+    color: "var(--workspace-secondary, var(--brand-orange))",
+  };
+  const primaryButtonStyle = {
+    backgroundColor: "var(--workspace-primary, var(--brand-navy))",
+  };
+
   return (
     <section className="w-full !px-0 py-4">
       <div className="overflow-hidden rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950">
@@ -240,16 +252,16 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
           <div className="hidden overflow-hidden rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950 md:block">
             <div className="overflow-x-auto">
               <table className="mx-auto w-full min-w-[900px] border-collapse text-left text-xs">
-                <thead className="bg-[#EEF1F4] text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-600 dark:bg-slate-900 dark:text-slate-300">
+                <thead className="bg-[#EEF1F4] text-sm font-semibold text-slate-600 dark:bg-slate-900 dark:text-slate-300">
                   <tr>
                     <th className="px-4 py-3">{headers.product}</th>
                     <th className="px-3 py-3">{headers.brand}</th>
                     <th className="px-3 py-3">{headers.variant}</th>
                     <th className="px-3 py-3">{headers.unit}</th>
                     <th className="px-3 py-3">{headers.id}</th>
-                    <th className="px-3 py-3 text-right">{headers.quantity}</th>
+                    <th className="px-3 py-3 text-center">{headers.quantity}</th>
                     <th className="px-3 py-3">{headers.tracking}</th>
-                    <th className="px-4 py-3 text-right">{headers.action}</th>
+                    <th className="px-4 py-3 text-center">{headers.action}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
@@ -264,10 +276,7 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
                     >
                       <td className="px-4 py-3">
                         <div className="min-w-40">
-                          <strong
-                            className="block text-sm font-semibold"
-                            style={{ color: "var(--workspace-primary, var(--brand-navy))" }}
-                          >
+                          <strong className="block text-sm font-bold text-slate-950 dark:text-white">
                             {product.name}
                           </strong>
                           {product.barcode ? (
@@ -286,14 +295,14 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
                       <td className="px-3 py-3 text-slate-600 dark:text-slate-300">
                         {product.unit}
                       </td>
-                      <td className="px-3 py-3 font-mono text-[11px] text-slate-500">
+                      <td
+                        className="px-3 py-3 font-mono text-[11px] font-semibold"
+                        style={secondaryStyle}
+                      >
                         {product.sku}
                       </td>
-                      <td className="px-3 py-3 text-right">
-                        <strong
-                          className="text-sm font-semibold"
-                          style={{ color: "var(--workspace-primary, var(--brand-navy))" }}
-                        >
+                      <td className="px-3 py-3 text-center">
+                        <strong className="text-sm font-bold" style={primaryStyle}>
                           {displayQuantity(product.current_quantity, product.unit)}
                         </strong>
                       </td>
@@ -302,13 +311,14 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
                           ? t("values.individual")
                           : t("values.quantity")}
                       </td>
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-4 py-3 text-center">
                         <Tooltip content={t("tooltips.correctItem")}>
                           <Button
+                            className="text-white hover:opacity-90"
                             onClick={() => openEdit(product)}
                             size="small"
+                            style={primaryButtonStyle}
                             type="button"
-                            variant="ghost"
                           >
                             <Pencil className="size-3.5" />
                             {t("actions.correctItem")}
@@ -343,10 +353,7 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
-                        <p
-                          className="truncate text-sm font-semibold"
-                          style={{ color: "var(--workspace-primary, var(--brand-navy))" }}
-                        >
+                        <p className="truncate text-sm font-bold text-slate-950 dark:text-white">
                           {product.name}
                         </p>
                         <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">
@@ -356,10 +363,7 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
                         </p>
                       </div>
                       <div className="shrink-0 text-right">
-                        <strong
-                          className="text-sm font-semibold"
-                          style={{ color: "var(--workspace-primary, var(--brand-navy))" }}
-                        >
+                        <strong className="text-sm font-bold" style={primaryStyle}>
                           {displayQuantity(product.current_quantity, product.unit)}
                         </strong>
                         <span className="ml-1 text-[11px] text-slate-500">{product.unit}</span>
@@ -368,7 +372,9 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
 
                     <div className="mt-2 flex items-end justify-between gap-3">
                       <div className="min-w-0 text-[11px] leading-4 text-slate-500">
-                        <p className="truncate font-mono">{product.sku}</p>
+                        <p className="truncate font-mono font-semibold" style={secondaryStyle}>
+                          {product.sku}
+                        </p>
                         <p>
                           {product.tracking_mode === "individual"
                             ? t("values.individual")
@@ -377,10 +383,11 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
                         </p>
                       </div>
                       <Button
+                        className="text-white hover:opacity-90"
                         onClick={() => openEdit(product)}
                         size="small"
+                        style={primaryButtonStyle}
                         type="button"
-                        variant="ghost"
                       >
                         <Pencil className="size-3.5" />
                         {t("actions.correctItem")}
@@ -463,6 +470,7 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
                 <label className={field}>
                   {t("fields.name")}
                   <Input
+                    className={controlClassName}
                     value={draft.name}
                     onChange={(event) => setDraft({ ...draft, name: event.target.value })}
                   />
@@ -470,6 +478,7 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
                 <label className={field}>
                   {t("fields.brandOptional")}
                   <Input
+                    className={controlClassName}
                     value={draft.brand}
                     onChange={(event) => setDraft({ ...draft, brand: event.target.value })}
                   />
@@ -477,6 +486,7 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
                 <label className={field}>
                   {t("fields.variant")}
                   <Input
+                    className={controlClassName}
                     value={draft.variant}
                     onChange={(event) => setDraft({ ...draft, variant: event.target.value })}
                   />
@@ -484,6 +494,7 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
                 <label className={field}>
                   {t("fields.barcode")}
                   <Input
+                    className={controlClassName}
                     value={draft.barcode}
                     onChange={(event) => setDraft({ ...draft, barcode: event.target.value })}
                   />
@@ -498,6 +509,7 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
                     </Tooltip>
                   </span>
                   <Select
+                    className={controlClassName}
                     value={draft.unit}
                     onChange={(event) => setDraft({ ...draft, unit: event.target.value })}
                   >
@@ -514,7 +526,13 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
                 <Button onClick={closeEdit} size="small" type="button" variant="ghost">
                   {t("actions.cancel")}
                 </Button>
-                <Button disabled={busy} size="small" type="submit">
+                <Button
+                  className="text-white hover:opacity-90"
+                  disabled={busy}
+                  size="small"
+                  style={primaryButtonStyle}
+                  type="submit"
+                >
                   {t("actions.saveCorrection")}
                 </Button>
               </div>
