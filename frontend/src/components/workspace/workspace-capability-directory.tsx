@@ -38,10 +38,10 @@ function WorkspaceCapabilityDirectory({ businessId }: { businessId: string }) {
       description:
         locale === "sw"
           ? "Bidhaa na vitu ambavyo biashara yako inauza."
-          : "Products and items your business has available to sell.",
+          : "Products your business currently has available to sell.",
       href: `/workspace/${businessId}/commerce/products`,
       icon: Store,
-      title: locale === "sw" ? "Bidhaa" : "Available items",
+      title: locale === "sw" ? "Bidhaa zilizopo" : "Available Products",
     },
     {
       description:
@@ -111,7 +111,7 @@ function WorkspaceCapabilityDirectory({ businessId }: { businessId: string }) {
           <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
             {locale === "sw"
               ? "Mauzo, bidhaa, stock, marejesho na fedha za biashara."
-              : "Sales, items, stock, returns and business finance."}
+              : "Sales, products, stock, returns and business finance."}
           </p>
         </div>
 
