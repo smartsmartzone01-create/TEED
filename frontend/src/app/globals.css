@@ -21,6 +21,7 @@
 
   --color-muted-foreground: var(--muted-foreground);
   --color-soft-background: var(--soft-background);
+  --color-interactive-highlight: var(--interactive-highlight);
   --color-border: var(--border);
 
   --color-brand-navy: var(--brand-navy);
