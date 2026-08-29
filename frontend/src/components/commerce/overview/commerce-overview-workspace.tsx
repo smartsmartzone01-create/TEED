@@ -58,11 +58,11 @@ function OverviewCard({
 }: OverviewCardProps) {
   const accentStyle = {
     backgroundColor:
-      "color-mix(in srgb, var(--workspace-secondary, var(--brand-orange)) 10%, white)",
-    color: "var(--workspace-secondary, var(--brand-orange))",
+      "color-mix(in srgb, var(--workspace-primary, var(--brand-navy)) 10%, white)",
+    color: "var(--workspace-primary, var(--brand-navy))",
   } as CSSProperties;
   const actionStyle = {
-    color: "var(--workspace-secondary, var(--brand-orange))",
+    color: "var(--workspace-primary, var(--brand-navy))",
   } as CSSProperties;
 
   return (
@@ -282,8 +282,8 @@ function CommerceOverviewWorkspace({ businessId }: { businessId: string }) {
 
   const attentionIconStyle = {
     backgroundColor:
-      "color-mix(in srgb, var(--workspace-secondary, var(--brand-orange)) 10%, white)",
-    color: "var(--workspace-secondary, var(--brand-orange))",
+      "color-mix(in srgb, var(--workspace-primary, var(--brand-navy)) 10%, white)",
+    color: "var(--workspace-primary, var(--brand-navy))",
   } as CSSProperties;
 
   return (
