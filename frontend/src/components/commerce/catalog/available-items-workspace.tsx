@@ -16,7 +16,7 @@ import { Select } from "@/components/global/primitives/select";
 import { Tooltip } from "@/components/global/primitives/tooltip";
 import { useIdentitySession } from "@/providers/identity/identity-session-provider";
 import { useNotification } from "@/providers/global/notification-provider";
-import { commercePatch, getProducts } from "@/services/commerce/commerce";
+import { commercePatch, getProducts, getSales } from "@/services/commerce/commerce";
 import type { Product } from "@/types/commerce/commerce";
 
 const countableUnits = new Set([
@@ -74,13 +74,61 @@ type EditDraft = {
   unit: string;
 };
 
+type PerformanceSale = {
+  status: string;
+  sold_at: string;
+  items: Array<{
+    source: string;
+    product: string;
+    product_name: string;
+    item_name: string;
+    quantity: string;
+    returned_quantity: string;
+  }>;
+};
+
+type ProductPerformance = {
+  today: string;
+  week: string;
+  month: string;
+};
+
 function displayQuantity(value: string, unit: string) {
   const number = Number(value);
   if (!Number.isFinite(number)) return value;
   if (countableUnits.has(unit) && Number.isInteger(number)) return String(number);
-  return new Intl.NumberFormat(undefined, { maximumFractionDigits: 3 }).format(
-    number,
-  );
+  return new Intl.NumberFormat(undefined, { maximumFractionDigits: 3 }).format(number);
+}
+
+function topProductSince(sales: PerformanceSale[], since: Date) {
+  const totals = new Map<string, { name: string; quantity: number }>();
+
+  for (const sale of sales) {
+    if (sale.status !== "active") continue;
+    const soldAt = new Date(sale.sold_at);
+    if (Number.isNaN(soldAt.getTime()) || soldAt < since) continue;
+
+    for (const item of sale.items) {
+      if (item.source !== "catalog" || !item.product) continue;
+      const soldQuantity = Math.max(
+        0,
+        Number(item.quantity) - Number(item.returned_quantity || 0),
+      );
+      if (!Number.isFinite(soldQuantity) || soldQuantity <= 0) continue;
+
+      const current = totals.get(item.product);
+      totals.set(item.product, {
+        name: item.product_name || item.item_name,
+        quantity: (current?.quantity ?? 0) + soldQuantity,
+      });
+    }
+  }
+
+  let top: { name: string; quantity: number } | null = null;
+  for (const candidate of totals.values()) {
+    if (!top || candidate.quantity > top.quantity) top = candidate;
+  }
+  return top?.name ?? "";
 }
 
 function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
@@ -89,6 +137,11 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
   const { accessToken } = useIdentitySession();
   const { notify } = useNotification();
   const [products, setProducts] = useState<Product[]>([]);
+  const [performance, setPerformance] = useState<ProductPerformance>({
+    today: "",
+    week: "",
+    month: "",
+  });
   const [editingId, setEditingId] = useState("");
   const [draft, setDraft] = useState<EditDraft | null>(null);
   const [busy, setBusy] = useState(false);
@@ -110,8 +163,24 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
   const load = useCallback(async () => {
     if (!accessToken) return;
     try {
-      const response = await getProducts(businessId, accessToken);
-      setProducts(response.data?.products ?? []);
+      const [productResponse, salesResponse] = await Promise.all([
+        getProducts(businessId, accessToken),
+        getSales(businessId, accessToken),
+      ]);
+      setProducts(productResponse.data?.products ?? []);
+
+      const now = new Date();
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const weekStart = new Date(todayStart);
+      weekStart.setDate(todayStart.getDate() - ((todayStart.getDay() + 6) % 7));
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const sales = (salesResponse.data?.sales ?? []) as PerformanceSale[];
+
+      setPerformance({
+        today: topProductSince(sales, todayStart),
+        week: topProductSince(sales, weekStart),
+        month: topProductSince(sales, monthStart),
+      });
     } catch (reason) {
       notify({
         message: reason instanceof Error ? reason.message : t("errors.load"),
@@ -141,10 +210,7 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
     });
   };
 
-  const save = async (
-    event: FormEvent<HTMLFormElement>,
-    product: Product,
-  ) => {
+  const save = async (event: FormEvent<HTMLFormElement>, product: Product) => {
     event.preventDefault();
     if (!accessToken || !draft) return;
 
@@ -181,9 +247,7 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
 
   const archiveEmptyProduct = async (product: Product) => {
     if (!accessToken || Number(product.current_quantity) !== 0) return;
-    if (!window.confirm(t("messages.archiveItemConfirm", { name: product.name }))) {
-      return;
-    }
+    if (!window.confirm(t("messages.archiveItemConfirm", { name: product.name }))) return;
 
     setBusy(true);
     try {
@@ -213,12 +277,19 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
     tracking: locale === "sw" ? "Ufuatiliaji" : "Tracking",
     action: locale === "sw" ? "Hatua" : "Action",
   };
-
   const intro =
     locale === "sw"
       ? "Bidhaa zinazopatikana kwa sasa katika biashara hii."
       : "Currently available products for this business.";
   const editLabel = locale === "sw" ? "Hariri" : "Edit";
+  const noPerformance = locale === "sw" ? "Hakuna mauzo bado" : "No sales yet";
+  const performancePeriods = [
+    { key: "today" as const, label: locale === "sw" ? "Leo" : "Today" },
+    { key: "week" as const, label: locale === "sw" ? "Wiki hii" : "This week" },
+    { key: "month" as const, label: locale === "sw" ? "Mwezi huu" : "This month" },
+  ];
+  const emptyAvailable =
+    locale === "sw" ? "Hakuna bidhaa zinazopatikana sasa." : "No products are currently available.";
 
   return (
     <section className="w-full !px-0 py-4">
@@ -241,7 +312,33 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
           ) : null}
         </div>
 
-        <div className="p-3 sm:p-4">
+        <div className="space-y-3 p-3 sm:space-y-4 sm:p-4">
+          <section
+            aria-label={locale === "sw" ? "Utendaji wa bidhaa" : "Product performance"}
+            className="rounded-md bg-slate-50 p-3 dark:bg-slate-900/55 sm:p-3.5"
+          >
+            <div className="mb-2.5 flex items-center justify-between gap-3">
+              <h2 className="text-sm font-semibold text-slate-950 dark:text-white">
+                {locale === "sw" ? "Bidhaa zinazoongoza" : "Top-performing products"}
+              </h2>
+              <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                {locale === "sw" ? "Kulingana na mauzo" : "Based on sales"}
+              </span>
+            </div>
+            <div className="grid divide-y divide-slate-200 dark:divide-slate-800 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+              {performancePeriods.map((period) => (
+                <div className="py-2 first:pt-0 last:pb-0 sm:px-3 sm:py-0 sm:first:pl-0 sm:last:pr-0" key={period.key}>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-500 dark:text-slate-400">
+                    {period.label}
+                  </p>
+                  <p className="mt-1 truncate text-sm font-semibold text-slate-950 dark:text-white">
+                    {performance[period.key] || noPerformance}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </section>
+
           <div className="hidden overflow-x-auto rounded-md md:block">
             <table className="mx-auto w-full min-w-[900px] border-collapse text-left text-xs">
               <thead className="bg-[#DDE3E9] text-sm font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-100">
@@ -272,21 +369,15 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
                           {product.name}
                         </strong>
                         {product.barcode ? (
-                          <span className="mt-0.5 block text-[11px] text-slate-400">
-                            {product.barcode}
-                          </span>
+                          <span className="mt-0.5 block text-[11px] text-slate-400">{product.barcode}</span>
                         ) : null}
                       </div>
                     </td>
-                    <td className="px-3 py-3 text-slate-600 dark:text-slate-300">
-                      {product.brand || "—"}
-                    </td>
+                    <td className="px-3 py-3 text-slate-600 dark:text-slate-300">{product.brand || "—"}</td>
                     <td className="px-3 py-3 text-slate-600 dark:text-slate-300">
                       {product.variant || product.group || "—"}
                     </td>
-                    <td className="px-3 py-3 text-slate-600 dark:text-slate-300">
-                      {product.unit}
-                    </td>
+                    <td className="px-3 py-3 text-slate-600 dark:text-slate-300">{product.unit}</td>
                     <td className="px-3 py-3 font-mono text-[11px] font-semibold text-[var(--workspace-secondary,var(--brand-orange))] dark:text-slate-200">
                       {product.sku}
                     </td>
@@ -296,18 +387,11 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
                       </strong>
                     </td>
                     <td className="px-3 py-3 text-slate-500 dark:text-slate-400">
-                      {product.tracking_mode === "individual"
-                        ? t("values.individual")
-                        : t("values.quantity")}
+                      {product.tracking_mode === "individual" ? t("values.individual") : t("values.quantity")}
                     </td>
                     <td className="px-4 py-3 text-center">
                       <Tooltip content={editLabel}>
-                        <Button
-                          onClick={() => openEdit(product)}
-                          size="small"
-                          type="button"
-                          variant="outline"
-                        >
+                        <Button onClick={() => openEdit(product)} size="small" type="button" variant="outline">
                           <Pencil className="size-3.5" />
                           {editLabel}
                         </Button>
@@ -317,9 +401,7 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
                 ))}
                 {!availableProducts.length ? (
                   <tr>
-                    <td className="px-4 py-7 text-sm text-slate-500" colSpan={8}>
-                      {t("empty.availableItems")}
-                    </td>
+                    <td className="px-4 py-7 text-sm text-slate-500" colSpan={8}>{emptyAvailable}</td>
                   </tr>
                 ) : null}
               </tbody>
@@ -331,52 +413,32 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
               <div className="divide-y divide-slate-200 dark:divide-slate-800">
                 {availableProducts.map((product, index) => (
                   <div
-                    className={
-                      index % 2 === 0
-                        ? "bg-white p-3.5 dark:bg-slate-950"
-                        : "bg-[#F4F7FA] p-3.5 dark:bg-slate-900/35"
-                    }
+                    className={index % 2 === 0 ? "bg-white p-3.5 dark:bg-slate-950" : "bg-[#F4F7FA] p-3.5 dark:bg-slate-900/35"}
                     key={product.id}
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-bold text-slate-950 dark:text-white">
-                          {product.name}
-                        </p>
+                        <p className="truncate text-sm font-bold text-slate-950 dark:text-white">{product.name}</p>
                         <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">
-                          {[product.brand, product.variant || product.group]
-                            .filter(Boolean)
-                            .join(" · ") || "—"}
+                          {[product.brand, product.variant || product.group].filter(Boolean).join(" · ") || "—"}
                         </p>
                       </div>
                       <div className="shrink-0 text-right">
                         <strong className={`text-sm font-bold ${primaryAccentClassName}`}>
                           {displayQuantity(product.current_quantity, product.unit)}
                         </strong>
-                        <span className="ml-1 text-[11px] text-slate-500 dark:text-slate-400">
-                          {product.unit}
-                        </span>
+                        <span className="ml-1 text-[11px] text-slate-500 dark:text-slate-400">{product.unit}</span>
                       </div>
                     </div>
-
                     <div className="mt-2 flex items-end justify-between gap-3">
                       <div className="min-w-0 text-[11px] leading-4 text-slate-500 dark:text-slate-400">
-                        <p className="truncate font-mono font-semibold text-[var(--workspace-secondary,var(--brand-orange))] dark:text-slate-200">
-                          {product.sku}
-                        </p>
+                        <p className="truncate font-mono font-semibold text-[var(--workspace-secondary,var(--brand-orange))] dark:text-slate-200">{product.sku}</p>
                         <p>
-                          {product.tracking_mode === "individual"
-                            ? t("values.individual")
-                            : t("values.quantity")}
+                          {product.tracking_mode === "individual" ? t("values.individual") : t("values.quantity")}
                           {product.barcode ? ` · ${product.barcode}` : ""}
                         </p>
                       </div>
-                      <Button
-                        onClick={() => openEdit(product)}
-                        size="small"
-                        type="button"
-                        variant="outline"
-                      >
+                      <Button onClick={() => openEdit(product)} size="small" type="button" variant="outline">
                         <Pencil className="size-3.5" />
                         {editLabel}
                       </Button>
@@ -385,36 +447,23 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
                 ))}
               </div>
             ) : (
-              <p className="p-4 text-sm text-slate-500">{t("empty.availableItems")}</p>
+              <p className="p-4 text-sm text-slate-500">{emptyAvailable}</p>
             )}
           </div>
         </div>
 
         {showEmpty && emptyProducts.length ? (
           <div className="border-t border-slate-200 px-3 pb-3 pt-3 dark:border-slate-800 sm:px-4 sm:pb-4">
-            <div className="mb-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
-              {t("emptyItemsTitle")}
-            </div>
+            <div className="mb-2 text-xs font-semibold text-slate-500 dark:text-slate-400">{t("emptyItemsTitle")}</div>
             <div className="divide-y divide-slate-200 overflow-hidden rounded-md dark:divide-slate-800">
               {emptyProducts.map((product) => (
-                <div
-                  className="flex flex-wrap items-center justify-between gap-3 bg-white px-3 py-3 text-sm dark:bg-slate-950"
-                  key={product.id}
-                >
+                <div className="flex flex-wrap items-center justify-between gap-3 bg-white px-3 py-3 text-sm dark:bg-slate-950" key={product.id}>
                   <div>
                     <strong>{product.name}</strong>
-                    <p className="mt-1 font-mono text-[11px] text-slate-500 dark:text-slate-400">
-                      {product.sku}
-                    </p>
+                    <p className="mt-1 font-mono text-[11px] text-slate-500 dark:text-slate-400">{product.sku}</p>
                   </div>
                   <Tooltip content={t("tooltips.archiveEmptyItem")}>
-                    <Button
-                      disabled={busy}
-                      onClick={() => void archiveEmptyProduct(product)}
-                      size="small"
-                      type="button"
-                      variant="ghost"
-                    >
+                    <Button disabled={busy} onClick={() => void archiveEmptyProduct(product)} size="small" type="button" variant="ghost">
                       <Archive className="size-4" />
                       {t("actions.archiveItem")}
                     </Button>
@@ -429,18 +478,14 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
       {editingProduct && draft ? (
         <div
           aria-modal="true"
-          className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/35 p-0 backdrop-blur-[1px] sm:items-center sm:p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/35 p-4 backdrop-blur-[1px] sm:p-6"
           role="dialog"
         >
-          <div className="flex h-[88svh] w-full min-h-0 flex-col overflow-hidden rounded-t-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-950 sm:h-auto sm:max-h-[92svh] sm:max-w-2xl sm:rounded-xl">
+          <div className="flex max-h-[82svh] w-full max-w-md min-h-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-950 sm:max-h-[90svh] sm:max-w-2xl">
             <div className="flex shrink-0 items-start justify-between gap-3 border-b border-slate-200 px-4 py-3.5 dark:border-slate-800 sm:px-5">
               <div>
-                <h2 className="text-sm font-semibold text-slate-950 dark:text-white sm:text-base">
-                  {editLabel}
-                </h2>
-                <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-                  {editingProduct.name}
-                </p>
+                <h2 className="text-sm font-semibold text-slate-950 dark:text-white sm:text-base">{editLabel}</h2>
+                <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{editingProduct.name}</p>
               </div>
               <button
                 aria-label={t("actions.cancel")}
@@ -452,75 +497,41 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
               </button>
             </div>
 
-            <form
-              className="flex min-h-0 flex-1 flex-col"
-              onSubmit={(event) => void save(event, editingProduct)}
-            >
-              <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:overflow-visible sm:p-5">
+            <form className="flex min-h-0 flex-1 flex-col" onSubmit={(event) => void save(event, editingProduct)}>
+              <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5">
                 <div className="grid gap-3 sm:grid-cols-2">
                   <label className={field}>
                     {t("fields.name")}
-                    <Input
-                      className={controlClassName}
-                      value={draft.name}
-                      onChange={(event) => setDraft({ ...draft, name: event.target.value })}
-                    />
+                    <Input className={controlClassName} value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} />
                   </label>
                   <label className={field}>
                     {t("fields.brandOptional")}
-                    <Input
-                      className={controlClassName}
-                      value={draft.brand}
-                      onChange={(event) => setDraft({ ...draft, brand: event.target.value })}
-                    />
+                    <Input className={controlClassName} value={draft.brand} onChange={(event) => setDraft({ ...draft, brand: event.target.value })} />
                   </label>
                   <label className={field}>
                     {t("fields.variant")}
-                    <Input
-                      className={controlClassName}
-                      value={draft.variant}
-                      onChange={(event) => setDraft({ ...draft, variant: event.target.value })}
-                    />
+                    <Input className={controlClassName} value={draft.variant} onChange={(event) => setDraft({ ...draft, variant: event.target.value })} />
                   </label>
                   <label className={field}>
                     {t("fields.barcode")}
-                    <Input
-                      className={controlClassName}
-                      value={draft.barcode}
-                      onChange={(event) => setDraft({ ...draft, barcode: event.target.value })}
-                    />
+                    <Input className={controlClassName} value={draft.barcode} onChange={(event) => setDraft({ ...draft, barcode: event.target.value })} />
                   </label>
                   <label className={field}>
                     <span className="flex items-center gap-1">
                       {t("fields.unit")}
                       <Tooltip content={t("tooltips.unitCorrection")}>
-                        <span className="inline-flex cursor-help text-slate-400" tabIndex={0}>
-                          <CircleHelp className="size-3.5" />
-                        </span>
+                        <span className="inline-flex cursor-help text-slate-400" tabIndex={0}><CircleHelp className="size-3.5" /></span>
                       </Tooltip>
                     </span>
-                    <Select
-                      className={controlClassName}
-                      value={draft.unit}
-                      onChange={(event) => setDraft({ ...draft, unit: event.target.value })}
-                    >
-                      {unitOptions.map((unit) => (
-                        <option key={unit} value={unit}>
-                          {t(`units.${unit}`)}
-                        </option>
-                      ))}
+                    <Select className={controlClassName} value={draft.unit} onChange={(event) => setDraft({ ...draft, unit: event.target.value })}>
+                      {unitOptions.map((unit) => <option key={unit} value={unit}>{t(`units.${unit}`)}</option>)}
                     </Select>
                   </label>
                 </div>
               </div>
-
-              <div className="flex shrink-0 flex-wrap justify-end gap-2 border-t border-slate-200 bg-white px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 dark:border-slate-800 dark:bg-slate-950 sm:px-5 sm:pb-4">
-                <Button onClick={closeEdit} size="small" type="button" variant="ghost">
-                  {t("actions.cancel")}
-                </Button>
-                <Button disabled={busy} size="small" type="submit">
-                  {t("actions.saveCorrection")}
-                </Button>
+              <div className="flex shrink-0 flex-wrap justify-end gap-2 border-t border-slate-200 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-950 sm:px-5 sm:py-4">
+                <Button onClick={closeEdit} size="small" type="button" variant="ghost">{t("actions.cancel")}</Button>
+                <Button disabled={busy} size="small" type="submit">{t("actions.saveCorrection")}</Button>
               </div>
             </form>
           </div>
