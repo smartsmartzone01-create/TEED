@@ -287,7 +287,7 @@ function CommerceOverviewWorkspace({ businessId }: { businessId: string }) {
   } as CSSProperties;
 
   return (
-    <section className="w-full space-y-5 px-2 py-4 sm:px-3 lg:px-4">
+    <section className="w-full space-y-5 !px-0 py-4">
       <p className="max-w-3xl text-base font-semibold leading-6 text-slate-950 dark:text-white sm:text-lg">
         {locale === "sw"
           ? "Angalia hali ya jumla ya mauzo, stock, marejesho, gharama na bajeti katika biashara yako."
