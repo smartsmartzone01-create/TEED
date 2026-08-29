@@ -57,6 +57,13 @@ function WorkspaceShell({ children }: WorkspaceShellProps) {
     return () => controller.abort();
   }, [businessId, currentBusiness?.status, loadProfile, loadSettings]);
 
+  useEffect(() => {
+    if (!businessId) return;
+    if (pathname.startsWith(`/workspace/${businessId}/commerce`)) {
+      window.localStorage.setItem(`tunakuza:workspace:${businessId}:started`, "1");
+    }
+  }, [businessId, pathname]);
+
   const brandStyle = businessId && colors ? ({ "--workspace-primary": colors.primary, "--workspace-secondary": colors.secondary } as CSSProperties) : undefined;
 
   return (
