@@ -10,11 +10,17 @@ import {
   UsersRound,
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { Link } from "@/i18n/navigation";
-import { useEffect, useState, type CSSProperties } from "react";
+import {
+  useCallback,
+  useEffect,
+  useState,
+  useSyncExternalStore,
+  type CSSProperties,
+} from "react";
 
 import { Tooltip } from "@/components/global/primitives/tooltip";
 import { Button } from "@/components/global/primitives/button";
+import { Link } from "@/i18n/navigation";
 import { useWorkspace } from "@/providers/workspace/workspace-provider";
 import type { WorkspaceOverviewData } from "@/types/workspace/workspace";
 
@@ -25,13 +31,29 @@ const actions = [
   { icon: UserRoundCog, key: "access", path: "access-requests" },
 ] as const;
 
+const subscribeToStorage = (onStoreChange: () => void) => {
+  window.addEventListener("storage", onStoreChange);
+  return () => window.removeEventListener("storage", onStoreChange);
+};
+
+const getServerStartedSnapshot = () => false;
+
 function WorkspaceOverview({ businessId }: { businessId: string }) {
   const t = useTranslations("WorkspaceOverview");
   const locale = useLocale();
   const { loadOverview } = useWorkspace();
   const [overview, setOverview] = useState<WorkspaceOverviewData | null>(null);
   const [error, setError] = useState(false);
-  const [hasStarted, setHasStarted] = useState(false);
+  const startedStorageKey = `tunakuza:workspace:${businessId}:started`;
+  const getStartedSnapshot = useCallback(
+    () => window.localStorage.getItem(startedStorageKey) === "1",
+    [startedStorageKey],
+  );
+  const hasStarted = useSyncExternalStore(
+    subscribeToStorage,
+    getStartedSnapshot,
+    getServerStartedSnapshot,
+  );
 
   useEffect(() => {
     const controller = new AbortController();
@@ -50,12 +72,6 @@ function WorkspaceOverview({ businessId }: { businessId: string }) {
       window.clearInterval(interval);
     };
   }, [businessId, loadOverview]);
-
-  useEffect(() => {
-    setHasStarted(
-      window.localStorage.getItem(`tunakuza:workspace:${businessId}:started`) === "1",
-    );
-  }, [businessId]);
 
   if (error) {
     return (
