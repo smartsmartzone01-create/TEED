@@ -25,6 +25,7 @@
 
   --muted-foreground: #4b5563;
   --soft-background: #f7f8fc;
+  --interactive-highlight: #f4f7fa;
   --border: #d9dee8;
 
   --brand-navy-soft: #eeeeff;
@@ -68,6 +69,7 @@
 
   --muted-foreground: #aeb6ca;
   --soft-background: #11162a;
+  --interactive-highlight: #111827;
   --border: #2b3350;
 
   --brand-navy-soft: #1a1b46;
