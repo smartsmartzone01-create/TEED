@@ -299,7 +299,7 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
       >
         <div className="mb-2 flex items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-2">
-            <span className="inline-flex size-7 shrink-0 items-center justify-center rounded-md bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+            <span className="inline-flex size-7 shrink-0 items-center justify-center rounded-md bg-[color-mix(in_srgb,var(--workspace-primary,var(--brand-navy))_10%,white)] text-[var(--workspace-primary,var(--brand-navy))] dark:bg-[color-mix(in_srgb,var(--workspace-primary,var(--brand-navy))_20%,transparent)] dark:[color:color-mix(in_srgb,var(--workspace-primary,var(--brand-navy))_35%,white)]">
               <TrendingUp className="size-3.5" />
             </span>
             <h2 className="truncate text-sm font-semibold text-slate-950 dark:text-white">
@@ -315,7 +315,7 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
           {performancePeriods.map((period) => (
             <div className="min-w-0 px-2 py-2 sm:px-3" key={period.key}>
               <div className="flex items-center gap-1">
-                <TrendingUp className="size-3 shrink-0 text-slate-400" />
+                <TrendingUp className={`size-3 shrink-0 ${primaryAccentClassName}`} />
                 <p className="truncate text-[10px] font-semibold uppercase tracking-[0.04em] text-slate-500 dark:text-slate-400">
                   {period.label}
                 </p>
