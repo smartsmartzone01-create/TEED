@@ -140,7 +140,7 @@ function WorkspaceHeader({ businessId, onOpenNavigation }: WorkspaceHeaderProps)
       <div className="flex min-w-0 items-center gap-2">
         <button
           aria-label={t("openNavigation")}
-          className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-900 dark:hover:text-white lg:hidden"
+          className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-interactive-highlight hover:text-slate-900 dark:text-slate-400 dark:hover:text-white lg:hidden"
           onClick={onOpenNavigation}
           type="button"
         >
