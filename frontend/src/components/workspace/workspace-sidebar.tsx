@@ -162,7 +162,7 @@ function WorkspaceSidebar({
               navigationItemClassName,
               groupActive
                 ? "bg-slate-100 text-slate-950 dark:bg-slate-900 dark:text-white"
-                : "text-slate-700 hover:bg-slate-50 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-slate-900 dark:hover:text-white",
+                : "text-slate-600 hover:bg-slate-50 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-slate-900 dark:hover:text-white",
               collapsed && "lg:justify-center lg:px-0",
             )}
             onClick={() => toggleGroup(group.key)}
@@ -227,7 +227,7 @@ function WorkspaceSidebar({
         className={cn(
           "fixed inset-y-0 left-0 z-50 flex w-[min(16rem,88vw)] flex-col border-r border-slate-200 bg-white text-slate-950",
           "transition-[width,transform] duration-300 ease-out dark:border-slate-800 dark:bg-slate-950 dark:text-white",
-          collapsed ? "lg:w-[5.25rem]" : "lg:w-64",
+          collapsed ? "lg:w-21" : "lg:w-64",
           mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
         )}
       >
