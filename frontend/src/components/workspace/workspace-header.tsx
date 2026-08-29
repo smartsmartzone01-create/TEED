@@ -34,6 +34,8 @@ function WorkspaceHeader({ businessId, onOpenNavigation }: WorkspaceHeaderProps)
   const operationsLabel = locale === "sw" ? "Uendeshaji" : "Operations";
   const administrationLabel = locale === "sw" ? "Usimamizi" : "Administration";
   const commerceLabel = locale === "sw" ? "Biashara" : "Commerce";
+  const commerceOverviewLabel =
+    locale === "sw" ? "Muhtasari wa biashara" : "Business Overview";
 
   const routes: Record<string, BreadcrumbItem[]> = {
     "/": [{ label: homeLabel }],
@@ -42,7 +44,7 @@ function WorkspaceHeader({ businessId, onOpenNavigation }: WorkspaceHeaderProps)
     "/commerce": [
       { label: operationsLabel },
       { label: commerceLabel },
-      { label: t("subnavigation.commerceOverview") },
+      { label: commerceOverviewLabel },
     ],
     "/commerce/products": [
       { label: operationsLabel },
