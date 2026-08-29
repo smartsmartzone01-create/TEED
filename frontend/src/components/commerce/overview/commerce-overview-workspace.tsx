@@ -11,7 +11,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type CSSProperties } from "react";
 
 import { Link } from "@/i18n/navigation";
 import { useIdentitySession } from "@/providers/identity/identity-session-provider";
@@ -19,6 +19,7 @@ import { useNotification } from "@/providers/global/notification-provider";
 import { getCommerceOverview } from "@/services/commerce/commerce";
 import { getBudgets, getExpenses } from "@/services/commerce/finance";
 import { getReturnsWorkspace } from "@/services/commerce/returns";
+import { getSales } from "@/services/commerce/sales";
 import { isRequestCancelled } from "@/services/global/api-client";
 import type { CommerceOverview } from "@/types/commerce/commerce";
 
@@ -27,6 +28,15 @@ function money(value: string | number | null | undefined) {
   return new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 }).format(
     Number(value),
   );
+}
+
+function localDateKey(value: string | Date) {
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return typeof value === "string" ? value.slice(0, 10) : "";
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 type OverviewCardProps = {
@@ -46,13 +56,25 @@ function OverviewCard({
   value,
   viewLabel,
 }: OverviewCardProps) {
+  const accentStyle = {
+    backgroundColor:
+      "color-mix(in srgb, var(--workspace-secondary, var(--brand-orange)) 10%, white)",
+    color: "var(--workspace-secondary, var(--brand-orange))",
+  } as CSSProperties;
+  const actionStyle = {
+    color: "var(--workspace-secondary, var(--brand-orange))",
+  } as CSSProperties;
+
   return (
     <Link
       className="group flex min-h-32 min-w-0 flex-col rounded-lg border border-slate-200 bg-white p-3.5 transition-[border-color,box-shadow,transform] hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-[0_6px_18px_rgba(15,23,42,0.06)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/40 dark:border-slate-800 dark:bg-slate-950 sm:min-h-36 sm:p-4"
       href={href as never}
     >
       <div className="flex items-start gap-3">
-        <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg bg-interactive-highlight text-slate-700 dark:bg-slate-900 dark:text-slate-200">
+        <span
+          className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg"
+          style={accentStyle}
+        >
           <Icon className="size-4" />
         </span>
         <div className="min-w-0">
@@ -67,7 +89,10 @@ function OverviewCard({
       <p className="mt-3 line-clamp-2 text-[11px] leading-4 text-slate-500 dark:text-slate-400 sm:text-xs">
         {meta}
       </p>
-      <span className="mt-auto inline-flex items-center gap-1 pt-3 text-[11px] font-semibold text-slate-700 transition-colors group-hover:text-slate-950 dark:text-slate-300 dark:group-hover:text-white sm:text-xs">
+      <span
+        className="mt-auto inline-flex items-center gap-1 pt-3 text-[11px] font-semibold transition-opacity group-hover:opacity-75 sm:text-xs"
+        style={actionStyle}
+      >
         {viewLabel}
         <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5" />
       </span>
@@ -81,10 +106,14 @@ function CommerceOverviewWorkspace({ businessId }: { businessId: string }) {
   const { accessToken } = useIdentitySession();
   const { notify } = useNotification();
   const [data, setData] = useState<CommerceOverview | null>(null);
-  const [returnsCount, setReturnsCount] = useState(0);
-  const [returnsValue, setReturnsValue] = useState("0");
-  const [expenseTotal, setExpenseTotal] = useState<string | null>(null);
-  const [budgetCount, setBudgetCount] = useState(0);
+  const [todaySalesCount, setTodaySalesCount] = useState(0);
+  const [todaySalesValue, setTodaySalesValue] = useState("0");
+  const [todayReturnsCount, setTodayReturnsCount] = useState(0);
+  const [todayReturnsValue, setTodayReturnsValue] = useState("0");
+  const [todayExpenseTotal, setTodayExpenseTotal] = useState("0");
+  const [todayExpenseCount, setTodayExpenseCount] = useState(0);
+  const [todayBudgetCount, setTodayBudgetCount] = useState(0);
+  const [todayBudgetPlanned, setTodayBudgetPlanned] = useState("0");
 
   const load = useCallback(
     async (signal?: AbortSignal) => {
@@ -95,38 +124,84 @@ function CommerceOverviewWorkspace({ businessId }: { businessId: string }) {
         setData(overview);
         if (!overview) return;
 
-        try {
-          const returnsResponse = await getReturnsWorkspace(
-            businessId,
-            accessToken,
-            {},
-            signal,
+        const today = localDateKey(new Date());
+        const month = today.slice(0, 7);
+
+        const [salesResult, returnsResult] = await Promise.allSettled([
+          getSales(businessId, accessToken, signal),
+          getReturnsWorkspace(businessId, accessToken, {}, signal),
+        ]);
+
+        if (salesResult.status === "fulfilled") {
+          const todaySales = (salesResult.value.data?.sales ?? []).filter(
+            (sale) => sale.status === "active" && localDateKey(sale.sold_at) === today,
           );
-          const returns = returnsResponse.data?.returns ?? [];
-          setReturnsCount(returns.length);
-          setReturnsValue(
-            returns
+          setTodaySalesCount(todaySales.length);
+          setTodaySalesValue(
+            todaySales
+              .reduce((total, sale) => total + Number(sale.total || 0), 0)
+              .toFixed(2),
+          );
+        } else {
+          setTodaySalesCount(0);
+          setTodaySalesValue("0");
+        }
+
+        if (returnsResult.status === "fulfilled") {
+          const todayReturns = (returnsResult.value.data?.returns ?? []).filter(
+            (record) => localDateKey(record.returned_at) === today,
+          );
+          setTodayReturnsCount(todayReturns.length);
+          setTodayReturnsValue(
+            todayReturns
               .reduce((total, record) => total + Number(record.total || 0), 0)
               .toFixed(2),
           );
-        } catch (reason) {
-          if (!isRequestCancelled(reason)) {
-            setReturnsCount(0);
-            setReturnsValue("0");
-          }
+        } else {
+          setTodayReturnsCount(0);
+          setTodayReturnsValue("0");
         }
 
         if (overview.pulse.can_manage_finance) {
           const [expenseResult, budgetResult] = await Promise.allSettled([
-            getExpenses(businessId, accessToken, {}, signal),
+            getExpenses(businessId, accessToken, { month }, signal),
             getBudgets(businessId, accessToken, signal),
           ]);
+
           if (expenseResult.status === "fulfilled") {
-            setExpenseTotal(expenseResult.value.data?.summary.total ?? null);
+            const todayExpenses = (expenseResult.value.data?.expenses ?? []).filter(
+              (expense) => localDateKey(expense.incurred_at) === today,
+            );
+            setTodayExpenseCount(todayExpenses.length);
+            setTodayExpenseTotal(
+              todayExpenses
+                .reduce((total, expense) => total + Number(expense.amount || 0), 0)
+                .toFixed(2),
+            );
+          } else {
+            setTodayExpenseCount(0);
+            setTodayExpenseTotal("0");
           }
+
           if (budgetResult.status === "fulfilled") {
-            setBudgetCount(budgetResult.value.data?.budgets.length ?? 0);
+            const todayBudgets = (budgetResult.value.data?.budgets ?? []).filter(
+              (budget) => budget.period_type === "daily" && budget.period_start === today,
+            );
+            setTodayBudgetCount(todayBudgets.length);
+            setTodayBudgetPlanned(
+              todayBudgets
+                .reduce((total, budget) => total + Number(budget.planned_amount || 0), 0)
+                .toFixed(2),
+            );
+          } else {
+            setTodayBudgetCount(0);
+            setTodayBudgetPlanned("0");
           }
+        } else {
+          setTodayExpenseCount(0);
+          setTodayExpenseTotal("0");
+          setTodayBudgetCount(0);
+          setTodayBudgetPlanned("0");
         }
       } catch (reason) {
         if (!isRequestCancelled(reason)) {
@@ -158,9 +233,9 @@ function CommerceOverviewWorkspace({ businessId }: { businessId: string }) {
           label: locale === "sw" ? "Mauzo" : "Sales",
           meta:
             locale === "sw"
-              ? `${data.pulse.sales_count} mauzo yaliyorekodiwa kwa jumla.`
-              : `${data.pulse.sales_count} sales recorded across the business.`,
-          value: money(data.pulse.revenue),
+              ? `${todaySalesCount} mauzo yamerekodiwa leo.`
+              : `${todaySalesCount} sales recorded today.`,
+          value: money(todaySalesValue),
         },
         {
           href: `/workspace/${businessId}/commerce/inventory`,
@@ -178,9 +253,9 @@ function CommerceOverviewWorkspace({ businessId }: { businessId: string }) {
           label: locale === "sw" ? "Marejesho" : "Returns",
           meta:
             locale === "sw"
-              ? `${money(returnsValue)} thamani ya marejesho yaliyorekodiwa.`
-              : `${money(returnsValue)} recorded return value.`,
-          value: String(returnsCount),
+              ? `${todayReturnsCount} marejesho yamerekodiwa leo.`
+              : `${todayReturnsCount} returns recorded today.`,
+          value: money(todayReturnsValue),
         },
         {
           href: `/workspace/${businessId}/commerce/expenses`,
@@ -188,9 +263,9 @@ function CommerceOverviewWorkspace({ businessId }: { businessId: string }) {
           label: locale === "sw" ? "Gharama" : "Expenses",
           meta:
             locale === "sw"
-              ? "Gharama za uendeshaji zilizorekodiwa katika biashara."
-              : "Operating expenses recorded across the business.",
-          value: money(expenseTotal ?? data.pulse.expenses),
+              ? `${todayExpenseCount} gharama zimerekodiwa leo.`
+              : `${todayExpenseCount} expenses recorded today.`,
+          value: money(todayExpenseTotal),
         },
         {
           href: `/workspace/${businessId}/commerce/budgets`,
@@ -198,16 +273,22 @@ function CommerceOverviewWorkspace({ businessId }: { businessId: string }) {
           label: locale === "sw" ? "Bajeti" : "Budgets",
           meta:
             locale === "sw"
-              ? "Mipango ya bajeti iliyowekwa kwa biashara."
-              : "Budget plans recorded for the business.",
-          value: String(budgetCount),
+              ? `${todayBudgetCount} bajeti za kila siku zimewekwa kwa leo.`
+              : `${todayBudgetCount} daily budgets set for today.`,
+          value: money(todayBudgetPlanned),
         },
       ]
     : [];
 
+  const attentionIconStyle = {
+    backgroundColor:
+      "color-mix(in srgb, var(--workspace-secondary, var(--brand-orange)) 10%, white)",
+    color: "var(--workspace-secondary, var(--brand-orange))",
+  } as CSSProperties;
+
   return (
     <section className="w-full space-y-5 px-2 py-4 sm:px-3 lg:px-4">
-      <p className="max-w-3xl text-sm leading-6 text-slate-600 dark:text-slate-300">
+      <p className="max-w-3xl text-base font-semibold leading-6 text-slate-950 dark:text-white sm:text-lg">
         {locale === "sw"
           ? "Angalia hali ya jumla ya mauzo, stock, marejesho, gharama na bajeti katika biashara yako."
           : "See the overall state of sales, stock, returns, expenses and budgets across your business."}
@@ -223,7 +304,10 @@ function CommerceOverviewWorkspace({ businessId }: { businessId: string }) {
 
           <section className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950 sm:p-5">
             <div className="flex items-start gap-3">
-              <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg bg-interactive-highlight text-slate-700 dark:bg-slate-900 dark:text-slate-200">
+              <span
+                className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg"
+                style={attentionIconStyle}
+              >
                 <Sparkles className="size-4" />
               </span>
               <div>
