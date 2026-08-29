@@ -28,11 +28,11 @@ function WorkspaceCapabilityDirectory({ businessId }: { businessId: string }) {
     {
       description:
         locale === "sw"
-          ? "Muhtasari wa hali na utendaji wa biashara yako."
-          : "A quick view of your business health and performance.",
+          ? "Muhtasari wa mauzo, stock, marejesho, gharama na bajeti."
+          : "An overall view of sales, stock, returns, expenses and budgets.",
       href: `/workspace/${businessId}/commerce`,
       icon: LayoutDashboard,
-      title: locale === "sw" ? "Hali ya biashara" : "Business Pulse",
+      title: locale === "sw" ? "Muhtasari wa biashara" : "Business Overview",
     },
     {
       description:
