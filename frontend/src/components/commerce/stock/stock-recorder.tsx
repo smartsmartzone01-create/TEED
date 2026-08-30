@@ -88,7 +88,7 @@ function StockRecorder({ businessId }: { businessId: string }) {
       data-recording-open={recordingOpen ? "true" : "false"}
       data-stock-stage={activeStage}
     >
-      <section className="stock-recording-launcher rounded-2xl border border-slate-200 bg-white px-1 py-2 dark:border-slate-800 dark:bg-slate-950 sm:px-2">
+      <section className="stock-recording-launcher rounded-lg border border-slate-200 bg-white px-1 py-2 dark:border-slate-800 dark:bg-slate-950 sm:px-2">
         <div className="flex items-center justify-between gap-2">
           <div className="flex min-w-0 items-center gap-1">
             <p className="truncate text-xs font-semibold text-slate-700 dark:text-slate-200 sm:text-sm">
