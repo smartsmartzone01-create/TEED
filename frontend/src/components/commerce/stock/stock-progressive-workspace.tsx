@@ -404,6 +404,7 @@ function ProgressiveStockWorkspace({ businessId }: { businessId: string }) {
     setPreparedDraft({ key: "", name: "", brand: "", variant: "", unit: "piece" });
     setEditingPreparedKey("");
     setProductEntryOpen(false);
+    moveTo("method");
   };
 
   const beginAnotherPreparedProduct = () => {
