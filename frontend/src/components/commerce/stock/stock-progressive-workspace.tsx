@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, ChevronUp, Pencil, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronUp, CircleHelp, Pencil, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useTranslations } from "next-intl";
 
@@ -8,6 +8,7 @@ import { StockProductSummary, StockSummaryActions } from "@/components/commerce/
 import { Button } from "@/components/global/primitives/button";
 import { Input } from "@/components/global/primitives/input";
 import { Select } from "@/components/global/primitives/select";
+import { Tooltip } from "@/components/global/primitives/tooltip";
 import { useNotification } from "@/providers/global/notification-provider";
 import { useIdentitySession } from "@/providers/identity/identity-session-provider";
 import { getProducts } from "@/services/commerce/catalog";
@@ -860,18 +861,30 @@ function ProgressiveStockWorkspace({ businessId }: { businessId: string }) {
 
   if (step === "method") {
     activeEditor = (
-      <form className="grid gap-4" onSubmit={commitMethod}>
-        <div><h2 className="text-lg font-bold">{t("steps.method")}</h2><p className="mt-1 text-sm text-slate-500">{t("help.method")}</p></div>
-        <div className="grid gap-3 sm:grid-cols-2" data-stock-active-step tabIndex={-1}>
+      <form className="grid max-w-xl gap-3" onSubmit={commitMethod}>
+        <div className="grid gap-2 sm:grid-cols-2" data-stock-active-step tabIndex={-1}>
           {(["individual", "group"] as const).map((method) => (
-            <label className={`cursor-pointer rounded-xl border p-4 ${recordMethod === method ? "border-slate-950 dark:border-white" : "border-slate-200 dark:border-slate-800"}`} key={method}>
-              <input className="mr-2" checked={recordMethod === method} name="record-method" type="radio" value={method} onChange={() => setRecordMethod(method)} />
-              <strong>{t(`recordMethod.${method}`)}</strong>
-              <p className="mt-1 text-xs text-slate-500">{t(`recordMethodHelp.${method}`)}</p>
-            </label>
+            <div
+              className={`flex min-h-10 items-center gap-2 rounded-lg border px-2.5 py-2 ${recordMethod === method ? "border-slate-500 bg-slate-50 dark:border-slate-500 dark:bg-slate-900/70" : "border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950"}`}
+              key={method}
+            >
+              <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-200">
+                <input checked={recordMethod === method} name="record-method" type="radio" value={method} onChange={() => setRecordMethod(method)} />
+                <span>{t(`recordMethod.${method}`)}</span>
+              </label>
+              <Tooltip content={t(`recordMethodHelp.${method}`)} side="top">
+                <button
+                  aria-label={t(`recordMethodHelp.${method}`)}
+                  className="inline-flex size-7 shrink-0 items-center justify-center rounded-md text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/50 dark:text-slate-500 dark:hover:bg-slate-900 dark:hover:text-slate-200"
+                  type="button"
+                >
+                  <CircleHelp className="size-3.5" />
+                </button>
+              </Tooltip>
+            </div>
           ))}
         </div>
-        <Button type="submit">{t("actions.enter")}</Button>
+        <Button className="h-8 w-fit px-3 text-xs" type="submit">{t("actions.enter")}</Button>
       </form>
     );
   }
