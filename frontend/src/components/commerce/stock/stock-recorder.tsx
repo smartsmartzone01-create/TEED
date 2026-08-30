@@ -25,13 +25,6 @@ function StockRecorder({ businessId }: { businessId: string }) {
     const host = hostRef.current;
     if (!host) return;
 
-    const getEditor = () => {
-      const layout = host.querySelector<HTMLElement>(
-        ":scope > div > section:first-child > div.grid:has(> aside)",
-      );
-      return layout?.querySelector<HTMLElement>(":scope > div:last-child") ?? null;
-    };
-
     const syncRecorderState = () => {
       const layout = host.querySelector<HTMLElement>(
         ":scope > div > section:first-child > div.grid:has(> aside)",
@@ -58,14 +51,14 @@ function StockRecorder({ businessId }: { businessId: string }) {
         const isGroupRecorder = Boolean(
           directForm?.querySelector('input[name="group-method"]'),
         );
-        const productDraftInput = Array.from(editor?.children ?? []).some((child) =>
-          child.querySelector?.("form input[data-stock-active-step]"),
+        const productStep = Boolean(
+          editor?.querySelector("[data-stock-products-step]"),
         );
 
-        if (directActiveInput && !isGroupRecorder) {
-          nextStage = 1;
-        } else if (productDraftInput) {
+        if (productStep) {
           nextStage = 2;
+        } else if (directActiveInput && !isGroupRecorder) {
+          nextStage = 1;
         }
       }
 
@@ -79,41 +72,13 @@ function StockRecorder({ businessId }: { businessId: string }) {
       if (lateDeliveryActive) setRecordingOpen(true);
     };
 
-    const advanceProductEntry = (event: Event) => {
-      const form = event.target;
-      if (!(form instanceof HTMLFormElement)) return;
-
-      const editor = getEditor();
-      const productShell = form.parentElement;
-      const productInput = form.querySelector<HTMLInputElement>(
-        'input[data-stock-active-step]',
-      );
-      if (!editor || !productShell || !productInput || !productInput.value.trim()) return;
-      if (!editor.contains(form) || productShell.parentElement !== editor) return;
-
-      window.setTimeout(() => {
-        if (!productShell.isConnected) return;
-        const refreshedInput = form.querySelector<HTMLInputElement>(
-          'input[data-stock-active-step]',
-        );
-        if (!refreshedInput || refreshedInput.value.trim()) return;
-
-        const continueButton = Array.from(productShell.children).find(
-          (child): child is HTMLButtonElement => child instanceof HTMLButtonElement,
-        );
-        continueButton?.click();
-      }, 0);
-    };
-
     const frame = window.requestAnimationFrame(syncRecorderState);
     const observer = new MutationObserver(syncRecorderState);
     observer.observe(host, { childList: true, subtree: true });
-    host.addEventListener("submit", advanceProductEntry);
 
     return () => {
       window.cancelAnimationFrame(frame);
       observer.disconnect();
-      host.removeEventListener("submit", advanceProductEntry);
     };
   }, []);
 
@@ -502,8 +467,14 @@ function StockRecorder({ businessId }: { businessId: string }) {
         .stock-recorder-shell[data-stock-stage="2"]
           .stock-recorder-editor
           > div.grid
-          > button:last-child {
-          display: none !important;
+          > button {
+          width: auto !important;
+          height: 2.25rem !important;
+          min-height: 0 !important;
+          justify-self: start;
+          border-radius: 0.5rem !important;
+          padding-inline: 0.8rem !important;
+          font-size: 0.75rem !important;
         }
 
         .stock-recorder-shell[data-stock-stage="0"]
