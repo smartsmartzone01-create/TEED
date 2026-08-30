@@ -25,6 +25,13 @@ function StockRecorder({ businessId }: { businessId: string }) {
     const host = hostRef.current;
     if (!host) return;
 
+    const getEditor = () => {
+      const layout = host.querySelector<HTMLElement>(
+        ":scope > div > section:first-child > div.grid:has(> aside)",
+      );
+      return layout?.querySelector<HTMLElement>(":scope > div:last-child") ?? null;
+    };
+
     const syncRecorderState = () => {
       const layout = host.querySelector<HTMLElement>(
         ":scope > div > section:first-child > div.grid:has(> aside)",
@@ -72,13 +79,41 @@ function StockRecorder({ businessId }: { businessId: string }) {
       if (lateDeliveryActive) setRecordingOpen(true);
     };
 
+    const advanceProductEntry = (event: Event) => {
+      const form = event.target;
+      if (!(form instanceof HTMLFormElement)) return;
+
+      const editor = getEditor();
+      const productShell = form.parentElement;
+      const productInput = form.querySelector<HTMLInputElement>(
+        'input[data-stock-active-step]',
+      );
+      if (!editor || !productShell || !productInput || !productInput.value.trim()) return;
+      if (!editor.contains(form) || productShell.parentElement !== editor) return;
+
+      window.setTimeout(() => {
+        if (!productShell.isConnected) return;
+        const refreshedInput = form.querySelector<HTMLInputElement>(
+          'input[data-stock-active-step]',
+        );
+        if (!refreshedInput || refreshedInput.value.trim()) return;
+
+        const continueButton = Array.from(productShell.children).find(
+          (child): child is HTMLButtonElement => child instanceof HTMLButtonElement,
+        );
+        continueButton?.click();
+      }, 0);
+    };
+
     const frame = window.requestAnimationFrame(syncRecorderState);
     const observer = new MutationObserver(syncRecorderState);
     observer.observe(host, { childList: true, subtree: true });
+    host.addEventListener("submit", advanceProductEntry);
 
     return () => {
       window.cancelAnimationFrame(frame);
       observer.disconnect();
+      host.removeEventListener("submit", advanceProductEntry);
     };
   }, []);
 
@@ -394,6 +429,10 @@ function StockRecorder({ businessId }: { businessId: string }) {
         .stock-recorder-shell[data-stock-stage="1"]
           .stock-recorder-editor
           > form
+          > div:first-child,
+        .stock-recorder-shell[data-stock-stage="2"]
+          .stock-recorder-editor
+          > div.grid
           > div:first-child {
           display: none;
         }
@@ -407,12 +446,77 @@ function StockRecorder({ businessId }: { businessId: string }) {
           gap: 0.65rem !important;
         }
 
+        .stock-recorder-shell[data-stock-stage="2"]
+          .stock-recorder-editor
+          > div.grid {
+          gap: 0.65rem !important;
+        }
+
+        .stock-recorder-shell[data-stock-stage="2"]
+          .stock-recorder-editor
+          > div.grid
+          > form {
+          display: grid !important;
+          grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+          gap: 0.65rem !important;
+          width: min(100%, 34rem);
+          border: 0 !important;
+          border-radius: 0 !important;
+          background: transparent !important;
+          padding: 0 !important;
+        }
+
+        .stock-recorder-shell[data-stock-stage="2"]
+          .stock-recorder-editor
+          > div.grid
+          > form
+          > div.grid {
+          display: contents !important;
+        }
+
+        .stock-recorder-shell[data-stock-stage="2"]
+          .stock-recorder-editor
+          > div.grid
+          > form
+          > div.grid
+          > label:first-child {
+          grid-column: 1 / -1;
+        }
+
+        .stock-recorder-shell[data-stock-stage="2"]
+          .stock-recorder-editor
+          > div.grid
+          > form
+          > button {
+          grid-column: 2;
+          width: auto !important;
+          height: 2.25rem !important;
+          min-height: 0 !important;
+          align-self: end;
+          justify-self: start;
+          border-radius: 0.5rem !important;
+          padding-inline: 0.8rem !important;
+          font-size: 0.75rem !important;
+        }
+
+        .stock-recorder-shell[data-stock-stage="2"]
+          .stock-recorder-editor
+          > div.grid
+          > button:last-child {
+          display: none !important;
+        }
+
         .stock-recorder-shell[data-stock-stage="0"]
           .stock-recorder-editor
           > form
           label,
         .stock-recorder-shell[data-stock-stage="1"]
           .stock-recorder-editor
+          > form
+          label,
+        .stock-recorder-shell[data-stock-stage="2"]
+          .stock-recorder-editor
+          > div.grid
           > form
           label {
           gap: 0.3rem !important;
@@ -432,6 +536,12 @@ function StockRecorder({ businessId }: { businessId: string }) {
           .stock-recorder-shell[data-stock-stage="1"]
           .stock-recorder-editor
           > form
+          label,
+        .dark
+          .stock-recorder-shell[data-stock-stage="2"]
+          .stock-recorder-editor
+          > div.grid
+          > form
           label {
           color: rgb(203 213 225);
         }
@@ -445,7 +555,19 @@ function StockRecorder({ businessId }: { businessId: string }) {
           .stock-recorder-editor
           > form
           label
-          input {
+          input,
+        .stock-recorder-shell[data-stock-stage="2"]
+          .stock-recorder-editor
+          > div.grid
+          > form
+          label
+          input,
+        .stock-recorder-shell[data-stock-stage="2"]
+          .stock-recorder-editor
+          > div.grid
+          > form
+          label
+          select {
           height: 2.25rem !important;
           border: 1px solid rgb(203 213 225) !important;
           border-radius: 0.5rem !important;
@@ -470,7 +592,21 @@ function StockRecorder({ businessId }: { businessId: string }) {
           .stock-recorder-editor
           > form
           label
-          input {
+          input,
+        .dark
+          .stock-recorder-shell[data-stock-stage="2"]
+          .stock-recorder-editor
+          > div.grid
+          > form
+          label
+          input,
+        .dark
+          .stock-recorder-shell[data-stock-stage="2"]
+          .stock-recorder-editor
+          > div.grid
+          > form
+          label
+          select {
           border-color: rgb(51 65 85) !important;
           background: rgb(15 23 42) !important;
           color: rgb(248 250 252);
@@ -482,6 +618,11 @@ function StockRecorder({ businessId }: { businessId: string }) {
           label:focus-within,
         .stock-recorder-shell[data-stock-stage="1"]
           .stock-recorder-editor
+          > form
+          label:focus-within,
+        .stock-recorder-shell[data-stock-stage="2"]
+          .stock-recorder-editor
+          > div.grid
           > form
           label:focus-within {
           position: relative;
@@ -497,6 +638,12 @@ function StockRecorder({ businessId }: { businessId: string }) {
         .dark
           .stock-recorder-shell[data-stock-stage="1"]
           .stock-recorder-editor
+          > form
+          label:focus-within,
+        .dark
+          .stock-recorder-shell[data-stock-stage="2"]
+          .stock-recorder-editor
+          > div.grid
           > form
           label:focus-within {
           color: rgb(248 250 252);
@@ -648,6 +795,22 @@ function StockRecorder({ businessId }: { businessId: string }) {
             > form
             > label {
             max-width: 18rem;
+          }
+
+          .stock-recorder-shell[data-stock-stage="2"]
+            .stock-recorder-editor
+            > div.grid
+            > form {
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+            width: 100%;
+          }
+
+          .stock-recorder-shell[data-stock-stage="2"]
+            .stock-recorder-editor
+            > div.grid
+            > form
+            > button {
+            justify-self: stretch;
           }
 
           .stock-recorder-editor .flex.justify-between {
