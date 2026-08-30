@@ -19,9 +19,17 @@ function StockRecorder({ businessId }: { businessId: string }) {
     if (!host) return;
 
     const syncRecorderState = () => {
-      const editor = host.querySelector<HTMLElement>(
-        ":scope > div > section:first-child > div.grid:has(> aside) > div:last-child",
+      const layout = host.querySelector<HTMLElement>(
+        ":scope > div > section:first-child > div.grid:has(> aside)",
       );
+      const editor = layout?.querySelector<HTMLElement>(":scope > div:last-child");
+      const stepPanel = layout?.querySelector<HTMLElement>(":scope > aside");
+      const navigation = stepPanel?.querySelector<HTMLElement>(":scope > div:last-child");
+
+      layout?.classList.add("stock-recorder-layout");
+      editor?.classList.add("stock-recorder-editor");
+      stepPanel?.classList.add("stock-step-panel");
+      navigation?.classList.add("stock-step-navigation");
 
       let nextStage: 0 | 1 | 2 | 3 = 3;
       if (editor?.querySelector('input[type="datetime-local"]')) {
@@ -55,15 +63,6 @@ function StockRecorder({ businessId }: { businessId: string }) {
         ),
       );
       if (lateDeliveryActive) setRecordingOpen(true);
-
-      const navigation = host.querySelector<HTMLElement>(
-        ":scope > div > section:first-child > div.grid:has(> aside) > aside > div:last-child",
-      );
-      const segment = navigation?.children.item(nextStage) as HTMLElement | null;
-      if (navigation && segment) {
-        const left = Math.max(0, segment.offsetLeft - navigation.offsetLeft - 12);
-        navigation.scrollTo({ left, behavior: "smooth" });
-      }
     };
 
     const frame = window.requestAnimationFrame(syncRecorderState);
@@ -83,28 +82,26 @@ function StockRecorder({ businessId }: { businessId: string }) {
       data-stock-stage={activeStage}
     >
       <section className="stock-recording-launcher rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-950 sm:p-4">
-        <div className="flex items-center justify-end gap-2">
-          <Tooltip
-            content={
-              <span>
-                {t("launcher.title")}. {t("launcher.description")}
-              </span>
-            }
-            side="top"
-          >
-            <button
-              aria-label={t("launcher.description")}
-              className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/50 dark:text-slate-400 dark:hover:bg-slate-900 dark:hover:text-white"
-              type="button"
-            >
-              <CircleHelp className="size-4" />
-            </button>
-          </Tooltip>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-1.5">
+            <p className="text-sm font-semibold text-slate-900 dark:text-white">
+              {t("launcher.title")}
+            </p>
+            <Tooltip content={t("launcher.description")} side="top">
+              <button
+                aria-label={t("launcher.description")}
+                className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/50 dark:text-slate-500 dark:hover:bg-slate-900 dark:hover:text-slate-200"
+                type="button"
+              >
+                <CircleHelp className="size-4" />
+              </button>
+            </Tooltip>
+          </div>
 
           <Button
             aria-controls="stock-recording-workspace"
             aria-expanded={recordingOpen}
-            className="min-w-0"
+            className="shrink-0"
             type="button"
             variant="outline"
             onClick={() => setRecordingOpen((current) => !current)}
@@ -128,15 +125,9 @@ function StockRecorder({ businessId }: { businessId: string }) {
         .stock-progressive-host,
         .stock-progressive-host > div,
         .stock-progressive-host > div > section,
-        .stock-progressive-host
-          > div
-          > section:first-child
-          > div.grid:has(> aside),
-        .stock-progressive-host
-          > div
-          > section:first-child
-          > div.grid:has(> aside)
-          > div:last-child {
+        .stock-recorder-layout,
+        .stock-step-panel,
+        .stock-recorder-editor {
           min-width: 0;
           max-width: 100%;
         }
@@ -149,197 +140,86 @@ function StockRecorder({ businessId }: { businessId: string }) {
         }
 
         .stock-progressive-host > div > section:first-child {
-          overflow: hidden;
-          border-radius: 0.5rem;
+          border-radius: 0.75rem;
         }
 
-        .stock-progressive-host
-          > div
-          > section:first-child
-          > div.grid:has(> aside) {
-          display: block;
+        .stock-recorder-layout {
+          display: block !important;
         }
 
-        .stock-progressive-host
-          > div
-          > section:first-child
-          > div.grid:has(> aside)
-          > aside {
-          min-width: 0;
-          max-width: 100%;
-          overflow: hidden;
-          border-right: 0;
+        .stock-step-panel {
+          overflow: visible !important;
+          border-right: 0 !important;
           border-bottom: 1px solid rgb(226 232 240);
         }
 
-        .dark
-          .stock-progressive-host
-          > div
-          > section:first-child
-          > div.grid:has(> aside)
-          > aside {
+        .dark .stock-step-panel {
           border-bottom-color: rgb(30 41 59);
         }
 
-        .stock-progressive-host
-          > div
-          > section:first-child
-          > div.grid:has(> aside)
-          > aside
-          > div:first-child {
+        .stock-step-panel > div:first-child {
           display: none;
         }
 
-        .stock-progressive-host
-          > div
-          > section:first-child
-          > div.grid:has(> aside)
-          > aside
-          > div:last-child {
-          display: flex;
-          width: 100%;
-          max-height: none;
-          gap: 1rem;
-          overflow-x: auto;
-          overflow-y: hidden;
-          padding: 0.75rem;
-          scrollbar-width: none;
-          scroll-snap-type: x proximity;
+        .stock-step-navigation {
+          display: flex !important;
+          flex-wrap: wrap;
+          align-items: stretch;
+          gap: 0.5rem;
+          max-height: none !important;
+          overflow: visible !important;
+          padding: 0.75rem !important;
         }
 
-        .stock-progressive-host
-          > div
-          > section:first-child
-          > div.grid:has(> aside)
-          > aside
-          > div:last-child::-webkit-scrollbar {
+        .stock-step-navigation > div:nth-child(n + 5) {
           display: none;
         }
 
-        .stock-progressive-host
-          > div
-          > section:first-child
-          > div.grid:has(> aside)
-          > aside
-          > div:last-child
-          > div {
+        .stock-step-navigation > div:nth-child(-n + 4) {
           position: relative;
-          min-width: 8.75rem;
-          flex: 1 0 8.75rem;
-          scroll-snap-align: start;
-          border: 1px solid rgb(226 232 240);
+          min-width: 0;
+          max-width: calc(50% - 0.25rem);
+          flex: 1 1 calc(50% - 0.25rem);
+          border: 0;
           border-radius: 0.5rem;
-          background: rgb(248 250 252);
-          padding: 0.625rem 0.7rem;
+          background: transparent;
+          padding: 0.55rem 0.65rem;
+          color: rgb(100 116 139);
           transition:
-            border-color 160ms ease,
             background-color 160ms ease,
+            color 160ms ease,
             opacity 160ms ease;
         }
 
-        .dark
-          .stock-progressive-host
-          > div
-          > section:first-child
-          > div.grid:has(> aside)
-          > aside
-          > div:last-child
-          > div {
-          border-color: rgb(30 41 59);
-          background: rgb(15 23 42 / 0.55);
-        }
-
-        .stock-progressive-host
-          > div
-          > section:first-child
-          > div.grid:has(> aside)
-          > aside
-          > div:last-child
-          > div:nth-child(n + 5) {
-          display: none;
-        }
-
-        .stock-progressive-host
-          > div
-          > section:first-child
-          > div.grid:has(> aside)
-          > aside
-          > div:last-child
-          > div:nth-child(-n + 3)::after {
-          content: "›";
-          position: absolute;
-          top: 50%;
-          right: -0.72rem;
-          transform: translate(50%, -50%);
+        .dark .stock-step-navigation > div:nth-child(-n + 4) {
           color: rgb(148 163 184);
-          font-size: 1rem;
-          font-weight: 800;
-          pointer-events: none;
         }
 
-        .stock-progressive-host
-          > div
-          > section:first-child
-          > div.grid:has(> aside)
-          > aside
-          > div:last-child
-          > div
-          > div {
+        .stock-step-navigation > div:nth-child(-n + 4) > div {
           min-width: 0;
           pointer-events: none;
         }
 
-        .stock-progressive-host
-          > div
-          > section:first-child
-          > div.grid:has(> aside)
-          > aside
-          > div:last-child
-          > div
+        .stock-step-navigation
+          > div:nth-child(-n + 4)
           > div
           > p:first-child {
-          overflow: hidden;
-          color: rgb(51 65 85);
+          color: inherit;
           font-size: 0.75rem;
           font-weight: 700;
-          line-height: 1.15rem;
-          text-overflow: ellipsis;
-          white-space: nowrap;
+          line-height: 1rem;
+          overflow-wrap: anywhere;
+          white-space: normal;
         }
 
-        .dark
-          .stock-progressive-host
-          > div
-          > section:first-child
-          > div.grid:has(> aside)
-          > aside
-          > div:last-child
-          > div
-          > div
-          > p:first-child {
-          color: rgb(203 213 225);
-        }
-
-        .stock-progressive-host
-          > div
-          > section:first-child
-          > div.grid:has(> aside)
-          > aside
-          > div:last-child
-          > div
+        .stock-step-navigation
+          > div:nth-child(-n + 4)
           > div
           > p:last-child {
           display: none;
         }
 
-        .stock-progressive-host
-          > div
-          > section:first-child
-          > div.grid:has(> aside)
-          > aside
-          > div:last-child
-          > div
-          > button {
+        .stock-step-navigation > div:nth-child(-n + 4) > button {
           position: absolute;
           inset: 0;
           z-index: 2;
@@ -348,309 +228,97 @@ function StockRecorder({ businessId }: { businessId: string }) {
           opacity: 0;
         }
 
-        .stock-progressive-host
-          > div
-          > section:first-child
-          > div.grid:has(> aside)
-          > aside
-          > div:last-child
-          > div:has(> button) {
+        .stock-step-navigation > div:nth-child(-n + 4):has(> button) {
           cursor: pointer;
         }
 
-        .stock-progressive-host
-          > div
-          > section:first-child
-          > div.grid:has(> aside)
-          > aside
-          > div:last-child
-          > div:not(:has(> button)) {
-          opacity: 0.52;
-        }
-
-        .stock-progressive-host
-          > div
-          > section:first-child
-          > div.grid:has(> aside)
-          > aside
-          > div:last-child
-          > div:has(> button:hover),
-        .stock-progressive-host
-          > div
-          > section:first-child
-          > div.grid:has(> aside)
-          > aside
-          > div:last-child
-          > div:has(> button:focus-visible) {
-          border-color: rgb(148 163 184);
+        .stock-step-navigation
+          > div:nth-child(-n + 4):has(> button:hover),
+        .stock-step-navigation
+          > div:nth-child(-n + 4):has(> button:focus-visible) {
           background: rgb(241 245 249);
+          color: rgb(15 23 42);
+        }
+
+        .dark
+          .stock-step-navigation
+          > div:nth-child(-n + 4):has(> button:hover),
+        .dark
+          .stock-step-navigation
+          > div:nth-child(-n + 4):has(> button:focus-visible) {
+          background: rgb(30 41 59);
+          color: rgb(248 250 252);
+        }
+
+        .stock-step-navigation > div:nth-child(-n + 4):not(:has(> button)) {
+          opacity: 0.5;
+        }
+
+        .stock-recorder-shell[data-stock-stage="0"]
+          .stock-step-navigation
+          > div:nth-child(1),
+        .stock-recorder-shell[data-stock-stage="1"]
+          .stock-step-navigation
+          > div:nth-child(2),
+        .stock-recorder-shell[data-stock-stage="2"]
+          .stock-step-navigation
+          > div:nth-child(3),
+        .stock-recorder-shell[data-stock-stage="3"]
+          .stock-step-navigation
+          > div:nth-child(4) {
+          background: rgb(15 23 42);
+          color: white;
           opacity: 1;
         }
 
         .dark
-          .stock-progressive-host
-          > div
-          > section:first-child
-          > div.grid:has(> aside)
-          > aside
-          > div:last-child
-          > div:has(> button:hover),
-        .dark
-          .stock-progressive-host
-          > div
-          > section:first-child
-          > div.grid:has(> aside)
-          > aside
-          > div:last-child
-          > div:has(> button:focus-visible) {
-          border-color: rgb(71 85 105);
-          background: rgb(30 41 59 / 0.7);
-        }
-
-        .stock-recorder-shell[data-stock-stage="0"]
-          .stock-progressive-host
-          > div
-          > section:first-child
-          > div.grid:has(> aside)
-          > aside
-          > div:last-child
-          > div:nth-child(1),
-        .stock-recorder-shell[data-stock-stage="1"]
-          .stock-progressive-host
-          > div
-          > section:first-child
-          > div.grid:has(> aside)
-          > aside
-          > div:last-child
-          > div:nth-child(2),
-        .stock-recorder-shell[data-stock-stage="2"]
-          .stock-progressive-host
-          > div
-          > section:first-child
-          > div.grid:has(> aside)
-          > aside
-          > div:last-child
-          > div:nth-child(3),
-        .stock-recorder-shell[data-stock-stage="3"]
-          .stock-progressive-host
-          > div
-          > section:first-child
-          > div.grid:has(> aside)
-          > aside
-          > div:last-child
-          > div:nth-child(4) {
-          border-color: color-mix(
-            in srgb,
-            var(--workspace-primary, var(--brand-navy)) 42%,
-            rgb(203 213 225) 58%
-          );
-          background: color-mix(
-            in srgb,
-            var(--workspace-primary, var(--brand-navy)) 8%,
-            #ffffff 92%
-          );
-          opacity: 1;
-        }
-
-        .stock-recorder-shell[data-stock-stage="0"]
-          .stock-progressive-host
-          > div
-          > section:first-child
-          > div.grid:has(> aside)
-          > aside
-          > div:last-child
-          > div:nth-child(1)
-          > div
-          > p:first-child,
-        .stock-recorder-shell[data-stock-stage="1"]
-          .stock-progressive-host
-          > div
-          > section:first-child
-          > div.grid:has(> aside)
-          > aside
-          > div:last-child
-          > div:nth-child(2)
-          > div
-          > p:first-child,
-        .stock-recorder-shell[data-stock-stage="2"]
-          .stock-progressive-host
-          > div
-          > section:first-child
-          > div.grid:has(> aside)
-          > aside
-          > div:last-child
-          > div:nth-child(3)
-          > div
-          > p:first-child,
-        .stock-recorder-shell[data-stock-stage="3"]
-          .stock-progressive-host
-          > div
-          > section:first-child
-          > div.grid:has(> aside)
-          > aside
-          > div:last-child
-          > div:nth-child(4)
-          > div
-          > p:first-child {
-          color: color-mix(
-            in srgb,
-            var(--workspace-primary, var(--brand-navy)) 82%,
-            rgb(15 23 42) 18%
-          );
-        }
-
-        .dark
           .stock-recorder-shell[data-stock-stage="0"]
-          .stock-progressive-host
-          > div
-          > section:first-child
-          > div.grid:has(> aside)
-          > aside
-          > div:last-child
+          .stock-step-navigation
           > div:nth-child(1),
         .dark
           .stock-recorder-shell[data-stock-stage="1"]
-          .stock-progressive-host
-          > div
-          > section:first-child
-          > div.grid:has(> aside)
-          > aside
-          > div:last-child
+          .stock-step-navigation
           > div:nth-child(2),
         .dark
           .stock-recorder-shell[data-stock-stage="2"]
-          .stock-progressive-host
-          > div
-          > section:first-child
-          > div.grid:has(> aside)
-          > aside
-          > div:last-child
+          .stock-step-navigation
           > div:nth-child(3),
         .dark
           .stock-recorder-shell[data-stock-stage="3"]
-          .stock-progressive-host
-          > div
-          > section:first-child
-          > div.grid:has(> aside)
-          > aside
-          > div:last-child
+          .stock-step-navigation
           > div:nth-child(4) {
-          border-color: color-mix(
-            in srgb,
-            var(--workspace-primary, var(--brand-navy)) 58%,
-            rgb(71 85 105) 42%
-          );
-          background: color-mix(
-            in srgb,
-            var(--workspace-primary, var(--brand-navy)) 20%,
-            rgb(15 23 42) 80%
-          );
+          background: white;
+          color: rgb(15 23 42);
         }
 
-        .dark
-          .stock-recorder-shell[data-stock-stage="0"]
-          .stock-progressive-host
-          > div
-          > section:first-child
-          > div.grid:has(> aside)
-          > aside
-          > div:last-child
-          > div:nth-child(1)
-          > div
-          > p:first-child,
-        .dark
-          .stock-recorder-shell[data-stock-stage="1"]
-          .stock-progressive-host
-          > div
-          > section:first-child
-          > div.grid:has(> aside)
-          > aside
-          > div:last-child
-          > div:nth-child(2)
-          > div
-          > p:first-child,
-        .dark
-          .stock-recorder-shell[data-stock-stage="2"]
-          .stock-progressive-host
-          > div
-          > section:first-child
-          > div.grid:has(> aside)
-          > aside
-          > div:last-child
-          > div:nth-child(3)
-          > div
-          > p:first-child,
-        .dark
-          .stock-recorder-shell[data-stock-stage="3"]
-          .stock-progressive-host
-          > div
-          > section:first-child
-          > div.grid:has(> aside)
-          > aside
-          > div:last-child
-          > div:nth-child(4)
-          > div
-          > p:first-child {
-          color: color-mix(
-            in srgb,
-            var(--workspace-primary, var(--brand-navy)) 62%,
-            #ffffff 38%
-          );
-        }
-
-        .stock-progressive-host
-          > div
-          > section:first-child
-          > div.grid:has(> aside)
-          > div:last-child {
+        .stock-recorder-editor {
           min-height: 0 !important;
-          min-width: 0;
-          max-width: 100%;
-          overflow: hidden;
-          padding: 0.75rem;
+          overflow: visible !important;
+          padding: 0.875rem !important;
         }
 
-        .stock-progressive-host
-          > div
-          > section:first-child
-          > div.grid:has(> aside)
-          > div:last-child
-          form,
-        .stock-progressive-host
-          > div
-          > section:first-child
-          > div.grid:has(> aside)
-          > div:last-child
-          label,
-        .stock-progressive-host
-          > div
-          > section:first-child
-          > div.grid:has(> aside)
-          > div:last-child
-          input,
-        .stock-progressive-host
-          > div
-          > section:first-child
-          > div.grid:has(> aside)
-          > div:last-child
-          select {
+        .stock-recorder-editor form,
+        .stock-recorder-editor .grid,
+        .stock-recorder-editor label,
+        .stock-recorder-editor input:not([type="radio"]):not([type="checkbox"]),
+        .stock-recorder-editor select {
           min-width: 0;
           max-width: 100%;
         }
 
-        .stock-progressive-host
-          > div
-          > section:first-child
-          > div.grid:has(> aside)
-          > div:last-child
-          input,
-        .stock-progressive-host
-          > div
-          > section:first-child
-          > div.grid:has(> aside)
-          > div:last-child
-          select {
+        .stock-recorder-editor input:not([type="radio"]):not([type="checkbox"]),
+        .stock-recorder-editor select {
           width: 100%;
+        }
+
+        .stock-recorder-editor input[type="radio"],
+        .stock-recorder-editor input[type="checkbox"] {
+          width: auto;
+          max-width: none;
+        }
+
+        .stock-recorder-editor button {
+          max-width: 100%;
         }
 
         .stock-progressive-host
@@ -666,67 +334,73 @@ function StockRecorder({ businessId }: { businessId: string }) {
 
         @media (max-width: 639px) {
           .stock-recording-launcher > div {
-            justify-content: flex-end;
+            align-items: center;
           }
 
-          .stock-progressive-host
-            > div
-            > section:first-child
-            > div.grid:has(> aside)
-            > div:last-child {
-            padding: 0.75rem;
+          .stock-recording-launcher p {
+            overflow-wrap: anywhere;
           }
 
-          .stock-progressive-host
-            > div
-            > section:first-child
-            > div.grid:has(> aside)
-            > div:last-child
-            label
-            > div.grid {
+          .stock-recorder-editor h2 {
+            font-size: 1rem;
+            line-height: 1.5rem;
+          }
+
+          .stock-recorder-editor h2 + p {
+            font-size: 0.8125rem;
+            line-height: 1.25rem;
+          }
+
+          .stock-recorder-editor label > div.grid {
             grid-template-columns: minmax(0, 1fr) !important;
           }
 
-          .stock-progressive-host
-            > div
-            > section:first-child
-            > div.grid:has(> aside)
-            > div:last-child
-            .grid {
-            min-width: 0;
-            max-width: 100%;
+          .stock-recorder-editor form > button,
+          .stock-recorder-editor > div.grid > button,
+          .stock-recorder-editor > div.grid > form > button {
+            width: 100%;
           }
 
-          .stock-progressive-host
-            > div
-            > section:first-child
-            > div.grid:has(> aside)
-            > aside
-            > div:last-child
+          .stock-recorder-editor .flex.justify-between {
+            flex-wrap: wrap;
+          }
+
+          .stock-recorder-editor strong,
+          .stock-recorder-editor span,
+          .stock-recorder-editor p {
+            overflow-wrap: anywhere;
+          }
+
+          .stock-recorder-shell[data-stock-stage="2"]
+            .stock-recorder-editor
+            .divide-y
             > div {
-            min-width: 8rem;
-            flex-basis: 8rem;
+            align-items: flex-start;
+            flex-wrap: wrap;
+          }
+
+          .stock-recorder-shell[data-stock-stage="2"]
+            .stock-recorder-editor
+            .divide-y
+            > div
+            > div:first-child {
+            min-width: 0;
+            flex: 1 1 10rem;
           }
         }
 
-        @media (min-width: 768px) {
-          .stock-progressive-host
-            > div
-            > section:first-child
-            > div.grid:has(> aside)
-            > aside
-            > div:last-child
-            > div {
-            min-width: 0;
-            flex-basis: 0;
+        @media (min-width: 640px) {
+          .stock-step-navigation > div:nth-child(-n + 4) {
+            max-width: none;
+            flex: 1 1 0;
           }
 
-          .stock-progressive-host
-            > div
-            > section:first-child
-            > div.grid:has(> aside)
-            > div:last-child {
-            padding: 1.25rem;
+          .stock-recorder-editor {
+            padding: 1.25rem !important;
+          }
+
+          .stock-recorder-editor label > div.grid {
+            grid-template-columns: 8.5rem minmax(0, 1fr) !important;
           }
         }
       `}</style>

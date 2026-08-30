@@ -9,12 +9,12 @@
       "stock": "Mzigo mpya",
       "lateDelivery": "Mzigo uliochelewa",
       "batch": "Fungu",
-      "products": "Unda bidhaa / SKU mpya",
-      "method": "Chagua namna ya kurekodi mzigo",
+      "products": "Bidhaa / SKU",
+      "method": "Njia ya kurekodi",
       "review": "Kagua na uhifadhi"
     },
     "launcher": {
-      "title": "Rekodi mzigo wako",
+      "title": "Anza kurekodi mzigo",
       "description": "Anza kurekodi mzigo mpya. Taarifa ulizoingiza zitaendelea kuwepo unapohama kati ya hatua za kurekodi.",
       "start": "Rekodi mzigo mpya",
       "close": "Ficha rekodi"

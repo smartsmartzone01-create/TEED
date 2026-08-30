@@ -9,12 +9,12 @@
       "stock": "New stock",
       "lateDelivery": "Late delivery",
       "batch": "Batch",
-      "products": "Create new products / SKUs",
-      "method": "Choose how to record this stock",
+      "products": "Product / SKU",
+      "method": "Recording method",
       "review": "Review and save"
     },
     "launcher": {
-      "title": "Record your stock",
+      "title": "Start recording stock",
       "description": "Start a new stock recording. Your progress stays available while you move between the recording steps.",
       "start": "Record new stock",
       "close": "Hide recording"
