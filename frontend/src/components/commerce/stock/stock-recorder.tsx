@@ -1,11 +1,12 @@
 "use client";
 
-import { PackagePlus, X } from "lucide-react";
+import { CircleHelp, PackagePlus, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 
 import { ProgressiveStockWorkspace } from "@/components/commerce/stock/stock-progressive-workspace";
 import { Button } from "@/components/global/primitives/button";
+import { Tooltip } from "@/components/global/primitives/tooltip";
 
 function StockRecorder({ businessId }: { businessId: string }) {
   const t = useTranslations("CommerceStock");
@@ -65,37 +66,45 @@ function StockRecorder({ businessId }: { businessId: string }) {
       }
     };
 
-    syncRecorderState();
+    const frame = window.requestAnimationFrame(syncRecorderState);
     const observer = new MutationObserver(syncRecorderState);
     observer.observe(host, { childList: true, subtree: true });
-    return () => observer.disconnect();
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      observer.disconnect();
+    };
   }, []);
 
   return (
     <div
-      className="stock-recorder-shell grid gap-5"
+      className="stock-recorder-shell grid min-w-0 gap-5"
       data-recording-open={recordingOpen ? "true" : "false"}
       data-stock-stage={activeStage}
     >
-      <section className="stock-recording-launcher rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950 sm:p-5">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex min-w-0 items-start gap-3">
-            <span className="stock-recording-launcher-icon mt-0.5 grid size-9 shrink-0 place-items-center rounded-lg border border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900">
-              <PackagePlus className="size-4" />
-            </span>
-            <div className="min-w-0">
-              <h2 className="text-sm font-bold text-slate-950 dark:text-white">
-                {t("launcher.title")}
-              </h2>
-              <p className="mt-1 max-w-2xl text-xs leading-5 text-slate-500 sm:text-sm">
-                {t("launcher.description")}
-              </p>
-            </div>
-          </div>
+      <section className="stock-recording-launcher rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-950 sm:p-4">
+        <div className="flex items-center justify-end gap-2">
+          <Tooltip
+            content={
+              <span>
+                {t("launcher.title")}. {t("launcher.description")}
+              </span>
+            }
+            side="top"
+          >
+            <button
+              aria-label={t("launcher.description")}
+              className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/50 dark:text-slate-400 dark:hover:bg-slate-900 dark:hover:text-white"
+              type="button"
+            >
+              <CircleHelp className="size-4" />
+            </button>
+          </Tooltip>
+
           <Button
             aria-controls="stock-recording-workspace"
             aria-expanded={recordingOpen}
-            className="w-full shrink-0 sm:w-auto"
+            className="min-w-0"
             type="button"
             variant="outline"
             onClick={() => setRecordingOpen((current) => !current)}
@@ -106,17 +115,30 @@ function StockRecorder({ businessId }: { businessId: string }) {
         </div>
       </section>
 
-      <div id="stock-recording-workspace" ref={hostRef} className="stock-progressive-host">
+      <div
+        id="stock-recording-workspace"
+        ref={hostRef}
+        className="stock-progressive-host min-w-0 max-w-full"
+      >
         <ProgressiveStockWorkspace businessId={businessId} />
       </div>
 
       <style jsx global>{`
-        .stock-recording-launcher-icon {
-          color: color-mix(
-            in srgb,
-            var(--workspace-primary, var(--brand-navy)) 82%,
-            #ffffff 18%
-          );
+        .stock-recorder-shell,
+        .stock-progressive-host,
+        .stock-progressive-host > div,
+        .stock-progressive-host > div > section,
+        .stock-progressive-host
+          > div
+          > section:first-child
+          > div.grid:has(> aside),
+        .stock-progressive-host
+          > div
+          > section:first-child
+          > div.grid:has(> aside)
+          > div:last-child {
+          min-width: 0;
+          max-width: 100%;
         }
 
         .stock-recorder-shell[data-recording-open="false"]
@@ -127,6 +149,7 @@ function StockRecorder({ businessId }: { businessId: string }) {
         }
 
         .stock-progressive-host > div > section:first-child {
+          overflow: hidden;
           border-radius: 0.5rem;
         }
 
@@ -142,6 +165,8 @@ function StockRecorder({ businessId }: { businessId: string }) {
           > section:first-child
           > div.grid:has(> aside)
           > aside {
+          min-width: 0;
+          max-width: 100%;
           overflow: hidden;
           border-right: 0;
           border-bottom: 1px solid rgb(226 232 240);
@@ -172,8 +197,9 @@ function StockRecorder({ businessId }: { businessId: string }) {
           > aside
           > div:last-child {
           display: flex;
+          width: 100%;
           max-height: none;
-          gap: 1.15rem;
+          gap: 1rem;
           overflow-x: auto;
           overflow-y: hidden;
           padding: 0.75rem;
@@ -198,13 +224,13 @@ function StockRecorder({ businessId }: { businessId: string }) {
           > div:last-child
           > div {
           position: relative;
-          min-width: 9.25rem;
-          flex: 1 0 9.25rem;
+          min-width: 8.75rem;
+          flex: 1 0 8.75rem;
           scroll-snap-align: start;
           border: 1px solid rgb(226 232 240);
           border-radius: 0.5rem;
           background: rgb(248 250 252);
-          padding: 0.65rem 0.75rem;
+          padding: 0.625rem 0.7rem;
           transition:
             border-color 160ms ease,
             background-color 160ms ease,
@@ -243,7 +269,7 @@ function StockRecorder({ businessId }: { businessId: string }) {
           content: "›";
           position: absolute;
           top: 50%;
-          right: -0.82rem;
+          right: -0.72rem;
           transform: translate(50%, -50%);
           color: rgb(148 163 184);
           font-size: 1rem;
@@ -578,10 +604,55 @@ function StockRecorder({ businessId }: { businessId: string }) {
           > div.grid:has(> aside)
           > div:last-child {
           min-height: 0 !important;
-          padding: 1rem;
+          min-width: 0;
+          max-width: 100%;
+          overflow: hidden;
+          padding: 0.75rem;
         }
 
-        /* Late-delivery cancel belongs to the page flow, directly after the recorder. */
+        .stock-progressive-host
+          > div
+          > section:first-child
+          > div.grid:has(> aside)
+          > div:last-child
+          form,
+        .stock-progressive-host
+          > div
+          > section:first-child
+          > div.grid:has(> aside)
+          > div:last-child
+          label,
+        .stock-progressive-host
+          > div
+          > section:first-child
+          > div.grid:has(> aside)
+          > div:last-child
+          input,
+        .stock-progressive-host
+          > div
+          > section:first-child
+          > div.grid:has(> aside)
+          > div:last-child
+          select {
+          min-width: 0;
+          max-width: 100%;
+        }
+
+        .stock-progressive-host
+          > div
+          > section:first-child
+          > div.grid:has(> aside)
+          > div:last-child
+          input,
+        .stock-progressive-host
+          > div
+          > section:first-child
+          > div.grid:has(> aside)
+          > div:last-child
+          select {
+          width: 100%;
+        }
+
         .stock-progressive-host
           > div
           > section:nth-of-type(2)
@@ -591,6 +662,51 @@ function StockRecorder({ businessId }: { businessId: string }) {
           inset: auto;
           z-index: auto;
           box-shadow: none;
+        }
+
+        @media (max-width: 639px) {
+          .stock-recording-launcher > div {
+            justify-content: flex-end;
+          }
+
+          .stock-progressive-host
+            > div
+            > section:first-child
+            > div.grid:has(> aside)
+            > div:last-child {
+            padding: 0.75rem;
+          }
+
+          .stock-progressive-host
+            > div
+            > section:first-child
+            > div.grid:has(> aside)
+            > div:last-child
+            label
+            > div.grid {
+            grid-template-columns: minmax(0, 1fr) !important;
+          }
+
+          .stock-progressive-host
+            > div
+            > section:first-child
+            > div.grid:has(> aside)
+            > div:last-child
+            .grid {
+            min-width: 0;
+            max-width: 100%;
+          }
+
+          .stock-progressive-host
+            > div
+            > section:first-child
+            > div.grid:has(> aside)
+            > aside
+            > div:last-child
+            > div {
+            min-width: 8rem;
+            flex-basis: 8rem;
+          }
         }
 
         @media (min-width: 768px) {
