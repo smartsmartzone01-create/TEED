@@ -14,6 +14,13 @@ function StockRecorder({ businessId }: { businessId: string }) {
   const [recordingOpen, setRecordingOpen] = useState(false);
   const [activeStage, setActiveStage] = useState<0 | 1 | 2 | 3>(0);
 
+  const activeHelp = [
+    t("help.stock"),
+    t("help.batch"),
+    t("help.products"),
+    t("help.method"),
+  ][activeStage];
+
   useEffect(() => {
     const host = hostRef.current;
     if (!host) return;
@@ -77,23 +84,26 @@ function StockRecorder({ businessId }: { businessId: string }) {
 
   return (
     <div
-      className="stock-recorder-shell grid min-w-0 gap-5"
+      className="stock-recorder-shell grid min-w-0 gap-4"
       data-recording-open={recordingOpen ? "true" : "false"}
       data-stock-stage={activeStage}
     >
-      <section className="stock-recording-launcher rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-950 sm:p-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex min-w-0 items-center gap-1.5">
-            <p className="text-sm font-semibold text-slate-900 dark:text-white">
+      <section className="stock-recording-launcher border-y border-slate-200 bg-white px-1 py-2 dark:border-slate-800 dark:bg-slate-950 sm:px-2">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex min-w-0 items-center gap-1">
+            <p className="truncate text-xs font-semibold text-slate-700 dark:text-slate-200 sm:text-sm">
               {t("launcher.title")}
             </p>
-            <Tooltip content={t("launcher.description")} side="top">
+            <Tooltip
+              content={recordingOpen ? activeHelp : t("launcher.description")}
+              side="top"
+            >
               <button
-                aria-label={t("launcher.description")}
-                className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/50 dark:text-slate-500 dark:hover:bg-slate-900 dark:hover:text-slate-200"
+                aria-label={recordingOpen ? activeHelp : t("launcher.description")}
+                className="inline-flex size-7 shrink-0 items-center justify-center rounded-md text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/50 dark:text-slate-500 dark:hover:bg-slate-900 dark:hover:text-slate-200"
                 type="button"
               >
-                <CircleHelp className="size-4" />
+                <CircleHelp className="size-3.5" />
               </button>
             </Tooltip>
           </div>
@@ -101,12 +111,12 @@ function StockRecorder({ businessId }: { businessId: string }) {
           <Button
             aria-controls="stock-recording-workspace"
             aria-expanded={recordingOpen}
-            className="shrink-0"
+            className="h-8 shrink-0 px-3 text-xs"
             type="button"
             variant="outline"
             onClick={() => setRecordingOpen((current) => !current)}
           >
-            {recordingOpen ? <X className="size-4" /> : <PackagePlus className="size-4" />}
+            {recordingOpen ? <X className="size-3.5" /> : <PackagePlus className="size-3.5" />}
             {recordingOpen ? t("launcher.close") : t("launcher.start")}
           </Button>
         </div>
@@ -140,7 +150,14 @@ function StockRecorder({ businessId }: { businessId: string }) {
         }
 
         .stock-progressive-host > div > section:first-child {
-          border-radius: 0.75rem;
+          overflow: hidden;
+          border-radius: 0 !important;
+          border-color: rgb(203 213 225) !important;
+          box-shadow: none !important;
+        }
+
+        .dark .stock-progressive-host > div > section:first-child {
+          border-color: rgb(51 65 85) !important;
         }
 
         .stock-recorder-layout {
@@ -148,13 +165,15 @@ function StockRecorder({ businessId }: { businessId: string }) {
         }
 
         .stock-step-panel {
-          overflow: visible !important;
+          overflow: hidden !important;
           border-right: 0 !important;
-          border-bottom: 1px solid rgb(226 232 240);
+          border-bottom: 1px solid rgb(203 213 225) !important;
+          background: rgb(248 250 252 / 0.8);
         }
 
         .dark .stock-step-panel {
-          border-bottom-color: rgb(30 41 59);
+          border-bottom-color: rgb(51 65 85) !important;
+          background: rgb(15 23 42 / 0.6);
         }
 
         .stock-step-panel > div:first-child {
@@ -163,12 +182,18 @@ function StockRecorder({ businessId }: { businessId: string }) {
 
         .stock-step-navigation {
           display: flex !important;
-          flex-wrap: wrap;
-          align-items: stretch;
-          gap: 0.5rem;
+          flex-wrap: nowrap;
+          align-items: center;
+          gap: 0;
           max-height: none !important;
-          overflow: visible !important;
-          padding: 0.75rem !important;
+          overflow-x: auto !important;
+          overflow-y: hidden !important;
+          padding: 0 !important;
+          scrollbar-width: none;
+        }
+
+        .stock-step-navigation::-webkit-scrollbar {
+          display: none;
         }
 
         .stock-step-navigation > div:nth-child(n + 5) {
@@ -177,22 +202,30 @@ function StockRecorder({ businessId }: { businessId: string }) {
 
         .stock-step-navigation > div:nth-child(-n + 4) {
           position: relative;
-          min-width: 0;
-          max-width: calc(50% - 0.25rem);
-          flex: 1 1 calc(50% - 0.25rem);
-          border: 0;
-          border-radius: 0.5rem;
-          background: transparent;
-          padding: 0.55rem 0.65rem;
+          min-width: max-content;
+          flex: 0 0 auto;
+          border: 0 !important;
+          border-radius: 0 !important;
+          background: transparent !important;
+          padding: 0.7rem 1.75rem 0.7rem 0.85rem !important;
           color: rgb(100 116 139);
-          transition:
-            background-color 160ms ease,
-            color 160ms ease,
-            opacity 160ms ease;
+          opacity: 1 !important;
         }
 
         .dark .stock-step-navigation > div:nth-child(-n + 4) {
           color: rgb(148 163 184);
+        }
+
+        .stock-step-navigation > div:nth-child(-n + 3)::after {
+          content: "›";
+          position: absolute;
+          top: 50%;
+          right: 0.55rem;
+          transform: translateY(-52%);
+          color: rgb(148 163 184);
+          font-size: 1rem;
+          font-weight: 700;
+          pointer-events: none;
         }
 
         .stock-step-navigation > div:nth-child(-n + 4) > div {
@@ -206,10 +239,9 @@ function StockRecorder({ businessId }: { businessId: string }) {
           > p:first-child {
           color: inherit;
           font-size: 0.75rem;
-          font-weight: 700;
+          font-weight: 600;
           line-height: 1rem;
-          overflow-wrap: anywhere;
-          white-space: normal;
+          white-space: nowrap;
         }
 
         .stock-step-navigation
@@ -236,7 +268,6 @@ function StockRecorder({ businessId }: { businessId: string }) {
           > div:nth-child(-n + 4):has(> button:hover),
         .stock-step-navigation
           > div:nth-child(-n + 4):has(> button:focus-visible) {
-          background: rgb(241 245 249);
           color: rgb(15 23 42);
         }
 
@@ -246,12 +277,11 @@ function StockRecorder({ businessId }: { businessId: string }) {
         .dark
           .stock-step-navigation
           > div:nth-child(-n + 4):has(> button:focus-visible) {
-          background: rgb(30 41 59);
           color: rgb(248 250 252);
         }
 
         .stock-step-navigation > div:nth-child(-n + 4):not(:has(> button)) {
-          opacity: 0.5;
+          color: rgb(148 163 184);
         }
 
         .stock-recorder-shell[data-stock-stage="0"]
@@ -266,9 +296,8 @@ function StockRecorder({ businessId }: { businessId: string }) {
         .stock-recorder-shell[data-stock-stage="3"]
           .stock-step-navigation
           > div:nth-child(4) {
-          background: rgb(15 23 42);
-          color: white;
-          opacity: 1;
+          color: rgb(15 23 42);
+          font-weight: 800;
         }
 
         .dark
@@ -287,14 +316,56 @@ function StockRecorder({ businessId }: { businessId: string }) {
           .stock-recorder-shell[data-stock-stage="3"]
           .stock-step-navigation
           > div:nth-child(4) {
-          background: white;
-          color: rgb(15 23 42);
+          color: white;
+        }
+
+        .stock-recorder-shell[data-stock-stage="0"]
+          .stock-step-navigation
+          > div:nth-child(1)::before,
+        .stock-recorder-shell[data-stock-stage="1"]
+          .stock-step-navigation
+          > div:nth-child(2)::before,
+        .stock-recorder-shell[data-stock-stage="2"]
+          .stock-step-navigation
+          > div:nth-child(3)::before,
+        .stock-recorder-shell[data-stock-stage="3"]
+          .stock-step-navigation
+          > div:nth-child(4)::before {
+          content: "";
+          position: absolute;
+          right: 1.75rem;
+          bottom: 0;
+          left: 0.85rem;
+          height: 2px;
+          background: currentColor;
         }
 
         .stock-recorder-editor {
           min-height: 0 !important;
           overflow: visible !important;
-          padding: 0.875rem !important;
+          padding: 1rem !important;
+          background: white;
+        }
+
+        .dark .stock-recorder-editor {
+          background: rgb(2 6 23);
+        }
+
+        .stock-recorder-editor h2 + p {
+          display: none;
+        }
+
+        .stock-recorder-editor h2 {
+          font-size: 0.75rem !important;
+          font-weight: 700 !important;
+          line-height: 1rem !important;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          color: rgb(100 116 139);
+        }
+
+        .dark .stock-recorder-editor h2 {
+          color: rgb(148 163 184);
         }
 
         .stock-recorder-editor form,
@@ -306,11 +377,6 @@ function StockRecorder({ businessId }: { businessId: string }) {
           max-width: 100%;
         }
 
-        .stock-recorder-editor input:not([type="radio"]):not([type="checkbox"]),
-        .stock-recorder-editor select {
-          width: 100%;
-        }
-
         .stock-recorder-editor input[type="radio"],
         .stock-recorder-editor input[type="checkbox"] {
           width: auto;
@@ -319,6 +385,85 @@ function StockRecorder({ businessId }: { businessId: string }) {
 
         .stock-recorder-editor button {
           max-width: 100%;
+        }
+
+        .stock-recorder-shell[data-stock-stage="0"]
+          .stock-recorder-editor
+          > form
+          > div:first-child {
+          display: none;
+        }
+
+        .stock-recorder-shell[data-stock-stage="0"]
+          .stock-recorder-editor
+          > form {
+          gap: 0 !important;
+        }
+
+        .stock-recorder-shell[data-stock-stage="0"]
+          .stock-recorder-editor
+          > form
+          label {
+          gap: 0.35rem !important;
+          border: 1px solid rgb(203 213 225);
+          padding: 0.55rem 0.7rem;
+          color: rgb(100 116 139);
+          font-size: 0.675rem;
+          letter-spacing: 0.04em;
+          text-transform: uppercase;
+        }
+
+        .dark
+          .stock-recorder-shell[data-stock-stage="0"]
+          .stock-recorder-editor
+          > form
+          label {
+          border-color: rgb(51 65 85);
+          color: rgb(148 163 184);
+        }
+
+        .stock-recorder-shell[data-stock-stage="0"]
+          .stock-recorder-editor
+          > form
+          label
+          input {
+          height: 2rem !important;
+          border: 0 !important;
+          border-radius: 0 !important;
+          background: transparent !important;
+          padding: 0 !important;
+          color: rgb(15 23 42);
+          font-size: 0.875rem;
+          font-weight: 500;
+          letter-spacing: normal;
+          text-transform: none;
+          box-shadow: none !important;
+        }
+
+        .dark
+          .stock-recorder-shell[data-stock-stage="0"]
+          .stock-recorder-editor
+          > form
+          label
+          input {
+          color: rgb(248 250 252);
+        }
+
+        .stock-recorder-shell[data-stock-stage="0"]
+          .stock-recorder-editor
+          > form
+          label:focus-within {
+          position: relative;
+          z-index: 1;
+          border-color: rgb(71 85 105);
+        }
+
+        .dark
+          .stock-recorder-shell[data-stock-stage="0"]
+          .stock-recorder-editor
+          > form
+          label:focus-within {
+          border-color: rgb(148 163 184);
         }
 
         .stock-progressive-host
@@ -333,22 +478,12 @@ function StockRecorder({ businessId }: { businessId: string }) {
         }
 
         @media (max-width: 639px) {
-          .stock-recording-launcher > div {
-            align-items: center;
-          }
-
           .stock-recording-launcher p {
-            overflow-wrap: anywhere;
+            font-size: 0.75rem;
           }
 
-          .stock-recorder-editor h2 {
-            font-size: 1rem;
-            line-height: 1.5rem;
-          }
-
-          .stock-recorder-editor h2 + p {
-            font-size: 0.8125rem;
-            line-height: 1.25rem;
+          .stock-recorder-editor {
+            padding: 0.75rem !important;
           }
 
           .stock-recorder-editor label > div.grid {
@@ -371,36 +506,82 @@ function StockRecorder({ businessId }: { businessId: string }) {
             overflow-wrap: anywhere;
           }
 
-          .stock-recorder-shell[data-stock-stage="2"]
+          .stock-recorder-shell[data-stock-stage="0"]
             .stock-recorder-editor
-            .divide-y
-            > div {
-            align-items: flex-start;
-            flex-wrap: wrap;
+            > form
+            > label,
+          .stock-recorder-shell[data-stock-stage="0"]
+            .stock-recorder-editor
+            > form
+            > div:nth-child(3)
+            > label {
+            margin-top: -1px;
           }
 
-          .stock-recorder-shell[data-stock-stage="2"]
+          .stock-recorder-shell[data-stock-stage="0"]
             .stock-recorder-editor
-            .divide-y
-            > div
-            > div:first-child {
-            min-width: 0;
-            flex: 1 1 10rem;
+            > form
+            > button {
+            margin-top: 0.75rem;
           }
         }
 
         @media (min-width: 640px) {
           .stock-step-navigation > div:nth-child(-n + 4) {
-            max-width: none;
             flex: 1 1 0;
+            min-width: 0;
           }
 
-          .stock-recorder-editor {
-            padding: 1.25rem !important;
+          .stock-step-navigation
+            > div:nth-child(-n + 4)
+            > div
+            > p:first-child {
+            text-align: center;
           }
 
           .stock-recorder-editor label > div.grid {
             grid-template-columns: 8.5rem minmax(0, 1fr) !important;
+          }
+        }
+
+        @media (min-width: 768px) {
+          .stock-recorder-shell[data-stock-stage="0"]
+            .stock-recorder-editor
+            > form {
+            grid-template-columns:
+              minmax(0, 1.2fr)
+              minmax(0, 1fr)
+              minmax(0, 0.8fr)
+              auto;
+            align-items: stretch;
+          }
+
+          .stock-recorder-shell[data-stock-stage="0"]
+            .stock-recorder-editor
+            > form
+            > div:nth-child(3) {
+            display: contents;
+          }
+
+          .stock-recorder-shell[data-stock-stage="0"]
+            .stock-recorder-editor
+            > form
+            > label,
+          .stock-recorder-shell[data-stock-stage="0"]
+            .stock-recorder-editor
+            > form
+            > div:nth-child(3)
+            > label {
+            margin-left: -1px;
+          }
+
+          .stock-recorder-shell[data-stock-stage="0"]
+            .stock-recorder-editor
+            > form
+            > button {
+            height: auto;
+            min-height: 100%;
+            border-radius: 0;
           }
         }
       `}</style>
