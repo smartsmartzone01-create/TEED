@@ -483,30 +483,32 @@ function StockRecorder({ businessId }: { businessId: string }) {
           }
 
           .stock-step-navigation {
-            overflow-x: hidden !important;
+            overflow-x: auto !important;
+            scroll-snap-type: x proximity;
+            -webkit-overflow-scrolling: touch;
           }
 
           .stock-step-navigation > div:nth-child(-n + 4) {
-            min-width: 0;
-            flex: 1 1 0;
-            padding: 0.6rem 0.7rem 0.6rem 0.2rem !important;
+            min-width: max-content;
+            flex: 0 0 auto;
+            padding: 0.6rem 0.9rem 0.6rem 0.4rem !important;
+            scroll-snap-align: start;
           }
 
           .stock-step-navigation > div:nth-child(-n + 3)::after {
-            right: 0.08rem;
-            font-size: 0.72rem;
+            right: 0.25rem;
+            font-size: 0.75rem;
           }
 
           .stock-step-navigation
             > div:nth-child(-n + 4)
             > div
             > p:first-child {
-            overflow: hidden;
-            font-size: 0.625rem;
-            line-height: 0.8rem;
-            letter-spacing: -0.015em;
-            text-align: center;
-            text-overflow: clip;
+            overflow: visible;
+            font-size: 0.675rem;
+            line-height: 0.85rem;
+            letter-spacing: -0.01em;
+            text-align: left;
             white-space: nowrap;
           }
 
@@ -522,8 +524,8 @@ function StockRecorder({ businessId }: { businessId: string }) {
           .stock-recorder-shell[data-stock-stage="3"]
             .stock-step-navigation
             > div:nth-child(4)::before {
-            right: 0.7rem;
-            left: 0.2rem;
+            right: 0.9rem;
+            left: 0.4rem;
           }
 
           .stock-recorder-editor {
