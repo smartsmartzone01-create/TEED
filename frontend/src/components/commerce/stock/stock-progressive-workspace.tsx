@@ -259,6 +259,7 @@ function ProgressiveStockWorkspace({ businessId }: { businessId: string }) {
     unit: "piece",
   });
   const [editingPreparedKey, setEditingPreparedKey] = useState("");
+  const [productEntryOpen, setProductEntryOpen] = useState(true);
   const [recordMethod, setRecordMethod] = useState<RecordMethod | "">("");
   const [directLines, setDirectLines] = useState<RecordedLine[]>([]);
   const [groups, setGroups] = useState<RecordedGroup[]>([]);
@@ -372,6 +373,7 @@ function ProgressiveStockWorkspace({ businessId }: { businessId: string }) {
       return;
     }
     setBatchCommitted(true);
+    setProductEntryOpen(true);
     moveTo("products");
   };
 
@@ -401,11 +403,22 @@ function ProgressiveStockWorkspace({ businessId }: { businessId: string }) {
     );
     setPreparedDraft({ key: "", name: "", brand: "", variant: "", unit: "piece" });
     setEditingPreparedKey("");
+    setProductEntryOpen(false);
+  };
+
+  const beginAnotherPreparedProduct = () => {
+    setPreparedDraft({ key: "", name: "", brand: "", variant: "", unit: "piece" });
+    setEditingPreparedKey("");
+    setProductEntryOpen(true);
+    requestAnimationFrame(() => {
+      document.querySelector<HTMLElement>("[data-stock-active-step]")?.focus();
+    });
   };
 
   const editPrepared = (product: PreparedProduct) => {
     setPreparedDraft(product);
     setEditingPreparedKey(product.key);
+    setProductEntryOpen(true);
     moveTo("products");
   };
 
@@ -633,6 +646,8 @@ function ProgressiveStockWorkspace({ businessId }: { businessId: string }) {
     setBatchCommitted(false);
     setPreparedProducts([]);
     setPreparedDraft({ key: "", name: "", brand: "", variant: "", unit: "piece" });
+    setEditingPreparedKey("");
+    setProductEntryOpen(true);
     setRecordMethod("");
     setDirectLines([]);
     setGroups([]);
@@ -744,7 +759,7 @@ function ProgressiveStockWorkspace({ businessId }: { businessId: string }) {
       <SummaryRow
         title={t("steps.method")}
         detail={recordMethod ? t(`recordMethod.${recordMethod}`) : t("values.notEntered")}
-        onEdit={recordMethod ? () => moveTo("method") : undefined}
+        onEdit={batchCommitted ? () => moveTo("method") : undefined}
       />
       {directLines.map((line, index) => {
         const product = choiceFor(line.productKey);
@@ -811,7 +826,7 @@ function ProgressiveStockWorkspace({ businessId }: { businessId: string }) {
 
   if (step === "products") {
     activeEditor = (
-      <div className="grid gap-4">
+      <div className="grid gap-4" data-stock-products-step>
         <div><h2 className="text-lg font-bold">{t("steps.products")}</h2><p className="mt-1 text-sm text-slate-500">{t("help.products")}</p></div>
         {preparedProducts.length ? (
           <div className={`${inset} divide-y divide-slate-200 px-3 dark:divide-slate-800`}>
@@ -823,16 +838,21 @@ function ProgressiveStockWorkspace({ businessId }: { businessId: string }) {
             ))}
           </div>
         ) : null}
-        <form className={`${inset} grid gap-3 p-3`} onSubmit={savePreparedProduct}>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label className={field}>{t("fields.productName")}<Input autoFocus data-stock-active-step tabIndex={-1} value={preparedDraft.name} onChange={(event) => setPreparedDraft({ ...preparedDraft, name: event.target.value })} /></label>
-            <label className={field}>{commerceT("fields.brandOptional")}<Input value={preparedDraft.brand} onChange={(event) => setPreparedDraft({ ...preparedDraft, brand: event.target.value })} /></label>
-            <label className={field}>{commerceT("fields.variant")}<Input value={preparedDraft.variant} onChange={(event) => setPreparedDraft({ ...preparedDraft, variant: event.target.value })} /></label>
-            <label className={field}>{t("fields.unit")}<Select value={preparedDraft.unit} onChange={(event) => setPreparedDraft({ ...preparedDraft, unit: event.target.value })}>{units.map((unit) => <option key={unit} value={unit}>{commerceT(`units.${unit}`)}</option>)}{unitDefinitions.map((unit) => <option key={unit.id} value={unit.name}>{unit.name}</option>)}</Select></label>
-          </div>
-          <Button type="submit">{editingPreparedKey ? t("actions.updateProduct") : t("actions.enterProduct")}</Button>
-        </form>
-        <Button type="button" variant="outline" onClick={() => moveTo("method")}>{t("actions.continue")}</Button>
+        {productEntryOpen ? (
+          <form className={`${inset} grid gap-3 p-3`} onSubmit={savePreparedProduct}>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className={field}>{t("fields.productName")}<Input autoFocus data-stock-active-step tabIndex={-1} value={preparedDraft.name} onChange={(event) => setPreparedDraft({ ...preparedDraft, name: event.target.value })} /></label>
+              <label className={field}>{commerceT("fields.brandOptional")}<Input value={preparedDraft.brand} onChange={(event) => setPreparedDraft({ ...preparedDraft, brand: event.target.value })} /></label>
+              <label className={field}>{commerceT("fields.variant")}<Input value={preparedDraft.variant} onChange={(event) => setPreparedDraft({ ...preparedDraft, variant: event.target.value })} /></label>
+              <label className={field}>{t("fields.unit")}<Select value={preparedDraft.unit} onChange={(event) => setPreparedDraft({ ...preparedDraft, unit: event.target.value })}>{units.map((unit) => <option key={unit} value={unit}>{commerceT(`units.${unit}`)}</option>)}{unitDefinitions.map((unit) => <option key={unit.id} value={unit.name}>{unit.name}</option>)}</Select></label>
+            </div>
+            <Button type="submit">{editingPreparedKey ? t("actions.updateProduct") : t("actions.enterProduct")}</Button>
+          </form>
+        ) : (
+          <Button size="small" type="button" variant="outline" onClick={beginAnotherPreparedProduct}>
+            {t("values.newProduct")}
+          </Button>
+        )}
       </div>
     );
   }
