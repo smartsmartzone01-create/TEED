@@ -390,50 +390,69 @@ function StockRecorder({ businessId }: { businessId: string }) {
         .stock-recorder-shell[data-stock-stage="0"]
           .stock-recorder-editor
           > form
+          > div:first-child,
+        .stock-recorder-shell[data-stock-stage="1"]
+          .stock-recorder-editor
+          > form
           > div:first-child {
           display: none;
         }
 
         .stock-recorder-shell[data-stock-stage="0"]
           .stock-recorder-editor
+          > form,
+        .stock-recorder-shell[data-stock-stage="1"]
+          .stock-recorder-editor
           > form {
-          gap: 0 !important;
+          gap: 0.65rem !important;
         }
 
         .stock-recorder-shell[data-stock-stage="0"]
           .stock-recorder-editor
           > form
+          label,
+        .stock-recorder-shell[data-stock-stage="1"]
+          .stock-recorder-editor
+          > form
           label {
-          gap: 0.35rem !important;
-          border: 1px solid rgb(203 213 225);
-          padding: 0.55rem 0.7rem;
-          color: rgb(100 116 139);
-          font-size: 0.675rem;
-          letter-spacing: 0.04em;
-          text-transform: uppercase;
+          gap: 0.3rem !important;
+          color: rgb(71 85 105);
+          font-size: 0.75rem;
+          font-weight: 600;
+          letter-spacing: normal;
+          text-transform: none;
         }
 
         .dark
           .stock-recorder-shell[data-stock-stage="0"]
           .stock-recorder-editor
           > form
+          label,
+        .dark
+          .stock-recorder-shell[data-stock-stage="1"]
+          .stock-recorder-editor
+          > form
           label {
-          border-color: rgb(51 65 85);
-          color: rgb(148 163 184);
+          color: rgb(203 213 225);
         }
 
         .stock-recorder-shell[data-stock-stage="0"]
           .stock-recorder-editor
           > form
           label
+          input,
+        .stock-recorder-shell[data-stock-stage="1"]
+          .stock-recorder-editor
+          > form
+          label
           input {
-          height: 2rem !important;
-          border: 0 !important;
-          border-radius: 0 !important;
-          background: transparent !important;
-          padding: 0 !important;
+          height: 2.25rem !important;
+          border: 1px solid rgb(203 213 225) !important;
+          border-radius: 0.5rem !important;
+          background: rgb(255 255 255) !important;
+          padding: 0 0.65rem !important;
           color: rgb(15 23 42);
-          font-size: 0.875rem;
+          font-size: 0.8125rem;
           font-weight: 500;
           letter-spacing: normal;
           text-transform: none;
@@ -445,25 +464,59 @@ function StockRecorder({ businessId }: { businessId: string }) {
           .stock-recorder-editor
           > form
           label
+          input,
+        .dark
+          .stock-recorder-shell[data-stock-stage="1"]
+          .stock-recorder-editor
+          > form
+          label
           input {
+          border-color: rgb(51 65 85) !important;
+          background: rgb(15 23 42) !important;
           color: rgb(248 250 252);
         }
 
         .stock-recorder-shell[data-stock-stage="0"]
           .stock-recorder-editor
           > form
+          label:focus-within,
+        .stock-recorder-shell[data-stock-stage="1"]
+          .stock-recorder-editor
+          > form
           label:focus-within {
           position: relative;
           z-index: 1;
-          border-color: rgb(71 85 105);
+          color: rgb(15 23 42);
         }
 
         .dark
           .stock-recorder-shell[data-stock-stage="0"]
           .stock-recorder-editor
           > form
+          label:focus-within,
+        .dark
+          .stock-recorder-shell[data-stock-stage="1"]
+          .stock-recorder-editor
+          > form
           label:focus-within {
-          border-color: rgb(148 163 184);
+          color: rgb(248 250 252);
+        }
+
+        .stock-recorder-shell[data-stock-stage="0"]
+          .stock-recorder-editor
+          > form
+          > button,
+        .stock-recorder-shell[data-stock-stage="1"]
+          .stock-recorder-editor
+          > form
+          > button {
+          width: auto !important;
+          height: 2.25rem !important;
+          min-height: 0 !important;
+          align-self: end;
+          border-radius: 0.5rem !important;
+          padding-inline: 0.8rem !important;
+          font-size: 0.75rem !important;
         }
 
         .stock-progressive-host
@@ -538,10 +591,63 @@ function StockRecorder({ businessId }: { businessId: string }) {
             grid-template-columns: minmax(0, 1fr) !important;
           }
 
-          .stock-recorder-editor form > button,
-          .stock-recorder-editor > div.grid > button,
-          .stock-recorder-editor > div.grid > form > button {
-            width: 100%;
+          .stock-recorder-shell[data-stock-stage="0"]
+            .stock-recorder-editor
+            > form {
+            grid-template-columns: minmax(0, 1fr) auto;
+            align-items: end;
+          }
+
+          .stock-recorder-shell[data-stock-stage="0"]
+            .stock-recorder-editor
+            > form
+            > label:first-of-type {
+            grid-column: 1 / -1;
+          }
+
+          .stock-recorder-shell[data-stock-stage="0"]
+            .stock-recorder-editor
+            > form
+            > div:nth-child(3) {
+            display: contents;
+          }
+
+          .stock-recorder-shell[data-stock-stage="0"]
+            .stock-recorder-editor
+            > form
+            > div:nth-child(3)
+            > label:first-child {
+            grid-column: 1 / -1;
+          }
+
+          .stock-recorder-shell[data-stock-stage="0"]
+            .stock-recorder-editor
+            > form
+            > div:nth-child(3)
+            > label:last-child {
+            grid-column: 1;
+          }
+
+          .stock-recorder-shell[data-stock-stage="0"]
+            .stock-recorder-editor
+            > form
+            > button {
+            grid-column: 2;
+            margin: 0 !important;
+          }
+
+          .stock-recorder-shell[data-stock-stage="1"]
+            .stock-recorder-editor
+            > form {
+            grid-template-columns: minmax(0, 1fr) auto;
+            align-items: end;
+          }
+
+          .stock-recorder-shell[data-stock-stage="1"]
+            .stock-recorder-editor
+            > form
+            > label {
+            max-width: 18rem;
           }
 
           .stock-recorder-editor .flex.justify-between {
@@ -552,25 +658,6 @@ function StockRecorder({ businessId }: { businessId: string }) {
           .stock-recorder-editor span,
           .stock-recorder-editor p {
             overflow-wrap: anywhere;
-          }
-
-          .stock-recorder-shell[data-stock-stage="0"]
-            .stock-recorder-editor
-            > form
-            > label,
-          .stock-recorder-shell[data-stock-stage="0"]
-            .stock-recorder-editor
-            > form
-            > div:nth-child(3)
-            > label {
-            margin-top: -1px;
-          }
-
-          .stock-recorder-shell[data-stock-stage="0"]
-            .stock-recorder-editor
-            > form
-            > button {
-            margin-top: 0.75rem;
           }
         }
 
@@ -590,6 +677,13 @@ function StockRecorder({ businessId }: { businessId: string }) {
           .stock-recorder-editor label > div.grid {
             grid-template-columns: 8.5rem minmax(0, 1fr) !important;
           }
+
+          .stock-recorder-shell[data-stock-stage="1"]
+            .stock-recorder-editor
+            > form {
+            grid-template-columns: minmax(12rem, 20rem) auto;
+            align-items: end;
+          }
         }
 
         @media (min-width: 768px) {
@@ -601,7 +695,7 @@ function StockRecorder({ businessId }: { businessId: string }) {
               minmax(0, 1fr)
               minmax(0, 0.8fr)
               auto;
-            align-items: stretch;
+            align-items: end;
           }
 
           .stock-recorder-shell[data-stock-stage="0"]
@@ -609,27 +703,6 @@ function StockRecorder({ businessId }: { businessId: string }) {
             > form
             > div:nth-child(3) {
             display: contents;
-          }
-
-          .stock-recorder-shell[data-stock-stage="0"]
-            .stock-recorder-editor
-            > form
-            > label,
-          .stock-recorder-shell[data-stock-stage="0"]
-            .stock-recorder-editor
-            > form
-            > div:nth-child(3)
-            > label {
-            margin-left: -1px;
-          }
-
-          .stock-recorder-shell[data-stock-stage="0"]
-            .stock-recorder-editor
-            > form
-            > button {
-            height: auto;
-            min-height: 100%;
-            border-radius: 0;
           }
         }
       `}</style>
