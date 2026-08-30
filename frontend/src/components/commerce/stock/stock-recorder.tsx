@@ -484,6 +484,8 @@ function StockRecorder({ businessId }: { businessId: string }) {
 
           .stock-step-navigation {
             overflow-x: auto !important;
+            padding-inline: 0.55rem !important;
+            scroll-padding-inline: 0.55rem;
             scroll-snap-type: x proximity;
             -webkit-overflow-scrolling: touch;
           }
