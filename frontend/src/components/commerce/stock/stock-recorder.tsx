@@ -88,7 +88,7 @@ function StockRecorder({ businessId }: { businessId: string }) {
       data-recording-open={recordingOpen ? "true" : "false"}
       data-stock-stage={activeStage}
     >
-      <section className="stock-recording-launcher border-y border-slate-200 bg-white px-1 py-2 dark:border-slate-800 dark:bg-slate-950 sm:px-2">
+      <section className="stock-recording-launcher rounded-2xl border border-slate-200 bg-white px-1 py-2 dark:border-slate-800 dark:bg-slate-950 sm:px-2">
         <div className="flex items-center justify-between gap-2">
           <div className="flex min-w-0 items-center gap-1">
             <p className="truncate text-xs font-semibold text-slate-700 dark:text-slate-200 sm:text-sm">
@@ -480,6 +480,50 @@ function StockRecorder({ businessId }: { businessId: string }) {
         @media (max-width: 639px) {
           .stock-recording-launcher p {
             font-size: 0.75rem;
+          }
+
+          .stock-step-navigation {
+            overflow-x: hidden !important;
+          }
+
+          .stock-step-navigation > div:nth-child(-n + 4) {
+            min-width: 0;
+            flex: 1 1 0;
+            padding: 0.6rem 0.7rem 0.6rem 0.2rem !important;
+          }
+
+          .stock-step-navigation > div:nth-child(-n + 3)::after {
+            right: 0.08rem;
+            font-size: 0.72rem;
+          }
+
+          .stock-step-navigation
+            > div:nth-child(-n + 4)
+            > div
+            > p:first-child {
+            overflow: hidden;
+            font-size: 0.625rem;
+            line-height: 0.8rem;
+            letter-spacing: -0.015em;
+            text-align: center;
+            text-overflow: clip;
+            white-space: nowrap;
+          }
+
+          .stock-recorder-shell[data-stock-stage="0"]
+            .stock-step-navigation
+            > div:nth-child(1)::before,
+          .stock-recorder-shell[data-stock-stage="1"]
+            .stock-step-navigation
+            > div:nth-child(2)::before,
+          .stock-recorder-shell[data-stock-stage="2"]
+            .stock-step-navigation
+            > div:nth-child(3)::before,
+          .stock-recorder-shell[data-stock-stage="3"]
+            .stock-step-navigation
+            > div:nth-child(4)::before {
+            right: 0.7rem;
+            left: 0.2rem;
           }
 
           .stock-recorder-editor {
