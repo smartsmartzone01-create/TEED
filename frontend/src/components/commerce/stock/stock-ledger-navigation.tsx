@@ -134,12 +134,20 @@ function StockLedgerNavigation() {
   }, [getShell, getViewports, syncControls]);
 
   const move = (direction: -1 | 1) => {
-    const [viewport] = getViewports();
-    if (!viewport) return;
-    viewport.scrollBy({
-      left: direction * Math.max(280, viewport.clientWidth * 0.72),
-      behavior: "smooth",
-    });
+    const viewports = getViewports();
+    if (!viewports.length) return;
+
+    for (const viewport of viewports) {
+      viewport.scrollTo({
+        left:
+          direction < 0
+            ? 0
+            : Math.max(0, viewport.scrollWidth - viewport.clientWidth),
+        behavior: "auto",
+      });
+    }
+
+    window.requestAnimationFrame(syncControls);
   };
 
   const controlClass =

@@ -26,6 +26,36 @@ function brandFrontendMessages<T>(value: T): T {
   return value;
 }
 
+function withCommerceStockReceiptFallback<T extends Record<string, unknown>>(
+  messages: T,
+): T {
+  const commerceStock = messages.CommerceStock;
+  if (!commerceStock || typeof commerceStock !== "object") return messages;
+
+  const stockMessages = commerceStock as Record<string, unknown>;
+  const receipt = stockMessages.receipt;
+  const costMode = stockMessages.costMode;
+  if (!receipt || typeof receipt !== "object") return messages;
+  if (!costMode || typeof costMode !== "object") return messages;
+
+  const receiptMessages = receipt as Record<string, unknown>;
+  if (typeof receiptMessages.buyingAmount === "string") return messages;
+
+  const fallbackLabel = (costMode as Record<string, unknown>).label;
+  if (typeof fallbackLabel !== "string") return messages;
+
+  return {
+    ...messages,
+    CommerceStock: {
+      ...stockMessages,
+      receipt: {
+        ...receiptMessages,
+        buyingAmount: fallbackLabel,
+      },
+    },
+  } as T;
+}
+
 export default getRequestConfig(async ({ requestLocale }) => {
   const requestedLocale = await requestLocale;
 
@@ -87,6 +117,6 @@ export default getRequestConfig(async ({ requestLocale }) => {
 
   return {
     locale,
-    messages: brandFrontendMessages(messages),
+    messages: brandFrontendMessages(withCommerceStockReceiptFallback(messages)),
   };
 });
