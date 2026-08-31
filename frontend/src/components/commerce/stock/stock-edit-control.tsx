@@ -1,10 +1,18 @@
 "use client";
 
-import { ArrowLeft, ChevronRight, Pencil, Truck, X } from "lucide-react";
+import {
+  ArrowLeft,
+  ChevronRight,
+  CircleHelp,
+  Pencil,
+  Truck,
+  X,
+} from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/global/primitives/button";
+import { Tooltip } from "@/components/global/primitives/tooltip";
 import type { StockReceipt } from "@/types/commerce/inventory";
 
 type EditMode = "correct" | "late_delivery";
@@ -88,11 +96,11 @@ function StockEditControl({
         </Button>
 
         {open ? (
-          <div className="absolute right-0 top-full z-30 mt-2 w-[min(28rem,calc(100vw-2rem))] overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-950">
+          <div className="fixed inset-x-3 top-1/2 z-40 max-h-[calc(100dvh-1.5rem)] -translate-y-1/2 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-950 md:absolute md:inset-x-auto md:right-0 md:top-full md:mt-2 md:w-[min(28rem,calc(100vw-2rem))] md:max-h-none md:translate-y-0">
             {!mode ? (
-              <div className="grid gap-3 p-3">
+              <div className="grid max-h-[calc(100dvh-1.5rem)] gap-3 overflow-y-auto p-3 md:max-h-none">
                 <div className="flex items-start justify-between gap-3">
-                  <div>
+                  <div className="min-w-0">
                     <strong className="text-sm text-slate-950 dark:text-white">
                       {t("editStock.title")}
                     </strong>
@@ -112,40 +120,57 @@ function StockEditControl({
                   </Button>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2">
-                  <Button
-                    className="h-auto min-h-16 items-start justify-start gap-2 px-3 py-2.5 text-left"
-                    onClick={() => setMode("correct")}
-                    type="button"
-                    variant="outline"
-                  >
-                    <Pencil className="mt-0.5 size-4 shrink-0" />
-                    <span className="grid gap-0.5">
-                      <strong className="text-xs">{commerceT("actions.correctStock")}</strong>
-                      <span className="text-[0.65rem] font-normal text-slate-500">
-                        {t("editStock.correctHelp")}
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <div className="flex min-w-0 items-center gap-1 rounded-lg border border-slate-200 p-1 dark:border-slate-800">
+                    <Button
+                      className="h-9 min-w-0 flex-1 justify-start gap-2 px-2.5 text-left"
+                      onClick={() => setMode("correct")}
+                      type="button"
+                      variant="ghost"
+                    >
+                      <Pencil className="size-4 shrink-0" />
+                      <span className="truncate text-xs font-semibold">
+                        {commerceT("actions.correctStock")}
                       </span>
-                    </span>
-                  </Button>
-                  <Button
-                    className="h-auto min-h-16 items-start justify-start gap-2 px-3 py-2.5 text-left"
-                    onClick={() => setMode("late_delivery")}
-                    type="button"
-                    variant="outline"
-                  >
-                    <Truck className="mt-0.5 size-4 shrink-0" />
-                    <span className="grid gap-0.5">
-                      <strong className="text-xs">{commerceT("actions.addLateDelivery")}</strong>
-                      <span className="text-[0.65rem] font-normal text-slate-500">
-                        {t("editStock.lateDeliveryHelp")}
+                    </Button>
+                    <Tooltip content={t("editStock.correctHelp")} side="top">
+                      <button
+                        aria-label={t("editStock.correctHelp")}
+                        className="inline-flex size-7 shrink-0 items-center justify-center rounded-md text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/50 dark:text-slate-500 dark:hover:bg-slate-900 dark:hover:text-slate-200"
+                        type="button"
+                      >
+                        <CircleHelp className="size-3.5" />
+                      </button>
+                    </Tooltip>
+                  </div>
+
+                  <div className="flex min-w-0 items-center gap-1 rounded-lg border border-slate-200 p-1 dark:border-slate-800">
+                    <Button
+                      className="h-9 min-w-0 flex-1 justify-start gap-2 px-2.5 text-left"
+                      onClick={() => setMode("late_delivery")}
+                      type="button"
+                      variant="ghost"
+                    >
+                      <Truck className="size-4 shrink-0" />
+                      <span className="truncate text-xs font-semibold">
+                        {commerceT("actions.addLateDelivery")}
                       </span>
-                    </span>
-                  </Button>
+                    </Button>
+                    <Tooltip content={t("editStock.lateDeliveryHelp")} side="top">
+                      <button
+                        aria-label={t("editStock.lateDeliveryHelp")}
+                        className="inline-flex size-7 shrink-0 items-center justify-center rounded-md text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/50 dark:text-slate-500 dark:hover:bg-slate-900 dark:hover:text-slate-200"
+                        type="button"
+                      >
+                        <CircleHelp className="size-3.5" />
+                      </button>
+                    </Tooltip>
+                  </div>
                 </div>
               </div>
             ) : (
-              <div className="grid max-h-[min(70vh,34rem)] grid-rows-[auto_minmax(0,1fr)]">
-                <div className="flex items-start gap-2 border-b border-slate-200 p-3 dark:border-slate-800">
+              <div className="grid max-h-[calc(100dvh-1.5rem)] grid-rows-[auto_minmax(0,1fr)] md:max-h-[min(70vh,34rem)]">
+                <div className="flex min-w-0 items-start gap-2 border-b border-slate-200 p-3 dark:border-slate-800">
                   <Button
                     aria-label={t("editStock.back")}
                     className="size-7 shrink-0 rounded-md p-0"
@@ -157,7 +182,7 @@ function StockEditControl({
                     <ArrowLeft className="size-3.5" />
                   </Button>
                   <div className="min-w-0 flex-1">
-                    <strong className="block text-sm text-slate-950 dark:text-white">
+                    <strong className="block truncate text-sm text-slate-950 dark:text-white">
                       {mode === "correct"
                         ? commerceT("actions.correctStock")
                         : commerceT("actions.addLateDelivery")}
@@ -178,7 +203,7 @@ function StockEditControl({
                   </Button>
                 </div>
 
-                <div className="overflow-y-auto p-1.5">
+                <div className="min-w-0 overflow-y-auto overscroll-contain p-1.5">
                   {receipts.length ? (
                     receipts.map((receipt) => {
                       const correctionClosed = mode === "correct" && !receipt.correction_open;
@@ -192,26 +217,26 @@ function StockEditControl({
 
                       return (
                         <button
-                          className="flex w-full items-center gap-3 rounded-md px-2.5 py-2.5 text-left transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-slate-900"
+                          className="flex w-full min-w-0 items-center gap-3 rounded-md px-2.5 py-2.5 text-left transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-slate-900"
                           disabled={disabled}
                           key={receipt.id}
                           onClick={() => chooseReceipt(receipt)}
                           type="button"
                         >
                           <span className="min-w-0 flex-1">
-                            <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                              <strong className="text-xs text-slate-950 dark:text-white">
+                            <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5">
+                              <strong className="max-w-full truncate text-xs text-slate-950 dark:text-white">
                                 {receipt.reference}
                               </strong>
                               <span className="text-[0.625rem] font-semibold text-slate-500">
                                 {t(`ledger.status.${receipt.status}`)}
                               </span>
                             </span>
-                            <span className="mt-0.5 block truncate text-[0.68rem] text-slate-600 dark:text-slate-300">
+                            <span className="mt-0.5 block max-w-full truncate text-[0.68rem] text-slate-600 dark:text-slate-300">
                               {receipt.supplier_name || t("values.noSupplier")}
                               {batchNames ? ` · ${batchNames}` : ""}
                             </span>
-                            <span className="mt-0.5 block text-[0.625rem] text-slate-500">
+                            <span className="mt-0.5 block max-w-full break-words text-[0.625rem] text-slate-500">
                               {receiptDate
                                 ? new Date(receiptDate).toLocaleDateString(locale, {
                                     year: "numeric",
