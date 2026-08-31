@@ -295,6 +295,16 @@ function StockEditControl({
           > section:nth-of-type(2)
           > div:last-child
           > article
+          > div.flex.flex-wrap.gap-2 {
+          display: none !important;
+        }
+
+        body
+          .stock-progressive-host
+          > div
+          > section:nth-of-type(2)
+          > div:last-child
+          > article
           > .stock-summary-actions-standalone {
           display: none !important;
         }
