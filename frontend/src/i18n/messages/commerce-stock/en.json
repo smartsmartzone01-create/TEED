@@ -105,8 +105,8 @@
       "savedHint": "Your receipt is ready to share, copy, or print.",
       "stockId": "Stock ID",
       "product": "Product",
+      "buyingAmount": "Buying amount",
       "totalBuyingPrice": "Total buying price",
-      "identifiedUnits": "Identified units",
       "lateDelivery": "Late delivery",
       "close": "Close receipt"
     },
