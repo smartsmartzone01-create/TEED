@@ -115,6 +115,7 @@
       "saving": "Saving stock...",
       "enter": "Enter",
       "edit": "Edit",
+      "editStock": "Edit stock",
       "enterProduct": "Enter product",
       "updateProduct": "Update product",
       "continue": "Continue",
@@ -126,6 +127,17 @@
       "backToRecording": "Back to recording",
       "recordAnother": "Record another new stock",
       "cancelLateDelivery": "Cancel late delivery"
+    },
+    "editStock": {
+      "title": "Edit stock",
+      "chooseAction": "Choose what you want to change.",
+      "correctHelp": "Correct a stock while its correction window is open.",
+      "lateDeliveryHelp": "Add stock received after the original delivery.",
+      "chooseStock": "Choose the stock this action applies to.",
+      "correctionClosed": "Correction window closed",
+      "lateDeliveryUnavailable": "Late delivery unavailable",
+      "back": "Back to edit options",
+      "noStock": "No stock records are available."
     },
     "savedSoFar": "Saved so far",
     "savedCount": "{count} individual items entered",

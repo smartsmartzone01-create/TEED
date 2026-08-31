@@ -4,6 +4,7 @@ import { ChevronDown, ChevronUp, CircleHelp, Pencil, Trash2 } from "lucide-react
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useTranslations } from "next-intl";
 
+import { StockEditControl } from "@/components/commerce/stock/stock-edit-control";
 import { StockProductSummary, StockSummaryActions } from "@/components/commerce/stock/stock-summary";
 import { Button } from "@/components/global/primitives/button";
 import { Input } from "@/components/global/primitives/input";
@@ -946,6 +947,10 @@ function ProgressiveStockWorkspace({ businessId }: { businessId: string }) {
     );
   }
 
+  const correctionReceipt = correctionId
+    ? receipts.find((receipt) => receipt.id === correctionId) ?? null
+    : null;
+
   return (
     <div className="grid gap-5">
       <section className={panel}>
@@ -981,7 +986,51 @@ function ProgressiveStockWorkspace({ businessId }: { businessId: string }) {
       </section>
 
       <section className={`${panel} p-4`}>
-        <div className="flex items-center justify-between gap-3"><h2 className="font-bold">{commerceT("receivedStock")}</h2>{lateDeliveryParent ? <Button type="button" variant="ghost" onClick={() => resetRecorder()}>{t("actions.cancelLateDelivery")}</Button> : null}</div>
+        <div className="flex flex-wrap items-center gap-2">
+          <h2 className="mr-auto font-bold">{commerceT("receivedStock")}</h2>
+          {lateDeliveryParent ? (
+            <Button type="button" variant="ghost" onClick={() => resetRecorder()}>
+              {t("actions.cancelLateDelivery")}
+            </Button>
+          ) : null}
+          <StockEditControl
+            receipts={receipts}
+            onCorrect={(receipt) => beginCorrection(receipt)}
+            onLateDelivery={(receipt) => {
+              setCorrectionId("");
+              setCorrection(null);
+              resetRecorder(receipt);
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }}
+          />
+        </div>
+
+        {correctionReceipt && correction ? (
+          <div className={`${inset} mt-3 p-3`}>
+            <div className="mb-3 min-w-0">
+              <strong className="text-sm text-slate-950 dark:text-white">
+                {commerceT("actions.correctStock")} · {correctionReceipt.reference}
+              </strong>
+              <p className="mt-0.5 text-xs text-slate-500">
+                {[
+                  correctionReceipt.supplier_name || t("values.noSupplier"),
+                  ...correctionReceipt.batches.map((batch) => batch.name).filter(Boolean),
+                ].join(" · ")}
+              </p>
+            </div>
+            <CorrectionEditor
+              correction={correction}
+              busy={busy}
+              onCancel={() => {
+                setCorrectionId("");
+                setCorrection(null);
+              }}
+              onChange={setCorrection}
+              onSave={() => void saveCorrection(correctionReceipt)}
+            />
+          </div>
+        ) : null}
+
         <div className="mt-4 grid gap-3">
           {(showAll ? receipts : receipts.slice(0, 5)).map((receipt, index) => (
             <article className="grid gap-3 rounded-xl border border-slate-200 bg-white p-4 text-sm shadow-sm dark:border-slate-800 dark:bg-slate-950" key={receipt.id} style={{ borderInlineStartColor: index % 2 === 0 ? "var(--workspace-primary, var(--brand-navy))" : "var(--workspace-secondary, var(--brand-orange))", borderInlineStartWidth: 3 }}>

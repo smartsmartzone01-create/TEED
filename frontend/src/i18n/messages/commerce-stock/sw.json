@@ -115,6 +115,7 @@
       "saving": "Inahifadhi mzigo...",
       "enter": "Enter",
       "edit": "Hariri",
+      "editStock": "Hariri mzigo",
       "enterProduct": "Ingiza bidhaa",
       "updateProduct": "Sasisha bidhaa",
       "continue": "Endelea",
@@ -126,6 +127,17 @@
       "backToRecording": "Rudi kurekodi",
       "recordAnother": "Rekodi mzigo mwingine mpya",
       "cancelLateDelivery": "Ghairi mzigo uliochelewa"
+    },
+    "editStock": {
+      "title": "Hariri mzigo",
+      "chooseAction": "Chagua unachotaka kufanya kwenye mzigo.",
+      "correctHelp": "Sahihisha mzigo wakati muda wa marekebisho bado uko wazi.",
+      "lateDeliveryHelp": "Ongeza bidhaa zilizopokelewa baada ya mzigo wa awali.",
+      "chooseStock": "Chagua mzigo unaohusika na hatua hii.",
+      "correctionClosed": "Muda wa kusahihisha umefungwa",
+      "lateDeliveryUnavailable": "Mzigo uliochelewa haupatikani",
+      "back": "Rudi kwenye chaguo za kuhariri",
+      "noStock": "Hakuna rekodi za mzigo zinazopatikana."
     },
     "savedSoFar": "Kilichohifadhiwa hadi sasa",
     "savedCount": "Bidhaa {count} zimeingizwa moja moja",
