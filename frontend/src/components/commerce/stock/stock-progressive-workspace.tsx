@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, ChevronUp, CircleHelp, Pencil, Trash2 } from "lucide-react";
+import { CircleHelp, Pencil, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useTranslations } from "next-intl";
 
@@ -1050,11 +1050,11 @@ function ProgressiveStockWorkspace({ businessId }: { businessId: string }) {
                 </div>
               ))}
               <StockSummaryActions receipt={receipt} />
-              <div className="flex flex-wrap gap-2">
-                <Button disabled={!receipt.correction_open} size="small" type="button" variant="outline" onClick={() => correctionId === receipt.id ? (setCorrectionId(""), setCorrection(null)) : beginCorrection(receipt)}>{commerceT("actions.correctStock")}{correctionId === receipt.id ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}</Button>
-                {receipt.status === "received" ? <Button size="small" type="button" variant="outline" onClick={() => { resetRecorder(receipt); window.scrollTo({ top: 0, behavior: "smooth" }); }}>{commerceT("actions.addLateDelivery")}</Button> : <Button size="small" type="button" variant="ghost" onClick={() => void archiveDraft(receipt)}><Trash2 className="size-4" /> {commerceT("actions.archiveDraft")}</Button>}
-              </div>
-              {correctionId === receipt.id && correction ? <CorrectionEditor correction={correction} busy={busy} onCancel={() => { setCorrectionId(""); setCorrection(null); }} onChange={setCorrection} onSave={() => void saveCorrection(receipt)} /> : null}
+              {receipt.status === "draft" ? (
+                <div className="flex flex-wrap gap-2">
+                  <Button size="small" type="button" variant="ghost" onClick={() => void archiveDraft(receipt)}><Trash2 className="size-4" /> {commerceT("actions.archiveDraft")}</Button>
+                </div>
+              ) : null}
             </article>
           ))}
           {!receipts.length ? <p className="text-sm text-slate-500">{commerceT("empty.stock")}</p> : null}

@@ -22,14 +22,3 @@
   flex-direction: column !important;
   gap: 0.08rem !important;
 }
-
-:global(.stock-summary-actions-standalone) + :global(.flex.flex-wrap.gap-2),
-:global(article:has(> .stock-received-ledger-entry))
-  > :global(.stock-summary-actions-standalone)
-  ~ :global(.flex.flex-wrap.gap-2) {
-  display: none !important;
-}
-
-:global(.stock-summary-actions-standalone) + :global(.flex.flex-wrap.gap-2) + * {
-  display: none !important;
-}
