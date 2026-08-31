@@ -99,6 +99,17 @@
       "batch": "Fungu",
       "group": "Kundi"
     },
+    "receipt": {
+      "title": "Risiti ya mzigo",
+      "savedTitle": "Mzigo umepokelewa",
+      "savedHint": "Risiti yako iko tayari kushirikiwa, kunakiliwa au kuchapishwa.",
+      "stockId": "Namba ya mzigo",
+      "product": "Bidhaa",
+      "totalBuyingPrice": "Jumla ya bei ya kununua",
+      "identifiedUnits": "Bidhaa zilizotambulishwa",
+      "lateDelivery": "Mzigo uliochelewa",
+      "close": "Funga risiti"
+    },
     "values": {
       "newProduct": "Ongeza bidhaa mpya",
       "pendingSku": "SKU mpya",
@@ -109,9 +120,9 @@
       "entries": "rekodi"
     },
     "actions": {
-      "copy": "Nakili muhtasari",
-      "share": "Shiriki muhtasari",
-      "print": "Chapisha muhtasari",
+      "copy": "Nakili risiti",
+      "share": "Shiriki risiti",
+      "print": "Chapisha risiti",
       "saving": "Inahifadhi mzigo...",
       "enter": "Enter",
       "edit": "Hariri",
@@ -166,7 +177,7 @@
       "groupNeedsProduct": "Weka angalau bidhaa moja kabla ya kumaliza kundi hili."
     },
     "success": {
-      "copied": "Muhtasari wa mzigo umenakiliwa.",
+      "copied": "Risiti ya mzigo imenakiliwa.",
       "draftSaved": "Rasimu ya mzigo imehifadhiwa.",
       "savedTitle": "Mzigo umehifadhiwa kikamilifu"
     }

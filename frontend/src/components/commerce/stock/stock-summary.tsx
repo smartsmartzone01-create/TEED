@@ -1,19 +1,14 @@
 "use client";
 
-import {
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  ChevronUp,
-  Copy,
-  Printer,
-  Share2,
-} from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 
+import {
+  StockReceiptDialog,
+  StockReceiptIconActions,
+} from "@/components/commerce/stock/stock-shareable-receipt";
 import { Button } from "@/components/global/primitives/button";
-import { useNotification } from "@/providers/global/notification-provider";
 import type { StockReceipt, StockReceiptLine } from "@/types/commerce/inventory";
 
 import styles from "./stock-summary.module.css";
@@ -195,94 +190,13 @@ function StockProductSummary({ line }: { line: StockReceiptLine }) {
   );
 }
 
-function formatStockSummary(receipt: StockReceipt, labels: Record<string, string>) {
-  const rows = [
-    labels.title,
-    receipt.reference,
-    `${labels.status}: ${receipt.status}`,
-    `${labels.date}: ${receipt.received_at ? new Date(receipt.received_at).toLocaleString() : "—"}`,
-    `${labels.supplier}: ${receipt.supplier_name || "—"}`,
-    "",
-  ];
-
-  for (const batch of receipt.batches) {
-    rows.push(`${labels.batch}: ${batch.name}`);
-    for (const group of batch.groups) {
-      const isDirectItem =
-        group.types.length === 1 && group.name === group.types[0].product_name;
-      if (!isDirectItem) {
-        rows.push(
-          `  ${labels.group}: ${group.name} · ${numberText(group.quantity)} ${group.unit}`,
-        );
-      }
-      for (const line of group.types) {
-        const quantity =
-          Number(line.quantity_received) / Number(line.conversion_to_base || "1");
-        rows.push(`${isDirectItem ? "  " : "    "}${line.product_name} (${line.product_sku})`);
-        rows.push(
-          `${isDirectItem ? "    " : "      "}${labels.quantity}: ${numberText(quantity)} ${line.received_unit}`,
-        );
-        rows.push(
-          `${isDirectItem ? "    " : "      "}${labels.costPerUnit}: ${moneyText(line.received_unit_cost)}`,
-        );
-        rows.push(
-          `${isDirectItem ? "    " : "      "}${labels.totalBuyingCost}: ${moneyText(line.total_buying_cost)}`,
-        );
-        for (const unit of line.tracked_units) {
-          const details = [
-            unit.model_name,
-            unit.brand,
-            unit.color,
-            unit.capacity,
-            unit.internal_serial,
-            ...unit.identifiers.map(
-              (identifier) => `${identifier.kind}: ${identifier.value}`,
-            ),
-          ].filter(Boolean);
-          rows.push(`${isDirectItem ? "    " : "      "}- ${details.join(" · ")}`);
-        }
-      }
-    }
-    rows.push("");
-  }
-
-  const buying = Number(receipt.total_buying_value || 0);
-  const expenses = Number(receipt.additional_cost || 0);
-  rows.push(`${labels.buyingValue}: ${moneyText(buying)}`);
-  rows.push(`${labels.stockExpense}: ${moneyText(expenses)}`);
-  rows.push(`${labels.totalStockCost}: ${moneyText(buying + expenses)}`);
-
-  if (receipt.late_deliveries.length) {
-    rows.push("", labels.lateDeliveries);
-    for (const delivery of receipt.late_deliveries) {
-      rows.push("", ...formatStockSummary(delivery, labels).split("\n").slice(1));
-    }
-  }
-  return rows.join("\n");
-}
-
 function StockSummaryActions({ receipt }: { receipt: StockReceipt }) {
   const stockT = useTranslations("CommerceStock");
   const commerceT = useTranslations("Commerce");
   const locale = useLocale();
-  const { notify } = useNotification();
   const [mobileExpanded, setMobileExpanded] = useState(false);
-  const labels = {
-    title: stockT("summary.title"),
-    status: stockT("fields.status"),
-    date: stockT("fields.dateReceived"),
-    supplier: stockT("fields.supplier"),
-    batch: stockT("summary.batch"),
-    group: stockT("summary.group"),
-    quantity: stockT("fields.quantity"),
-    costPerUnit: stockT("fields.costPerUnit"),
-    totalBuyingCost: stockT("fields.totalBuyingCost"),
-    buyingValue: stockT("fields.totalBuyingValue"),
-    stockExpense: stockT("fields.stockExpenses"),
-    totalStockCost: stockT("summary.totalStockCost"),
-    lateDeliveries: commerceT("lateDeliveries"),
-  };
-  const text = formatStockSummary(receipt, labels);
+  const [receiptDialogOpen, setReceiptDialogOpen] = useState(false);
+  const standaloneActionsRef = useRef<HTMLDivElement>(null);
   const ledgerLines = ledgerLinesForReceipt(receipt);
   const total =
     Number(receipt.total_buying_value || 0) + Number(receipt.additional_cost || 0);
@@ -303,96 +217,11 @@ function StockSummaryActions({ receipt }: { receipt: StockReceipt }) {
       : stockT("ledger.recording.groupQuantity");
   };
 
-  const copy = async () => {
-    await navigator.clipboard.writeText(text);
-    notify({ message: stockT("success.copied"), tone: "success" });
-  };
-
-  const share = async () => {
-    if (navigator.share) {
-      await navigator.share({
-        title: `${stockT("summary.title")} ${receipt.reference}`,
-        text,
-      });
-      return;
-    }
-    await copy();
-  };
-
-  const print = () => {
-    const escaped = text
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;");
-    const frame = document.createElement("iframe");
-    frame.setAttribute("aria-hidden", "true");
-    frame.style.position = "fixed";
-    frame.style.width = "1px";
-    frame.style.height = "1px";
-    frame.style.right = "0";
-    frame.style.bottom = "0";
-    frame.style.border = "0";
-    frame.style.opacity = "0";
-    document.body.appendChild(frame);
-
-    const printWindow = frame.contentWindow;
-    const printDocument = frame.contentDocument;
-    if (!printWindow || !printDocument) {
-      frame.remove();
-      return;
-    }
-
-    printDocument.open();
-    printDocument.write(
-      `<!doctype html><html><head><meta charset="utf-8"><title>${receipt.reference}</title><style>@page{margin:16mm}body{font-family:Arial,sans-serif;color:#111;margin:0}pre{white-space:pre-wrap;overflow-wrap:anywhere;font:14px/1.55 Arial,sans-serif;margin:0}</style></head><body><pre>${escaped}</pre></body></html>`,
-    );
-    printDocument.close();
-
-    const cleanup = () => window.setTimeout(() => frame.remove(), 500);
-    window.setTimeout(() => {
-      printWindow.focus();
-      printWindow.print();
-      cleanup();
-    }, 150);
-  };
-
-  const renderIconActions = (className: string) => (
-    <div className={className}>
-      <Button
-        aria-label={stockT("actions.copy")}
-        className="size-8 rounded-md p-0"
-        onClick={() => void copy()}
-        size="small"
-        title={stockT("actions.copy")}
-        type="button"
-        variant="ghost"
-      >
-        <Copy className="size-3.5" />
-      </Button>
-      <Button
-        aria-label={stockT("actions.share")}
-        className="size-8 rounded-md p-0"
-        onClick={() => void share()}
-        size="small"
-        title={stockT("actions.share")}
-        type="button"
-        variant="ghost"
-      >
-        <Share2 className="size-3.5" />
-      </Button>
-      <Button
-        aria-label={stockT("actions.print")}
-        className="size-8 rounded-md p-0"
-        onClick={print}
-        size="small"
-        title={stockT("actions.print")}
-        type="button"
-        variant="ghost"
-      >
-        <Printer className="size-3.5" />
-      </Button>
-    </div>
-  );
+  useEffect(() => {
+    const root = standaloneActionsRef.current;
+    if (receipt.status !== "received" || !root || root.closest("article")) return;
+    setReceiptDialogOpen(true);
+  }, [receipt.id, receipt.status]);
 
   const renderProductInfo = (line: StockReceiptLine) => (
     <div className="stock-ledger-product-info" key={`info-${line.id}`}>
@@ -519,7 +348,10 @@ function StockSummaryActions({ receipt }: { receipt: StockReceipt }) {
               <strong>{moneyText(total)}</strong>
             </div>
             <div className="stock-ledger-cell stock-ledger-actions-cell">
-              {renderIconActions(`stock-ledger-icon-actions ${styles.ledgerActions}`)}
+              <StockReceiptIconActions
+                className={`stock-ledger-icon-actions ${styles.ledgerActions}`}
+                receipt={receipt}
+              />
             </div>
           </div>
         </StockLedgerScroller>
@@ -619,7 +451,10 @@ function StockSummaryActions({ receipt }: { receipt: StockReceipt }) {
               <span className="stock-ledger-mobile-label mb-0 shrink-0">
                 {stockT("ledger.headers.actions")}
               </span>
-              {renderIconActions("stock-ledger-icon-actions stock-ledger-icon-actions-mobile")}
+              <StockReceiptIconActions
+                className="stock-ledger-icon-actions stock-ledger-icon-actions-mobile"
+                receipt={receipt}
+              />
             </div>
             <Button
               aria-controls={mobileDetailsId}
@@ -641,9 +476,18 @@ function StockSummaryActions({ receipt }: { receipt: StockReceipt }) {
         </div>
       </div>
 
-      <div className="stock-summary-actions-standalone order-2 flex flex-wrap items-center gap-1.5">
-        {renderIconActions("flex flex-wrap items-center gap-1.5")}
+      <div
+        className="stock-summary-actions-standalone order-2 flex flex-wrap items-center gap-1.5"
+        ref={standaloneActionsRef}
+      >
+        <StockReceiptIconActions className="flex flex-wrap items-center gap-1.5" receipt={receipt} />
       </div>
+
+      <StockReceiptDialog
+        onClose={() => setReceiptDialogOpen(false)}
+        open={receiptDialogOpen}
+        receipt={receipt}
+      />
     </>
   );
 }

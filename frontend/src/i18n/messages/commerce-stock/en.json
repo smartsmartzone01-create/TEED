@@ -99,6 +99,17 @@
       "batch": "Batch",
       "group": "Group"
     },
+    "receipt": {
+      "title": "Stock receipt",
+      "savedTitle": "Stock received",
+      "savedHint": "Your receipt is ready to share, copy, or print.",
+      "stockId": "Stock ID",
+      "product": "Product",
+      "totalBuyingPrice": "Total buying price",
+      "identifiedUnits": "Identified units",
+      "lateDelivery": "Late delivery",
+      "close": "Close receipt"
+    },
     "values": {
       "newProduct": "Add a new product",
       "pendingSku": "New SKU",
@@ -109,9 +120,9 @@
       "entries": "entries"
     },
     "actions": {
-      "copy": "Copy summary",
-      "share": "Share summary",
-      "print": "Print summary",
+      "copy": "Copy receipt",
+      "share": "Share receipt",
+      "print": "Print receipt",
       "saving": "Saving stock...",
       "enter": "Enter",
       "edit": "Edit",
@@ -166,7 +177,7 @@
       "groupNeedsProduct": "Enter at least one product before finishing this group."
     },
     "success": {
-      "copied": "Stock summary copied.",
+      "copied": "Stock receipt copied.",
       "draftSaved": "Stock draft saved.",
       "savedTitle": "Stock saved successfully"
     }
