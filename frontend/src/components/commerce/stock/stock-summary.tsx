@@ -10,15 +10,9 @@ import {
 } from "@/components/commerce/stock/stock-shareable-receipt";
 import { Button } from "@/components/global/primitives/button";
 import type { StockReceipt, StockReceiptLine } from "@/types/commerce/inventory";
+import { formatQuantityWithUnit, formatUnitName } from "@/utils/commerce/quantity";
 
 import styles from "./stock-summary.module.css";
-
-const numberText = (value: string | number | null | undefined) => {
-  const number = Number(value ?? 0);
-  return Number.isFinite(number)
-    ? new Intl.NumberFormat(undefined, { maximumFractionDigits: 3 }).format(number)
-    : String(value ?? "");
-};
 
 const moneyText = (value: string | number | null | undefined) => {
   if (value == null) return "—";
@@ -138,6 +132,7 @@ function StockLedgerScroller({
 
 function StockProductSummary({ line }: { line: StockReceiptLine }) {
   const t = useTranslations("CommerceStock");
+  const locale = useLocale();
   const quantity =
     Number(line.quantity_received) / Number(line.conversion_to_base || "1");
   return (
@@ -148,7 +143,7 @@ function StockProductSummary({ line }: { line: StockReceiptLine }) {
           <p className="text-xs text-slate-500">{line.product_sku}</p>
         </div>
         <span className="text-sm font-medium">
-          {numberText(quantity)} {line.received_unit}
+          {formatQuantityWithUnit(quantity, line.received_unit, locale)}
         </span>
       </div>
       <div className="grid gap-2 text-xs sm:grid-cols-2">
@@ -309,7 +304,11 @@ function StockSummaryActions({ receipt }: { receipt: StockReceipt }) {
                           <>
                             <strong>{entry.groupName}</strong>
                             <span>
-                              {numberText(entry.groupQuantity)} {entry.groupUnit}
+                              {formatQuantityWithUnit(
+                                entry.groupQuantity,
+                                entry.groupUnit,
+                                locale,
+                              )}
                             </span>
                           </>
                         )}
@@ -323,10 +322,11 @@ function StockSummaryActions({ receipt }: { receipt: StockReceipt }) {
                       </div>
                       <div className="stock-ledger-line-cell stock-ledger-price-cell">
                         <strong>
-                          {moneyText(entry.line.received_unit_cost)} / {entry.line.received_unit}
+                          {moneyText(entry.line.received_unit_cost)} /{" "}
+                          {formatUnitName(entry.line.received_unit, 1, locale)}
                         </strong>
                         <span>
-                          {numberText(quantity)} {entry.line.received_unit}
+                          {formatQuantityWithUnit(quantity, entry.line.received_unit, locale)}
                         </span>
                       </div>
                     </div>
@@ -409,7 +409,11 @@ function StockSummaryActions({ receipt }: { receipt: StockReceipt }) {
                     <span key={`group-${entry.line.id}`}>
                       {entry.direct
                         ? "—"
-                        : `${entry.groupName} · ${numberText(entry.groupQuantity)} ${entry.groupUnit}`}
+                        : `${entry.groupName} · ${formatQuantityWithUnit(
+                            entry.groupQuantity,
+                            entry.groupUnit,
+                            locale,
+                          )}`}
                     </span>
                   ))}
                 </div>
@@ -430,7 +434,8 @@ function StockSummaryActions({ receipt }: { receipt: StockReceipt }) {
                 <div className="stock-ledger-mobile-stack">
                   {ledgerLines.map((entry) => (
                     <span key={`price-${entry.line.id}`}>
-                      {moneyText(entry.line.received_unit_cost)} / {entry.line.received_unit}
+                      {moneyText(entry.line.received_unit_cost)} /{" "}
+                      {formatUnitName(entry.line.received_unit, 1, locale)}
                     </span>
                   ))}
                 </div>

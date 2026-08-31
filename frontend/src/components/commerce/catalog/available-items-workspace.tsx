@@ -18,23 +18,11 @@ import { useIdentitySession } from "@/providers/identity/identity-session-provid
 import { useNotification } from "@/providers/global/notification-provider";
 import { commercePatch, getProducts, getSales } from "@/services/commerce/commerce";
 import type { Product } from "@/types/commerce/commerce";
-
-const countableUnits = new Set([
-  "piece",
-  "pair",
-  "packet",
-  "box",
-  "carton",
-  "crate",
-  "bottle",
-  "can",
-  "bag",
-  "sack",
-  "bundle",
-  "set",
-  "dozen",
-  "roll",
-]);
+import {
+  formatQuantityNumber,
+  formatQuantityWithUnit,
+  formatUnitName,
+} from "@/utils/commerce/quantity";
 
 const unitOptions = [
   "piece",
@@ -92,13 +80,6 @@ type ProductPerformance = {
   week: string;
   month: string;
 };
-
-function displayQuantity(value: string, unit: string) {
-  const number = Number(value);
-  if (!Number.isFinite(number)) return value;
-  if (countableUnits.has(unit) && Number.isInteger(number)) return String(number);
-  return new Intl.NumberFormat(undefined, { maximumFractionDigits: 3 }).format(number);
-}
 
 function topProductSince(sales: PerformanceSale[], since: Date) {
   const totals = new Map<string, { name: string; quantity: number }>();
@@ -386,13 +367,15 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
                     <td className="px-3 py-3 text-slate-600 dark:text-slate-300">
                       {product.variant || product.group || "—"}
                     </td>
-                    <td className="px-3 py-3 text-slate-600 dark:text-slate-300">{product.unit}</td>
+                    <td className="px-3 py-3 text-slate-600 dark:text-slate-300">
+                      {formatUnitName(product.unit, 2, locale)}
+                    </td>
                     <td className="px-3 py-3 font-mono text-[11px] font-semibold text-[var(--workspace-secondary,var(--brand-orange))] dark:text-slate-200">
                       {product.sku}
                     </td>
                     <td className="px-3 py-3 text-center">
                       <strong className={`text-sm font-bold ${primaryAccentClassName}`}>
-                        {displayQuantity(product.current_quantity, product.unit)}
+                        {formatQuantityNumber(product.current_quantity, locale)}
                       </strong>
                     </td>
                     <td className="px-3 py-3 text-slate-500 dark:text-slate-400">
@@ -434,9 +417,12 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
                       </div>
                       <div className="shrink-0 text-right">
                         <strong className={`text-sm font-bold ${primaryAccentClassName}`}>
-                          {displayQuantity(product.current_quantity, product.unit)}
+                          {formatQuantityWithUnit(
+                            product.current_quantity,
+                            product.unit,
+                            locale,
+                          )}
                         </strong>
-                        <span className="ml-1 text-[11px] text-slate-500 dark:text-slate-400">{product.unit}</span>
                       </div>
                     </div>
                     <div className="mt-2 flex items-end justify-between gap-3">

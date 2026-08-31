@@ -12,6 +12,7 @@ import type {
   StockReceiptGroup,
   StockReceiptLine,
 } from "@/types/commerce/inventory";
+import { formatQuantityWithUnit } from "@/utils/commerce/quantity";
 
 type ReceiptEntry = {
   id: string;
@@ -125,8 +126,6 @@ function useShareableStockReceipt(receipt: StockReceipt) {
     totalBuyingPrice: finiteNumber(receipt.total_buying_value),
   };
 
-  const numberText = (value: number) =>
-    new Intl.NumberFormat(locale, { maximumFractionDigits: 3 }).format(value);
   const moneyText = (value: number) =>
     new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(value);
 
@@ -147,7 +146,9 @@ function useShareableStockReceipt(receipt: StockReceipt) {
       if (entry.kind === "item" && entry.sku) {
         rows.push(`${labels.productId}: ${entry.sku}`);
       }
-      rows.push(`${labels.quantity}: ${numberText(entry.quantity)} ${entry.unit}`);
+      rows.push(
+        `${labels.quantity}: ${formatQuantityWithUnit(entry.quantity, entry.unit, locale)}`,
+      );
       rows.push(`${labels.buyingAmount}: ${moneyText(entry.buyingAmount)}`);
     }
   }
@@ -212,11 +213,12 @@ function useShareableStockReceipt(receipt: StockReceipt) {
     }, 150);
   };
 
-  return { receiptView, labels, moneyText, numberText, copy, share, print };
+  return { receiptView, labels, moneyText, copy, share, print };
 }
 
 function StockReceiptPreview({ receipt }: { receipt: StockReceipt }) {
-  const { receiptView, labels, moneyText, numberText } = useShareableStockReceipt(receipt);
+  const locale = useLocale();
+  const { receiptView, labels, moneyText } = useShareableStockReceipt(receipt);
 
   return (
     <div className="grid gap-4 text-sm">
@@ -272,7 +274,7 @@ function StockReceiptPreview({ receipt }: { receipt: StockReceipt }) {
                     ) : null}
                   </div>
                   <strong className="shrink-0 text-right text-xs">
-                    {numberText(entry.quantity)} {entry.unit}
+                    {formatQuantityWithUnit(entry.quantity, entry.unit, locale)}
                   </strong>
                 </div>
                 <div className="flex items-center justify-between gap-3 text-xs">
