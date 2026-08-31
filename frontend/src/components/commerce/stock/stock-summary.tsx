@@ -1,7 +1,7 @@
 "use client";
 
 import { Copy, Printer, Share2 } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 
 import { Button } from "@/components/global/primitives/button";
 import { useNotification } from "@/providers/global/notification-provider";
@@ -21,6 +21,31 @@ const moneyText = (value: string | number | null | undefined) => {
     ? new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 }).format(number)
     : String(value);
 };
+
+type LedgerLine = {
+  batchName: string;
+  groupName: string;
+  groupQuantity: string;
+  groupUnit: string;
+  direct: boolean;
+  line: StockReceiptLine;
+};
+
+const ledgerLinesForReceipt = (receipt: StockReceipt): LedgerLine[] =>
+  receipt.batches.flatMap((batch) =>
+    batch.groups.flatMap((group) => {
+      const direct =
+        group.types.length === 1 && group.name === group.types[0].product_name;
+      return group.types.map((line) => ({
+        batchName: batch.name,
+        groupName: group.name,
+        groupQuantity: group.quantity,
+        groupUnit: group.unit,
+        direct,
+        line,
+      }));
+    }),
+  );
 
 function StockProductSummary({ line }: { line: StockReceiptLine }) {
   const t = useTranslations("CommerceStock");
@@ -145,6 +170,7 @@ function formatStockSummary(receipt: StockReceipt, labels: Record<string, string
 function StockSummaryActions({ receipt }: { receipt: StockReceipt }) {
   const stockT = useTranslations("CommerceStock");
   const commerceT = useTranslations("Commerce");
+  const locale = useLocale();
   const { notify } = useNotification();
   const labels = {
     title: stockT("summary.title"),
@@ -162,6 +188,24 @@ function StockSummaryActions({ receipt }: { receipt: StockReceipt }) {
     lateDeliveries: commerceT("lateDeliveries"),
   };
   const text = formatStockSummary(receipt, labels);
+  const ledgerLines = ledgerLinesForReceipt(receipt);
+  const total =
+    Number(receipt.total_buying_value || 0) + Number(receipt.additional_cost || 0);
+  const receiptDate = receipt.received_at || receipt.created_at;
+  const statusTone =
+    receipt.status === "received"
+      ? "stock-ledger-status-received"
+      : receipt.status === "draft"
+        ? "stock-ledger-status-draft"
+        : "stock-ledger-status-archived";
+
+  const statusLabel = stockT(`ledger.status.${receipt.status}`);
+  const recordingLabel = (entry: LedgerLine) => {
+    if (entry.direct) return stockT("ledger.recording.individual");
+    return entry.line.tracking_mode === "individual"
+      ? stockT("ledger.recording.groupIndividual")
+      : stockT("ledger.recording.groupQuantity");
+  };
 
   const copy = async () => {
     await navigator.clipboard.writeText(text);
@@ -216,44 +260,269 @@ function StockSummaryActions({ receipt }: { receipt: StockReceipt }) {
     }, 150);
   };
 
-  const iconButtonClass = "size-9 rounded-full p-0";
-
-  return (
-    <div className="order-2 flex flex-wrap items-center gap-1.5">
+  const renderIconActions = (className: string) => (
+    <div className={className}>
       <Button
         aria-label={stockT("actions.copy")}
-        className={iconButtonClass}
+        className="size-8 rounded-md p-0"
         onClick={() => void copy()}
         size="small"
         title={stockT("actions.copy")}
         type="button"
         variant="ghost"
       >
-        <Copy className="size-4" />
+        <Copy className="size-3.5" />
       </Button>
       <Button
         aria-label={stockT("actions.share")}
-        className={iconButtonClass}
+        className="size-8 rounded-md p-0"
         onClick={() => void share()}
         size="small"
         title={stockT("actions.share")}
         type="button"
         variant="ghost"
       >
-        <Share2 className="size-4" />
+        <Share2 className="size-3.5" />
       </Button>
       <Button
         aria-label={stockT("actions.print")}
-        className={iconButtonClass}
+        className="size-8 rounded-md p-0"
         onClick={print}
         size="small"
         title={stockT("actions.print")}
         type="button"
         variant="ghost"
       >
-        <Printer className="size-4" />
+        <Printer className="size-3.5" />
       </Button>
     </div>
+  );
+
+  const renderProductInfo = (line: StockReceiptLine) => (
+    <div className="stock-ledger-product-info" key={`info-${line.id}`}>
+      <strong>{line.product_name}</strong>
+      {[line.product_brand, line.product_variant].filter(Boolean).length ? (
+        <span>{[line.product_brand, line.product_variant].filter(Boolean).join(" · ")}</span>
+      ) : null}
+      {line.tracked_units.map((unit) => {
+        const details = [
+          unit.model_name,
+          unit.brand,
+          unit.color,
+          unit.capacity,
+          unit.internal_serial,
+          ...unit.identifiers.map(
+            (identifier) => `${identifier.kind}: ${identifier.value}`,
+          ),
+        ].filter(Boolean);
+        return details.length ? <span key={unit.id}>{details.join(" · ")}</span> : null;
+      })}
+    </div>
+  );
+
+  const desktopHeaders = [
+    stockT("ledger.headers.stockId"),
+    stockT("ledger.headers.supplier"),
+    stockT("ledger.headers.batchName"),
+    stockT("ledger.headers.productGroup"),
+    stockT("ledger.headers.recordingMethod"),
+    stockT("ledger.headers.productInfo"),
+    stockT("ledger.headers.productSku"),
+    stockT("ledger.headers.pricePerUnit"),
+    stockT("ledger.headers.expenses"),
+    stockT("ledger.headers.total"),
+    stockT("ledger.headers.actions"),
+  ];
+
+  return (
+    <>
+      <div className="stock-received-ledger-entry">
+        <div className="stock-ledger-desktop">
+          <div className="stock-ledger-header">
+            {desktopHeaders.map((header) => (
+              <div className="stock-ledger-header-cell" key={header}>
+                {header}
+              </div>
+            ))}
+          </div>
+
+          <div className="stock-ledger-desktop-body">
+            <div className="stock-ledger-cell stock-ledger-stock-cell">
+              <strong className="stock-ledger-reference">{receipt.reference}</strong>
+              <span className={`stock-ledger-status ${statusTone}`}>{statusLabel}</span>
+              <span className="stock-ledger-date">
+                {receiptDate
+                  ? new Date(receiptDate).toLocaleDateString(locale, {
+                      year: "numeric",
+                      month: "short",
+                      day: "numeric",
+                    })
+                  : "—"}
+              </span>
+            </div>
+
+            <div className="stock-ledger-cell stock-ledger-supplier-cell">
+              {receipt.supplier_name || stockT("values.noSupplier")}
+            </div>
+
+            <div className="stock-ledger-lines">
+              {ledgerLines.length ? (
+                ledgerLines.map((entry) => {
+                  const quantity =
+                    Number(entry.line.quantity_received) /
+                    Number(entry.line.conversion_to_base || "1");
+                  return (
+                    <div className="stock-ledger-line" key={entry.line.id}>
+                      <div className="stock-ledger-line-cell">{entry.batchName || "—"}</div>
+                      <div className="stock-ledger-line-cell">
+                        {entry.direct ? (
+                          "—"
+                        ) : (
+                          <>
+                            <strong>{entry.groupName}</strong>
+                            <span>
+                              {numberText(entry.groupQuantity)} {entry.groupUnit}
+                            </span>
+                          </>
+                        )}
+                      </div>
+                      <div className="stock-ledger-line-cell stock-ledger-recording-cell">
+                        {recordingLabel(entry)}
+                      </div>
+                      <div className="stock-ledger-line-cell">{renderProductInfo(entry.line)}</div>
+                      <div className="stock-ledger-line-cell stock-ledger-sku-cell">
+                        {entry.line.product_sku || "—"}
+                      </div>
+                      <div className="stock-ledger-line-cell stock-ledger-price-cell">
+                        <strong>
+                          {moneyText(entry.line.received_unit_cost)} / {entry.line.received_unit}
+                        </strong>
+                        <span>
+                          {numberText(quantity)} {entry.line.received_unit}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="stock-ledger-line stock-ledger-line-empty">
+                  {Array.from({ length: 6 }).map((_, index) => (
+                    <div className="stock-ledger-line-cell" key={index}>—</div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="stock-ledger-cell stock-ledger-expense-cell">
+              {moneyText(receipt.additional_cost)}
+            </div>
+            <div className="stock-ledger-cell stock-ledger-total-cell">
+              <strong>{moneyText(total)}</strong>
+            </div>
+            <div className="stock-ledger-cell stock-ledger-actions-cell">
+              {renderIconActions("stock-ledger-icon-actions")}
+            </div>
+          </div>
+        </div>
+
+        <div className="stock-ledger-mobile">
+          <div className="stock-ledger-mobile-band stock-ledger-mobile-band-one">
+            <div className="stock-ledger-mobile-cell">
+              <span className="stock-ledger-mobile-label">{stockT("ledger.headers.stockId")}</span>
+              <strong>{receipt.reference}</strong>
+              <span className={`stock-ledger-status ${statusTone}`}>{statusLabel}</span>
+              <span className="stock-ledger-date">
+                {receiptDate
+                  ? new Date(receiptDate).toLocaleDateString(locale, {
+                      year: "numeric",
+                      month: "short",
+                      day: "numeric",
+                    })
+                  : "—"}
+              </span>
+            </div>
+            <div className="stock-ledger-mobile-cell">
+              <span className="stock-ledger-mobile-label">{stockT("ledger.headers.supplier")}</span>
+              <strong>{receipt.supplier_name || stockT("values.noSupplier")}</strong>
+            </div>
+            <div className="stock-ledger-mobile-cell">
+              <span className="stock-ledger-mobile-label">{stockT("ledger.headers.batchName")}</span>
+              <div className="stock-ledger-mobile-stack">
+                {Array.from(new Set(ledgerLines.map((entry) => entry.batchName))).map((name) => (
+                  <span key={name}>{name || "—"}</span>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="stock-ledger-mobile-band stock-ledger-mobile-band-two">
+            <div className="stock-ledger-mobile-cell">
+              <span className="stock-ledger-mobile-label">{stockT("ledger.headers.recordingMethod")}</span>
+              <div className="stock-ledger-mobile-stack">
+                {ledgerLines.map((entry) => (
+                  <span key={`method-${entry.line.id}`}>{recordingLabel(entry)}</span>
+                ))}
+              </div>
+            </div>
+            <div className="stock-ledger-mobile-cell">
+              <span className="stock-ledger-mobile-label">{stockT("ledger.headers.productInfo")}</span>
+              <div className="stock-ledger-mobile-stack">
+                {ledgerLines.map((entry) => renderProductInfo(entry.line))}
+              </div>
+            </div>
+            <div className="stock-ledger-mobile-cell">
+              <span className="stock-ledger-mobile-label">{stockT("ledger.headers.productGroup")}</span>
+              <div className="stock-ledger-mobile-stack">
+                {ledgerLines.map((entry) => (
+                  <span key={`group-${entry.line.id}`}>
+                    {entry.direct
+                      ? "—"
+                      : `${entry.groupName} · ${numberText(entry.groupQuantity)} ${entry.groupUnit}`}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="stock-ledger-mobile-band stock-ledger-mobile-band-three">
+            <div className="stock-ledger-mobile-cell">
+              <span className="stock-ledger-mobile-label">{stockT("ledger.headers.productSku")}</span>
+              <div className="stock-ledger-mobile-stack stock-ledger-mobile-sku-stack">
+                {ledgerLines.map((entry) => (
+                  <span key={`sku-${entry.line.id}`}>{entry.line.product_sku || "—"}</span>
+                ))}
+              </div>
+            </div>
+            <div className="stock-ledger-mobile-cell">
+              <span className="stock-ledger-mobile-label">{stockT("ledger.headers.pricePerUnit")}</span>
+              <div className="stock-ledger-mobile-stack">
+                {ledgerLines.map((entry) => (
+                  <span key={`price-${entry.line.id}`}>
+                    {moneyText(entry.line.received_unit_cost)} / {entry.line.received_unit}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <div className="stock-ledger-mobile-cell">
+              <span className="stock-ledger-mobile-label">{stockT("ledger.headers.expenses")}</span>
+              <strong>{moneyText(receipt.additional_cost)}</strong>
+            </div>
+            <div className="stock-ledger-mobile-cell">
+              <span className="stock-ledger-mobile-label">{stockT("ledger.headers.total")}</span>
+              <strong>{moneyText(total)}</strong>
+            </div>
+            <div className="stock-ledger-mobile-cell stock-ledger-mobile-actions-cell">
+              <span className="stock-ledger-mobile-label">{stockT("ledger.headers.actions")}</span>
+              {renderIconActions("stock-ledger-icon-actions stock-ledger-icon-actions-mobile")}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="stock-summary-actions-standalone order-2 flex flex-wrap items-center gap-1.5">
+        {renderIconActions("flex flex-wrap items-center gap-1.5")}
+      </div>
+    </>
   );
 }
 

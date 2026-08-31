@@ -64,6 +64,31 @@
       "identifierValue": "Identifier number",
       "totalProducts": "Recorded entries"
     },
+    "ledger": {
+      "headers": {
+        "stockId": "Stock ID",
+        "supplier": "Supplier",
+        "batchName": "Batch name",
+        "productGroup": "Product group",
+        "recordingMethod": "Recording method",
+        "productInfo": "Product info",
+        "productSku": "Product ID / SKU",
+        "pricePerUnit": "Buying price / unit",
+        "expenses": "Expenses",
+        "total": "Total",
+        "actions": "Actions"
+      },
+      "status": {
+        "received": "Received",
+        "draft": "Draft",
+        "archived": "Archived"
+      },
+      "recording": {
+        "individual": "As individual",
+        "groupIndividual": "As group · individual",
+        "groupQuantity": "As group · quantity"
+      }
+    },
     "summary": {
       "title": "Stock summary",
       "totalStockCost": "Total stock cost",

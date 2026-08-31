@@ -64,6 +64,31 @@
       "identifierValue": "Namba ya utambulisho",
       "totalProducts": "Rekodi zilizowekwa"
     },
+    "ledger": {
+      "headers": {
+        "stockId": "Namba ya mzigo",
+        "supplier": "Msambazaji",
+        "batchName": "Jina la fungu",
+        "productGroup": "Kundi la bidhaa",
+        "recordingMethod": "Njia ya kurekodi",
+        "productInfo": "Taarifa za bidhaa",
+        "productSku": "Namba ya bidhaa / SKU",
+        "pricePerUnit": "Bei ya kununua / kipimo",
+        "expenses": "Gharama",
+        "total": "Jumla",
+        "actions": "Hatua"
+      },
+      "status": {
+        "received": "Imepokelewa",
+        "draft": "Rasimu",
+        "archived": "Imehifadhiwa"
+      },
+      "recording": {
+        "individual": "Moja moja",
+        "groupIndividual": "Kwa kundi · moja moja",
+        "groupQuantity": "Kwa kundi · kwa idadi"
+      }
+    },
     "summary": {
       "title": "Muhtasari wa mzigo",
       "totalStockCost": "Jumla ya gharama ya mzigo",
