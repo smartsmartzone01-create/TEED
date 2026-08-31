@@ -1,8 +1,16 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, Copy, Printer, Share2 } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  ChevronUp,
+  Copy,
+  Printer,
+  Share2,
+} from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { useCallback, useEffect, useRef, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 
 import { Button } from "@/components/global/primitives/button";
 import { useNotification } from "@/providers/global/notification-provider";
@@ -258,6 +266,7 @@ function StockSummaryActions({ receipt }: { receipt: StockReceipt }) {
   const commerceT = useTranslations("Commerce");
   const locale = useLocale();
   const { notify } = useNotification();
+  const [mobileExpanded, setMobileExpanded] = useState(false);
   const labels = {
     title: stockT("summary.title"),
     status: stockT("fields.status"),
@@ -278,6 +287,7 @@ function StockSummaryActions({ receipt }: { receipt: StockReceipt }) {
   const total =
     Number(receipt.total_buying_value || 0) + Number(receipt.additional_cost || 0);
   const receiptDate = receipt.received_at || receipt.created_at;
+  const mobileDetailsId = `stock-mobile-details-${receipt.id}`;
   const statusTone =
     receipt.status === "received"
       ? "stock-ledger-status-received"
@@ -544,68 +554,89 @@ function StockSummaryActions({ receipt }: { receipt: StockReceipt }) {
             </div>
           </div>
 
-          <div className="stock-ledger-mobile-band stock-ledger-mobile-band-two">
-            <div className="stock-ledger-mobile-cell">
-              <span className="stock-ledger-mobile-label">{stockT("ledger.headers.recordingMethod")}</span>
-              <div className="stock-ledger-mobile-stack">
-                {ledgerLines.map((entry) => (
-                  <span key={`method-${entry.line.id}`}>{recordingLabel(entry)}</span>
-                ))}
+          <div hidden={!mobileExpanded} id={mobileDetailsId}>
+            <div className="stock-ledger-mobile-band stock-ledger-mobile-band-two">
+              <div className="stock-ledger-mobile-cell">
+                <span className="stock-ledger-mobile-label">{stockT("ledger.headers.recordingMethod")}</span>
+                <div className="stock-ledger-mobile-stack">
+                  {ledgerLines.map((entry) => (
+                    <span key={`method-${entry.line.id}`}>{recordingLabel(entry)}</span>
+                  ))}
+                </div>
+              </div>
+              <div className="stock-ledger-mobile-cell">
+                <span className="stock-ledger-mobile-label">{stockT("ledger.headers.productInfo")}</span>
+                <div className="stock-ledger-mobile-stack">
+                  {ledgerLines.map((entry) => renderProductInfo(entry.line))}
+                </div>
+              </div>
+              <div className="stock-ledger-mobile-cell">
+                <span className="stock-ledger-mobile-label">{stockT("ledger.headers.productGroup")}</span>
+                <div className="stock-ledger-mobile-stack">
+                  {ledgerLines.map((entry) => (
+                    <span key={`group-${entry.line.id}`}>
+                      {entry.direct
+                        ? "—"
+                        : `${entry.groupName} · ${numberText(entry.groupQuantity)} ${entry.groupUnit}`}
+                    </span>
+                  ))}
+                </div>
               </div>
             </div>
-            <div className="stock-ledger-mobile-cell">
-              <span className="stock-ledger-mobile-label">{stockT("ledger.headers.productInfo")}</span>
-              <div className="stock-ledger-mobile-stack">
-                {ledgerLines.map((entry) => renderProductInfo(entry.line))}
+
+            <div className="stock-ledger-mobile-band stock-ledger-mobile-band-three">
+              <div className="stock-ledger-mobile-cell">
+                <span className="stock-ledger-mobile-label">{stockT("ledger.headers.productSku")}</span>
+                <div className="stock-ledger-mobile-stack stock-ledger-mobile-sku-stack">
+                  {ledgerLines.map((entry) => (
+                    <span key={`sku-${entry.line.id}`}>{entry.line.product_sku || "—"}</span>
+                  ))}
+                </div>
               </div>
-            </div>
-            <div className="stock-ledger-mobile-cell">
-              <span className="stock-ledger-mobile-label">{stockT("ledger.headers.productGroup")}</span>
-              <div className="stock-ledger-mobile-stack">
-                {ledgerLines.map((entry) => (
-                  <span key={`group-${entry.line.id}`}>
-                    {entry.direct
-                      ? "—"
-                      : `${entry.groupName} · ${numberText(entry.groupQuantity)} ${entry.groupUnit}`}
-                  </span>
-                ))}
+              <div className="stock-ledger-mobile-cell">
+                <span className="stock-ledger-mobile-label">{stockT("ledger.headers.pricePerUnit")}</span>
+                <div className="stock-ledger-mobile-stack">
+                  {ledgerLines.map((entry) => (
+                    <span key={`price-${entry.line.id}`}>
+                      {moneyText(entry.line.received_unit_cost)} / {entry.line.received_unit}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div className="stock-ledger-mobile-cell">
+                <span className="stock-ledger-mobile-label">{stockT("ledger.headers.expenses")}</span>
+                <strong>{moneyText(receipt.additional_cost)}</strong>
+              </div>
+              <div className="stock-ledger-mobile-cell">
+                <span className="stock-ledger-mobile-label">{stockT("ledger.headers.total")}</span>
+                <strong>{moneyText(total)}</strong>
               </div>
             </div>
           </div>
 
-          <div className="stock-ledger-mobile-band stock-ledger-mobile-band-three">
-            <div className="stock-ledger-mobile-cell">
-              <span className="stock-ledger-mobile-label">{stockT("ledger.headers.productSku")}</span>
-              <div className="stock-ledger-mobile-stack stock-ledger-mobile-sku-stack">
-                {ledgerLines.map((entry) => (
-                  <span key={`sku-${entry.line.id}`}>{entry.line.product_sku || "—"}</span>
-                ))}
-              </div>
+          <div className="flex items-center justify-between gap-2 border-t border-slate-200 px-3 py-1.5 dark:border-slate-800">
+            <div className="flex min-w-0 items-center gap-1">
+              <span className="stock-ledger-mobile-label mb-0 shrink-0">
+                {stockT("ledger.headers.actions")}
+              </span>
+              {renderIconActions("stock-ledger-icon-actions stock-ledger-icon-actions-mobile")}
             </div>
-            <div className="stock-ledger-mobile-cell">
-              <span className="stock-ledger-mobile-label">{stockT("ledger.headers.pricePerUnit")}</span>
-              <div className="stock-ledger-mobile-stack">
-                {ledgerLines.map((entry) => (
-                  <span key={`price-${entry.line.id}`}>
-                    {moneyText(entry.line.received_unit_cost)} / {entry.line.received_unit}
-                  </span>
-                ))}
-              </div>
-            </div>
-            <div className="stock-ledger-mobile-cell">
-              <span className="stock-ledger-mobile-label">{stockT("ledger.headers.expenses")}</span>
-              <strong>{moneyText(receipt.additional_cost)}</strong>
-            </div>
-            <div className="stock-ledger-mobile-cell">
-              <span className="stock-ledger-mobile-label">{stockT("ledger.headers.total")}</span>
-              <strong>{moneyText(total)}</strong>
-            </div>
-            <div className="stock-ledger-mobile-cell stock-ledger-mobile-actions-cell">
-              <span className="stock-ledger-mobile-label">{stockT("ledger.headers.actions")}</span>
-              {renderIconActions(
-                `stock-ledger-icon-actions stock-ledger-icon-actions-mobile ${styles.ledgerActions}`,
+            <Button
+              aria-controls={mobileDetailsId}
+              aria-expanded={mobileExpanded}
+              className="h-7 min-h-0 shrink-0 gap-1 px-2 text-[0.65rem]"
+              onClick={() => setMobileExpanded((current) => !current)}
+              size="small"
+              type="button"
+              variant="ghost"
+            >
+              {mobileExpanded ? commerceT("actions.showLess") : commerceT("actions.viewMore")}
+              {mobileExpanded ? (
+                <ChevronUp className="size-3.5" />
+              ) : (
+                <ChevronDown className="size-3.5" />
               )}
-            </div>
+            </Button>
           </div>
         </div>
       </div>
