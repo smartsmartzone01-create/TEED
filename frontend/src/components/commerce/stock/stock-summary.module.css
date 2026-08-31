@@ -22,3 +22,7 @@
   flex-direction: column !important;
   gap: 0.08rem !important;
 }
+
+:global(.stock-summary-actions-standalone ~ *) {
+  display: none !important;
+}
