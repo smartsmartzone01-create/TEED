@@ -11,3 +11,216 @@
 .page-section {
   padding-block: var(--section-block-space);
 }
+
+/* Stock received ledger: semantic column labels and vertical actions. */
+.stock-progressive-host
+  > div
+  > section:nth-of-type(2)
+  > div:nth-child(2)
+  > article
+  > div:first-child::before,
+.stock-progressive-host
+  > div
+  > section:nth-of-type(2)
+  > div:nth-child(2)
+  > article
+  > div.grid.gap-2.border-t::before,
+.stock-progressive-host
+  > div
+  > section:nth-of-type(2)
+  > div:nth-child(2)
+  > article
+  > .flex.flex-wrap.gap-2:not(:first-child)::before {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: rgb(100 116 139);
+  font-size: 0.625rem;
+  font-weight: 700;
+  line-height: 0.8rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.dark
+  .stock-progressive-host
+  > div
+  > section:nth-of-type(2)
+  > div:nth-child(2)
+  > article
+  > div:first-child::before,
+.dark
+  .stock-progressive-host
+  > div
+  > section:nth-of-type(2)
+  > div:nth-child(2)
+  > article
+  > div.grid.gap-2.border-t::before,
+.dark
+  .stock-progressive-host
+  > div
+  > section:nth-of-type(2)
+  > div:nth-child(2)
+  > article
+  > .flex.flex-wrap.gap-2:not(:first-child)::before {
+  color: rgb(148 163 184);
+}
+
+.stock-progressive-host
+  > div
+  > section:nth-of-type(2)
+  > div:nth-child(2)
+  > article
+  > div:first-child::before {
+  content: "Stock ID · Supplier · Status";
+}
+
+.stock-progressive-host
+  > div
+  > section:nth-of-type(2)
+  > div:nth-child(2)
+  > article
+  > div.grid.gap-2.border-t::before {
+  content: "Batch / Group · Product / SKU · Quantity · Buying price";
+}
+
+.stock-progressive-host
+  > div
+  > section:nth-of-type(2)
+  > div:nth-child(2)
+  > article
+  > .flex.flex-wrap.gap-2:not(:first-child)::before {
+  content: "Actions";
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .stock-progressive-host
+    > div
+    > section:nth-of-type(2)
+    > div:nth-child(2)
+    > article {
+    grid-template-columns:
+      minmax(10rem, 1.05fr)
+      minmax(20rem, 2.35fr)
+      minmax(9.5rem, 0.95fr) !important;
+    align-items: start !important;
+  }
+
+  .stock-progressive-host
+    > div
+    > section:nth-of-type(2)
+    > div:nth-child(2)
+    > article
+    > div:first-child {
+    grid-column: 1 !important;
+    grid-row: 1 / span 2 !important;
+    align-self: start !important;
+  }
+
+  .stock-progressive-host
+    > div
+    > section:nth-of-type(2)
+    > div:nth-child(2)
+    > article
+    > div.grid.gap-2.border-t {
+    grid-column: 2 !important;
+    grid-row: 1 / span 2 !important;
+    align-self: start !important;
+  }
+
+  .stock-progressive-host
+    > div
+    > section:nth-of-type(2)
+    > div:nth-child(2)
+    > article
+    > .flex.flex-wrap.gap-2:not(:first-child) {
+    grid-column: 3 !important;
+    grid-row: 1 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    gap: 0.45rem !important;
+    width: 100%;
+  }
+
+  .stock-progressive-host
+    > div
+    > section:nth-of-type(2)
+    > div:nth-child(2)
+    > article
+    > .flex.flex-wrap.gap-2:not(:first-child)
+    > button {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+
+  .stock-progressive-host
+    > div
+    > section:nth-of-type(2)
+    > div:nth-child(2)
+    > article
+    > .order-2 {
+    grid-column: 3 !important;
+    grid-row: 2 !important;
+    display: flex !important;
+    align-self: start !important;
+    justify-content: flex-start !important;
+    margin-top: 0.1rem;
+  }
+
+  .stock-progressive-host
+    > div
+    > section:nth-of-type(2)
+    > div:nth-child(2)
+    > article
+    > div.grid.gap-3.border-t {
+    grid-column: 1 / -1 !important;
+    grid-row: 3 !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .stock-progressive-host
+    > div
+    > section:nth-of-type(2)
+    > div:nth-child(2)
+    > article
+    > div:first-child::before {
+    content: "Stock";
+  }
+
+  .stock-progressive-host
+    > div
+    > section:nth-of-type(2)
+    > div:nth-child(2)
+    > article
+    > div.grid.gap-2.border-t::before {
+    content: "Products / quantity / buying price";
+    margin-top: 0.15rem;
+  }
+
+  .stock-progressive-host
+    > div
+    > section:nth-of-type(2)
+    > div:nth-child(2)
+    > article
+    > .flex.flex-wrap.gap-2:not(:first-child) {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.45rem !important;
+    width: 100%;
+  }
+
+  .stock-progressive-host
+    > div
+    > section:nth-of-type(2)
+    > div:nth-child(2)
+    > article
+    > .order-2 {
+    display: flex !important;
+    margin-top: 0.45rem !important;
+    margin-left: 0 !important;
+  }
+}
