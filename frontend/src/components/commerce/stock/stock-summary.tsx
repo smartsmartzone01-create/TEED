@@ -1,11 +1,14 @@
 "use client";
 
-import { Copy, Printer, Share2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Copy, Printer, Share2 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
+import { useCallback, useEffect, useRef, type ReactNode } from "react";
 
 import { Button } from "@/components/global/primitives/button";
 import { useNotification } from "@/providers/global/notification-provider";
 import type { StockReceipt, StockReceiptLine } from "@/types/commerce/inventory";
+
+import styles from "./stock-summary.module.css";
 
 const numberText = (value: string | number | null | undefined) => {
   const number = Number(value ?? 0);
@@ -46,6 +49,89 @@ const ledgerLinesForReceipt = (receipt: StockReceipt): LedgerLine[] =>
       }));
     }),
   );
+
+function StockLedgerScroller({
+  children,
+  previousLabel,
+  nextLabel,
+}: {
+  children: ReactNode;
+  previousLabel: string;
+  nextLabel: string;
+}) {
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const previousRef = useRef<HTMLButtonElement>(null);
+  const nextRef = useRef<HTMLButtonElement>(null);
+
+  const syncControls = useCallback(() => {
+    const viewport = viewportRef.current;
+    const previous = previousRef.current;
+    const next = nextRef.current;
+    if (!viewport || !previous || !next) return;
+
+    const maxScroll = Math.max(0, viewport.scrollWidth - viewport.clientWidth);
+    const hasOverflow = maxScroll > 2;
+    previous.hidden = !hasOverflow || viewport.scrollLeft <= 2;
+    next.hidden = !hasOverflow || viewport.scrollLeft >= maxScroll - 2;
+  }, []);
+
+  useEffect(() => {
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+
+    const frame = window.requestAnimationFrame(syncControls);
+    const observer = new ResizeObserver(syncControls);
+    observer.observe(viewport);
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      observer.disconnect();
+    };
+  }, [syncControls]);
+
+  const scroll = (direction: -1 | 1) => {
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+    viewport.scrollBy({
+      left: direction * Math.max(280, viewport.clientWidth * 0.72),
+      behavior: "smooth",
+    });
+  };
+
+  return (
+    <div className={styles.scrollShell}>
+      <div
+        className={`stock-ledger-desktop ${styles.scrollViewport}`}
+        onScroll={syncControls}
+        ref={viewportRef}
+      >
+        {children}
+      </div>
+      <button
+        aria-label={previousLabel}
+        className={`${styles.scrollControl} ${styles.scrollControlLeft}`}
+        hidden
+        onClick={() => scroll(-1)}
+        ref={previousRef}
+        title={previousLabel}
+        type="button"
+      >
+        <ChevronLeft className="size-4" />
+      </button>
+      <button
+        aria-label={nextLabel}
+        className={`${styles.scrollControl} ${styles.scrollControlRight}`}
+        hidden
+        onClick={() => scroll(1)}
+        ref={nextRef}
+        title={nextLabel}
+        type="button"
+      >
+        <ChevronRight className="size-4" />
+      </button>
+    </div>
+  );
+}
 
 function StockProductSummary({ line }: { line: StockReceiptLine }) {
   const t = useTranslations("CommerceStock");
@@ -337,7 +423,10 @@ function StockSummaryActions({ receipt }: { receipt: StockReceipt }) {
   return (
     <>
       <div className="stock-received-ledger-entry">
-        <div className="stock-ledger-desktop">
+        <StockLedgerScroller
+          nextLabel={stockT("ledger.navigation.next")}
+          previousLabel={stockT("ledger.navigation.previous")}
+        >
           <div className="stock-ledger-header">
             {desktopHeaders.map((header) => (
               <div className="stock-ledger-header-cell" key={header}>
@@ -420,10 +509,10 @@ function StockSummaryActions({ receipt }: { receipt: StockReceipt }) {
               <strong>{moneyText(total)}</strong>
             </div>
             <div className="stock-ledger-cell stock-ledger-actions-cell">
-              {renderIconActions("stock-ledger-icon-actions")}
+              {renderIconActions(`stock-ledger-icon-actions ${styles.ledgerActions}`)}
             </div>
           </div>
-        </div>
+        </StockLedgerScroller>
 
         <div className="stock-ledger-mobile">
           <div className="stock-ledger-mobile-band stock-ledger-mobile-band-one">
@@ -513,7 +602,9 @@ function StockSummaryActions({ receipt }: { receipt: StockReceipt }) {
             </div>
             <div className="stock-ledger-mobile-cell stock-ledger-mobile-actions-cell">
               <span className="stock-ledger-mobile-label">{stockT("ledger.headers.actions")}</span>
-              {renderIconActions("stock-ledger-icon-actions stock-ledger-icon-actions-mobile")}
+              {renderIconActions(
+                `stock-ledger-icon-actions stock-ledger-icon-actions-mobile ${styles.ledgerActions}`,
+              )}
             </div>
           </div>
         </div>

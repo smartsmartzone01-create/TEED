@@ -78,6 +78,10 @@
         "total": "Total",
         "actions": "Actions"
       },
+      "navigation": {
+        "previous": "Scroll stock information left",
+        "next": "Scroll stock information right"
+      },
       "status": {
         "received": "Received",
         "draft": "Draft",

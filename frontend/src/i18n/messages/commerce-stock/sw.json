@@ -78,6 +78,10 @@
         "total": "Jumla",
         "actions": "Hatua"
       },
+      "navigation": {
+        "previous": "Sogeza taarifa za mzigo kushoto",
+        "next": "Sogeza taarifa za mzigo kulia"
+      },
       "status": {
         "received": "Imepokelewa",
         "draft": "Rasimu",
