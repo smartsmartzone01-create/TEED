@@ -79,8 +79,8 @@
         "actions": "Actions"
       },
       "navigation": {
-        "previous": "Scroll stock information left",
-        "next": "Scroll stock information right"
+        "previous": "Move stock list left",
+        "next": "Move stock list right"
       },
       "status": {
         "received": "Received",

@@ -15,66 +15,10 @@
 }
 
 .scrollControl {
-  display: none;
+  display: none !important;
 }
 
 .ledgerActions {
   flex-direction: column !important;
   gap: 0.08rem !important;
-}
-
-@media (min-width: 768px) {
-  .scrollControl {
-    position: absolute;
-    z-index: 8;
-    top: 50%;
-    display: inline-flex;
-    width: 2rem;
-    height: 2rem;
-    align-items: center;
-    justify-content: center;
-    transform: translateY(-50%);
-    border: 1px solid rgb(203 213 225 / 0.9);
-    border-radius: 9999px;
-    background: rgb(255 255 255 / 0.92);
-    color: rgb(51 65 85);
-    box-shadow: 0 4px 14px rgb(15 23 42 / 0.14);
-    backdrop-filter: blur(4px);
-    transition:
-      background 150ms ease,
-      color 150ms ease,
-      box-shadow 150ms ease;
-  }
-
-  .scrollControl:hover,
-  .scrollControl:focus-visible {
-    background: white;
-    color: rgb(15 23 42);
-    box-shadow: 0 6px 18px rgb(15 23 42 / 0.18);
-    outline: none;
-  }
-
-  :global(.dark) .scrollControl {
-    border-color: rgb(71 85 105 / 0.9);
-    background: rgb(15 23 42 / 0.92);
-    color: rgb(226 232 240);
-  }
-
-  :global(.dark) .scrollControl:hover,
-  :global(.dark) .scrollControl:focus-visible {
-    background: rgb(30 41 59);
-    color: white;
-  }
-
-  .scrollControl[hidden] {
-    display: none !important;
-  }
-
-  .scrollControlLeft {
-    left: 0.4rem;
-  }
-
-  .scrollControlRight {
-    right: 0.4rem;
-  }
 }
