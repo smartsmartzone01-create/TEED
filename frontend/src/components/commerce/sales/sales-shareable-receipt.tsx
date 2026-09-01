@@ -20,6 +20,8 @@ type ReceiptItem = {
   quantity: string;
   amount: number;
   details: ReceiptDetail[];
+  warrantyText: string;
+  warrantyUntilText: string;
 };
 
 const finiteNumber = (value: string | number | null | undefined) => {
@@ -130,16 +132,6 @@ function useShareableSalesReceipt(sale: Sale) {
     minute: "2-digit",
   });
   const paymentText = t(sale.payment_status);
-  const warrantyText = sale.warranty_months
-    ? t("warrantyMonths", { months: sale.warranty_months })
-    : "";
-  const warrantyUntilText = sale.warranty_months
-    ? addCalendarMonths(sale.sold_at, sale.warranty_months).toLocaleDateString(locale, {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-      })
-    : "";
 
   const items: ReceiptItem[] = sale.items.map((item) => ({
     id: item.id,
@@ -151,6 +143,16 @@ function useShareableSalesReceipt(sale: Sale) {
         ),
     amount: finiteNumber(item.line_total),
     details: visibleItemDetails(item, labels),
+    warrantyText: item.warranty_months
+      ? t("warrantyMonths", { months: item.warranty_months })
+      : "",
+    warrantyUntilText: item.warranty_months
+      ? addCalendarMonths(sale.sold_at, item.warranty_months).toLocaleDateString(locale, {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+        })
+      : "",
   }));
 
   const tradeDetails = sale.trade_in
@@ -168,17 +170,16 @@ function useShareableSalesReceipt(sale: Sale) {
     `${labels.payment}: ${paymentText}`,
   ];
 
-  if (sale.warranty_months) {
-    rows.push(
-      `${labels.warranty}: ${warrantyText}`,
-      `${labels.validUntil}: ${warrantyUntilText}`,
-    );
-  }
-
   for (const item of items) {
     rows.push("", `${labels.product}: ${item.name}`);
     for (const detail of item.details) rows.push(`${detail.label}: ${detail.value}`);
     rows.push(`${labels.quantity}: ${item.quantity}`);
+    if (item.warrantyText) {
+      rows.push(
+        `${labels.warranty}: ${item.warrantyText}`,
+        `${labels.validUntil}: ${item.warrantyUntilText}`,
+      );
+    }
     if (!isTradeIn) rows.push(`${labels.amount}: ${moneyText(item.amount)}`);
   }
 
@@ -258,8 +259,6 @@ function useShareableSalesReceipt(sale: Sale) {
     discount,
     dateText,
     paymentText,
-    warrantyText,
-    warrantyUntilText,
     moneyText,
     copy,
     share,
@@ -278,8 +277,6 @@ function SalesReceiptPreview({ sale }: { sale: Sale }) {
     discount,
     dateText,
     paymentText,
-    warrantyText,
-    warrantyUntilText,
     moneyText,
   } = useShareableSalesReceipt(sale);
 
@@ -306,18 +303,6 @@ function SalesReceiptPreview({ sale }: { sale: Sale }) {
           <span className="block text-slate-500">{labels.payment}</span>
           <strong>{paymentText}</strong>
         </div>
-        {sale.warranty_months ? (
-          <>
-            <div>
-              <span className="block text-slate-500">{labels.warranty}</span>
-              <strong>{warrantyText}</strong>
-            </div>
-            <div>
-              <span className="block text-slate-500">{labels.validUntil}</span>
-              <strong>{warrantyUntilText}</strong>
-            </div>
-          </>
-        ) : null}
       </div>
 
       <div className="grid gap-2">
@@ -344,6 +329,18 @@ function SalesReceiptPreview({ sale }: { sale: Sale }) {
               <span className="text-slate-500">{labels.quantity}</span>
               <strong>{item.quantity}</strong>
             </div>
+            {item.warrantyText ? (
+              <>
+                <div className="mt-1 flex items-center justify-between gap-3 text-xs">
+                  <span className="text-slate-500">{labels.warranty}</span>
+                  <strong>{item.warrantyText}</strong>
+                </div>
+                <div className="mt-1 flex items-center justify-between gap-3 text-xs">
+                  <span className="text-slate-500">{labels.validUntil}</span>
+                  <strong>{item.warrantyUntilText}</strong>
+                </div>
+              </>
+            ) : null}
             {!isTradeIn ? (
               <div className="mt-1 flex items-center justify-between gap-3 text-xs">
                 <span className="text-slate-500">{labels.amount}</span>

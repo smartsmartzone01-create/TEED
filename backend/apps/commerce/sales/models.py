@@ -30,12 +30,6 @@ class Sale(BaseModel):
         PARTIAL = "partial", "Partial"
         UNPAID = "unpaid", "Unpaid"
 
-    class WarrantyMonths(models.IntegerChoices):
-        THREE = 3, "3 months"
-        SIX = 6, "6 months"
-        TWELVE = 12, "12 months"
-        TWENTY_FOUR = 24, "24 months"
-
     business = models.ForeignKey(
         "workspaces.Business", on_delete=models.PROTECT, related_name="sales"
     )
@@ -65,9 +59,6 @@ class Sale(BaseModel):
     cost_of_goods = models.DecimalField(max_digits=14, decimal_places=2, default=0)
     payment_status = models.CharField(
         max_length=16, choices=PaymentStatus.choices, default=PaymentStatus.PAID
-    )
-    warranty_months = models.PositiveSmallIntegerField(
-        choices=WarrantyMonths.choices, null=True, blank=True
     )
     sold_at = models.DateTimeField()
     recorded_by = models.ForeignKey(
@@ -140,6 +131,12 @@ class SaleItem(BaseModel):
         CATALOG = "catalog", "TEED product / SKU"
         MANUAL = "manual", "Independent item"
 
+    class WarrantyMonths(models.IntegerChoices):
+        THREE = 3, "3 months"
+        SIX = 6, "6 months"
+        TWELVE = 12, "12 months"
+        TWENTY_FOUR = 24, "24 months"
+
     objects = SaleItemManager()
 
     sale = models.ForeignKey(Sale, on_delete=models.CASCADE, related_name="items")
@@ -170,6 +167,9 @@ class SaleItem(BaseModel):
     line_total = models.DecimalField(max_digits=14, decimal_places=2)
     cost_total = models.DecimalField(max_digits=14, decimal_places=2, default=0)
     returned_quantity = models.DecimalField(max_digits=14, decimal_places=3, default=0)
+    warranty_months = models.PositiveSmallIntegerField(
+        choices=WarrantyMonths.choices, null=True, blank=True
+    )
 
     class Meta:
         db_table = "commerce_sale_items"

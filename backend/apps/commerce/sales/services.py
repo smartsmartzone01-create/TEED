@@ -146,6 +146,7 @@ def _record_items(*, sale, actor, business, items):
                 unit_price=unit_price,
                 line_total=line_total,
                 cost_total=cost_total,
+                warranty_months=item.get("warranty_months"),
             )
             subtotal += line_total
             total_cost += cost_total
@@ -181,6 +182,7 @@ def _record_items(*, sale, actor, business, items):
             quantity=quantity,
             unit_price=unit_price,
             line_total=line_total,
+            warranty_months=item.get("warranty_months"),
         )
         if tracked_unit_id:
             cost = _allocate_tracked_unit(
@@ -386,7 +388,6 @@ def _sale_snapshot(sale):
         "customer_region": sale.customer_region,
         "discount": str(sale.discount),
         "payment_status": sale.payment_status,
-        "warranty_months": sale.warranty_months,
         "sold_at": sale.sold_at.isoformat(),
         "trade_in": trade_in,
         "items": [
@@ -405,6 +406,7 @@ def _sale_snapshot(sale):
                 ),
                 "quantity": str(item.quantity),
                 "unit_price": str(item.unit_price),
+                "warranty_months": item.warranty_months,
             }
             for item in sale.items.all()
         ],

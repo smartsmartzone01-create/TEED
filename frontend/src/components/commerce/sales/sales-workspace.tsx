@@ -63,6 +63,7 @@ type SaleLineDraft = {
   acquisition_unit_cost: string;
   quantity: string;
   unit_price: string;
+  warranty_months: WarrantyMonths | null;
 };
 
 const emptyLine = (): SaleLineDraft => ({
@@ -78,6 +79,7 @@ const emptyLine = (): SaleLineDraft => ({
   acquisition_unit_cost: "",
   quantity: "1",
   unit_price: "",
+  warranty_months: null,
 });
 
 const nowLocal = () => {
@@ -146,7 +148,6 @@ function SalesWorkspace({ businessId }: { businessId: string }) {
   const [transactionType, setTransactionType] = useState<TransactionType>("normal");
   const [saleMode, setSaleMode] = useState<SaleMode>("stock");
   const [saleType, setSaleType] = useState<"retail" | "wholesale">("retail");
-  const [warrantyMonths, setWarrantyMonths] = useState<WarrantyMonths | null>(null);
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [customerRegion, setCustomerRegion] = useState("");
@@ -205,7 +206,6 @@ function SalesWorkspace({ businessId }: { businessId: string }) {
     setTransactionType("normal");
     setSaleMode("stock");
     setSaleType("retail");
-    setWarrantyMonths(null);
     setCustomerName("");
     setCustomerPhone("");
     setCustomerRegion("");
@@ -234,7 +234,6 @@ function SalesWorkspace({ businessId }: { businessId: string }) {
     setTransactionType(sale.transaction_type);
     setSaleMode(sale.sale_mode);
     setSaleType(sale.sale_type);
-    setWarrantyMonths(sale.warranty_months);
     setCustomerName(sale.customer_name);
     setCustomerPhone(sale.customer_phone);
     setCustomerRegion(sale.customer_region);
@@ -256,6 +255,7 @@ function SalesWorkspace({ businessId }: { businessId: string }) {
         acquisition_unit_cost: item.acquisition_unit_cost ?? "",
         quantity: item.quantity,
         unit_price: item.unit_price,
+        warranty_months: item.warranty_months,
       })),
     );
     if (sale.trade_in) {
@@ -299,6 +299,41 @@ function SalesWorkspace({ businessId }: { businessId: string }) {
       unit_price: product?.selling_price ?? "",
     });
   };
+
+  const warrantyField = (index: number, line: SaleLineDraft) => (
+    <label className={`${field} sm:max-w-56`}>
+      <span className="flex min-w-0 items-center gap-1">
+        <span className="truncate">{t("warranty")}</span>
+        <Tooltip content={t("warrantyHelp")} side="top">
+          <button
+            aria-label={t("warrantyHelp")}
+            className="inline-flex size-5 shrink-0 items-center justify-center rounded text-slate-400 transition hover:text-slate-700 dark:hover:text-slate-200"
+            type="button"
+          >
+            <CircleHelp className="size-3" />
+          </button>
+        </Tooltip>
+      </span>
+      <Select
+        className={controlClassName}
+        value={line.warranty_months == null ? "" : String(line.warranty_months)}
+        onChange={(event) =>
+          updateLine(index, {
+            warranty_months: event.target.value
+              ? (Number(event.target.value) as WarrantyMonths)
+              : null,
+          })
+        }
+      >
+        <option value="">{t("noWarranty")}</option>
+        {warrantyOptions.map((months) => (
+          <option key={months} value={months}>
+            {t("warrantyMonths", { months })}
+          </option>
+        ))}
+      </Select>
+    </label>
+  );
 
   const validate = () => {
     const outgoingValid =
@@ -345,6 +380,7 @@ function SalesWorkspace({ businessId }: { businessId: string }) {
             : {}),
           quantity: line.quantity,
           unit_price: line.unit_price,
+          warranty_months: line.warranty_months,
         };
       }
       return {
@@ -353,6 +389,7 @@ function SalesWorkspace({ businessId }: { businessId: string }) {
         ...(line.tracked_unit_id ? { tracked_unit_id: line.tracked_unit_id } : {}),
         quantity: line.tracked_unit_id ? "1" : line.quantity,
         ...(line.unit_price ? { unit_price: line.unit_price } : {}),
+        warranty_months: line.warranty_months,
       };
     });
     const incomingDetails = {
@@ -374,7 +411,6 @@ function SalesWorkspace({ businessId }: { businessId: string }) {
       customer_region: customerRegion.trim(),
       discount,
       payment_status: paymentStatus,
-      warranty_months: warrantyMonths,
       sold_at: new Date(soldAt).toISOString(),
       items,
       ...(transactionType === "trade_in"
@@ -626,6 +662,7 @@ function SalesWorkspace({ businessId }: { businessId: string }) {
                         </div>
                       </>
                     )}
+                    {warrantyField(index, line)}
                   </div>
                 );
               })}
@@ -639,42 +676,10 @@ function SalesWorkspace({ businessId }: { businessId: string }) {
               <TradeInFields draft={tradeIn} outgoingValue={outgoingValue} stockTargets={stockTargets} onChange={setTradeIn} />
             ) : null}
 
-            <div className="grid gap-2 border-t border-slate-100 pt-3 dark:border-slate-800 sm:grid-cols-4">
+            <div className="grid gap-2 border-t border-slate-100 pt-3 dark:border-slate-800 sm:grid-cols-3">
               <label className={field}>{t("discount")}<Input className={controlClassName} min="0" step="0.01" type="number" value={discount} onChange={(event) => setDiscount(event.target.value)} /></label>
               <label className={field}>{t("payment")}<Select className={controlClassName} value={paymentStatus} onChange={(event) => setPaymentStatus(event.target.value as "paid" | "partial" | "unpaid")}><option value="paid">{t("paid")}</option><option value="partial">{t("partial")}</option><option value="unpaid">{t("unpaid")}</option></Select></label>
               <label className={field}>{t("date")}<Input className={controlClassName} type="datetime-local" value={soldAt} onChange={(event) => setSoldAt(event.target.value)} /></label>
-              <label className={field}>
-                <span className="flex min-w-0 items-center gap-1">
-                  <span className="truncate">{t("warranty")}</span>
-                  <Tooltip content={t("warrantyHelp")} side="top">
-                    <button
-                      aria-label={t("warrantyHelp")}
-                      className="inline-flex size-5 shrink-0 items-center justify-center rounded text-slate-400 transition hover:text-slate-700 dark:hover:text-slate-200"
-                      type="button"
-                    >
-                      <CircleHelp className="size-3" />
-                    </button>
-                  </Tooltip>
-                </span>
-                <Select
-                  className={controlClassName}
-                  value={warrantyMonths == null ? "" : String(warrantyMonths)}
-                  onChange={(event) =>
-                    setWarrantyMonths(
-                      event.target.value
-                        ? (Number(event.target.value) as WarrantyMonths)
-                        : null,
-                    )
-                  }
-                >
-                  <option value="">{t("noWarranty")}</option>
-                  {warrantyOptions.map((months) => (
-                    <option key={months} value={months}>
-                      {t("warrantyMonths", { months })}
-                    </option>
-                  ))}
-                </Select>
-              </label>
             </div>
             <Button className="h-9 w-full text-sm sm:w-auto sm:justify-self-end" disabled={busy || !accessToken || !validate()} size="small" type="submit">
               {editing ? t("saveEdit") : t("save")}
@@ -717,6 +722,11 @@ function SalesWorkspace({ businessId }: { businessId: string }) {
                           <p className="mt-1 wrap-break-word text-sm text-slate-500">
                             {[item.product_sku, item.quantity !== "1.000" ? `${money(item.quantity)} × ${money(item.unit_price)}` : ""].filter(Boolean).join(" · ")}
                           </p>
+                          {item.warranty_months ? (
+                            <p className="mt-1 text-xs font-semibold text-slate-600 dark:text-slate-300">
+                              {t("warranty")}: {t("warrantyMonths", { months: item.warranty_months })}
+                            </p>
+                          ) : null}
                           {details.length ? (
                             <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-500">
                               {details.map(([label, value]) => (

@@ -47,6 +47,11 @@ const trackedSaleUnitDetailsSchema = z.object({
   identifiers: z.array(trackedIdentifierSchema),
 });
 
+const warrantyMonthsSchema = z
+  .union([z.literal(3), z.literal(6), z.literal(12), z.literal(24)])
+  .nullable()
+  .default(null);
+
 const saleItemSchema = z
   .object({
     id: z.string(),
@@ -66,6 +71,7 @@ const saleItemSchema = z
     line_total: decimal,
     cost_total: decimal.optional(),
     returned_quantity: decimal,
+    warranty_months: warrantyMonthsSchema,
   })
   .passthrough();
 
@@ -81,11 +87,6 @@ const tradeInDetailSchema = z.object({
   stock_receipt: z.string().nullable(),
   stock_receipt_reference: z.string(),
 });
-
-const warrantyMonthsSchema = z
-  .union([z.literal(3), z.literal(6), z.literal(12), z.literal(24)])
-  .nullable()
-  .default(null);
 
 const saleSchema = z
   .object({
@@ -103,7 +104,6 @@ const saleSchema = z
     cost_of_goods: decimal.optional(),
     gross_profit: decimal.optional(),
     payment_status: z.enum(["paid", "partial", "unpaid"]),
-    warranty_months: warrantyMonthsSchema,
     sold_at: z.string(),
     items: z.array(saleItemSchema),
     trade_in: tradeInDetailSchema.nullable(),

@@ -38,6 +38,8 @@ type TrackedSaleUnitDetails = {
   identifiers: Array<{ kind: string; value: string }>;
 };
 
+type WarrantyMonths = 3 | 6 | 12 | 24;
+
 type SaleItem = {
   id: string;
   source: "catalog" | "manual";
@@ -56,6 +58,7 @@ type SaleItem = {
   line_total: string;
   cost_total?: string;
   returned_quantity: string;
+  warranty_months: WarrantyMonths | null;
 };
 
 type TradeInDetail = {
@@ -70,8 +73,6 @@ type TradeInDetail = {
   stock_receipt: string | null;
   stock_receipt_reference: string;
 };
-
-type WarrantyMonths = 3 | 6 | 12 | 24;
 
 type Sale = {
   id: string;
@@ -88,7 +89,6 @@ type Sale = {
   cost_of_goods?: string;
   gross_profit?: string;
   payment_status: "paid" | "partial" | "unpaid";
-  warranty_months: WarrantyMonths | null;
   sold_at: string;
   items: SaleItem[];
   trade_in: TradeInDetail | null;

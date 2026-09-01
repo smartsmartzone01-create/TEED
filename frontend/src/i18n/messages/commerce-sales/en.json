@@ -58,7 +58,7 @@
     "retail": "Retail",
     "wholesale": "Wholesale",
     "warranty": "Warranty",
-    "warrantyHelp": "Optional warranty period. It starts from the recorded sale date and applies to this sale.",
+    "warrantyHelp": "Optional warranty for this product. It starts from the recorded sale date.",
     "noWarranty": "No warranty",
     "warrantyMonths": "{months, plural, one {# month} other {# months}}",
     "customerName": "Customer name",
