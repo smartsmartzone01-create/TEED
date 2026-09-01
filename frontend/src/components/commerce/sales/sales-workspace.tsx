@@ -1,9 +1,13 @@
 "use client";
 
-import { CircleHelp, Copy, Plus, Printer, Share2, X } from "lucide-react";
+import { CircleHelp, Plus, X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 
+import {
+  SalesReceiptDialog,
+  SalesReceiptIconActions,
+} from "@/components/commerce/sales/sales-shareable-receipt";
 import { SalesStatusCard } from "@/components/commerce/sales/sales-status-card";
 import {
   TradeInFields,
@@ -121,72 +125,6 @@ function itemDetailRows(item: SaleItem) {
     .map(([key, value]) => [key.replaceAll("_", " "), value]);
 }
 
-function saleSummary(sale: Sale) {
-  const lines = sale.items.flatMap((item, index) => {
-    const details = itemDetailRows(item).map(([label, value]) => `${label}: ${value}`);
-    return [
-      `Item ${index + 1}: ${item.product_name || item.item_name}`,
-      item.product_sku ? `SKU: ${item.product_sku}` : "",
-      ...details,
-      `Quantity: ${item.quantity}`,
-      `Selling price: ${money(item.unit_price)}`,
-      `Line total: ${money(item.line_total)}`,
-      "",
-    ].filter((value) => value !== "");
-  });
-  const trade = sale.trade_in
-    ? [
-        "TRADE-IN",
-        `Received item: ${sale.trade_in.incoming_item_name}`,
-        `Trade-in value: ${money(sale.trade_in.incoming_value)}`,
-        `Cash top-up: ${money(sale.trade_in.cash_top_up)}`,
-        sale.trade_in.stock_receipt_reference
-          ? `Added to stock: ${sale.trade_in.stock_receipt_reference}`
-          : "",
-        "",
-      ].filter(Boolean)
-    : [];
-  return [
-    "SALE SUMMARY",
-    `Receipt: ${sale.receipt_number}`,
-    `Transaction: ${sale.transaction_type}`,
-    `Source: ${sale.sale_mode}`,
-    `Market: ${sale.sale_type}`,
-    `Date: ${new Date(sale.sold_at).toLocaleString()}`,
-    `Customer: ${sale.customer_name || "—"}`,
-    `Phone: ${sale.customer_phone || "—"}`,
-    `Region: ${sale.customer_region || "—"}`,
-    "",
-    ...lines,
-    ...trade,
-    `Payment: ${sale.payment_status}`,
-    `Discount: ${money(sale.discount)}`,
-    `Total sale value: ${money(sale.total)}`,
-  ].join("\n");
-}
-
-function printText(text: string) {
-  const frame = document.createElement("iframe");
-  frame.style.position = "fixed";
-  frame.style.width = "0";
-  frame.style.height = "0";
-  frame.style.border = "0";
-  document.body.appendChild(frame);
-  const doc = frame.contentDocument;
-  if (!doc) {
-    frame.remove();
-    return;
-  }
-  doc.open();
-  doc.write(`<!doctype html><html><head><title>Sale summary</title><style>body{font-family:Arial,sans-serif;padding:32px;white-space:pre-wrap;line-height:1.55;font-size:13px}</style></head><body>${text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;")}</body></html>`);
-  doc.close();
-  window.setTimeout(() => {
-    frame.contentWindow?.focus();
-    frame.contentWindow?.print();
-    window.setTimeout(() => frame.remove(), 1000);
-  }, 150);
-}
-
 function SalesWorkspace({ businessId }: { businessId: string }) {
   const t = useTranslations("CommerceSales");
   const locale = useLocale();
@@ -215,6 +153,8 @@ function SalesWorkspace({ businessId }: { businessId: string }) {
   const [lines, setLines] = useState<SaleLineDraft[]>([emptyLine()]);
   const [tradeIn, setTradeIn] = useState<TradeInDraft>(emptyTradeInDraft());
   const [busy, setBusy] = useState(false);
+  const [savedSale, setSavedSale] = useState<Sale | null>(null);
+  const [receiptDialogOpen, setReceiptDialogOpen] = useState(false);
 
   const load = useCallback(
     async (signal?: AbortSignal) => {
@@ -455,7 +395,11 @@ function SalesWorkspace({ businessId }: { businessId: string }) {
         await updateSale(businessId, editing.id, accessToken, body);
         notify({ message: t("saleEdited"), tone: "success" });
       } else {
-        await createSale(businessId, accessToken, body);
+        const response = await createSale(businessId, accessToken, body);
+        if (response.data) {
+          setSavedSale(response.data);
+          setReceiptDialogOpen(true);
+        }
         notify({ message: t("saleSaved"), tone: "success" });
       }
       resetForm();
@@ -487,21 +431,6 @@ function SalesWorkspace({ businessId }: { businessId: string }) {
         message: reasonValue instanceof Error ? reasonValue.message : t("saveError"),
         tone: "error",
       });
-    }
-  };
-
-  const copySale = async (sale: Sale) => {
-    await navigator.clipboard.writeText(saleSummary(sale));
-    notify({ message: t("copied"), tone: "success" });
-  };
-
-  const shareSale = async (sale: Sale) => {
-    const text = saleSummary(sale);
-    if (navigator.share) {
-      await navigator.share({ title: sale.receipt_number, text });
-    } else {
-      await navigator.clipboard.writeText(text);
-      notify({ message: t("copied"), tone: "success" });
     }
   };
 
@@ -552,28 +481,31 @@ function SalesWorkspace({ businessId }: { businessId: string }) {
               </Button>
             </div>
 
-            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-              <label className={field}>
-                {t("transactionType")}
-                <Select className={controlClassName} value={transactionType} onChange={(event) => { setTransactionType(event.target.value as TransactionType); setTradeIn(emptyTradeInDraft()); }}>
+            <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
+              <label className={`${field} min-w-0`}>
+                <span className="truncate">{t("transactionType")}</span>
+                <Select className={`${controlClassName} min-w-0 px-2 text-xs sm:text-sm`} value={transactionType} onChange={(event) => { setTransactionType(event.target.value as TransactionType); setTradeIn(emptyTradeInDraft()); }}>
                   <option value="normal">{t("normalSale")}</option>
                   <option value="trade_in">{t("tradeIn")}</option>
                 </Select>
               </label>
-              <label className={field}>
-                {t("saleSource")}
-                <Select className={controlClassName} value={saleMode} onChange={(event) => { setSaleMode(event.target.value as SaleMode); setLines([emptyLine()]); }}>
+              <label className={`${field} min-w-0`}>
+                <span className="truncate">{t("saleSource")}</span>
+                <Select className={`${controlClassName} min-w-0 px-2 text-xs sm:text-sm`} value={saleMode} onChange={(event) => { setSaleMode(event.target.value as SaleMode); setLines([emptyLine()]); }}>
                   <option value="stock">{t("fromStock")}</option>
                   <option value="independent">{t("independentSale")}</option>
                 </Select>
               </label>
-              <label className={field}>
-                {t("marketType")}
-                <Select className={controlClassName} value={saleType} onChange={(event) => setSaleType(event.target.value as "retail" | "wholesale")}>
+              <label className={`${field} min-w-0`}>
+                <span className="truncate">{t("marketType")}</span>
+                <Select className={`${controlClassName} min-w-0 px-2 text-xs sm:text-sm`} value={saleType} onChange={(event) => setSaleType(event.target.value as "retail" | "wholesale")}>
                   <option value="retail">{t("retail")}</option>
                   <option value="wholesale">{t("wholesale")}</option>
                 </Select>
               </label>
+            </div>
+
+            <div className="grid gap-2 sm:grid-cols-3">
               <label className={field}>{t("customerName")}<Input className={controlClassName} value={customerName} onChange={(event) => setCustomerName(event.target.value)} /></label>
               <label className={field}>{t("customerPhone")}<Input className={controlClassName} value={customerPhone} onChange={(event) => setCustomerPhone(event.target.value)} /></label>
               <label className={field}>{t("customerRegion")}<Input className={controlClassName} value={customerRegion} onChange={(event) => setCustomerRegion(event.target.value)} /></label>
@@ -780,9 +712,7 @@ function SalesWorkspace({ businessId }: { businessId: string }) {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3 dark:border-slate-800 lg:border-t-0 lg:pt-0">
-                  <button aria-label={t("copySummary")} className="rounded-lg border border-slate-200 p-2 dark:border-slate-800" title={t("copySummary")} type="button" onClick={() => void copySale(sale)}><Copy className="size-4" /></button>
-                  <button aria-label={t("shareSummary")} className="rounded-lg border border-slate-200 p-2 dark:border-slate-800" title={t("shareSummary")} type="button" onClick={() => void shareSale(sale)}><Share2 className="size-4" /></button>
-                  <button aria-label={t("printSummary")} className="rounded-lg border border-slate-200 p-2 dark:border-slate-800" title={t("printSummary")} type="button" onClick={() => printText(saleSummary(sale))}><Printer className="size-4" /></button>
+                  <SalesReceiptIconActions sale={sale} />
                   <Button disabled={tradeLocked} size="small" title={tradeLocked ? t("tradeStockLocked") : undefined} type="button" variant="outline" onClick={() => beginEdit(sale)}>{t("edit")}</Button>
                   {permissions.includes("commerce.sales.void") ? <Button disabled={tradeLocked} size="small" title={tradeLocked ? t("tradeStockLocked") : undefined} type="button" variant="ghost" onClick={() => void onVoid(sale)}>{t("void")}</Button> : null}
                 </div>
@@ -792,6 +722,14 @@ function SalesWorkspace({ businessId }: { businessId: string }) {
         })}
         {!sales.length ? <div className={panel}><p className="text-sm text-slate-500">{t("noSales")}</p></div> : null}
       </section>
+
+      {savedSale ? (
+        <SalesReceiptDialog
+          onClose={() => setReceiptDialogOpen(false)}
+          open={receiptDialogOpen}
+          sale={savedSale}
+        />
+      ) : null}
     </section>
   );
 }
