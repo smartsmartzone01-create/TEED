@@ -1,9 +1,9 @@
+import common.database.uuid
 import django.db.models.deletion
 from django.conf import settings
 from django.db import migrations, models
 
 import apps.commerce.financing.models
-import common.database.uuid
 
 
 class Migration(migrations.Migration):

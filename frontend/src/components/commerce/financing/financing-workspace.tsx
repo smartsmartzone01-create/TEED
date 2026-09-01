@@ -237,6 +237,7 @@ function FinancingWorkspace({ businessId }: { businessId: string }) {
   }, [
     availability,
     contractTotal,
+    customerName,
     financingMode,
     installmentAmount,
     lines,

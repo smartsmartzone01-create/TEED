@@ -76,7 +76,9 @@ class NotificationListAPIView(NotificationBaseAPIView):
                 }
             )
         if business_id and scope == UserNotification.Scope.WORKSPACE:
-            from apps.commerce.financing.services import sync_financing_due_notifications
+            from apps.commerce.financing.services import (
+                sync_financing_due_notifications,
+            )
 
             try:
                 sync_financing_due_notifications(
