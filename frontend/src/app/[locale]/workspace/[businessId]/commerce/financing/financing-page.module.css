@@ -1,0 +1,112 @@
+.page > section > section:last-of-type > article {
+  border-inline-start-width: 3px;
+}
+
+.page > section > section:last-of-type > article:nth-of-type(odd) {
+  border-inline-start-color: var(--workspace-primary, var(--brand-navy));
+}
+
+.page > section > section:last-of-type > article:nth-of-type(even) {
+  border-inline-start-color: var(--workspace-secondary, var(--brand-orange));
+}
+
+.page > section > section:last-of-type > article > div:nth-of-type(2) {
+  align-items: center;
+}
+
+.page > section > section:last-of-type > article > div:nth-of-type(2) > button:nth-child(-n + 3) {
+  position: relative;
+  inline-size: 2rem;
+  padding-inline: 0;
+  overflow: visible;
+  font-size: 0;
+}
+
+.page > section > section:last-of-type > article > div:nth-of-type(2) > button:nth-child(1) {
+  --financing-action-label: "Copy";
+}
+
+.page > section > section:last-of-type > article > div:nth-of-type(2) > button:nth-child(2) {
+  --financing-action-label: "Share";
+}
+
+.page > section > section:last-of-type > article > div:nth-of-type(2) > button:nth-child(3) {
+  --financing-action-label: "Print";
+}
+
+html[lang^="sw"] .page > section > section:last-of-type > article > div:nth-of-type(2) > button:nth-child(1) {
+  --financing-action-label: "Nakili";
+}
+
+html[lang^="sw"] .page > section > section:last-of-type > article > div:nth-of-type(2) > button:nth-child(2) {
+  --financing-action-label: "Shiriki";
+}
+
+html[lang^="sw"] .page > section > section:last-of-type > article > div:nth-of-type(2) > button:nth-child(3) {
+  --financing-action-label: "Chapisha";
+}
+
+.page > section > section:last-of-type > article > div:nth-of-type(2) > button:nth-child(-n + 3)::after {
+  position: absolute;
+  inset-block-end: calc(100% + 0.45rem);
+  inset-inline-start: 50%;
+  z-index: 20;
+  width: max-content;
+  max-width: 10rem;
+  padding: 0.3rem 0.5rem;
+  border-radius: 0.4rem;
+  background: var(--brand-navy);
+  color: white;
+  content: var(--financing-action-label);
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1rem;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 0.2rem);
+  transition: opacity 120ms ease, transform 120ms ease;
+  white-space: nowrap;
+}
+
+.page > section > section:last-of-type > article > div:nth-of-type(2) > button:nth-child(-n + 3):hover::after,
+.page > section > section:last-of-type > article > div:nth-of-type(2) > button:nth-child(-n + 3):focus-visible::after {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.page > section > section:last-of-type > article > div:nth-of-type(2) > button:nth-child(4) > svg,
+.page > section > section:last-of-type > article > div:nth-of-type(2) > button:nth-child(5) > svg {
+  display: none;
+}
+
+.page > section > section:last-of-type > article > div:nth-of-type(2) > button:nth-child(4)::before,
+.page > section > section:last-of-type > article > div:nth-of-type(2) > button:nth-child(5)::before {
+  display: inline-block;
+  width: 0.875rem;
+  height: 0.875rem;
+  flex: 0 0 auto;
+  background: currentColor;
+  content: "";
+  mask-position: center;
+  mask-repeat: no-repeat;
+  mask-size: contain;
+  -webkit-mask-position: center;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-size: contain;
+}
+
+.page > section > section:last-of-type > article > div:nth-of-type(2) > button:nth-child(4)::before {
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='9' fill='none' stroke='black' stroke-width='2'/%3E%3Cpath d='M12 7v5l3 2' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='9' fill='none' stroke='black' stroke-width='2'/%3E%3Cpath d='M12 7v5l3 2' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+.page > section > section:last-of-type > article > div:nth-of-type(2) > button:nth-child(5)::before {
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m22 2-7 20-4-9-9-4Z' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M22 2 11 13' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m22 2-7 20-4-9-9-4Z' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M22 2 11 13' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+}
+
+@media (min-width: 640px) {
+  .page > section > section:last-of-type > article > div:nth-of-type(2) > button:nth-child(4) {
+    margin-inline-start: auto;
+  }
+}
