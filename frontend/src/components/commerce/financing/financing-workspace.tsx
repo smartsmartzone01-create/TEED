@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Copy,
@@ -729,92 +730,135 @@ function FinancingWorkspace({ businessId }: { businessId: string }) {
           ) : null}
 
           {step === 4 ? (
-            <div className="grid gap-3 text-sm">
+            <div className="grid gap-2 text-sm">
               <p className="text-xs text-slate-500">{t("reviewHint")}</p>
 
-              <section className="rounded-lg border border-slate-200 p-3 dark:border-slate-800">
-                <h3 className="text-xs font-bold uppercase tracking-wide text-slate-500">{t("reviewSetup")}</h3>
-                <div className="mt-2 grid grid-cols-2 gap-2 text-xs sm:grid-cols-5">
-                  <div><span className="block text-slate-500">{t("agreementType")}</span><strong>{t(agreementType)}</strong></div>
-                  <div><span className="block text-slate-500">{t("transactionType")}</span><strong>{t(transactionType === "trade_in" ? "tradeIn" : transactionType)}</strong></div>
-                  <div><span className="block text-slate-500">{t("source")}</span><strong>{t(source === "stock" ? "stock" : "independent")}</strong></div>
-                  <div><span className="block text-slate-500">{t("marketType")}</span><strong>{t(marketType)}</strong></div>
-                  <div><span className="block text-slate-500">{t("financingMode")}</span><strong>{t(financingMode === "partner" ? "partnerFinanced" : "businessFinanced")}</strong></div>
+              <details className="group rounded-lg border border-slate-200 dark:border-slate-800">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2.5">
+                  <div className="min-w-0">
+                    <h3 className="text-xs font-bold uppercase tracking-wide text-slate-500">{t("reviewSetup")}</h3>
+                    <p className="mt-0.5 truncate text-xs text-slate-700 dark:text-slate-300">
+                      {t(agreementType)} · {t(source === "stock" ? "stock" : "independent")} · {t(financingMode === "partner" ? "partnerFinanced" : "businessFinanced")}
+                    </p>
+                  </div>
+                  <ChevronDown className="size-4 shrink-0 text-slate-400 transition-transform group-open:rotate-180" />
+                </summary>
+                <div className="border-t border-slate-100 px-3 py-3 dark:border-slate-800">
+                  <div className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-5">
+                    <div><span className="block text-slate-500">{t("agreementType")}</span><strong>{t(agreementType)}</strong></div>
+                    <div><span className="block text-slate-500">{t("transactionType")}</span><strong>{t(transactionType === "trade_in" ? "tradeIn" : transactionType)}</strong></div>
+                    <div><span className="block text-slate-500">{t("source")}</span><strong>{t(source === "stock" ? "stock" : "independent")}</strong></div>
+                    <div><span className="block text-slate-500">{t("marketType")}</span><strong>{t(marketType)}</strong></div>
+                    <div><span className="block text-slate-500">{t("financingMode")}</span><strong>{t(financingMode === "partner" ? "partnerFinanced" : "businessFinanced")}</strong></div>
+                  </div>
                 </div>
-              </section>
+              </details>
 
-              <section className="rounded-lg border border-slate-200 p-3 dark:border-slate-800">
-                <h3 className="text-xs font-bold uppercase tracking-wide text-slate-500">{t("reviewCustomer")}</h3>
-                <div className="mt-2 grid grid-cols-2 gap-2 text-xs sm:grid-cols-3">
-                  <div><span className="block text-slate-500">{t("customerName")}</span><strong>{customerName}</strong></div>
-                  <div><span className="block text-slate-500">{t("customerPhone")}</span><strong>{customerPhone || t("notProvided")}</strong></div>
-                  <div><span className="block text-slate-500">{t("customerRegion")}</span><strong>{customerRegion || t("notProvided")}</strong></div>
+              <details className="group rounded-lg border border-slate-200 dark:border-slate-800">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2.5">
+                  <div className="min-w-0">
+                    <h3 className="text-xs font-bold uppercase tracking-wide text-slate-500">{t("reviewCustomer")}</h3>
+                    <p className="mt-0.5 truncate text-xs text-slate-700 dark:text-slate-300">
+                      {customerName}{customerRegion ? ` · ${customerRegion}` : customerPhone ? ` · ${customerPhone}` : ""}
+                    </p>
+                  </div>
+                  <ChevronDown className="size-4 shrink-0 text-slate-400 transition-transform group-open:rotate-180" />
+                </summary>
+                <div className="border-t border-slate-100 px-3 py-3 dark:border-slate-800">
+                  <div className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-3">
+                    <div><span className="block text-slate-500">{t("customerName")}</span><strong>{customerName}</strong></div>
+                    <div><span className="block text-slate-500">{t("customerPhone")}</span><strong>{customerPhone || t("notProvided")}</strong></div>
+                    <div><span className="block text-slate-500">{t("customerRegion")}</span><strong>{customerRegion || t("notProvided")}</strong></div>
+                  </div>
                 </div>
-              </section>
+              </details>
 
-              <section className="grid gap-2 rounded-lg border border-slate-200 p-3 dark:border-slate-800">
-                <h3 className="text-xs font-bold uppercase tracking-wide text-slate-500">{t("reviewProducts")}</h3>
-                {lines.map((line, index) => {
-                  const product = availability.find((item) => item.id === line.product_id);
-                  const trackedUnit = product?.available_units.find((unit) => unit.id === line.tracked_unit_id);
-                  const quantity = trackedUnit ? 1 : Number(line.quantity || 0);
-                  const acquisitionUnitCost = source === "independent"
-                    ? line.acquisition_unit_cost
-                    : trackedUnit?.acquisition_unit_cost ?? product?.acquisition_unit_cost ?? "";
-                  const acquisitionTotal = acquisitionUnitCost
-                    ? Number(acquisitionUnitCost) * quantity
-                    : null;
-                  const productName = source === "stock" ? product?.name ?? "—" : line.item_name;
-                  const identityRows = source === "independent"
-                    ? [
-                        [t("acquiredFrom"), line.acquired_from],
-                        [t("brand"), line.brand],
-                        [t("modelName"), line.model_name],
-                        [t("color"), line.color],
-                        [t("capacitySize"), line.capacity_size],
-                        [line.identifier_type || t("identifierType"), line.identifier_value],
-                      ]
-                    : [
-                        [t("sku"), product?.sku ?? ""],
-                        [t("brand"), trackedUnit?.brand ?? ""],
-                        [t("modelName"), trackedUnit?.model_name ?? ""],
-                        [t("color"), trackedUnit?.color ?? ""],
-                        [t("capacitySize"), trackedUnit?.capacity ?? ""],
-                        ...(trackedUnit?.identifiers.map((identifier) => [identifier.kind.toUpperCase(), identifier.value]) ?? []),
-                      ];
-                  return (
-                    <div className="rounded-md bg-slate-50 p-3 dark:bg-slate-900/60" key={`${productName}-${index}`}>
-                      <strong className="block">{productName}</strong>
-                      <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-xs sm:grid-cols-3">
-                        {identityRows.filter(([, value]) => Boolean(value)).map(([label, value]) => (
-                          <div key={`${label}-${value}`}><span className="block text-slate-500">{label}</span><strong className="wrap-anywhere">{value}</strong></div>
-                        ))}
-                        <div><span className="block text-slate-500">{t("quantity")}</span><strong>{source === "stock" && product?.unit ? formatQuantityWithUnit(String(quantity), product.unit, locale) : quantity}</strong></div>
-                        <div><span className="block text-slate-500">{t("unitPrice")}</span><strong>{money(line.unit_price || 0, locale)}</strong></div>
-                        <div><span className="block text-slate-500">{t("sellingTotal")}</span><strong>{money(quantity * Number(line.unit_price || 0), locale)}</strong></div>
-                        <div><span className="block text-slate-500">{t("acquisitionTotal")}</span><strong>{acquisitionTotal == null ? t("notProvided") : money(acquisitionTotal, locale)}</strong></div>
-                        <div><span className="block text-slate-500">{t("warranty")}</span><strong>{line.warranty_months ? t("warrantyMonths", { months: line.warranty_months }) : t("noWarranty")}</strong></div>
+              <details className="group rounded-lg border border-slate-200 dark:border-slate-800">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2.5">
+                  <div className="min-w-0">
+                    <h3 className="text-xs font-bold uppercase tracking-wide text-slate-500">{t("reviewProducts")}</h3>
+                    <p className="mt-0.5 truncate text-xs text-slate-700 dark:text-slate-300">
+                      {source === "stock"
+                        ? availability.find((item) => item.id === lines[0]?.product_id)?.name ?? "—"
+                        : lines[0]?.item_name || "—"}
+                      {lines.length > 1 ? ` · +${lines.length - 1}` : ""}
+                    </p>
+                  </div>
+                  <ChevronDown className="size-4 shrink-0 text-slate-400 transition-transform group-open:rotate-180" />
+                </summary>
+                <div className="grid gap-2 border-t border-slate-100 px-3 py-3 dark:border-slate-800">
+                  {lines.map((line, index) => {
+                    const product = availability.find((item) => item.id === line.product_id);
+                    const trackedUnit = product?.available_units.find((unit) => unit.id === line.tracked_unit_id);
+                    const quantity = trackedUnit ? 1 : Number(line.quantity || 0);
+                    const acquisitionUnitCost = source === "independent"
+                      ? line.acquisition_unit_cost
+                      : trackedUnit?.acquisition_unit_cost ?? product?.acquisition_unit_cost ?? "";
+                    const acquisitionTotal = acquisitionUnitCost
+                      ? Number(acquisitionUnitCost) * quantity
+                      : null;
+                    const productName = source === "stock" ? product?.name ?? "—" : line.item_name;
+                    const identityRows = source === "independent"
+                      ? [
+                          [t("acquiredFrom"), line.acquired_from],
+                          [t("brand"), line.brand],
+                          [t("modelName"), line.model_name],
+                          [t("color"), line.color],
+                          [t("capacitySize"), line.capacity_size],
+                          [line.identifier_type || t("identifierType"), line.identifier_value],
+                        ]
+                      : [
+                          [t("sku"), product?.sku ?? ""],
+                          [t("brand"), trackedUnit?.brand ?? ""],
+                          [t("modelName"), trackedUnit?.model_name ?? ""],
+                          [t("color"), trackedUnit?.color ?? ""],
+                          [t("capacitySize"), trackedUnit?.capacity ?? ""],
+                          ...(trackedUnit?.identifiers.map((identifier) => [identifier.kind.toUpperCase(), identifier.value]) ?? []),
+                        ];
+                    return (
+                      <div className="rounded-md bg-slate-50 p-3 dark:bg-slate-900/60" key={`${productName}-${index}`}>
+                        <strong className="block">{productName}</strong>
+                        <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-xs sm:grid-cols-3">
+                          {identityRows.filter(([, value]) => Boolean(value)).map(([label, value]) => (
+                            <div key={`${label}-${value}`}><span className="block text-slate-500">{label}</span><strong className="wrap-anywhere">{value}</strong></div>
+                          ))}
+                          <div><span className="block text-slate-500">{t("quantity")}</span><strong>{source === "stock" && product?.unit ? formatQuantityWithUnit(String(quantity), product.unit, locale) : quantity}</strong></div>
+                          <div><span className="block text-slate-500">{t("unitPrice")}</span><strong>{money(line.unit_price || 0, locale)}</strong></div>
+                          <div><span className="block text-slate-500">{t("sellingTotal")}</span><strong>{money(quantity * Number(line.unit_price || 0), locale)}</strong></div>
+                          <div><span className="block text-slate-500">{t("acquisitionTotal")}</span><strong>{acquisitionTotal == null ? t("notProvided") : money(acquisitionTotal, locale)}</strong></div>
+                          <div><span className="block text-slate-500">{t("warranty")}</span><strong>{line.warranty_months ? t("warrantyMonths", { months: line.warranty_months }) : t("noWarranty")}</strong></div>
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </section>
-
-              <section className="rounded-lg border border-slate-200 p-3 dark:border-slate-800">
-                <h3 className="text-xs font-bold uppercase tracking-wide text-slate-500">{t("reviewTerms")}</h3>
-                <div className="mt-2 grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
-                  <div><span className="block text-slate-500">{t("contractTotal")}</span><strong>{money(contractTotal || 0, locale)}</strong></div>
-                  <div><span className="block text-slate-500">{t("initialContribution")}</span><strong>{money((transactionType === "upfront" ? Number(upfrontCash || 0) : 0) + (transactionType === "trade_in" ? Number(tradeInCredit || 0) : 0), locale)}</strong></div>
-                  {transactionType === "upfront" ? <div><span className="block text-slate-500">{t("upfrontCash")}</span><strong>{money(upfrontCash || 0, locale)}</strong></div> : null}
-                  {transactionType === "trade_in" ? <><div><span className="block text-slate-500">{t("tradeInItem")}</span><strong>{tradeInItem}</strong></div><div><span className="block text-slate-500">{t("tradeInCredit")}</span><strong>{money(tradeInCredit || 0, locale)}</strong></div></> : null}
-                  <div><span className="block text-slate-500">{t("installmentAmount")}</span><strong>{money(installmentAmount || 0, locale)}</strong></div>
-                  <div><span className="block text-slate-500">{t("frequency")}</span><strong>{t(frequency)}</strong></div>
-                  <div><span className="block text-slate-500">{t("nextDueDate")}</span><strong>{nextDueDate}</strong></div>
-                  {agreementType === "installment" ? <div><span className="block text-slate-500">{t("releaseThreshold")}</span><strong>{releaseThreshold}%</strong></div> : null}
-                  {financingMode === "partner" ? <><div><span className="block text-slate-500">{t("partnerName")}</span><strong>{partnerName}</strong></div><div><span className="block text-slate-500">{t("partnerSettlement")}</span><strong>{money(partnerSettlement || 0, locale)}</strong></div><div><span className="block text-slate-500">{t("businessCommission")}</span><strong>{money(businessCommission || 0, locale)}</strong></div></> : null}
-                  {notes ? <div className="col-span-2 sm:col-span-4"><span className="block text-slate-500">{t("notes")}</span><strong>{notes}</strong></div> : null}
+                    );
+                  })}
                 </div>
-              </section>
+              </details>
+
+              <details className="group rounded-lg border border-slate-200 dark:border-slate-800">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2.5">
+                  <div className="min-w-0">
+                    <h3 className="text-xs font-bold uppercase tracking-wide text-slate-500">{t("reviewTerms")}</h3>
+                    <p className="mt-0.5 truncate text-xs text-slate-700 dark:text-slate-300">
+                      {t("contractTotal")}: {money(contractTotal || 0, locale)} · {t("installmentAmount")}: {money(installmentAmount || 0, locale)}
+                    </p>
+                  </div>
+                  <ChevronDown className="size-4 shrink-0 text-slate-400 transition-transform group-open:rotate-180" />
+                </summary>
+                <div className="border-t border-slate-100 px-3 py-3 dark:border-slate-800">
+                  <div className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
+                    <div><span className="block text-slate-500">{t("contractTotal")}</span><strong>{money(contractTotal || 0, locale)}</strong></div>
+                    <div><span className="block text-slate-500">{t("initialContribution")}</span><strong>{money((transactionType === "upfront" ? Number(upfrontCash || 0) : 0) + (transactionType === "trade_in" ? Number(tradeInCredit || 0) : 0), locale)}</strong></div>
+                    {transactionType === "upfront" ? <div><span className="block text-slate-500">{t("upfrontCash")}</span><strong>{money(upfrontCash || 0, locale)}</strong></div> : null}
+                    {transactionType === "trade_in" ? <><div><span className="block text-slate-500">{t("tradeInItem")}</span><strong>{tradeInItem}</strong></div><div><span className="block text-slate-500">{t("tradeInCredit")}</span><strong>{money(tradeInCredit || 0, locale)}</strong></div></> : null}
+                    <div><span className="block text-slate-500">{t("installmentAmount")}</span><strong>{money(installmentAmount || 0, locale)}</strong></div>
+                    <div><span className="block text-slate-500">{t("frequency")}</span><strong>{t(frequency)}</strong></div>
+                    <div><span className="block text-slate-500">{t("nextDueDate")}</span><strong>{nextDueDate}</strong></div>
+                    {agreementType === "installment" ? <div><span className="block text-slate-500">{t("releaseThreshold")}</span><strong>{releaseThreshold}%</strong></div> : null}
+                    {financingMode === "partner" ? <><div><span className="block text-slate-500">{t("partnerName")}</span><strong>{partnerName}</strong></div><div><span className="block text-slate-500">{t("partnerSettlement")}</span><strong>{money(partnerSettlement || 0, locale)}</strong></div><div><span className="block text-slate-500">{t("businessCommission")}</span><strong>{money(businessCommission || 0, locale)}</strong></div></> : null}
+                    {notes ? <div className="col-span-2 sm:col-span-4"><span className="block text-slate-500">{t("notes")}</span><strong>{notes}</strong></div> : null}
+                  </div>
+                </div>
+              </details>
             </div>
           ) : null}
 
