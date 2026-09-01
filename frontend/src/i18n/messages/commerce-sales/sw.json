@@ -9,6 +9,9 @@
     "salesActionsHelp": "Rekodi mauzo mapya au pitia historia yako ya mauzo ya hivi karibuni.",
     "viewSaleHistory": "Angalia historia ya mauzo",
     "closeRecorder": "Funga sehemu ya kurekodi",
+    "viewDetails": "Angalia maelezo",
+    "hideDetails": "Ficha maelezo",
+    "moreItems": "+{count} zaidi",
     "status": {
       "title": "Hali ya mauzo",
       "context": "Kulingana na mauzo halali",

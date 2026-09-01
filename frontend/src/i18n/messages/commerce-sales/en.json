@@ -9,6 +9,9 @@
     "salesActionsHelp": "Record a new sale or review your recent sales history.",
     "viewSaleHistory": "View sale history",
     "closeRecorder": "Close recorder",
+    "viewDetails": "View details",
+    "hideDetails": "Hide details",
+    "moreItems": "+{count} more",
     "status": {
       "title": "Sales status",
       "context": "Based on active sales",

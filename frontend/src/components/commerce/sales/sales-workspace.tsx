@@ -1,6 +1,6 @@
 "use client";
 
-import { CircleHelp, Plus, X } from "lucide-react";
+import { ChevronDown, ChevronUp, CircleHelp, Plus, X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 
@@ -40,7 +40,7 @@ import type {
 import { formatQuantityWithUnit } from "@/utils/commerce/quantity";
 
 const panel =
-  "rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950";
+  "rounded-lg border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-950 sm:p-4";
 const recorderPanel =
   "grid gap-3 rounded-lg border border-slate-200 bg-white p-3 shadow-none dark:border-slate-800 dark:bg-slate-950 sm:p-4";
 const field = "grid gap-1 text-[11px] font-semibold text-slate-600 dark:text-slate-300 sm:text-xs";
@@ -144,6 +144,7 @@ function SalesWorkspace({ businessId }: { businessId: string }) {
   const [sales, setSales] = useState<Sale[]>([]);
   const [availability, setAvailability] = useState<SaleAvailabilityProduct[]>([]);
   const [stockTargets, setStockTargets] = useState<SaleStockTarget[]>([]);
+  const [expandedSaleIds, setExpandedSaleIds] = useState<Set<string>>(new Set());
   const [editing, setEditing] = useState<Sale | null>(null);
   const [transactionType, setTransactionType] = useState<TransactionType>("normal");
   const [saleMode, setSaleMode] = useState<SaleMode>("stock");
@@ -476,6 +477,15 @@ function SalesWorkspace({ businessId }: { businessId: string }) {
     }
   };
 
+  const toggleSaleDetails = (saleId: string) => {
+    setExpandedSaleIds((current) => {
+      const next = new Set(current);
+      if (next.has(saleId)) next.delete(saleId);
+      else next.add(saleId);
+      return next;
+    });
+  };
+
   return (
     <section className="w-full space-y-4 py-4">
       <SalesStatusCard sales={sales} />
@@ -688,10 +698,22 @@ function SalesWorkspace({ businessId }: { businessId: string }) {
         </div>
       ) : null}
 
-      <section className="scroll-mt-5 space-y-3" ref={historyRef}>
-        <h2 className="text-xl font-bold">{t("recentSales")}</h2>
+      <section className="scroll-mt-5 space-y-2" ref={historyRef}>
+        <h2 className="text-lg font-bold sm:text-xl">{t("recentSales")}</h2>
         {sales.map((sale, index) => {
           const tradeLocked = Boolean(sale.trade_in?.stock_receipt);
+          const expanded = expandedSaleIds.has(sale.id);
+          const firstItem = sale.items[0];
+          const firstItemName = firstItem?.product_name || firstItem?.item_name || "—";
+          const firstExactName =
+            firstItem?.tracked_unit_details?.model_name || firstItem?.item_details?.model || "";
+          const moreItemCount = Math.max(0, sale.items.length - 1);
+          const saleDate = new Date(sale.sold_at).toLocaleDateString(locale, {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+          });
+
           return (
             <article
               className={panel}
@@ -704,65 +726,139 @@ function SalesWorkspace({ businessId }: { businessId: string }) {
                 borderInlineStartWidth: 3,
               }}
             >
-              <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
-                <div className="min-w-0 space-y-4">
-                  {sale.transaction_type === "trade_in" ? (
-                    <span className="inline-flex rounded-full border border-slate-200 px-2 py-1 text-xs font-semibold dark:border-slate-800">{t("tradeIn")}</span>
-                  ) : null}
-                  <div className="space-y-4">
-                    {sale.items.map((item) => {
-                      const details = itemDetailRows(item);
-                      const exactName = item.tracked_unit_details?.model_name || item.item_details?.model || "";
-                      return (
-                        <div className="min-w-0" key={item.id}>
-                          <strong className="block wrap-break-word text-base">{item.product_name || item.item_name}</strong>
-                          {exactName && exactName !== item.product_name ? (
-                            <span className="mt-0.5 block wrap-break-word text-sm font-semibold text-slate-700 dark:text-slate-200">{exactName}</span>
-                          ) : null}
-                          <p className="mt-1 wrap-break-word text-sm text-slate-500">
-                            {[item.product_sku, item.quantity !== "1.000" ? `${money(item.quantity)} × ${money(item.unit_price)}` : ""].filter(Boolean).join(" · ")}
-                          </p>
-                          {item.warranty_months ? (
-                            <p className="mt-1 text-xs font-semibold text-slate-600 dark:text-slate-300">
-                              {t("warranty")}: {t("warrantyMonths", { months: item.warranty_months })}
-                            </p>
-                          ) : null}
-                          {details.length ? (
-                            <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-500">
-                              {details.map(([label, value]) => (
-                                <span className="break-all" key={`${label}-${value}`}><span className="capitalize">{label}</span>: <strong className="font-semibold text-slate-700 dark:text-slate-200">{value}</strong></span>
-                              ))}
-                            </div>
-                          ) : item.tracked_unit_reference ? (
-                            <p className="mt-2 break-all text-xs text-slate-500">{item.tracked_unit_reference}</p>
-                          ) : null}
-                        </div>
-                      );
-                    })}
+              <div className="grid gap-3">
+                <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
+                  <div className="min-w-0">
+                    <div className="flex min-w-0 flex-wrap items-center gap-2">
+                      <strong className="wrap-break-word text-sm font-semibold text-slate-950 dark:text-white sm:text-base">
+                        {firstItemName}
+                      </strong>
+                      {sale.transaction_type === "trade_in" ? (
+                        <span className="inline-flex rounded-full border border-slate-200 px-2 py-0.5 text-[10px] font-semibold dark:border-slate-800 sm:text-xs">
+                          {t("tradeIn")}
+                        </span>
+                      ) : null}
+                    </div>
+                    {firstExactName && firstExactName !== firstItemName ? (
+                      <span className="mt-0.5 block wrap-break-word text-xs font-semibold text-slate-600 dark:text-slate-300 sm:text-sm">
+                        {firstExactName}
+                      </span>
+                    ) : null}
+                    <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-slate-500">
+                      {firstItem?.product_sku ? <span className="wrap-break-word">{firstItem.product_sku}</span> : null}
+                      {firstItem ? (
+                        <span>
+                          {formatQuantityWithUnit(firstItem.quantity, firstItem.product_unit, locale)}
+                        </span>
+                      ) : null}
+                      {moreItemCount > 0 ? (
+                        <span className="font-semibold text-slate-600 dark:text-slate-300">
+                          {t("moreItems", { count: moreItemCount })}
+                        </span>
+                      ) : null}
+                    </p>
+                    <p className="mt-1 wrap-break-word text-[11px] text-slate-500 sm:text-xs">
+                      {sale.receipt_number} · {saleDate}
+                    </p>
                   </div>
 
-                  {sale.trade_in ? (
-                    <div className="grid gap-2 rounded-lg bg-slate-50 p-3 text-sm dark:bg-slate-900 sm:grid-cols-3">
-                      <div><span className="text-xs text-slate-500">{t("incomingTradeItem")}</span><strong className="block wrap-break-word">{sale.trade_in.incoming_item_name}</strong></div>
-                      <div><span className="text-xs text-slate-500">{t("agreedTradeValue")}</span><strong className="block">{money(sale.trade_in.incoming_value)}</strong></div>
-                      <div><span className="text-xs text-slate-500">{t("cashTopUp")}</span><strong className="block">{money(sale.trade_in.cash_top_up)}</strong></div>
-                      {sale.trade_in.stock_receipt_reference ? <div className="sm:col-span-3"><span className="text-xs text-slate-500">{t("addedToStock")}</span><strong className="block">{sale.trade_in.stock_receipt_reference}{sale.trade_in.stock_product_sku ? ` · ${sale.trade_in.stock_product_sku}` : ""}</strong></div> : null}
+                  <div className="flex items-start justify-between gap-3 sm:flex-col sm:items-end sm:text-right">
+                    <div>
+                      <strong className="block text-sm sm:text-base">{money(sale.total)}</strong>
+                      <span className="text-[11px] font-medium text-slate-500 sm:text-xs">
+                        {t(sale.payment_status)}
+                      </span>
                     </div>
-                  ) : null}
-
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-3 border-t border-slate-100 pt-4 text-sm dark:border-slate-800 sm:grid-cols-3 lg:grid-cols-5">
-                    <div className="min-w-0"><span className="text-xs text-slate-500">{t("receipt")}</span><strong className="block break-all">{sale.receipt_number}</strong></div>
-                    <div className="min-w-0"><span className="text-xs text-slate-500">{t("customer")}</span><strong className="block wrap-break-word">{sale.customer_name || "—"}</strong></div>
-                    <div className="min-w-0"><span className="text-xs text-slate-500">{t("customerRegion")}</span><strong className="block wrap-break-word">{sale.customer_region || "—"}</strong></div>
-                    <div className="min-w-0"><span className="text-xs text-slate-500">{t("payment")}</span><strong className="block wrap-break-word">{sale.payment_status}</strong></div>
-                    <div className="min-w-0"><span className="text-xs text-slate-500">{t("amount")}</span><strong className="block wrap-break-word">{money(sale.total)}</strong></div>
                   </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3 dark:border-slate-800 lg:border-t-0 lg:pt-0">
+                {expanded ? (
+                  <div className="grid gap-3 border-t border-slate-100 pt-3 dark:border-slate-800">
+                    <div className="grid gap-3">
+                      {sale.items.map((item) => {
+                        const details = itemDetailRows(item);
+                        const exactName =
+                          item.tracked_unit_details?.model_name || item.item_details?.model || "";
+                        return (
+                          <div
+                            className="min-w-0 rounded-md bg-slate-50/70 p-2.5 dark:bg-slate-900/45"
+                            key={item.id}
+                          >
+                            <strong className="block wrap-break-word text-sm">
+                              {item.product_name || item.item_name}
+                            </strong>
+                            {exactName && exactName !== item.product_name ? (
+                              <span className="mt-0.5 block wrap-break-word text-xs font-semibold text-slate-700 dark:text-slate-200">
+                                {exactName}
+                              </span>
+                            ) : null}
+                            <p className="mt-1 wrap-break-word text-xs text-slate-500">
+                              {[
+                                item.product_sku,
+                                `${formatQuantityWithUnit(item.quantity, item.product_unit, locale)} × ${money(item.unit_price)}`,
+                              ]
+                                .filter(Boolean)
+                                .join(" · ")}
+                            </p>
+                            {item.warranty_months ? (
+                              <p className="mt-1 text-xs font-semibold text-slate-600 dark:text-slate-300">
+                                {t("warranty")}: {t("warrantyMonths", { months: item.warranty_months })}
+                              </p>
+                            ) : null}
+                            {details.length ? (
+                              <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-500">
+                                {details.map(([label, value]) => (
+                                  <span className="break-all" key={`${label}-${value}`}>
+                                    <span className="capitalize">{label}</span>:{" "}
+                                    <strong className="font-semibold text-slate-700 dark:text-slate-200">
+                                      {value}
+                                    </strong>
+                                  </span>
+                                ))}
+                              </div>
+                            ) : item.tracked_unit_reference ? (
+                              <p className="mt-2 break-all text-xs text-slate-500">
+                                {item.tracked_unit_reference}
+                              </p>
+                            ) : null}
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {sale.trade_in ? (
+                      <div className="grid gap-2 rounded-md bg-slate-50 p-2.5 text-xs dark:bg-slate-900 sm:grid-cols-3">
+                        <div><span className="text-slate-500">{t("incomingTradeItem")}</span><strong className="block wrap-break-word text-sm">{sale.trade_in.incoming_item_name}</strong></div>
+                        <div><span className="text-slate-500">{t("agreedTradeValue")}</span><strong className="block text-sm">{money(sale.trade_in.incoming_value)}</strong></div>
+                        <div><span className="text-slate-500">{t("cashTopUp")}</span><strong className="block text-sm">{money(sale.trade_in.cash_top_up)}</strong></div>
+                        {sale.trade_in.stock_receipt_reference ? <div className="sm:col-span-3"><span className="text-slate-500">{t("addedToStock")}</span><strong className="block wrap-break-word text-sm">{sale.trade_in.stock_receipt_reference}{sale.trade_in.stock_product_sku ? ` · ${sale.trade_in.stock_product_sku}` : ""}</strong></div> : null}
+                      </div>
+                    ) : null}
+
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs sm:grid-cols-3 lg:grid-cols-5">
+                      <div className="min-w-0"><span className="text-slate-500">{t("receipt")}</span><strong className="block break-all text-sm">{sale.receipt_number}</strong></div>
+                      <div className="min-w-0"><span className="text-slate-500">{t("customer")}</span><strong className="block wrap-break-word text-sm">{sale.customer_name || "—"}</strong></div>
+                      <div className="min-w-0"><span className="text-slate-500">{t("customerRegion")}</span><strong className="block wrap-break-word text-sm">{sale.customer_region || "—"}</strong></div>
+                      <div className="min-w-0"><span className="text-slate-500">{t("payment")}</span><strong className="block wrap-break-word text-sm">{t(sale.payment_status)}</strong></div>
+                      <div className="min-w-0"><span className="text-slate-500">{t("amount")}</span><strong className="block wrap-break-word text-sm">{money(sale.total)}</strong></div>
+                    </div>
+                  </div>
+                ) : null}
+
+                <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-2.5 dark:border-slate-800">
                   <SalesReceiptIconActions sale={sale} />
                   <Button disabled={tradeLocked} size="small" title={tradeLocked ? t("tradeStockLocked") : undefined} type="button" variant="outline" onClick={() => beginEdit(sale)}>{t("edit")}</Button>
                   {permissions.includes("commerce.sales.void") ? <Button disabled={tradeLocked} size="small" title={tradeLocked ? t("tradeStockLocked") : undefined} type="button" variant="ghost" onClick={() => void onVoid(sale)}>{t("void")}</Button> : null}
+                  <button
+                    aria-expanded={expanded}
+                    aria-label={expanded ? t("hideDetails") : t("viewDetails")}
+                    className="ml-auto inline-flex size-8 shrink-0 items-center justify-center rounded-md text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/50 dark:hover:bg-slate-900 dark:hover:text-white"
+                    onClick={() => toggleSaleDetails(sale.id)}
+                    title={expanded ? t("hideDetails") : t("viewDetails")}
+                    type="button"
+                  >
+                    {expanded ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
+                  </button>
                 </div>
               </div>
             </article>
