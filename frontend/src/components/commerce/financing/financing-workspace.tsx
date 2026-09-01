@@ -5,6 +5,7 @@ import {
   ChevronRight,
   Copy,
   Download,
+  HandCoins,
   Plus,
   Printer,
   Share2,
@@ -414,25 +415,42 @@ function FinancingWorkspace({ businessId }: { businessId: string }) {
 
   return (
     <section className="w-full space-y-4 py-4">
-      <header>
-        <h1 className="text-xl font-bold text-slate-950 dark:text-white">{t("title")}</h1>
-        <p className="mt-1 text-sm text-slate-500">{t("subtitle")}</p>
-      </header>
-
-      <section className={`${shell} p-3 sm:p-4`}>
-        <h2 className="text-sm font-semibold">{t("statusTitle")}</h2>
-        <div className="mt-3 grid grid-cols-3 gap-2">
-          <div className="rounded-md bg-slate-50 p-2.5 dark:bg-slate-900">
-            <span className="text-[11px] text-slate-500">{t("activeAgreements")}</span>
-            <strong className="mt-1 block text-lg">{activeCount}</strong>
+      <section
+        aria-label={t("statusTitle")}
+        className="rounded-lg border border-slate-200 bg-white px-3 py-2.5 dark:border-slate-800 dark:bg-slate-950 sm:px-4 sm:py-3"
+      >
+        <div className="mb-2 flex items-center gap-2">
+          <span className="inline-flex size-7 shrink-0 items-center justify-center rounded-md bg-[color-mix(in_srgb,var(--workspace-primary,var(--brand-navy))_10%,white)] text-[var(--workspace-primary,var(--brand-navy))] dark:bg-[color-mix(in_srgb,var(--workspace-primary,var(--brand-navy))_20%,transparent)] dark:[color:color-mix(in_srgb,var(--workspace-primary,var(--brand-navy))_35%,white)]">
+            <HandCoins className="size-3.5" />
+          </span>
+          <h2 className="truncate text-sm font-semibold text-slate-950 dark:text-white">
+            {t("statusTitle")}
+          </h2>
+        </div>
+        <div className="grid grid-cols-3 divide-x divide-slate-200 overflow-hidden rounded-md bg-slate-50 dark:divide-slate-800 dark:bg-slate-900/55">
+          <div className="min-w-0 px-2 py-2 sm:px-3">
+            <span className="block truncate text-[10px] font-semibold uppercase tracking-[0.04em] text-slate-500 dark:text-slate-400">
+              {t("activeAgreements")}
+            </span>
+            <strong className="mt-0.5 block truncate text-[11px] font-semibold text-slate-950 dark:text-white sm:text-xs">
+              {activeCount}
+            </strong>
           </div>
-          <div className="rounded-md bg-slate-50 p-2.5 dark:bg-slate-900">
-            <span className="text-[11px] text-slate-500">{t("dueAgreements")}</span>
-            <strong className="mt-1 block text-lg">{dueCount}</strong>
+          <div className="min-w-0 px-2 py-2 sm:px-3">
+            <span className="block truncate text-[10px] font-semibold uppercase tracking-[0.04em] text-slate-500 dark:text-slate-400">
+              {t("dueAgreements")}
+            </span>
+            <strong className="mt-0.5 block truncate text-[11px] font-semibold text-slate-950 dark:text-white sm:text-xs">
+              {dueCount}
+            </strong>
           </div>
-          <div className="rounded-md bg-slate-50 p-2.5 dark:bg-slate-900">
-            <span className="text-[11px] text-slate-500">{t("outstanding")}</span>
-            <strong className="mt-1 block text-lg">{money(outstandingTotal, locale)}</strong>
+          <div className="min-w-0 px-2 py-2 sm:px-3">
+            <span className="block truncate text-[10px] font-semibold uppercase tracking-[0.04em] text-slate-500 dark:text-slate-400">
+              {t("outstanding")}
+            </span>
+            <strong className="mt-0.5 block truncate text-[11px] font-semibold text-slate-950 dark:text-white sm:text-xs">
+              {money(outstandingTotal, locale)}
+            </strong>
           </div>
         </div>
       </section>

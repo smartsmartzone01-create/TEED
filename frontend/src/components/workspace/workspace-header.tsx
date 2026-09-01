@@ -36,6 +36,8 @@ function WorkspaceHeader({ businessId, onOpenNavigation }: WorkspaceHeaderProps)
   const commerceLabel = locale === "sw" ? "Biashara" : "Commerce";
   const commerceOverviewLabel =
     locale === "sw" ? "Muhtasari wa biashara" : "Business Overview";
+  const financingLabel =
+    locale === "sw" ? "Mikopo na malipo ya awamu" : "Loans & Installments";
 
   const routes: Record<string, BreadcrumbItem[]> = {
     "/": [{ label: homeLabel }],
@@ -60,6 +62,11 @@ function WorkspaceHeader({ businessId, onOpenNavigation }: WorkspaceHeaderProps)
       { label: operationsLabel },
       { label: commerceLabel },
       { label: t("subnavigation.sales") },
+    ],
+    "/commerce/financing": [
+      { label: operationsLabel },
+      { label: commerceLabel },
+      { label: financingLabel },
     ],
     "/commerce/returns": [
       { label: operationsLabel },
