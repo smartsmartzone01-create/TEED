@@ -1,7 +1,7 @@
 "use client";
 
 import { CircleHelp, Copy, Plus, Printer, Share2, X } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 
 import { SalesStatusCard } from "@/components/commerce/sales/sales-status-card";
@@ -32,10 +32,15 @@ import type {
   SaleItem,
   SaleStockTarget,
 } from "@/types/commerce/sales";
+import { formatQuantityWithUnit } from "@/utils/commerce/quantity";
 
 const panel =
   "rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950";
-const field = "grid gap-1 text-xs font-semibold text-slate-600 dark:text-slate-300";
+const recorderPanel =
+  "grid gap-3 rounded-lg border border-slate-200 bg-white p-3 shadow-none dark:border-slate-800 dark:bg-slate-950 sm:p-4";
+const field = "grid gap-1 text-[11px] font-semibold text-slate-600 dark:text-slate-300 sm:text-xs";
+const controlClassName =
+  "h-9 rounded-md border-slate-300 bg-white text-sm shadow-none dark:border-slate-700 dark:bg-slate-950";
 
 type SaleMode = "stock" | "independent";
 type TransactionType = "normal" | "trade_in";
@@ -184,6 +189,7 @@ function printText(text: string) {
 
 function SalesWorkspace({ businessId }: { businessId: string }) {
   const t = useTranslations("CommerceSales");
+  const locale = useLocale();
   const { accessToken } = useIdentitySession();
   const { notify } = useNotification();
   const { businesses } = useWorkspace();
@@ -536,45 +542,60 @@ function SalesWorkspace({ businessId }: { businessId: string }) {
 
       {showRecorder ? (
         <div id="sales-recording-workspace" ref={recorderRef}>
-          <form className={`${panel} grid gap-4 scroll-mt-5`} onSubmit={(event) => void onSubmit(event)}>
-            <div className="flex items-center justify-between gap-3">
-              <h2 className="text-xl font-bold">{editing ? t("editSale") : t("recordSale")}</h2>
-              <Button type="button" variant="ghost" onClick={closeRecorder}>{t("cancel")}</Button>
+          <form className={`${recorderPanel} scroll-mt-5`} onSubmit={(event) => void onSubmit(event)}>
+            <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2 dark:border-slate-800">
+              <h2 className="text-sm font-semibold text-slate-950 dark:text-white">
+                {editing ? t("editSale") : t("recordSale")}
+              </h2>
+              <Button className="h-8 px-2 text-xs" size="small" type="button" variant="ghost" onClick={closeRecorder}>
+                {t("cancel")}
+              </Button>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
               <label className={field}>
                 {t("transactionType")}
-                <Select value={transactionType} onChange={(event) => { setTransactionType(event.target.value as TransactionType); setTradeIn(emptyTradeInDraft()); }}>
+                <Select className={controlClassName} value={transactionType} onChange={(event) => { setTransactionType(event.target.value as TransactionType); setTradeIn(emptyTradeInDraft()); }}>
                   <option value="normal">{t("normalSale")}</option>
                   <option value="trade_in">{t("tradeIn")}</option>
                 </Select>
               </label>
               <label className={field}>
                 {t("saleSource")}
-                <Select value={saleMode} onChange={(event) => { setSaleMode(event.target.value as SaleMode); setLines([emptyLine()]); }}>
+                <Select className={controlClassName} value={saleMode} onChange={(event) => { setSaleMode(event.target.value as SaleMode); setLines([emptyLine()]); }}>
                   <option value="stock">{t("fromStock")}</option>
                   <option value="independent">{t("independentSale")}</option>
                 </Select>
               </label>
               <label className={field}>
                 {t("marketType")}
-                <Select value={saleType} onChange={(event) => setSaleType(event.target.value as "retail" | "wholesale")}>
+                <Select className={controlClassName} value={saleType} onChange={(event) => setSaleType(event.target.value as "retail" | "wholesale")}>
                   <option value="retail">{t("retail")}</option>
                   <option value="wholesale">{t("wholesale")}</option>
                 </Select>
               </label>
-              <label className={field}>{t("customerName")}<Input value={customerName} onChange={(event) => setCustomerName(event.target.value)} /></label>
-              <label className={field}>{t("customerPhone")}<Input value={customerPhone} onChange={(event) => setCustomerPhone(event.target.value)} /></label>
-              <label className={field}>{t("customerRegion")}<Input value={customerRegion} onChange={(event) => setCustomerRegion(event.target.value)} /></label>
+              <label className={field}>{t("customerName")}<Input className={controlClassName} value={customerName} onChange={(event) => setCustomerName(event.target.value)} /></label>
+              <label className={field}>{t("customerPhone")}<Input className={controlClassName} value={customerPhone} onChange={(event) => setCustomerPhone(event.target.value)} /></label>
+              <label className={field}>{t("customerRegion")}<Input className={controlClassName} value={customerRegion} onChange={(event) => setCustomerRegion(event.target.value)} /></label>
+            </div>
+
+            <div className="flex items-center gap-1 pt-0.5">
+              <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">{t("outgoingItem")}</h3>
+              <Tooltip
+                content={transactionType === "trade_in" ? t("outgoingTradeHelp") : t("outgoingSaleHelp")}
+                side="top"
+              >
+                <button
+                  aria-label={transactionType === "trade_in" ? t("outgoingTradeHelp") : t("outgoingSaleHelp")}
+                  className="inline-flex size-6 items-center justify-center rounded-md text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-900 dark:hover:text-slate-200"
+                  type="button"
+                >
+                  <CircleHelp className="size-3.5" />
+                </button>
+              </Tooltip>
             </div>
 
             <div className="grid gap-2">
-              <h3 className="font-bold">{t("outgoingItem")}</h3>
-              <p className="text-xs text-slate-500">{transactionType === "trade_in" ? t("outgoingTradeHelp") : t("outgoingSaleHelp")}</p>
-            </div>
-
-            <div className="grid gap-3">
               {lines.map((line, index) => {
                 const product = productFor(line);
                 const trackedUnit = trackedUnitFor(line);
@@ -601,32 +622,44 @@ function SalesWorkspace({ businessId }: { businessId: string }) {
                   : [];
 
                 return (
-                  <div className="grid gap-3 rounded-xl border border-slate-200 p-3 dark:border-slate-800" key={index}>
+                  <div className="grid gap-2 rounded-lg border border-slate-200 bg-slate-50/30 p-2.5 dark:border-slate-800 dark:bg-slate-900/20 sm:p-3" key={index}>
                     {saleMode === "stock" ? (
                       <>
-                        <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_8rem_10rem_auto]">
-                          <Select required value={line.product_id} onChange={(event) => chooseProduct(index, event.target.value)}>
+                        <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_7rem_9rem_auto]">
+                          <Select className={controlClassName} required value={line.product_id} onChange={(event) => chooseProduct(index, event.target.value)}>
                             <option value="">{t("chooseProduct")}</option>
                             {availability.map((item) => (
-                              <option key={item.id} value={item.id}>{item.name} · {item.sku} · {money(item.current_quantity)} {item.unit} {t("available")}</option>
+                              <option key={item.id} value={item.id}>
+                                {item.name} · {item.sku} · {formatQuantityWithUnit(item.current_quantity, item.unit, locale)} {t("available")}
+                              </option>
                             ))}
                           </Select>
-                          <Input aria-label={t("quantity")} disabled={hasTrackedUnits} min="0.001" required step="0.001" type="number" value={hasTrackedUnits ? "1" : line.quantity} onChange={(event) => updateLine(index, { quantity: event.target.value })} />
-                          <Input aria-label={transactionType === "trade_in" ? t("agreedOutgoingValue") : t("sellingPrice")} min="0" placeholder={transactionType === "trade_in" ? t("agreedOutgoingValue") : t("sellingPrice")} required={transactionType === "trade_in" || product?.selling_price == null} step="0.01" type="number" value={line.unit_price} onChange={(event) => updateLine(index, { unit_price: event.target.value })} />
-                          <Button disabled={lines.length === 1} type="button" variant="outline" onClick={() => setLines((current) => current.filter((_, itemIndex) => itemIndex !== index))}>×</Button>
+                          <Input className={controlClassName} aria-label={t("quantity")} disabled={hasTrackedUnits} min="0.001" required step="0.001" type="number" value={hasTrackedUnits ? "1" : line.quantity} onChange={(event) => updateLine(index, { quantity: event.target.value })} />
+                          <Input className={controlClassName} aria-label={transactionType === "trade_in" ? t("agreedOutgoingValue") : t("sellingPrice")} min="0" placeholder={transactionType === "trade_in" ? t("agreedOutgoingValue") : t("sellingPrice")} required={transactionType === "trade_in" || product?.selling_price == null} step="0.01" type="number" value={line.unit_price} onChange={(event) => updateLine(index, { unit_price: event.target.value })} />
+                          <Button
+                            aria-label={t("remove")}
+                            className="size-9 p-0"
+                            disabled={lines.length === 1}
+                            size="small"
+                            type="button"
+                            variant="outline"
+                            onClick={() => setLines((current) => current.filter((_, itemIndex) => itemIndex !== index))}
+                          >
+                            ×
+                          </Button>
                         </div>
                         {hasTrackedUnits && product ? (
-                          <div className="grid gap-3">
+                          <div className="grid gap-2">
                             <label className={field}>
                               {t("chooseAvailableItem")}
-                              <Select required value={line.tracked_unit_id} onChange={(event) => updateLine(index, { tracked_unit_id: event.target.value, quantity: "1" })}>
+                              <Select className={controlClassName} required value={line.tracked_unit_id} onChange={(event) => updateLine(index, { tracked_unit_id: event.target.value, quantity: "1" })}>
                                 <option value="">{t("chooseAvailableItem")}</option>
                                 {currentTrackedReference && !product.available_units.some((unit) => unit.id === line.tracked_unit_id) ? <option value={line.tracked_unit_id}>{currentTrackedReference}</option> : null}
                                 {product.available_units.map((unit) => <option key={unit.id} value={unit.id}>{unitLabel(unit)}</option>)}
                               </Select>
                             </label>
                             {trackedUnit ? (
-                              <div className="grid gap-2 rounded-lg bg-slate-50 p-3 text-xs dark:bg-slate-900 sm:grid-cols-2 lg:grid-cols-4">
+                              <div className="grid gap-1.5 rounded-md bg-slate-100/80 p-2.5 text-[11px] dark:bg-slate-900 sm:grid-cols-2 lg:grid-cols-4">
                                 {detailRows.map(([label, value]) => value ? <div key={label}><span className="text-slate-500">{label}</span><strong className="block">{value}</strong></div> : null)}
                                 {trackedUnit.identifiers.map((identifier) => <div key={`${identifier.kind}-${identifier.value}`}><span className="text-slate-500">{identifier.kind}</span><strong className="block">{identifier.value}</strong></div>)}
                               </div>
@@ -636,19 +669,23 @@ function SalesWorkspace({ businessId }: { businessId: string }) {
                       </>
                     ) : (
                       <>
-                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                          <Input placeholder={t("itemName")} required value={line.item_name} onChange={(event) => updateLine(index, { item_name: event.target.value })} />
-                          <Input placeholder={t("brand")} value={line.brand} onChange={(event) => updateLine(index, { brand: event.target.value })} />
-                          <Input placeholder={t("model")} value={line.model} onChange={(event) => updateLine(index, { model: event.target.value })} />
-                          <Input placeholder={t("color")} value={line.color} onChange={(event) => updateLine(index, { color: event.target.value })} />
-                          <Input placeholder={t("capacitySize")} value={line.capacity} onChange={(event) => updateLine(index, { capacity: event.target.value })} />
-                          <Select value={line.identifier_kind} onChange={(event) => updateLine(index, { identifier_kind: event.target.value })}><option value="">{t("identifierType")}</option>{["serial", "imei", "chassis", "registration", "engine", "barcode"].map((kind) => <option key={kind} value={kind}>{kind}</option>)}</Select>
-                          <Input placeholder={t("identifierValue")} value={line.identifier_value} onChange={(event) => updateLine(index, { identifier_value: event.target.value })} />
-                          <Input min="0.001" step="0.001" type="number" placeholder={t("quantity")} required value={line.quantity} onChange={(event) => updateLine(index, { quantity: event.target.value })} />
-                          <Input min="0" step="0.01" type="number" placeholder={t("buyingCostOptional")} value={line.acquisition_unit_cost} onChange={(event) => updateLine(index, { acquisition_unit_cost: event.target.value })} />
-                          <Input min="0" step="0.01" type="number" placeholder={transactionType === "trade_in" ? t("agreedOutgoingValue") : t("sellingPrice")} required value={line.unit_price} onChange={(event) => updateLine(index, { unit_price: event.target.value })} />
+                        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+                          <Input className={controlClassName} placeholder={t("itemName")} required value={line.item_name} onChange={(event) => updateLine(index, { item_name: event.target.value })} />
+                          <Input className={controlClassName} placeholder={t("brand")} value={line.brand} onChange={(event) => updateLine(index, { brand: event.target.value })} />
+                          <Input className={controlClassName} placeholder={t("model")} value={line.model} onChange={(event) => updateLine(index, { model: event.target.value })} />
+                          <Input className={controlClassName} placeholder={t("color")} value={line.color} onChange={(event) => updateLine(index, { color: event.target.value })} />
+                          <Input className={controlClassName} placeholder={t("capacitySize")} value={line.capacity} onChange={(event) => updateLine(index, { capacity: event.target.value })} />
+                          <Select className={controlClassName} value={line.identifier_kind} onChange={(event) => updateLine(index, { identifier_kind: event.target.value })}><option value="">{t("identifierType")}</option>{["serial", "imei", "chassis", "registration", "engine", "barcode"].map((kind) => <option key={kind} value={kind}>{kind}</option>)}</Select>
+                          <Input className={controlClassName} placeholder={t("identifierValue")} value={line.identifier_value} onChange={(event) => updateLine(index, { identifier_value: event.target.value })} />
+                          <Input className={controlClassName} min="0.001" step="0.001" type="number" placeholder={t("quantity")} required value={line.quantity} onChange={(event) => updateLine(index, { quantity: event.target.value })} />
+                          <Input className={controlClassName} min="0" step="0.01" type="number" placeholder={t("buyingCostOptional")} value={line.acquisition_unit_cost} onChange={(event) => updateLine(index, { acquisition_unit_cost: event.target.value })} />
+                          <Input className={controlClassName} min="0" step="0.01" type="number" placeholder={transactionType === "trade_in" ? t("agreedOutgoingValue") : t("sellingPrice")} required value={line.unit_price} onChange={(event) => updateLine(index, { unit_price: event.target.value })} />
                         </div>
-                        <div className="flex justify-end"><Button disabled={lines.length === 1} type="button" variant="outline" onClick={() => setLines((current) => current.filter((_, itemIndex) => itemIndex !== index))}>{t("remove")}</Button></div>
+                        <div className="flex justify-end">
+                          <Button className="h-8 px-2 text-xs" disabled={lines.length === 1} size="small" type="button" variant="outline" onClick={() => setLines((current) => current.filter((_, itemIndex) => itemIndex !== index))}>
+                            {t("remove")}
+                          </Button>
+                        </div>
                       </>
                     )}
                   </div>
@@ -656,18 +693,22 @@ function SalesWorkspace({ businessId }: { businessId: string }) {
               })}
             </div>
 
-            <Button type="button" variant="outline" onClick={() => setLines((current) => [...current, emptyLine()])}>{t("addLine")}</Button>
+            <Button className="h-8 w-fit px-2.5 text-xs" size="small" type="button" variant="outline" onClick={() => setLines((current) => [...current, emptyLine()])}>
+              {t("addLine")}
+            </Button>
 
             {transactionType === "trade_in" ? (
               <TradeInFields draft={tradeIn} outgoingValue={outgoingValue} stockTargets={stockTargets} onChange={setTradeIn} />
             ) : null}
 
-            <div className="grid gap-3 sm:grid-cols-3">
-              <label className={field}>{t("discount")}<Input min="0" step="0.01" type="number" value={discount} onChange={(event) => setDiscount(event.target.value)} /></label>
-              <label className={field}>{t("payment")}<Select value={paymentStatus} onChange={(event) => setPaymentStatus(event.target.value as "paid" | "partial" | "unpaid")}><option value="paid">{t("paid")}</option><option value="partial">{t("partial")}</option><option value="unpaid">{t("unpaid")}</option></Select></label>
-              <label className={field}>{t("date")}<Input type="datetime-local" value={soldAt} onChange={(event) => setSoldAt(event.target.value)} /></label>
+            <div className="grid gap-2 border-t border-slate-100 pt-3 dark:border-slate-800 sm:grid-cols-3">
+              <label className={field}>{t("discount")}<Input className={controlClassName} min="0" step="0.01" type="number" value={discount} onChange={(event) => setDiscount(event.target.value)} /></label>
+              <label className={field}>{t("payment")}<Select className={controlClassName} value={paymentStatus} onChange={(event) => setPaymentStatus(event.target.value as "paid" | "partial" | "unpaid")}><option value="paid">{t("paid")}</option><option value="partial">{t("partial")}</option><option value="unpaid">{t("unpaid")}</option></Select></label>
+              <label className={field}>{t("date")}<Input className={controlClassName} type="datetime-local" value={soldAt} onChange={(event) => setSoldAt(event.target.value)} /></label>
             </div>
-            <Button disabled={busy || !accessToken || !validate()} type="submit">{editing ? t("saveEdit") : t("save")}</Button>
+            <Button className="h-9 w-full text-sm sm:w-auto sm:justify-self-end" disabled={busy || !accessToken || !validate()} size="small" type="submit">
+              {editing ? t("saveEdit") : t("save")}
+            </Button>
           </form>
         </div>
       ) : null}
@@ -699,11 +740,11 @@ function SalesWorkspace({ businessId }: { businessId: string }) {
                       const exactName = item.tracked_unit_details?.model_name || item.item_details?.model || "";
                       return (
                         <div className="min-w-0" key={item.id}>
-                          <strong className="block break-words text-base">{item.product_name || item.item_name}</strong>
+                          <strong className="block wrap-break-word text-base">{item.product_name || item.item_name}</strong>
                           {exactName && exactName !== item.product_name ? (
-                            <span className="mt-0.5 block break-words text-sm font-semibold text-slate-700 dark:text-slate-200">{exactName}</span>
+                            <span className="mt-0.5 block wrap-break-word text-sm font-semibold text-slate-700 dark:text-slate-200">{exactName}</span>
                           ) : null}
-                          <p className="mt-1 break-words text-sm text-slate-500">
+                          <p className="mt-1 wrap-break-word text-sm text-slate-500">
                             {[item.product_sku, item.quantity !== "1.000" ? `${money(item.quantity)} × ${money(item.unit_price)}` : ""].filter(Boolean).join(" · ")}
                           </p>
                           {details.length ? (
@@ -722,7 +763,7 @@ function SalesWorkspace({ businessId }: { businessId: string }) {
 
                   {sale.trade_in ? (
                     <div className="grid gap-2 rounded-lg bg-slate-50 p-3 text-sm dark:bg-slate-900 sm:grid-cols-3">
-                      <div><span className="text-xs text-slate-500">{t("incomingTradeItem")}</span><strong className="block break-words">{sale.trade_in.incoming_item_name}</strong></div>
+                      <div><span className="text-xs text-slate-500">{t("incomingTradeItem")}</span><strong className="block wrap-break-word">{sale.trade_in.incoming_item_name}</strong></div>
                       <div><span className="text-xs text-slate-500">{t("agreedTradeValue")}</span><strong className="block">{money(sale.trade_in.incoming_value)}</strong></div>
                       <div><span className="text-xs text-slate-500">{t("cashTopUp")}</span><strong className="block">{money(sale.trade_in.cash_top_up)}</strong></div>
                       {sale.trade_in.stock_receipt_reference ? <div className="sm:col-span-3"><span className="text-xs text-slate-500">{t("addedToStock")}</span><strong className="block">{sale.trade_in.stock_receipt_reference}{sale.trade_in.stock_product_sku ? ` · ${sale.trade_in.stock_product_sku}` : ""}</strong></div> : null}
@@ -731,10 +772,10 @@ function SalesWorkspace({ businessId }: { businessId: string }) {
 
                   <div className="grid grid-cols-2 gap-x-4 gap-y-3 border-t border-slate-100 pt-4 text-sm dark:border-slate-800 sm:grid-cols-3 lg:grid-cols-5">
                     <div className="min-w-0"><span className="text-xs text-slate-500">{t("receipt")}</span><strong className="block break-all">{sale.receipt_number}</strong></div>
-                    <div className="min-w-0"><span className="text-xs text-slate-500">{t("customer")}</span><strong className="block break-words">{sale.customer_name || "—"}</strong></div>
-                    <div className="min-w-0"><span className="text-xs text-slate-500">{t("customerRegion")}</span><strong className="block break-words">{sale.customer_region || "—"}</strong></div>
-                    <div className="min-w-0"><span className="text-xs text-slate-500">{t("payment")}</span><strong className="block break-words">{sale.payment_status}</strong></div>
-                    <div className="min-w-0"><span className="text-xs text-slate-500">{t("amount")}</span><strong className="block break-words">{money(sale.total)}</strong></div>
+                    <div className="min-w-0"><span className="text-xs text-slate-500">{t("customer")}</span><strong className="block wrap-break-word">{sale.customer_name || "—"}</strong></div>
+                    <div className="min-w-0"><span className="text-xs text-slate-500">{t("customerRegion")}</span><strong className="block wrap-break-word">{sale.customer_region || "—"}</strong></div>
+                    <div className="min-w-0"><span className="text-xs text-slate-500">{t("payment")}</span><strong className="block wrap-break-word">{sale.payment_status}</strong></div>
+                    <div className="min-w-0"><span className="text-xs text-slate-500">{t("amount")}</span><strong className="block wrap-break-word">{money(sale.total)}</strong></div>
                   </div>
                 </div>
 
