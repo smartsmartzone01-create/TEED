@@ -14,7 +14,16 @@ const financingAvailabilityProductSchema = z.object({
   available_units: z.array(
     z.object({
       id: z.string(),
-      label: z.string(),
+      internal_serial: z.string(),
+      model_name: z.string(),
+      brand: z.string(),
+      color: z.string(),
+      capacity: z.string(),
+      identifiers: z.array(z.object({ kind: z.string(), value: z.string() })),
+      stock_reference: z.string(),
+      batch_name: z.string(),
+      group_name: z.string(),
+      acquisition_unit_cost: decimal.optional(),
     }),
   ),
 });

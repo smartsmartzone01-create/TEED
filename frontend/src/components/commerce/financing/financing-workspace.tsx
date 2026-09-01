@@ -34,6 +34,7 @@ import type {
   FinancingAgreement,
   FinancingAgreementType,
   FinancingAvailabilityProduct,
+  FinancingAvailabilityUnit,
   FinancingFrequency,
   FinancingMarketType,
   FinancingMode,
@@ -77,6 +78,22 @@ const money = (value: string | number, locale: string) => {
     ? new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(parsed)
     : String(value);
 };
+
+function unitLabel(unit: FinancingAvailabilityUnit) {
+  const identification = unit.identifiers
+    .map((item) => `${item.kind}: ${item.value}`)
+    .join(" · ");
+  return [
+    unit.internal_serial,
+    unit.model_name,
+    unit.brand,
+    unit.color,
+    unit.capacity,
+    identification,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+}
 
 function FinancingWorkspace({ businessId }: { businessId: string }) {
   const t = useTranslations("CommerceFinancing");
@@ -204,6 +221,16 @@ function FinancingWorkspace({ businessId }: { businessId: string }) {
       tracked_unit_id: "",
       quantity: "1",
       unit_price: product?.selling_price ?? "",
+      acquisition_unit_cost: "",
+    });
+  };
+
+  const chooseTrackedUnit = (index: number, product: FinancingAvailabilityProduct, unitId: string) => {
+    const unit = product.available_units.find((item) => item.id === unitId);
+    updateLine(index, {
+      tracked_unit_id: unitId,
+      quantity: "1",
+      acquisition_unit_cost: unit?.acquisition_unit_cost ?? "",
     });
   };
 
@@ -216,7 +243,7 @@ function FinancingWorkspace({ businessId }: { businessId: string }) {
         if (source === "independent") return Boolean(line.item_name.trim());
         const product = availability.find((item) => item.id === line.product_id);
         if (!product) return false;
-        return product.tracking_mode !== "individual" || Boolean(line.tracked_unit_id);
+        return !product.available_units.length || Boolean(line.tracked_unit_id);
       });
     }
     if (step === 3) {
@@ -474,10 +501,10 @@ function FinancingWorkspace({ businessId }: { businessId: string }) {
 
       {showRecorder ? (
         <form className={`${shell} grid gap-3 p-3 sm:p-4`} onSubmit={(event) => void onSubmit(event)}>
-          <div className="flex overflow-x-auto border-b border-slate-100 pb-2 dark:border-slate-800">
+          <div className="flex w-full overflow-x-auto border-b border-slate-100 pb-2 dark:border-slate-800 sm:overflow-visible">
             {stepKeys.map((key, index) => (
               <button
-                className={`flex shrink-0 items-center gap-1 text-xs font-semibold ${index === step ? "text-slate-950 dark:text-white" : "text-slate-400"}`}
+                className={`flex shrink-0 items-center gap-1 text-xs font-semibold sm:flex-1 sm:justify-center ${index === step ? "text-slate-950 dark:text-white" : "text-slate-400"}`}
                 key={key}
                 onClick={() => index <= step && setStep(index)}
                 type="button"
@@ -511,6 +538,8 @@ function FinancingWorkspace({ businessId }: { businessId: string }) {
               <p className="text-xs text-slate-500">{source === "stock" ? t("stockReservedHint") : null}</p>
               {lines.map((line, index) => {
                 const product = availability.find((item) => item.id === line.product_id);
+                const trackedUnit = product?.available_units.find((unit) => unit.id === line.tracked_unit_id);
+                const hasExactItems = Boolean(product?.available_units.length);
                 return (
                   <div className="grid gap-2 rounded-lg border border-slate-200 p-2.5 dark:border-slate-800" key={index}>
                     <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
@@ -522,16 +551,23 @@ function FinancingWorkspace({ businessId }: { businessId: string }) {
                       ) : (
                         <Input className={control} placeholder={t("itemName")} value={line.item_name} onChange={(event) => updateLine(index, { item_name: event.target.value })} />
                       )}
-                      {source === "stock" && product?.tracking_mode === "individual" ? (
-                        <Select className={control} value={line.tracked_unit_id} onChange={(event) => updateLine(index, { tracked_unit_id: event.target.value, quantity: "1" })}>
+                      {source === "stock" && hasExactItems && product ? (
+                        <Select className={control} value={line.tracked_unit_id} onChange={(event) => chooseTrackedUnit(index, product, event.target.value)}>
                           <option value="">{t("chooseItem")}</option>
-                          {product.available_units.map((unit) => <option key={unit.id} value={unit.id}>{unit.label}</option>)}
+                          {product.available_units.map((unit) => <option key={unit.id} value={unit.id}>{unitLabel(unit)}</option>)}
                         </Select>
                       ) : (
-                        <Input className={control} min="0.001" placeholder={t("quantity")} step="0.001" type="number" value={line.quantity} onChange={(event) => updateLine(index, { quantity: event.target.value })} />
+                        <Input className={control} disabled={source === "stock" && hasExactItems} min="0.001" placeholder={t("quantity")} step="0.001" type="number" value={hasExactItems ? "1" : line.quantity} onChange={(event) => updateLine(index, { quantity: event.target.value })} />
                       )}
                       <Input className={control} min="0" placeholder={t("unitPrice")} step="0.01" type="number" value={line.unit_price} onChange={(event) => updateLine(index, { unit_price: event.target.value })} />
-                      {source === "independent" ? <Input className={control} min="0" placeholder={t("acquisitionCost")} step="0.01" type="number" value={line.acquisition_unit_cost} onChange={(event) => updateLine(index, { acquisition_unit_cost: event.target.value })} /> : null}
+                      {source === "independent" ? (
+                        <Input className={control} min="0" placeholder={t("acquisitionCost")} step="0.01" type="number" value={line.acquisition_unit_cost} onChange={(event) => updateLine(index, { acquisition_unit_cost: event.target.value })} />
+                      ) : trackedUnit?.acquisition_unit_cost ? (
+                        <label className={field}>
+                          {t("acquisitionCost")}
+                          <Input className={control} disabled value={money(trackedUnit.acquisition_unit_cost, locale)} />
+                        </label>
+                      ) : null}
                     </div>
                     <div className="flex items-end justify-between gap-2">
                       <label className={`${field} max-w-56 flex-1`}>{t("warranty")}<Select className={control} value={line.warranty_months ?? ""} onChange={(event) => updateLine(index, { warranty_months: event.target.value ? Number(event.target.value) as FinancingWarrantyMonths : null })}><option value="">{t("noWarranty")}</option>{warrantyOptions.map((months) => <option key={months} value={months}>{t("warrantyMonths", { months })}</option>)}</Select></label>

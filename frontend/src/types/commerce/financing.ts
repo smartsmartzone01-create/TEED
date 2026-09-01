@@ -7,6 +7,20 @@ type FinancingFrequency = "weekly" | "monthly";
 type FinancingStatus = "active" | "due" | "overdue" | "paid" | "cancelled";
 type FinancingWarrantyMonths = 3 | 6 | 12 | 24;
 
+type FinancingAvailabilityUnit = {
+  id: string;
+  internal_serial: string;
+  model_name: string;
+  brand: string;
+  color: string;
+  capacity: string;
+  identifiers: Array<{ kind: string; value: string }>;
+  stock_reference: string;
+  batch_name: string;
+  group_name: string;
+  acquisition_unit_cost?: string;
+};
+
 type FinancingAvailabilityProduct = {
   id: string;
   name: string;
@@ -15,7 +29,7 @@ type FinancingAvailabilityProduct = {
   tracking_mode: "quantity" | "individual";
   current_quantity: string;
   selling_price: string | null;
-  available_units: Array<{ id: string; label: string }>;
+  available_units: FinancingAvailabilityUnit[];
 };
 
 type FinancingItem = {
@@ -92,6 +106,7 @@ export type {
   FinancingAgreement,
   FinancingAgreementType,
   FinancingAvailabilityProduct,
+  FinancingAvailabilityUnit,
   FinancingDocument,
   FinancingFrequency,
   FinancingItem,

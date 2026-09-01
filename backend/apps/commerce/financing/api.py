@@ -45,6 +45,12 @@ def _can_view_internal(membership):
     return role_has_permission(membership.role, WorkspacePermission.MANAGE_FINANCE)
 
 
+def _effective_unit_cost(stock_line):
+    return (stock_line.unit_cost or 0) + (
+        stock_line.additional_cost / stock_line.quantity_received
+    )
+
+
 class FinancingAvailabilityAPIView(CommerceBaseAPIView):
     def get(self, request, business_id):
         membership = commerce_membership(
@@ -52,6 +58,7 @@ class FinancingAvailabilityAPIView(CommerceBaseAPIView):
             business_id=business_id,
             permission=WorkspacePermission.VIEW_FINANCING,
         )
+        show_internal = _can_view_internal(membership)
         products = Product.objects.filter(
             business=membership.business,
             is_active=True,
@@ -64,31 +71,50 @@ class FinancingAvailabilityAPIView(CommerceBaseAPIView):
                 status=TrackedUnit.Status.AVAILABLE,
                 stock_line__quantity_remaining__gt=0,
             )
-            .select_related("product")
+            .select_related(
+                "product",
+                "stock_line",
+                "stock_line__receipt",
+                "stock_line__stock_group",
+                "stock_line__stock_group__batch",
+            )
             .prefetch_related("identifiers")
+            .order_by("product__name", "internal_serial")
         )
         units_by_product = {}
         for unit in units:
-            units_by_product.setdefault(str(unit.product_id), []).append(
-                {
-                    "id": str(unit.id),
-                    "label": " · ".join(
-                        part
-                        for part in [
-                            unit.model_name,
-                            unit.brand,
-                            unit.color,
-                            unit.capacity,
-                            " · ".join(
-                                f"{identifier.kind}: {identifier.value}"
-                                for identifier in unit.identifiers.all()
-                            )
-                            or unit.internal_serial,
-                        ]
-                        if part
-                    ),
-                }
-            )
+            identifiers = [
+                {"kind": identifier.kind, "value": identifier.value}
+                for identifier in unit.identifiers.all()
+            ]
+            if unit.imei and not any(item["kind"] == "imei" for item in identifiers):
+                identifiers.append({"kind": "imei", "value": unit.imei})
+            if unit.serial_number and not any(
+                item["kind"] == "serial" for item in identifiers
+            ):
+                identifiers.append({"kind": "serial", "value": unit.serial_number})
+            group = unit.stock_line.stock_group
+            payload = {
+                "id": str(unit.id),
+                "internal_serial": unit.internal_serial,
+                "model_name": unit.model_name,
+                "brand": unit.brand,
+                "color": unit.color,
+                "capacity": unit.capacity,
+                "identifiers": identifiers,
+                "stock_reference": (
+                    unit.stock_line.receipt.reference
+                    if unit.stock_line.receipt_id
+                    else unit.stock_line.reference
+                ),
+                "batch_name": group.batch.name if group else "",
+                "group_name": group.name if group else "",
+            }
+            if show_internal:
+                payload["acquisition_unit_cost"] = str(
+                    _effective_unit_cost(unit.stock_line)
+                )
+            units_by_product.setdefault(str(unit.product_id), []).append(payload)
         return SuccessResponse(
             message="Financing availability retrieved successfully.",
             data={
