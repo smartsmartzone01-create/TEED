@@ -9,6 +9,13 @@ from .finance.api import (
     ExpenseDetailAPIView,
     ExpenseListCreateAPIView,
 )
+from .financing.api import (
+    FinancingAgreementListCreateAPIView,
+    FinancingAvailabilityAPIView,
+    FinancingDocumentDownloadAPIView,
+    FinancingDocumentListCreateAPIView,
+    FinancingPaymentCreateAPIView,
+)
 from .inventory.api import (
     ActiveStockReceiptListCreatePolishAPIView,
     AdjustmentCreateAPIView,
@@ -92,6 +99,31 @@ urlpatterns = [
         "businesses/<uuid:business_id>/sales/<uuid:sale_id>/void/",
         SaleVoidAPIView.as_view(),
         name="sale-void",
+    ),
+    path(
+        "businesses/<uuid:business_id>/financing/availability/",
+        FinancingAvailabilityAPIView.as_view(),
+        name="financing-availability",
+    ),
+    path(
+        "businesses/<uuid:business_id>/financing/",
+        FinancingAgreementListCreateAPIView.as_view(),
+        name="financing",
+    ),
+    path(
+        "businesses/<uuid:business_id>/financing/<uuid:agreement_id>/payments/",
+        FinancingPaymentCreateAPIView.as_view(),
+        name="financing-payments",
+    ),
+    path(
+        "businesses/<uuid:business_id>/financing/<uuid:agreement_id>/documents/",
+        FinancingDocumentListCreateAPIView.as_view(),
+        name="financing-documents",
+    ),
+    path(
+        "businesses/<uuid:business_id>/financing/<uuid:agreement_id>/documents/<uuid:document_id>/download/",
+        FinancingDocumentDownloadAPIView.as_view(),
+        name="financing-document-download",
     ),
     path(
         "businesses/<uuid:business_id>/returns/",

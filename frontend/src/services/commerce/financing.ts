@@ -1,0 +1,127 @@
+import {
+  financingAgreementResponseSchema,
+  financingAgreementsResponseSchema,
+  financingAvailabilityResponseSchema,
+  financingDocumentResponseSchema,
+  financingPaymentResponseSchema,
+} from "@/schemas/commerce/financing";
+import { commerceBase } from "@/services/commerce/shared";
+import { requestApi } from "@/services/global/api-client";
+import { withCsrfRetry } from "@/services/identity/csrf";
+
+function getFinancingAgreements(
+  businessId: string,
+  accessToken: string,
+  signal?: AbortSignal,
+) {
+  return requestApi({
+    accessToken,
+    path: `${commerceBase(businessId)}/financing/`,
+    schema: financingAgreementsResponseSchema,
+    signal,
+  });
+}
+
+function getFinancingAvailability(
+  businessId: string,
+  accessToken: string,
+  signal?: AbortSignal,
+) {
+  return requestApi({
+    accessToken,
+    path: `${commerceBase(businessId)}/financing/availability/`,
+    schema: financingAvailabilityResponseSchema,
+    signal,
+  });
+}
+
+function createFinancingAgreement(
+  businessId: string,
+  accessToken: string,
+  body: unknown,
+) {
+  return withCsrfRetry((csrfToken) =>
+    requestApi({
+      accessToken,
+      body,
+      csrfToken,
+      method: "POST",
+      path: `${commerceBase(businessId)}/financing/`,
+      schema: financingAgreementResponseSchema,
+    }),
+  );
+}
+
+function createFinancingPayment(
+  businessId: string,
+  agreementId: string,
+  accessToken: string,
+  body: unknown,
+) {
+  return withCsrfRetry((csrfToken) =>
+    requestApi({
+      accessToken,
+      body,
+      csrfToken,
+      method: "POST",
+      path: `${commerceBase(businessId)}/financing/${agreementId}/payments/`,
+      schema: financingPaymentResponseSchema,
+    }),
+  );
+}
+
+function uploadFinancingDocument(
+  businessId: string,
+  agreementId: string,
+  accessToken: string,
+  file: File,
+  description = "",
+) {
+  const body = new FormData();
+  body.append("file", file);
+  body.append("description", description);
+  return withCsrfRetry((csrfToken) =>
+    requestApi({
+      accessToken,
+      body,
+      csrfToken,
+      method: "POST",
+      path: `${commerceBase(businessId)}/financing/${agreementId}/documents/`,
+      schema: financingDocumentResponseSchema,
+    }),
+  );
+}
+
+async function downloadFinancingDocument(
+  downloadPath: string,
+  accessToken: string,
+  filename: string,
+) {
+  const developmentApiBaseUrl =
+    process.env.NODE_ENV === "development" ? "http://localhost:8000" : "";
+  const baseUrl =
+    process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ?? developmentApiBaseUrl;
+  const response = await fetch(`${baseUrl}${downloadPath}`, {
+    credentials: "include",
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (!response.ok) throw new Error("Financing document could not be downloaded.");
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
+}
+
+export {
+  createFinancingAgreement,
+  createFinancingPayment,
+  downloadFinancingDocument,
+  getFinancingAgreements,
+  getFinancingAvailability,
+  uploadFinancingDocument,
+};

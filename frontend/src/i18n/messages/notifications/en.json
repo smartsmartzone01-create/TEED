@@ -37,6 +37,7 @@
       "business_control_decision": {"title":"Business lifecycle updated","message":"{decision, select, approve {{action, select, delete {{workspace_name} is now scheduled for deletion. You may cancel deletion during the recovery period.} disable {{workspace_name} is now disabled.} reactivate {{workspace_name} is active again.} cancel_deletion {Deletion of {workspace_name} was cancelled and the Business is active again.} other {The lifecycle request for {workspace_name} was approved.}}} reject {The {action} request for {workspace_name} was rejected. No lifecycle change was applied.} other {The lifecycle request for {workspace_name} was decided.}}"},
       "commerce_sold_out": {"title":"Item sold out","message":"{item_name} ({sku}) is sold out. Record new stock to make it available again."},
       "commerce_low_stock": {"title":"Low stock","message":"{item_name} has {quantity} {unit} remaining. Your alert level is {threshold}."},
+      "commerce_financing_due": {"title":"Financing payment {status}","message":"{customer_name} · {agreement_reference} · {amount} due on {due_date}. Open the financing agreement to copy or share the customer reminder."},
       "system_announcement": {"title":"TEED update","message":"An important TEED account update is available."},
       "default": {"title":"Account notification","message":"An important update is available for your account."}
     }

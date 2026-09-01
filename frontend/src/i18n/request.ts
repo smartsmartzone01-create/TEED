@@ -79,6 +79,7 @@ export default getRequestConfig(async ({ requestLocale }) => {
     commerceSalesMessages,
     commerceReturnsMessages,
     commerceFinanceMessages,
+    commerceFinancingMessages,
   ] = await Promise.all([
     import(`@/i18n/messages/dashboard/${locale}.json`),
     import(`@/i18n/messages/global/${locale}.json`),
@@ -95,6 +96,7 @@ export default getRequestConfig(async ({ requestLocale }) => {
     import(`@/i18n/messages/commerce-sales/${locale}.json`),
     import(`@/i18n/messages/commerce-returns/${locale}.json`),
     import(`@/i18n/messages/commerce-finance/${locale}.json`),
+    import(`@/i18n/messages/commerce-financing/${locale}.json`),
   ]);
 
   const messages = {
@@ -113,6 +115,7 @@ export default getRequestConfig(async ({ requestLocale }) => {
     ...commerceSalesMessages.default,
     ...commerceReturnsMessages.default,
     ...commerceFinanceMessages.default,
+    ...commerceFinancingMessages.default,
   };
 
   return {
