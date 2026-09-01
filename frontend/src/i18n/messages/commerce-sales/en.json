@@ -9,6 +9,14 @@
     "salesActionsHelp": "Record a new sale or review your recent sales history.",
     "viewSaleHistory": "View sale history",
     "closeRecorder": "Close recorder",
+    "status": {
+      "title": "Sales status",
+      "context": "Based on active sales",
+      "salesToday": "Sales today",
+      "revenueToday": "Revenue today",
+      "topSellerWeek": "Top seller this week",
+      "noSalesWeek": "No sales this week"
+    },
     "transactionType": "Transaction type",
     "normalSale": "Normal sale",
     "tradeIn": "Trade-in",

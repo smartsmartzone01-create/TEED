@@ -1,9 +1,10 @@
 "use client";
 
-import { Copy, Printer, Share2 } from "lucide-react";
+import { CircleHelp, Copy, Plus, Printer, Share2, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 
+import { SalesStatusCard } from "@/components/commerce/sales/sales-status-card";
 import {
   TradeInFields,
   emptyTradeInDraft,
@@ -12,6 +13,7 @@ import {
 import { Button } from "@/components/global/primitives/button";
 import { Input } from "@/components/global/primitives/input";
 import { Select } from "@/components/global/primitives/select";
+import { Tooltip } from "@/components/global/primitives/tooltip";
 import { useNotification } from "@/providers/global/notification-provider";
 import { useIdentitySession } from "@/providers/identity/identity-session-provider";
 import { useWorkspace } from "@/providers/workspace/workspace-provider";
@@ -276,10 +278,6 @@ function SalesWorkspace({ businessId }: { businessId: string }) {
     setShowRecorder(false);
   };
 
-  const viewHistory = () => {
-    historyRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
-
   const beginEdit = (sale: Sale) => {
     if (sale.sale_mode === "trade_in" || sale.trade_in?.stock_receipt) return;
     setEditing(sale);
@@ -502,29 +500,42 @@ function SalesWorkspace({ businessId }: { businessId: string }) {
   };
 
   return (
-    <section className="mx-auto w-full max-w-7xl space-y-5 px-4 py-6 sm:px-6 lg:px-8">
-      <header className="border-b border-slate-200 pb-5 dark:border-slate-800">
-        <h1 className="text-2xl font-bold text-slate-950 dark:text-white">{t("title")}</h1>
-        <p className="mt-1 max-w-2xl text-sm text-slate-500">{t("description")}</p>
-      </header>
+    <section className="w-full space-y-4 py-4">
+      <SalesStatusCard sales={sales} />
 
-      <section className={`${panel} flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between`}>
-        <div>
-          <h2 className="font-bold text-slate-950 dark:text-white">{t("salesActionsTitle")}</h2>
-          <p className="mt-1 text-sm text-slate-500">{t("salesActionsHelp")}</p>
-        </div>
-        <div className="grid gap-2 sm:flex sm:flex-wrap">
-          <Button type="button" variant="outline" onClick={viewHistory}>{t("viewSaleHistory")}</Button>
-          {showRecorder ? (
-            <Button type="button" variant="outline" onClick={closeRecorder}>{t("closeRecorder")}</Button>
-          ) : (
-            <Button type="button" onClick={openRecorder}>{t("recordSale")}</Button>
-          )}
+      <section className="rounded-lg border border-slate-200 bg-white px-1 py-2 dark:border-slate-800 dark:bg-slate-950 sm:px-2">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex min-w-0 items-center gap-1">
+            <p className="truncate text-xs font-semibold text-slate-700 dark:text-slate-200 sm:text-sm">
+              {editing ? t("editSale") : t("recordSale")}
+            </p>
+            <Tooltip content={t("salesActionsHelp")} side="top">
+              <button
+                aria-label={t("salesActionsHelp")}
+                className="inline-flex size-7 shrink-0 items-center justify-center rounded-md text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/50 dark:text-slate-500 dark:hover:bg-slate-900 dark:hover:text-slate-200"
+                type="button"
+              >
+                <CircleHelp className="size-3.5" />
+              </button>
+            </Tooltip>
+          </div>
+
+          <Button
+            aria-controls="sales-recording-workspace"
+            aria-expanded={showRecorder}
+            className="h-8 shrink-0 px-3 text-xs"
+            onClick={showRecorder ? closeRecorder : openRecorder}
+            type="button"
+            variant="outline"
+          >
+            {showRecorder ? <X className="size-3.5" /> : <Plus className="size-3.5" />}
+            {showRecorder ? t("closeRecorder") : t("recordSale")}
+          </Button>
         </div>
       </section>
 
       {showRecorder ? (
-        <div ref={recorderRef}>
+        <div id="sales-recording-workspace" ref={recorderRef}>
           <form className={`${panel} grid gap-4 scroll-mt-5`} onSubmit={(event) => void onSubmit(event)}>
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-xl font-bold">{editing ? t("editSale") : t("recordSale")}</h2>

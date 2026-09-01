@@ -9,6 +9,14 @@
     "salesActionsHelp": "Rekodi mauzo mapya au pitia historia yako ya mauzo ya hivi karibuni.",
     "viewSaleHistory": "Angalia historia ya mauzo",
     "closeRecorder": "Funga sehemu ya kurekodi",
+    "status": {
+      "title": "Hali ya mauzo",
+      "context": "Kulingana na mauzo halali",
+      "salesToday": "Mauzo ya leo",
+      "revenueToday": "Mapato ya leo",
+      "topSellerWeek": "Bidhaa inayouza zaidi wiki hii",
+      "noSalesWeek": "Hakuna mauzo wiki hii"
+    },
     "transactionType": "Aina ya muamala",
     "normalSale": "Mauzo ya kawaida",
     "tradeIn": "Trade-in",
