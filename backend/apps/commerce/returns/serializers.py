@@ -145,7 +145,9 @@ class ReturnCreateSerializer(serializers.Serializer):
             )
         if resolution != SaleReturn.Resolution.REPLACEMENT and replacement:
             raise serializers.ValidationError(
-                {"replacement": "Only replacement returns can include a replacement item."}
+                {
+                    "replacement": "Only replacement returns can include a replacement item."
+                }
             )
         return attrs
 
@@ -180,7 +182,9 @@ class ReturnReplacementSerializer(serializers.ModelSerializer):
     product_name = serializers.CharField(
         source="product.name", read_only=True, default=""
     )
-    product_sku = serializers.CharField(source="product.sku", read_only=True, default="")
+    product_sku = serializers.CharField(
+        source="product.sku", read_only=True, default=""
+    )
     tracked_unit_reference = serializers.CharField(
         source="tracked_unit.internal_serial", read_only=True, default=""
     )

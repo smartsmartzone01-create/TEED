@@ -6,13 +6,17 @@ from .models import Budget, Expense
 
 
 MANUAL_EXPENSE_CATEGORIES = [
-    choice for choice in Expense.Category.choices if choice[0] != Expense.Category.STOCK_EXPENSE
+    choice
+    for choice in Expense.Category.choices
+    if choice[0] != Expense.Category.STOCK_EXPENSE
 ]
 
 
 class ExpenseListQuerySerializer(serializers.Serializer):
     month = serializers.RegexField(r"^\d{4}-\d{2}$", required=False)
-    category = serializers.ChoiceField(choices=MANUAL_EXPENSE_CATEGORIES, required=False)
+    category = serializers.ChoiceField(
+        choices=MANUAL_EXPENSE_CATEGORIES, required=False
+    )
 
 
 class ExpenseCreateSerializer(serializers.ModelSerializer):
@@ -38,11 +42,15 @@ class ExpenseCreateSerializer(serializers.ModelSerializer):
 
 
 class ExpenseSerializer(serializers.ModelSerializer):
-    category_label = serializers.CharField(source="get_category_display", read_only=True)
+    category_label = serializers.CharField(
+        source="get_category_display", read_only=True
+    )
     payment_method_label = serializers.CharField(
         source="get_payment_method_display", read_only=True
     )
-    recorded_by_email = serializers.EmailField(source="recorded_by.email", read_only=True)
+    recorded_by_email = serializers.EmailField(
+        source="recorded_by.email", read_only=True
+    )
 
     class Meta:
         model = Expense

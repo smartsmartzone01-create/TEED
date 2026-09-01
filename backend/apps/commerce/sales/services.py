@@ -220,7 +220,11 @@ def _record_trade_in(*, sale, actor, business_id, trade_in):
         ).first()
         if stock_product is None:
             raise ValidationError(
-                {"trade_in": ["Choose an active SKU from this business for the received item."]}
+                {
+                    "trade_in": [
+                        "Choose an active SKU from this business for the received item."
+                    ]
+                }
             )
 
     if trade_in.get("add_to_stock"):
@@ -427,7 +431,9 @@ def _can_edit_sale(*, membership, actor, sale):
 
 def _restore_sale_inventory(sale):
     tracked_ids = list(
-        sale.items.exclude(tracked_unit_id=None).values_list("tracked_unit_id", flat=True)
+        sale.items.exclude(tracked_unit_id=None).values_list(
+            "tracked_unit_id", flat=True
+        )
     )
     if tracked_ids:
         TrackedUnit.objects.filter(id__in=tracked_ids).update(

@@ -63,7 +63,10 @@ class Migration(migrations.Migration):
                 (
                     "source",
                     models.CharField(
-                        choices=[("stock", "From stock"), ("independent", "Independent")],
+                        choices=[
+                            ("stock", "From stock"),
+                            ("independent", "Independent"),
+                        ],
                         max_length=16,
                     ),
                 ),
@@ -79,7 +82,10 @@ class Migration(migrations.Migration):
                         null=True,
                     ),
                 ),
-                ("cost_total", models.DecimalField(decimal_places=2, default=0, max_digits=14)),
+                (
+                    "cost_total",
+                    models.DecimalField(decimal_places=2, default=0, max_digits=14),
+                ),
                 (
                     "product",
                     models.ForeignKey(

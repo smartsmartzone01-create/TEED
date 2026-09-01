@@ -169,7 +169,11 @@ def _record_replacement(*, business, return_record, replacement_values):
         )
     if product.tracking_mode == Product.TrackingMode.QUANTITY and tracked_unit_id:
         raise ValidationError(
-            {"replacement": [f"{product.name} is quantity-tracked; do not choose a unit."]}
+            {
+                "replacement": [
+                    f"{product.name} is quantity-tracked; do not choose a unit."
+                ]
+            }
         )
 
     replacement = ReturnReplacement.objects.create(

@@ -51,21 +51,17 @@ def budget_period_bounds(*, period_type, period_start):
 
 
 def _operating_expense_spend(*, business, start, end):
-    return (
-        Expense.objects.filter(
-            business=business,
-            stock_receipt__isnull=True,
-            incurred_at__date__gte=start,
-            incurred_at__date__lt=end,
-        ).aggregate(total=Sum("amount"))["total"]
-        or Decimal("0")
-    )
+    return Expense.objects.filter(
+        business=business,
+        stock_receipt__isnull=True,
+        incurred_at__date__gte=start,
+        incurred_at__date__lt=end,
+    ).aggregate(total=Sum("amount"))["total"] or Decimal("0")
 
 
 def _stock_purchase_spend(*, business, start, end):
     line_value = ExpressionWrapper(
-        F("quantity_received")
-        * Coalesce(F("unit_cost"), Value(Decimal("0.00"))),
+        F("quantity_received") * Coalesce(F("unit_cost"), Value(Decimal("0.00"))),
         output_field=DecimalField(max_digits=20, decimal_places=2),
     )
     batches = StockBatch.objects.filter(
@@ -85,18 +81,15 @@ def _stock_purchase_spend(*, business, start, end):
         buying=Sum(line_value),
         line_additional=Sum("additional_cost"),
     )
-    receipt_additional = (
-        StockReceipt.objects.filter(
-            business=business,
-            status__in=[
-                StockReceipt.Status.RECEIVED,
-                StockReceipt.Status.ARCHIVED,
-            ],
-            received_at__date__gte=start,
-            received_at__date__lt=end,
-        ).aggregate(total=Sum("additional_cost"))["total"]
-        or Decimal("0")
-    )
+    receipt_additional = StockReceipt.objects.filter(
+        business=business,
+        status__in=[
+            StockReceipt.Status.RECEIVED,
+            StockReceipt.Status.ARCHIVED,
+        ],
+        received_at__date__gte=start,
+        received_at__date__lt=end,
+    ).aggregate(total=Sum("additional_cost"))["total"] or Decimal("0")
     return (
         (batch_totals["buying"] or Decimal("0"))
         + (batch_totals["line_additional"] or Decimal("0"))

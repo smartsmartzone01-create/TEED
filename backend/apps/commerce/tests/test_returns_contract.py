@@ -297,20 +297,26 @@ class ReturnsContractTests(TestCase):
         old_batch.refresh_from_db()
         new_batch.refresh_from_db()
         record.refresh_from_db()
-        allocations = list(record.replacement.allocations.order_by("batch__received_at"))
+        allocations = list(
+            record.replacement.allocations.order_by("batch__received_at")
+        )
 
         self.assertEqual(replacement_product.current_quantity, Decimal("1"))
         self.assertEqual(old_batch.quantity_remaining, Decimal("0"))
         self.assertEqual(new_batch.quantity_remaining, Decimal("1"))
         self.assertEqual(record.damaged_loss, Decimal("10000"))
         self.assertEqual(record.replacement_cost, Decimal("22000"))
-        self.assertEqual([item.quantity for item in allocations], [Decimal("1"), Decimal("1")])
+        self.assertEqual(
+            [item.quantity for item in allocations], [Decimal("1"), Decimal("1")]
+        )
         self.assertEqual(
             [item.unit_cost for item in allocations],
             [Decimal("10000"), Decimal("12000")],
         )
 
-    def test_independent_replacement_records_cost_and_provenance_without_touching_stock(self):
+    def test_independent_replacement_records_cost_and_provenance_without_touching_stock(
+        self,
+    ):
         returned_product = Product.objects.create(
             business=self.business,
             name="Returned cable",
@@ -359,7 +365,9 @@ class ReturnsContractTests(TestCase):
         self.assertEqual(record.replacement.acquisition_source, "Nearby supplier")
         self.assertEqual(record.replacement.item_name, "Emergency replacement cable")
         self.assertEqual(record.replacement.item_details["brand"], "CableCo")
-        self.assertEqual(record.replacement.item_details["identifier_value"], "CAB-0001")
+        self.assertEqual(
+            record.replacement.item_details["identifier_value"], "CAB-0001"
+        )
         self.assertEqual(record.replacement.cost_total, Decimal("7000"))
         self.assertEqual(record.replacement_cost, Decimal("7000"))
         self.assertEqual(record.damaged_loss, Decimal("5000"))
