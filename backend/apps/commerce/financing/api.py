@@ -9,7 +9,7 @@ from apps.workspaces.policy import WorkspacePermission, role_has_permission
 
 from ..api import CommerceBaseAPIView
 from ..catalog.models import Product
-from ..inventory.models import TrackedUnit
+from ..inventory.models import StockBatch, TrackedUnit
 from ..services import commerce_membership
 from .models import FinancingAgreement, FinancingDocument
 from .serializers import (
@@ -64,6 +64,21 @@ class FinancingAvailabilityAPIView(CommerceBaseAPIView):
             is_active=True,
             current_quantity__gt=0,
         ).order_by("name", "sku")
+        quantity_costs_by_product = {}
+        if show_internal:
+            quantity_batches = (
+                StockBatch.objects.filter(
+                    product__business=membership.business,
+                    product__is_active=True,
+                    tracking_mode=Product.TrackingMode.QUANTITY,
+                    quantity_remaining__gt=0,
+                )
+                .order_by("product_id", "received_at", "created_at")
+            )
+            for batch in quantity_batches:
+                quantity_costs_by_product.setdefault(
+                    str(batch.product_id), str(_effective_unit_cost(batch))
+                )
         units = (
             TrackedUnit.objects.filter(
                 product__business=membership.business,
@@ -129,6 +144,15 @@ class FinancingAvailabilityAPIView(CommerceBaseAPIView):
                         "selling_price": str(product.selling_price)
                         if product.selling_price is not None
                         else None,
+                        **(
+                            {
+                                "acquisition_unit_cost": quantity_costs_by_product[
+                                    str(product.id)
+                                ]
+                            }
+                            if str(product.id) in quantity_costs_by_product
+                            else {}
+                        ),
                         "available_units": units_by_product.get(str(product.id), []),
                     }
                     for product in products

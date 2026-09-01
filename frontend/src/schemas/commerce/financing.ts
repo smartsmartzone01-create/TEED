@@ -11,6 +11,7 @@ const financingAvailabilityProductSchema = z.object({
   tracking_mode: z.enum(["quantity", "individual"]),
   current_quantity: decimal,
   selling_price: decimal.nullable(),
+  acquisition_unit_cost: decimal.optional(),
   available_units: z.array(
     z.object({
       id: z.string(),

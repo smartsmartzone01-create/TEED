@@ -29,6 +29,7 @@ type FinancingAvailabilityProduct = {
   tracking_mode: "quantity" | "individual";
   current_quantity: string;
   selling_price: string | null;
+  acquisition_unit_cost?: string;
   available_units: FinancingAvailabilityUnit[];
 };
 
