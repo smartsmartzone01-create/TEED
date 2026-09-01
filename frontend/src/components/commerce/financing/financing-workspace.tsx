@@ -56,6 +56,13 @@ type LineDraft = {
   product_id: string;
   tracked_unit_id: string;
   item_name: string;
+  brand: string;
+  model_name: string;
+  color: string;
+  capacity_size: string;
+  identifier_type: string;
+  identifier_value: string;
+  acquired_from: string;
   quantity: string;
   unit_price: string;
   acquisition_unit_cost: string;
@@ -66,6 +73,13 @@ const emptyLine = (): LineDraft => ({
   product_id: "",
   tracked_unit_id: "",
   item_name: "",
+  brand: "",
+  model_name: "",
+  color: "",
+  capacity_size: "",
+  identifier_type: "",
+  identifier_value: "",
+  acquired_from: "",
   quantity: "1",
   unit_price: "",
   acquisition_unit_cost: "",
@@ -239,7 +253,15 @@ function FinancingWorkspace({ businessId }: { businessId: string }) {
     if (step === 2) {
       return lines.every((line) => {
         if (!line.unit_price || Number(line.quantity) <= 0) return false;
-        if (source === "independent") return Boolean(line.item_name.trim());
+        if (source === "independent") {
+          const hasIdentifierType = Boolean(line.identifier_type.trim());
+          const hasIdentifierValue = Boolean(line.identifier_value.trim());
+          return Boolean(
+            line.item_name.trim() &&
+              line.acquired_from.trim() &&
+              hasIdentifierType === hasIdentifierValue,
+          );
+        }
         const product = availability.find((item) => item.id === line.product_id);
         if (!product) return false;
         return !product.available_units.length || Boolean(line.tracked_unit_id);
@@ -311,6 +333,21 @@ function FinancingWorkspace({ businessId }: { businessId: string }) {
             ? { product_id: line.product_id }
             : {
                 item_name: line.item_name.trim(),
+                item_details: {
+                  acquired_from: line.acquired_from.trim(),
+                  ...(line.brand.trim() ? { brand: line.brand.trim() } : {}),
+                  ...(line.model_name.trim() ? { model_name: line.model_name.trim() } : {}),
+                  ...(line.color.trim() ? { color: line.color.trim() } : {}),
+                  ...(line.capacity_size.trim()
+                    ? { capacity_size: line.capacity_size.trim() }
+                    : {}),
+                  ...(line.identifier_type.trim()
+                    ? { identifier_type: line.identifier_type.trim() }
+                    : {}),
+                  ...(line.identifier_value.trim()
+                    ? { identifier_value: line.identifier_value.trim() }
+                    : {}),
+                },
                 ...(line.acquisition_unit_cost
                   ? { acquisition_unit_cost: line.acquisition_unit_cost }
                   : {}),
@@ -548,33 +585,43 @@ function FinancingWorkspace({ businessId }: { businessId: string }) {
                     : Number(acquisitionCost) * (trackedUnit ? 1 : acquisitionQuantity);
                 return (
                   <div className="grid gap-2 rounded-lg border border-slate-200 p-2.5 dark:border-slate-800" key={index}>
-                    <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-                      {source === "stock" ? (
+                    {source === "independent" ? (
+                      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                        <Input className={control} placeholder={t("itemName")} value={line.item_name} onChange={(event) => updateLine(index, { item_name: event.target.value })} />
+                        <Input className={control} placeholder={t("acquiredFrom")} value={line.acquired_from} onChange={(event) => updateLine(index, { acquired_from: event.target.value })} />
+                        <Input className={control} placeholder={t("brand")} value={line.brand} onChange={(event) => updateLine(index, { brand: event.target.value })} />
+                        <Input className={control} placeholder={t("modelName")} value={line.model_name} onChange={(event) => updateLine(index, { model_name: event.target.value })} />
+                        <Input className={control} placeholder={t("color")} value={line.color} onChange={(event) => updateLine(index, { color: event.target.value })} />
+                        <Input className={control} placeholder={t("capacitySize")} value={line.capacity_size} onChange={(event) => updateLine(index, { capacity_size: event.target.value })} />
+                        <Input className={control} placeholder={t("identifierType")} value={line.identifier_type} onChange={(event) => updateLine(index, { identifier_type: event.target.value })} />
+                        <Input className={control} placeholder={t("identifierValue")} value={line.identifier_value} onChange={(event) => updateLine(index, { identifier_value: event.target.value })} />
+                        <Input className={control} min="0.001" placeholder={t("quantity")} step="0.001" type="number" value={line.quantity} onChange={(event) => updateLine(index, { quantity: event.target.value })} />
+                        <Input className={control} min="0" placeholder={t("unitPrice")} step="0.01" type="number" value={line.unit_price} onChange={(event) => updateLine(index, { unit_price: event.target.value })} />
+                        <Input className={control} min="0" placeholder={t("acquisitionCost")} step="0.01" type="number" value={line.acquisition_unit_cost} onChange={(event) => updateLine(index, { acquisition_unit_cost: event.target.value })} />
+                      </div>
+                    ) : (
+                      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
                         <Select className={control} value={line.product_id} onChange={(event) => chooseProduct(index, event.target.value)}>
                           <option value="">{t("chooseProduct")}</option>
                           {availability.map((item) => <option key={item.id} value={item.id}>{item.name} · {item.sku} · {formatQuantityWithUnit(item.current_quantity, item.unit, locale)}</option>)}
                         </Select>
-                      ) : (
-                        <Input className={control} placeholder={t("itemName")} value={line.item_name} onChange={(event) => updateLine(index, { item_name: event.target.value })} />
-                      )}
-                      {source === "stock" && hasExactItems && product ? (
-                        <Select className={control} value={line.tracked_unit_id} onChange={(event) => chooseTrackedUnit(index, product, event.target.value)}>
-                          <option value="">{t("chooseItem")}</option>
-                          {product.available_units.map((unit) => <option key={unit.id} value={unit.id}>{unitLabel(unit)}</option>)}
-                        </Select>
-                      ) : (
-                        <Input className={control} disabled={source === "stock" && hasExactItems} min="0.001" placeholder={t("quantity")} step="0.001" type="number" value={hasExactItems ? "1" : line.quantity} onChange={(event) => updateLine(index, { quantity: event.target.value })} />
-                      )}
-                      <Input className={control} min="0" placeholder={t("unitPrice")} step="0.01" type="number" value={line.unit_price} onChange={(event) => updateLine(index, { unit_price: event.target.value })} />
-                      {source === "independent" ? (
-                        <Input className={control} min="0" placeholder={t("acquisitionCost")} step="0.01" type="number" value={line.acquisition_unit_cost} onChange={(event) => updateLine(index, { acquisition_unit_cost: event.target.value })} />
-                      ) : acquisitionTotal !== undefined ? (
-                        <label className={field}>
-                          {trackedUnit ? t("acquisitionCost") : t("acquisitionTotal")}
-                          <Input className={control} disabled value={money(acquisitionTotal, locale)} />
-                        </label>
-                      ) : null}
-                    </div>
+                        {hasExactItems && product ? (
+                          <Select className={control} value={line.tracked_unit_id} onChange={(event) => chooseTrackedUnit(index, product, event.target.value)}>
+                            <option value="">{t("chooseItem")}</option>
+                            {product.available_units.map((unit) => <option key={unit.id} value={unit.id}>{unitLabel(unit)}</option>)}
+                          </Select>
+                        ) : (
+                          <Input className={control} disabled={hasExactItems} min="0.001" placeholder={t("quantity")} step="0.001" type="number" value={hasExactItems ? "1" : line.quantity} onChange={(event) => updateLine(index, { quantity: event.target.value })} />
+                        )}
+                        <Input className={control} min="0" placeholder={t("unitPrice")} step="0.01" type="number" value={line.unit_price} onChange={(event) => updateLine(index, { unit_price: event.target.value })} />
+                        {acquisitionTotal !== undefined ? (
+                          <label className={field}>
+                            {trackedUnit ? t("acquisitionCost") : t("acquisitionTotal")}
+                            <Input className={control} disabled value={money(acquisitionTotal, locale)} />
+                          </label>
+                        ) : null}
+                      </div>
+                    )}
                     <div className="flex items-end justify-between gap-2">
                       <label className={`${field} max-w-56 flex-1`}>{t("warranty")}<Select className={control} value={line.warranty_months ?? ""} onChange={(event) => updateLine(index, { warranty_months: event.target.value ? Number(event.target.value) as FinancingWarrantyMonths : null })}><option value="">{t("noWarranty")}</option>{warrantyOptions.map((months) => <option key={months} value={months}>{t("warrantyMonths", { months })}</option>)}</Select></label>
                       <Button className="h-9 px-2 text-xs" disabled={lines.length === 1} onClick={() => setLines((current) => current.filter((_, lineIndex) => lineIndex !== index))} type="button" variant="outline">{t("remove")}</Button>

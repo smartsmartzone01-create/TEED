@@ -132,6 +132,27 @@ class FinancingAgreementCreateSerializer(serializers.Serializer):
                     raise serializers.ValidationError(
                         {"items": "Enter a name for every independently acquired product."}
                     )
+                details = item.get("item_details") or {}
+                if not isinstance(details, dict):
+                    raise serializers.ValidationError(
+                        {"items": "Independent product details must be an object."}
+                    )
+                acquired_from = str(details.get("acquired_from", "")).strip()
+                if not acquired_from:
+                    raise serializers.ValidationError(
+                        {"items": "Record where every independently acquired product came from."}
+                    )
+                identifier_type = str(details.get("identifier_type", "")).strip()
+                identifier_value = str(details.get("identifier_value", "")).strip()
+                if bool(identifier_type) != bool(identifier_value):
+                    raise serializers.ValidationError(
+                        {"items": "Record both the identifier type and identifier value."}
+                    )
+                item["item_details"] = {
+                    str(key): str(value).strip()
+                    for key, value in details.items()
+                    if str(value).strip()
+                }
                 item.pop("product_id", None)
                 item.pop("tracked_unit_id", None)
                 continue
