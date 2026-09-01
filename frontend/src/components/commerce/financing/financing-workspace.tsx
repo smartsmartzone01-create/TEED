@@ -540,6 +540,12 @@ function FinancingWorkspace({ businessId }: { businessId: string }) {
                 const trackedUnit = product?.available_units.find((unit) => unit.id === line.tracked_unit_id);
                 const hasExactItems = Boolean(product?.available_units.length);
                 const acquisitionCost = trackedUnit?.acquisition_unit_cost ?? (!hasExactItems ? product?.acquisition_unit_cost : undefined);
+                const acquisitionQuantity = Number(line.quantity);
+                const acquisitionTotal =
+                  acquisitionCost === undefined ||
+                  (!trackedUnit && (!Number.isFinite(acquisitionQuantity) || acquisitionQuantity <= 0))
+                    ? undefined
+                    : Number(acquisitionCost) * (trackedUnit ? 1 : acquisitionQuantity);
                 return (
                   <div className="grid gap-2 rounded-lg border border-slate-200 p-2.5 dark:border-slate-800" key={index}>
                     <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
@@ -562,10 +568,10 @@ function FinancingWorkspace({ businessId }: { businessId: string }) {
                       <Input className={control} min="0" placeholder={t("unitPrice")} step="0.01" type="number" value={line.unit_price} onChange={(event) => updateLine(index, { unit_price: event.target.value })} />
                       {source === "independent" ? (
                         <Input className={control} min="0" placeholder={t("acquisitionCost")} step="0.01" type="number" value={line.acquisition_unit_cost} onChange={(event) => updateLine(index, { acquisition_unit_cost: event.target.value })} />
-                      ) : acquisitionCost ? (
+                      ) : acquisitionTotal !== undefined ? (
                         <label className={field}>
-                          {t("acquisitionCost")}
-                          <Input className={control} disabled value={money(acquisitionCost, locale)} />
+                          {trackedUnit ? t("acquisitionCost") : t("acquisitionTotal")}
+                          <Input className={control} disabled value={money(acquisitionTotal, locale)} />
                         </label>
                       ) : null}
                     </div>

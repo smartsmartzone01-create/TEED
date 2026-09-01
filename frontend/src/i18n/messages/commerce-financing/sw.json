@@ -34,6 +34,7 @@
     "quantity": "Kiasi",
     "unitPrice": "Thamani ya kuuza / kila kipimo",
     "acquisitionCost": "Gharama ya kupata / kila kipimo",
+    "acquisitionTotal": "Gharama ya kupata (kiasi kilichochaguliwa)",
     "addProduct": "Ongeza bidhaa nyingine",
     "remove": "Ondoa",
     "warranty": "Dhamana",

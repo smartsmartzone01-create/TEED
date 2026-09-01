@@ -34,6 +34,7 @@
     "quantity": "Quantity",
     "unitPrice": "Selling value / unit",
     "acquisitionCost": "Acquisition cost / unit",
+    "acquisitionTotal": "Acquisition cost (selected quantity)",
     "addProduct": "Add another product",
     "remove": "Remove",
     "warranty": "Warranty",
