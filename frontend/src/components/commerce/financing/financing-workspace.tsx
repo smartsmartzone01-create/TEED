@@ -15,6 +15,10 @@ import {
 import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 
+import {
+  FinancingShareableSummaryDialog,
+  type FinancingShareableSummaryData,
+} from "@/components/commerce/financing/financing-shareable-summary";
 import { Button } from "@/components/global/primitives/button";
 import { Input } from "@/components/global/primitives/input";
 import { Select } from "@/components/global/primitives/select";
@@ -150,6 +154,8 @@ function FinancingWorkspace({ businessId }: { businessId: string }) {
   const [paymentDrafts, setPaymentDrafts] = useState<Record<string, string>>({});
   const [paymentRefs, setPaymentRefs] = useState<Record<string, string>>({});
   const [documentDrafts, setDocumentDrafts] = useState<Record<string, File | null>>({});
+  const [savedSummary, setSavedSummary] = useState<FinancingShareableSummaryData | null>(null);
+  const [summaryDialogOpen, setSummaryDialogOpen] = useState(false);
 
   const load = useCallback(
     async (signal?: AbortSignal) => {
@@ -303,10 +309,59 @@ function FinancingWorkspace({ businessId }: { businessId: string }) {
 
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!accessToken || !canRecord || !stepValid) return;
+    if (!stepValid) return;
+    if (step < stepKeys.length - 1) {
+      setStep((value) => Math.min(stepKeys.length - 1, value + 1));
+      return;
+    }
+    if (!accessToken || !canRecord) return;
+
+    const upfrontValue = transactionType === "upfront" ? Number(upfrontCash || 0) : 0;
+    const tradeInValue = transactionType === "trade_in" ? Number(tradeInCredit || 0) : 0;
+    const shareableItems = lines.map((line, index) => {
+      const product = availability.find((item) => item.id === line.product_id);
+      const trackedUnit = product?.available_units.find(
+        (unit) => unit.id === line.tracked_unit_id,
+      );
+      const details = source === "independent"
+        ? [
+            { label: t("brand"), value: line.brand.trim() },
+            { label: t("modelName"), value: line.model_name.trim() },
+            { label: t("color"), value: line.color.trim() },
+            { label: t("capacitySize"), value: line.capacity_size.trim() },
+            ...(line.identifier_type.trim() && line.identifier_value.trim()
+              ? [{ label: line.identifier_type.trim().toUpperCase(), value: line.identifier_value.trim() }]
+              : []),
+          ].filter((detail) => Boolean(detail.value))
+        : trackedUnit
+          ? [
+              { label: t("brand"), value: trackedUnit.brand },
+              { label: t("modelName"), value: trackedUnit.model_name },
+              { label: t("color"), value: trackedUnit.color },
+              { label: t("capacitySize"), value: trackedUnit.capacity },
+              ...trackedUnit.identifiers.map((identifier) => ({
+                label: identifier.kind.toUpperCase(),
+                value: identifier.value,
+              })),
+            ].filter((detail) => Boolean(detail.value))
+          : [];
+      const quantity = line.tracked_unit_id ? 1 : Number(line.quantity || 0);
+      return {
+        key: `${line.product_id || line.item_name}-${index}`,
+        name: source === "stock" ? product?.name ?? line.item_name : line.item_name.trim(),
+        quantity_text:
+          source === "stock" && product?.unit
+            ? formatQuantityWithUnit(String(quantity), product.unit, locale)
+            : new Intl.NumberFormat(locale, { maximumFractionDigits: 3 }).format(quantity),
+        line_total: quantity * Number(line.unit_price || 0),
+        details,
+        warranty_months: line.warranty_months,
+      };
+    });
+
     setBusy(true);
     try {
-      await createFinancingAgreement(businessId, accessToken, {
+      const response = await createFinancingAgreement(businessId, accessToken, {
         agreement_type: agreementType,
         transaction_type: transactionType,
         source,
@@ -358,6 +413,29 @@ function FinancingWorkspace({ businessId }: { businessId: string }) {
           warranty_months: line.warranty_months,
         })),
       });
+      if (response.data) {
+        setSavedSummary({
+          reference: response.data.reference,
+          created_at: response.data.created_at,
+          agreement_type: agreementType,
+          transaction_type: transactionType,
+          customer_name: customerName.trim(),
+          customer_phone: customerPhone.trim(),
+          customer_region: customerRegion.trim(),
+          contract_total: Number(contractTotal || 0),
+          upfront_cash: upfrontValue,
+          trade_in_item_name: transactionType === "trade_in" ? tradeInItem.trim() : "",
+          trade_in_credit: tradeInValue,
+          contribution_total: upfrontValue + tradeInValue,
+          installment_amount: Number(installmentAmount || 0),
+          frequency,
+          next_due_date: nextDueDate,
+          release_threshold_percent:
+            agreementType === "installment" ? Number(releaseThreshold || 0) : 100,
+          items: shareableItems,
+        });
+        setSummaryDialogOpen(true);
+      }
       notify({ message: t("saved"), tone: "success" });
       closeRecorder();
       await load();
@@ -653,18 +731,96 @@ function FinancingWorkspace({ businessId }: { businessId: string }) {
           {step === 4 ? (
             <div className="grid gap-3 text-sm">
               <p className="text-xs text-slate-500">{t("reviewHint")}</p>
-              <div className="grid grid-cols-2 gap-2 rounded-lg bg-slate-50 p-3 dark:bg-slate-900 sm:grid-cols-4">
-                <div><span className="text-xs text-slate-500">{t("agreementType")}</span><strong className="block">{t(agreementType)}</strong></div>
-                <div><span className="text-xs text-slate-500">{t("customerName")}</span><strong className="block">{customerName}</strong></div>
-                <div><span className="text-xs text-slate-500">{t("contractTotal")}</span><strong className="block">{money(contractTotal || 0, locale)}</strong></div>
-                <div><span className="text-xs text-slate-500">{t("installmentAmount")}</span><strong className="block">{money(installmentAmount || 0, locale)}</strong></div>
-              </div>
+
+              <section className="rounded-lg border border-slate-200 p-3 dark:border-slate-800">
+                <h3 className="text-xs font-bold uppercase tracking-wide text-slate-500">{t("reviewSetup")}</h3>
+                <div className="mt-2 grid grid-cols-2 gap-2 text-xs sm:grid-cols-5">
+                  <div><span className="block text-slate-500">{t("agreementType")}</span><strong>{t(agreementType)}</strong></div>
+                  <div><span className="block text-slate-500">{t("transactionType")}</span><strong>{t(transactionType === "trade_in" ? "tradeIn" : transactionType)}</strong></div>
+                  <div><span className="block text-slate-500">{t("source")}</span><strong>{t(source === "stock" ? "stock" : "independent")}</strong></div>
+                  <div><span className="block text-slate-500">{t("marketType")}</span><strong>{t(marketType)}</strong></div>
+                  <div><span className="block text-slate-500">{t("financingMode")}</span><strong>{t(financingMode === "partner" ? "partnerFinanced" : "businessFinanced")}</strong></div>
+                </div>
+              </section>
+
+              <section className="rounded-lg border border-slate-200 p-3 dark:border-slate-800">
+                <h3 className="text-xs font-bold uppercase tracking-wide text-slate-500">{t("reviewCustomer")}</h3>
+                <div className="mt-2 grid grid-cols-2 gap-2 text-xs sm:grid-cols-3">
+                  <div><span className="block text-slate-500">{t("customerName")}</span><strong>{customerName}</strong></div>
+                  <div><span className="block text-slate-500">{t("customerPhone")}</span><strong>{customerPhone || t("notProvided")}</strong></div>
+                  <div><span className="block text-slate-500">{t("customerRegion")}</span><strong>{customerRegion || t("notProvided")}</strong></div>
+                </div>
+              </section>
+
+              <section className="grid gap-2 rounded-lg border border-slate-200 p-3 dark:border-slate-800">
+                <h3 className="text-xs font-bold uppercase tracking-wide text-slate-500">{t("reviewProducts")}</h3>
+                {lines.map((line, index) => {
+                  const product = availability.find((item) => item.id === line.product_id);
+                  const trackedUnit = product?.available_units.find((unit) => unit.id === line.tracked_unit_id);
+                  const quantity = trackedUnit ? 1 : Number(line.quantity || 0);
+                  const acquisitionUnitCost = source === "independent"
+                    ? line.acquisition_unit_cost
+                    : trackedUnit?.acquisition_unit_cost ?? product?.acquisition_unit_cost ?? "";
+                  const acquisitionTotal = acquisitionUnitCost
+                    ? Number(acquisitionUnitCost) * quantity
+                    : null;
+                  const productName = source === "stock" ? product?.name ?? "—" : line.item_name;
+                  const identityRows = source === "independent"
+                    ? [
+                        [t("acquiredFrom"), line.acquired_from],
+                        [t("brand"), line.brand],
+                        [t("modelName"), line.model_name],
+                        [t("color"), line.color],
+                        [t("capacitySize"), line.capacity_size],
+                        [line.identifier_type || t("identifierType"), line.identifier_value],
+                      ]
+                    : [
+                        [t("sku"), product?.sku ?? ""],
+                        [t("brand"), trackedUnit?.brand ?? ""],
+                        [t("modelName"), trackedUnit?.model_name ?? ""],
+                        [t("color"), trackedUnit?.color ?? ""],
+                        [t("capacitySize"), trackedUnit?.capacity ?? ""],
+                        ...(trackedUnit?.identifiers.map((identifier) => [identifier.kind.toUpperCase(), identifier.value]) ?? []),
+                      ];
+                  return (
+                    <div className="rounded-md bg-slate-50 p-3 dark:bg-slate-900/60" key={`${productName}-${index}`}>
+                      <strong className="block">{productName}</strong>
+                      <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-xs sm:grid-cols-3">
+                        {identityRows.filter(([, value]) => Boolean(value)).map(([label, value]) => (
+                          <div key={`${label}-${value}`}><span className="block text-slate-500">{label}</span><strong className="wrap-anywhere">{value}</strong></div>
+                        ))}
+                        <div><span className="block text-slate-500">{t("quantity")}</span><strong>{source === "stock" && product?.unit ? formatQuantityWithUnit(String(quantity), product.unit, locale) : quantity}</strong></div>
+                        <div><span className="block text-slate-500">{t("unitPrice")}</span><strong>{money(line.unit_price || 0, locale)}</strong></div>
+                        <div><span className="block text-slate-500">{t("sellingTotal")}</span><strong>{money(quantity * Number(line.unit_price || 0), locale)}</strong></div>
+                        <div><span className="block text-slate-500">{t("acquisitionTotal")}</span><strong>{acquisitionTotal == null ? t("notProvided") : money(acquisitionTotal, locale)}</strong></div>
+                        <div><span className="block text-slate-500">{t("warranty")}</span><strong>{line.warranty_months ? t("warrantyMonths", { months: line.warranty_months }) : t("noWarranty")}</strong></div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </section>
+
+              <section className="rounded-lg border border-slate-200 p-3 dark:border-slate-800">
+                <h3 className="text-xs font-bold uppercase tracking-wide text-slate-500">{t("reviewTerms")}</h3>
+                <div className="mt-2 grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
+                  <div><span className="block text-slate-500">{t("contractTotal")}</span><strong>{money(contractTotal || 0, locale)}</strong></div>
+                  <div><span className="block text-slate-500">{t("initialContribution")}</span><strong>{money((transactionType === "upfront" ? Number(upfrontCash || 0) : 0) + (transactionType === "trade_in" ? Number(tradeInCredit || 0) : 0), locale)}</strong></div>
+                  {transactionType === "upfront" ? <div><span className="block text-slate-500">{t("upfrontCash")}</span><strong>{money(upfrontCash || 0, locale)}</strong></div> : null}
+                  {transactionType === "trade_in" ? <><div><span className="block text-slate-500">{t("tradeInItem")}</span><strong>{tradeInItem}</strong></div><div><span className="block text-slate-500">{t("tradeInCredit")}</span><strong>{money(tradeInCredit || 0, locale)}</strong></div></> : null}
+                  <div><span className="block text-slate-500">{t("installmentAmount")}</span><strong>{money(installmentAmount || 0, locale)}</strong></div>
+                  <div><span className="block text-slate-500">{t("frequency")}</span><strong>{t(frequency)}</strong></div>
+                  <div><span className="block text-slate-500">{t("nextDueDate")}</span><strong>{nextDueDate}</strong></div>
+                  {agreementType === "installment" ? <div><span className="block text-slate-500">{t("releaseThreshold")}</span><strong>{releaseThreshold}%</strong></div> : null}
+                  {financingMode === "partner" ? <><div><span className="block text-slate-500">{t("partnerName")}</span><strong>{partnerName}</strong></div><div><span className="block text-slate-500">{t("partnerSettlement")}</span><strong>{money(partnerSettlement || 0, locale)}</strong></div><div><span className="block text-slate-500">{t("businessCommission")}</span><strong>{money(businessCommission || 0, locale)}</strong></div></> : null}
+                  {notes ? <div className="col-span-2 sm:col-span-4"><span className="block text-slate-500">{t("notes")}</span><strong>{notes}</strong></div> : null}
+                </div>
+              </section>
             </div>
           ) : null}
 
           <div className="flex items-center justify-between border-t border-slate-100 pt-3 dark:border-slate-800">
             <Button className="h-8 px-2.5 text-xs" disabled={step === 0} onClick={() => setStep((value) => Math.max(0, value - 1))} type="button" variant="outline"><ChevronLeft className="size-3.5" />{t("previous")}</Button>
-            {step < stepKeys.length - 1 ? <Button className="h-8 px-2.5 text-xs" disabled={!stepValid} onClick={() => setStep((value) => Math.min(stepKeys.length - 1, value + 1))} type="button">{t("next")}<ChevronRight className="size-3.5" /></Button> : <Button className="h-8 px-3 text-xs" disabled={busy || !stepValid} type="submit">{busy ? t("saving") : t("save")}</Button>}
+            {step < stepKeys.length - 1 ? <Button className="h-8 px-2.5 text-xs" disabled={!stepValid} type="submit">{t("next")}<ChevronRight className="size-3.5" /></Button> : <Button className="h-8 px-3 text-xs" disabled={busy || !stepValid} type="submit">{busy ? t("saving") : t("save")}</Button>}
           </div>
         </form>
       ) : null}
@@ -716,6 +872,14 @@ function FinancingWorkspace({ businessId }: { businessId: string }) {
         ))}
         {!agreements.length ? <div className={`${shell} p-4 text-sm text-slate-500`}>{t("noAgreements")}</div> : null}
       </section>
+
+      {savedSummary ? (
+        <FinancingShareableSummaryDialog
+          data={savedSummary}
+          onClose={() => setSummaryDialogOpen(false)}
+          open={summaryDialogOpen}
+        />
+      ) : null}
     </section>
   );
 }
