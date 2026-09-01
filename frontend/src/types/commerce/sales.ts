@@ -71,6 +71,8 @@ type TradeInDetail = {
   stock_receipt_reference: string;
 };
 
+type WarrantyMonths = 3 | 6 | 12 | 24;
+
 type Sale = {
   id: string;
   receipt_number: string;
@@ -86,6 +88,7 @@ type Sale = {
   cost_of_goods?: string;
   gross_profit?: string;
   payment_status: "paid" | "partial" | "unpaid";
+  warranty_months: WarrantyMonths | null;
   sold_at: string;
   items: SaleItem[];
   trade_in: TradeInDetail | null;
@@ -101,4 +104,5 @@ export type {
   SaleStockTarget,
   TradeInDetail,
   TrackedSaleUnitDetails,
+  WarrantyMonths,
 };

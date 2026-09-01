@@ -382,6 +382,7 @@ def _sale_snapshot(sale):
         "customer_region": sale.customer_region,
         "discount": str(sale.discount),
         "payment_status": sale.payment_status,
+        "warranty_months": sale.warranty_months,
         "sold_at": sale.sold_at.isoformat(),
         "trade_in": trade_in,
         "items": [

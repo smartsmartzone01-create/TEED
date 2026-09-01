@@ -108,6 +108,12 @@ class SaleCreateSerializer(serializers.Serializer):
         max_digits=14, decimal_places=2, min_value=Decimal("0"), default=0
     )
     payment_status = serializers.ChoiceField(choices=Sale.PaymentStatus.choices)
+    warranty_months = serializers.ChoiceField(
+        choices=Sale.WarrantyMonths.choices,
+        required=False,
+        allow_null=True,
+        default=None,
+    )
     sold_at = serializers.DateTimeField()
     items = SaleItemInputSerializer(many=True, min_length=1)
     trade_in = TradeInInputSerializer(required=False, allow_null=True)
@@ -259,6 +265,7 @@ class SaleSerializer(serializers.ModelSerializer):
             "cost_of_goods",
             "gross_profit",
             "payment_status",
+            "warranty_months",
             "sold_at",
             "recorded_by",
             "voided_at",

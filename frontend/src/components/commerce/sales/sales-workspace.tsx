@@ -35,6 +35,7 @@ import type {
   SaleAvailabilityUnit,
   SaleItem,
   SaleStockTarget,
+  WarrantyMonths,
 } from "@/types/commerce/sales";
 import { formatQuantityWithUnit } from "@/utils/commerce/quantity";
 
@@ -45,6 +46,7 @@ const recorderPanel =
 const field = "grid gap-1 text-[11px] font-semibold text-slate-600 dark:text-slate-300 sm:text-xs";
 const controlClassName =
   "h-9 rounded-md border-slate-300 bg-white text-sm shadow-none dark:border-slate-700 dark:bg-slate-950";
+const warrantyOptions: WarrantyMonths[] = [3, 6, 12, 24];
 
 type SaleMode = "stock" | "independent";
 type TransactionType = "normal" | "trade_in";
@@ -144,6 +146,7 @@ function SalesWorkspace({ businessId }: { businessId: string }) {
   const [transactionType, setTransactionType] = useState<TransactionType>("normal");
   const [saleMode, setSaleMode] = useState<SaleMode>("stock");
   const [saleType, setSaleType] = useState<"retail" | "wholesale">("retail");
+  const [warrantyMonths, setWarrantyMonths] = useState<WarrantyMonths | null>(null);
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [customerRegion, setCustomerRegion] = useState("");
@@ -202,6 +205,7 @@ function SalesWorkspace({ businessId }: { businessId: string }) {
     setTransactionType("normal");
     setSaleMode("stock");
     setSaleType("retail");
+    setWarrantyMonths(null);
     setCustomerName("");
     setCustomerPhone("");
     setCustomerRegion("");
@@ -230,6 +234,7 @@ function SalesWorkspace({ businessId }: { businessId: string }) {
     setTransactionType(sale.transaction_type);
     setSaleMode(sale.sale_mode);
     setSaleType(sale.sale_type);
+    setWarrantyMonths(sale.warranty_months);
     setCustomerName(sale.customer_name);
     setCustomerPhone(sale.customer_phone);
     setCustomerRegion(sale.customer_region);
@@ -369,6 +374,7 @@ function SalesWorkspace({ businessId }: { businessId: string }) {
       customer_region: customerRegion.trim(),
       discount,
       payment_status: paymentStatus,
+      warranty_months: warrantyMonths,
       sold_at: new Date(soldAt).toISOString(),
       items,
       ...(transactionType === "trade_in"
@@ -505,7 +511,39 @@ function SalesWorkspace({ businessId }: { businessId: string }) {
               </label>
             </div>
 
-            <div className="grid gap-2 sm:grid-cols-3">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <label className={field}>
+                <span className="flex min-w-0 items-center gap-1">
+                  <span className="truncate">{t("warranty")}</span>
+                  <Tooltip content={t("warrantyHelp")} side="top">
+                    <button
+                      aria-label={t("warrantyHelp")}
+                      className="inline-flex size-5 shrink-0 items-center justify-center rounded text-slate-400 transition hover:text-slate-700 dark:hover:text-slate-200"
+                      type="button"
+                    >
+                      <CircleHelp className="size-3" />
+                    </button>
+                  </Tooltip>
+                </span>
+                <Select
+                  className={controlClassName}
+                  value={warrantyMonths == null ? "" : String(warrantyMonths)}
+                  onChange={(event) =>
+                    setWarrantyMonths(
+                      event.target.value
+                        ? (Number(event.target.value) as WarrantyMonths)
+                        : null,
+                    )
+                  }
+                >
+                  <option value="">{t("noWarranty")}</option>
+                  {warrantyOptions.map((months) => (
+                    <option key={months} value={months}>
+                      {t("warrantyMonths", { months })}
+                    </option>
+                  ))}
+                </Select>
+              </label>
               <label className={field}>{t("customerName")}<Input className={controlClassName} value={customerName} onChange={(event) => setCustomerName(event.target.value)} /></label>
               <label className={field}>{t("customerPhone")}<Input className={controlClassName} value={customerPhone} onChange={(event) => setCustomerPhone(event.target.value)} /></label>
               <label className={field}>{t("customerRegion")}<Input className={controlClassName} value={customerRegion} onChange={(event) => setCustomerRegion(event.target.value)} /></label>

@@ -27,6 +27,21 @@ const finiteNumber = (value: string | number | null | undefined) => {
   return Number.isFinite(parsed) ? parsed : 0;
 };
 
+function addCalendarMonths(value: string, months: number) {
+  const source = new Date(value);
+  const result = new Date(source);
+  const day = source.getDate();
+  result.setDate(1);
+  result.setMonth(result.getMonth() + months);
+  const lastDay = new Date(
+    result.getFullYear(),
+    result.getMonth() + 1,
+    0,
+  ).getDate();
+  result.setDate(Math.min(day, lastDay));
+  return result;
+}
+
 function visibleItemDetails(item: SaleItem, labels: Record<string, string>) {
   if (item.tracked_unit_details) {
     const details = item.tracked_unit_details;
@@ -90,6 +105,8 @@ function useShareableSalesReceipt(sale: Sale) {
     customer: t("saleReceipt.customer"),
     region: t("saleReceipt.region"),
     payment: t("saleReceipt.payment"),
+    warranty: t("saleReceipt.warranty"),
+    validUntil: t("saleReceipt.validUntil"),
     product: t("saleReceipt.product"),
     customerItem: t("saleReceipt.customerItem"),
     quantity: t("saleReceipt.quantity"),
@@ -113,6 +130,16 @@ function useShareableSalesReceipt(sale: Sale) {
     minute: "2-digit",
   });
   const paymentText = t(sale.payment_status);
+  const warrantyText = sale.warranty_months
+    ? t("warrantyMonths", { months: sale.warranty_months })
+    : "";
+  const warrantyUntilText = sale.warranty_months
+    ? addCalendarMonths(sale.sold_at, sale.warranty_months).toLocaleDateString(locale, {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      })
+    : "";
 
   const items: ReceiptItem[] = sale.items.map((item) => ({
     id: item.id,
@@ -140,6 +167,13 @@ function useShareableSalesReceipt(sale: Sale) {
     `${labels.region}: ${sale.customer_region || "—"}`,
     `${labels.payment}: ${paymentText}`,
   ];
+
+  if (sale.warranty_months) {
+    rows.push(
+      `${labels.warranty}: ${warrantyText}`,
+      `${labels.validUntil}: ${warrantyUntilText}`,
+    );
+  }
 
   for (const item of items) {
     rows.push("", `${labels.product}: ${item.name}`);
@@ -224,6 +258,8 @@ function useShareableSalesReceipt(sale: Sale) {
     discount,
     dateText,
     paymentText,
+    warrantyText,
+    warrantyUntilText,
     moneyText,
     copy,
     share,
@@ -242,6 +278,8 @@ function SalesReceiptPreview({ sale }: { sale: Sale }) {
     discount,
     dateText,
     paymentText,
+    warrantyText,
+    warrantyUntilText,
     moneyText,
   } = useShareableSalesReceipt(sale);
 
@@ -268,6 +306,18 @@ function SalesReceiptPreview({ sale }: { sale: Sale }) {
           <span className="block text-slate-500">{labels.payment}</span>
           <strong>{paymentText}</strong>
         </div>
+        {sale.warranty_months ? (
+          <>
+            <div>
+              <span className="block text-slate-500">{labels.warranty}</span>
+              <strong>{warrantyText}</strong>
+            </div>
+            <div>
+              <span className="block text-slate-500">{labels.validUntil}</span>
+              <strong>{warrantyUntilText}</strong>
+            </div>
+          </>
+        ) : null}
       </div>
 
       <div className="grid gap-2">
