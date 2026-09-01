@@ -7,6 +7,7 @@ import {
   ChevronRight,
   FolderKanban,
   Grid2X2,
+  HandCoins,
   Inbox,
   LayoutDashboard,
   LockKeyhole,
@@ -68,6 +69,7 @@ const commerceItems: NavigationItem[] = [
   { icon: Store, key: "products", path: "/commerce/products" },
   { icon: Building2, key: "inventory", path: "/commerce/inventory" },
   { icon: ShoppingBag, key: "sales", path: "/commerce/sales" },
+  { icon: HandCoins, key: "financing", path: "/commerce/financing" },
   { icon: Inbox, key: "returns", path: "/commerce/returns" },
   { icon: Settings2, key: "expenses", path: "/commerce/expenses" },
   { icon: ShieldCheck, key: "budgets", path: "/commerce/budgets" },
@@ -137,6 +139,8 @@ function WorkspaceSidebar({
   const commerceLabel = locale === "sw" ? "Biashara" : "Commerce";
   const commerceOverviewLabel =
     locale === "sw" ? "Muhtasari wa biashara" : "Business Overview";
+  const financingLabel =
+    locale === "sw" ? "Mikopo na malipo ya awamu" : "Loans & Installments";
 
   function toggleGroup(key: NavigationGroupKey) {
     if (collapsed) onToggleCollapsed();
@@ -194,7 +198,9 @@ function WorkspaceSidebar({
               const itemLabel =
                 item.key === "commerceOverview"
                   ? commerceOverviewLabel
-                  : t(`subnavigation.${item.key}`);
+                  : item.key === "financing"
+                    ? financingLabel
+                    : t(`subnavigation.${item.key}`);
               return (
                 <Link
                   aria-current={selected ? "page" : undefined}

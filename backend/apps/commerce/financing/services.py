@@ -23,6 +23,17 @@ from .models import (
 )
 
 
+ALLOWED_FINANCING_DOCUMENT_TYPES = {
+    "application/pdf",
+    "image/heic",
+    "image/heif",
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+}
+MAX_FINANCING_DOCUMENT_BYTES = 10 * 1024 * 1024
+
+
 def _effective_batch_unit_cost(batch):
     return (batch.unit_cost or Decimal("0")) + (
         batch.additional_cost / batch.quantity_received
@@ -91,8 +102,9 @@ def _allocate_tracked(*, financing_item, product, tracked_unit_id):
     )
     batch.quantity_remaining = F("quantity_remaining") - 1
     batch.save(update_fields=["quantity_remaining", "updated_at"])
-    # First financing slice reuses SOLD as the existing unavailable tracked-unit state.
-    # A dedicated financed/reserved state can be introduced with the correction/release flow.
+    # The first financing slice reserves tracked products by moving them out of
+    # AVAILABLE stock. A dedicated reserved state can be added when the release
+    # and cancellation workflow is expanded.
     unit.status = TrackedUnit.Status.SOLD
     unit.save(update_fields=["status", "updated_at"])
     return unit_cost
@@ -155,6 +167,18 @@ def _record_items(*, agreement, items):
         product.save(update_fields=["current_quantity", "updated_at"])
 
 
+def _installment_release_reached(agreement):
+    if agreement.agreement_type != FinancingAgreement.AgreementType.INSTALLMENT:
+        return False
+    if agreement.product_released_at is not None or agreement.contract_total <= 0:
+        return False
+    paid_value = agreement.contribution_total + agreement.payments_total
+    return (
+        paid_value * Decimal("100")
+        >= agreement.contract_total * agreement.release_threshold_percent
+    )
+
+
 @transaction.atomic
 def create_financing_agreement(*, actor, business_id, items, **values):
     membership = commerce_membership(
@@ -185,6 +209,9 @@ def create_financing_agreement(*, actor, business_id, items, **values):
     )
     _record_items(agreement=agreement, items=items)
     if agreement.agreement_type == FinancingAgreement.AgreementType.LOAN:
+        agreement.product_released_at = timezone.now()
+        agreement.save(update_fields=["product_released_at", "updated_at"])
+    elif _installment_release_reached(agreement):
         agreement.product_released_at = timezone.now()
         agreement.save(update_fields=["product_released_at", "updated_at"])
     return agreement
@@ -228,17 +255,26 @@ def record_financing_payment(*, actor, business_id, agreement_id, **values):
         raise ValidationError({"agreement_id": ["Financing agreement not found."]})
     if agreement.status in {FinancingAgreement.Status.CANCELLED, FinancingAgreement.Status.PAID}:
         raise ValidationError({"agreement_id": ["This financing agreement is not open for payments."]})
+    if values["amount"] > agreement.outstanding_balance:
+        raise ValidationError(
+            {"amount": ["Payment cannot exceed the outstanding agreement balance."]}
+        )
     payment = FinancingPayment.objects.create(
         agreement=agreement, recorded_by=actor, **values
     )
     agreement = FinancingAgreement.objects.prefetch_related("payments").get(pk=agreement.pk)
+    release_now = _installment_release_reached(agreement)
     if agreement.outstanding_balance <= 0:
         agreement.status = FinancingAgreement.Status.PAID
         agreement.next_due_date = None
     elif payment.amount >= agreement.installment_amount:
         agreement.status = FinancingAgreement.Status.ACTIVE
         agreement.next_due_date = _next_due_date(agreement)
-    agreement.save(update_fields=["status", "next_due_date", "updated_at"])
+    update_fields = ["status", "next_due_date", "updated_at"]
+    if release_now:
+        agreement.product_released_at = timezone.now()
+        update_fields.append("product_released_at")
+    agreement.save(update_fields=update_fields)
     return payment
 
 
@@ -272,7 +308,7 @@ def sync_financing_due_notifications(*, actor, business_id):
         if new_status not in {FinancingAgreement.Status.DUE, FinancingAgreement.Status.OVERDUE}:
             continue
         notify_user(
-            user=agreement.recorded_by,
+            user=actor,
             category=UserNotification.Category.WORKSPACE,
             template=UserNotification.Template.COMMERCE_FINANCING_DUE,
             context={
@@ -309,10 +345,23 @@ def attach_financing_document(*, actor, business_id, agreement_id, file, descrip
     agreement = require_financing_document_access(
         user=actor, business_id=business_id, agreement_id=agreement_id
     )
+    content_type = getattr(file, "content_type", "")
+    if content_type not in ALLOWED_FINANCING_DOCUMENT_TYPES:
+        raise ValidationError(
+            {"file": ["Upload a PDF or supported contract image file."]}
+        )
+    if getattr(file, "size", 0) > MAX_FINANCING_DOCUMENT_BYTES:
+        raise ValidationError({"file": ["Financing documents must be 10 MB or smaller."]})
+    original_name = file.name.rsplit("/", 1)[-1].rsplit("\\", 1)[-1]
+    if len(original_name) > 180:
+        raise ValidationError({"file": ["The financing document file name is too long."]})
+    description = str(description or "").strip()
+    if len(description) > 240:
+        raise ValidationError({"description": ["Keep the document description within 240 characters."]})
     return FinancingDocument.objects.create(
         agreement=agreement,
         file=file,
-        original_name=file.name,
+        original_name=original_name,
         description=description,
         uploaded_by=actor,
     )
