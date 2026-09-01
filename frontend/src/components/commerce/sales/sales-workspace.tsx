@@ -511,39 +511,7 @@ function SalesWorkspace({ businessId }: { businessId: string }) {
               </label>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-              <label className={field}>
-                <span className="flex min-w-0 items-center gap-1">
-                  <span className="truncate">{t("warranty")}</span>
-                  <Tooltip content={t("warrantyHelp")} side="top">
-                    <button
-                      aria-label={t("warrantyHelp")}
-                      className="inline-flex size-5 shrink-0 items-center justify-center rounded text-slate-400 transition hover:text-slate-700 dark:hover:text-slate-200"
-                      type="button"
-                    >
-                      <CircleHelp className="size-3" />
-                    </button>
-                  </Tooltip>
-                </span>
-                <Select
-                  className={controlClassName}
-                  value={warrantyMonths == null ? "" : String(warrantyMonths)}
-                  onChange={(event) =>
-                    setWarrantyMonths(
-                      event.target.value
-                        ? (Number(event.target.value) as WarrantyMonths)
-                        : null,
-                    )
-                  }
-                >
-                  <option value="">{t("noWarranty")}</option>
-                  {warrantyOptions.map((months) => (
-                    <option key={months} value={months}>
-                      {t("warrantyMonths", { months })}
-                    </option>
-                  ))}
-                </Select>
-              </label>
+            <div className="grid gap-2 sm:grid-cols-3">
               <label className={field}>{t("customerName")}<Input className={controlClassName} value={customerName} onChange={(event) => setCustomerName(event.target.value)} /></label>
               <label className={field}>{t("customerPhone")}<Input className={controlClassName} value={customerPhone} onChange={(event) => setCustomerPhone(event.target.value)} /></label>
               <label className={field}>{t("customerRegion")}<Input className={controlClassName} value={customerRegion} onChange={(event) => setCustomerRegion(event.target.value)} /></label>
@@ -671,10 +639,42 @@ function SalesWorkspace({ businessId }: { businessId: string }) {
               <TradeInFields draft={tradeIn} outgoingValue={outgoingValue} stockTargets={stockTargets} onChange={setTradeIn} />
             ) : null}
 
-            <div className="grid gap-2 border-t border-slate-100 pt-3 dark:border-slate-800 sm:grid-cols-3">
+            <div className="grid gap-2 border-t border-slate-100 pt-3 dark:border-slate-800 sm:grid-cols-4">
               <label className={field}>{t("discount")}<Input className={controlClassName} min="0" step="0.01" type="number" value={discount} onChange={(event) => setDiscount(event.target.value)} /></label>
               <label className={field}>{t("payment")}<Select className={controlClassName} value={paymentStatus} onChange={(event) => setPaymentStatus(event.target.value as "paid" | "partial" | "unpaid")}><option value="paid">{t("paid")}</option><option value="partial">{t("partial")}</option><option value="unpaid">{t("unpaid")}</option></Select></label>
               <label className={field}>{t("date")}<Input className={controlClassName} type="datetime-local" value={soldAt} onChange={(event) => setSoldAt(event.target.value)} /></label>
+              <label className={field}>
+                <span className="flex min-w-0 items-center gap-1">
+                  <span className="truncate">{t("warranty")}</span>
+                  <Tooltip content={t("warrantyHelp")} side="top">
+                    <button
+                      aria-label={t("warrantyHelp")}
+                      className="inline-flex size-5 shrink-0 items-center justify-center rounded text-slate-400 transition hover:text-slate-700 dark:hover:text-slate-200"
+                      type="button"
+                    >
+                      <CircleHelp className="size-3" />
+                    </button>
+                  </Tooltip>
+                </span>
+                <Select
+                  className={controlClassName}
+                  value={warrantyMonths == null ? "" : String(warrantyMonths)}
+                  onChange={(event) =>
+                    setWarrantyMonths(
+                      event.target.value
+                        ? (Number(event.target.value) as WarrantyMonths)
+                        : null,
+                    )
+                  }
+                >
+                  <option value="">{t("noWarranty")}</option>
+                  {warrantyOptions.map((months) => (
+                    <option key={months} value={months}>
+                      {t("warrantyMonths", { months })}
+                    </option>
+                  ))}
+                </Select>
+              </label>
             </div>
             <Button className="h-9 w-full text-sm sm:w-auto sm:justify-self-end" disabled={busy || !accessToken || !validate()} size="small" type="submit">
               {editing ? t("saveEdit") : t("save")}
