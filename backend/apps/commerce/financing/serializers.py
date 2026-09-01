@@ -194,6 +194,7 @@ class FinancingItemSerializer(serializers.ModelSerializer):
     product_name = serializers.SerializerMethodField()
     product_sku = serializers.SerializerMethodField()
     product_unit = serializers.CharField(source="product.unit", read_only=True, default="")
+    customer_details = serializers.SerializerMethodField()
 
     class Meta:
         model = FinancingItem
@@ -206,6 +207,7 @@ class FinancingItemSerializer(serializers.ModelSerializer):
             "tracked_unit",
             "item_name",
             "item_details",
+            "customer_details",
             "quantity",
             "unit_price",
             "line_total",
@@ -219,6 +221,45 @@ class FinancingItemSerializer(serializers.ModelSerializer):
 
     def get_product_sku(self, obj):
         return obj.product.sku if obj.product_id else ""
+
+    def get_customer_details(self, obj):
+        details = []
+
+        def add_detail(kind, value, label=""):
+            cleaned = str(value or "").strip()
+            if cleaned:
+                details.append({"kind": kind, "label": label, "value": cleaned})
+
+        if obj.tracked_unit_id:
+            unit = obj.tracked_unit
+            add_detail("brand", unit.brand)
+            add_detail("model_name", unit.model_name)
+            add_detail("color", unit.color)
+            add_detail("capacity_size", unit.capacity)
+            identifiers = [
+                (identifier.kind, identifier.value)
+                for identifier in unit.identifiers.all()
+            ]
+            if unit.imei and not any(kind == "imei" for kind, _ in identifiers):
+                identifiers.append(("imei", unit.imei))
+            if unit.serial_number and not any(
+                kind == "serial" for kind, _ in identifiers
+            ):
+                identifiers.append(("serial", unit.serial_number))
+            for kind, value in identifiers:
+                add_detail("identifier", value, str(kind).upper())
+            return details
+
+        item_details = obj.item_details or {}
+        add_detail("brand", item_details.get("brand"))
+        add_detail("model_name", item_details.get("model_name"))
+        add_detail("color", item_details.get("color"))
+        add_detail("capacity_size", item_details.get("capacity_size"))
+        identifier_type = str(item_details.get("identifier_type", "")).strip()
+        identifier_value = str(item_details.get("identifier_value", "")).strip()
+        if identifier_type and identifier_value:
+            add_detail("identifier", identifier_value, identifier_type.upper())
+        return details
 
 
 class FinancingDocumentSerializer(serializers.ModelSerializer):

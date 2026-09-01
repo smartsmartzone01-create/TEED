@@ -1,3 +1,4 @@
+import { firstFieldIssue } from "@/lib/global/api-errors";
 import {
   financingAgreementResponseSchema,
   financingAgreementsResponseSchema,
@@ -6,7 +7,7 @@ import {
   financingPaymentResponseSchema,
 } from "@/schemas/commerce/financing";
 import { commerceBase } from "@/services/commerce/shared";
-import { requestApi } from "@/services/global/api-client";
+import { ApiClientError, requestApi } from "@/services/global/api-client";
 import { withCsrfRetry } from "@/services/identity/csrf";
 
 function getFinancingAgreements(
@@ -70,7 +71,34 @@ function createFinancingPayment(
   );
 }
 
-function uploadFinancingDocument(
+function normalizedFinancingDocument(file: File) {
+  if (file.type && file.type !== "image/jpg" && file.type !== "application/octet-stream") {
+    return file;
+  }
+  const extension = file.name.split(".").pop()?.toLowerCase() ?? "";
+  const contentType =
+    extension === "pdf"
+      ? "application/pdf"
+      : extension === "jpg" || extension === "jpeg"
+        ? "image/jpeg"
+        : extension === "png"
+          ? "image/png"
+          : extension === "webp"
+            ? "image/webp"
+            : extension === "heic"
+              ? "image/heic"
+              : extension === "heif"
+                ? "image/heif"
+                : file.type;
+  return contentType && contentType !== file.type
+    ? new File([file], file.name, {
+        lastModified: file.lastModified,
+        type: contentType,
+      })
+    : file;
+}
+
+async function uploadFinancingDocument(
   businessId: string,
   agreementId: string,
   accessToken: string,
@@ -78,18 +106,28 @@ function uploadFinancingDocument(
   description = "",
 ) {
   const body = new FormData();
-  body.append("file", file);
+  body.append("file", normalizedFinancingDocument(file));
   body.append("description", description);
-  return withCsrfRetry((csrfToken) =>
-    requestApi({
-      accessToken,
-      body,
-      csrfToken,
-      method: "POST",
-      path: `${commerceBase(businessId)}/financing/${agreementId}/documents/`,
-      schema: financingDocumentResponseSchema,
-    }),
-  );
+  try {
+    return await withCsrfRetry((csrfToken) =>
+      requestApi({
+        accessToken,
+        body,
+        csrfToken,
+        method: "POST",
+        path: `${commerceBase(businessId)}/financing/${agreementId}/documents/`,
+        schema: financingDocumentResponseSchema,
+      }),
+    );
+  } catch (error) {
+    if (error instanceof ApiClientError) {
+      const issue =
+        firstFieldIssue(error.details.fieldErrors, "file") ??
+        firstFieldIssue(error.details.fieldErrors, "description");
+      if (issue) throw new Error(issue.message);
+    }
+    throw error;
+  }
 }
 
 async function downloadFinancingDocument(

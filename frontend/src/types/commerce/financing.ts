@@ -33,6 +33,12 @@ type FinancingAvailabilityProduct = {
   available_units: FinancingAvailabilityUnit[];
 };
 
+type FinancingCustomerDetail = {
+  kind: string;
+  label: string;
+  value: string;
+};
+
 type FinancingItem = {
   id: string;
   product: string | null;
@@ -42,6 +48,7 @@ type FinancingItem = {
   tracked_unit: string | null;
   item_name: string;
   item_details: Record<string, string>;
+  customer_details: FinancingCustomerDetail[];
   quantity: string;
   unit_price: string;
   line_total: string;
@@ -108,6 +115,7 @@ export type {
   FinancingAgreementType,
   FinancingAvailabilityProduct,
   FinancingAvailabilityUnit,
+  FinancingCustomerDetail,
   FinancingDocument,
   FinancingFrequency,
   FinancingItem,

@@ -105,10 +105,7 @@ function FinancingShareableSummaryDialog({
   for (const item of data.items) {
     rows.push("", `${t("shareableSummary.product")}: ${item.name}`);
     for (const detail of item.details) rows.push(`${detail.label}: ${detail.value}`);
-    rows.push(
-      `${t("shareableSummary.quantity")}: ${item.quantity_text}`,
-      `${t("shareableSummary.productAmount")}: ${money(item.line_total)}`,
-    );
+    rows.push(`${t("shareableSummary.quantity")}: ${item.quantity_text}`);
     if (item.warranty_months) {
       rows.push(
         `${t("shareableSummary.warranty")}: ${t("warrantyMonths", {
@@ -277,17 +274,13 @@ function FinancingShareableSummaryDialog({
                     ))}
                   </div>
                 ) : null}
-                <div className="mt-2 grid grid-cols-2 gap-2 border-t border-slate-100 pt-2 text-xs dark:border-slate-800">
+                <div className="mt-2 grid gap-2 border-t border-slate-100 pt-2 text-xs dark:border-slate-800 sm:grid-cols-2">
                   <div>
                     <span className="block text-slate-500">{t("shareableSummary.quantity")}</span>
                     <strong>{item.quantity_text}</strong>
                   </div>
-                  <div>
-                    <span className="block text-slate-500">{t("shareableSummary.productAmount")}</span>
-                    <strong>{money(item.line_total)}</strong>
-                  </div>
                   {item.warranty_months ? (
-                    <div className="col-span-2">
+                    <div>
                       <span className="block text-slate-500">{t("shareableSummary.warranty")}</span>
                       <strong>{t("warrantyMonths", { months: item.warranty_months })}</strong>
                     </div>

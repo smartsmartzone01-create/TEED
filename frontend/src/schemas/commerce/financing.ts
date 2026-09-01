@@ -46,6 +46,12 @@ const financingDocumentSchema = z.object({
   download_path: z.string(),
 });
 
+const financingCustomerDetailSchema = z.object({
+  kind: z.string(),
+  label: z.string(),
+  value: z.string(),
+});
+
 const financingItemSchema = z.object({
   id: z.string(),
   product: z.string().nullable(),
@@ -55,6 +61,7 @@ const financingItemSchema = z.object({
   tracked_unit: z.string().nullable(),
   item_name: z.string(),
   item_details: z.record(z.string(), z.string()).default({}),
+  customer_details: z.array(financingCustomerDetailSchema).default([]),
   quantity: decimal,
   unit_price: decimal,
   line_total: decimal,
@@ -120,6 +127,7 @@ export {
   financingAgreementsResponseSchema,
   financingAvailabilityProductSchema,
   financingAvailabilityResponseSchema,
+  financingCustomerDetailSchema,
   financingDocumentResponseSchema,
   financingDocumentsResponseSchema,
   financingDocumentSchema,

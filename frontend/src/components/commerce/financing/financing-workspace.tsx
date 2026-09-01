@@ -56,6 +56,18 @@ const control =
   "h-9 rounded-md border-slate-300 bg-white text-sm shadow-none dark:border-slate-700 dark:bg-slate-950";
 const warrantyOptions: FinancingWarrantyMonths[] = [3, 6, 12, 24];
 const stepKeys = ["setup", "customer", "products", "terms", "review"] as const;
+const financingDocumentExtensions = new Set(["pdf", "jpg", "jpeg", "png", "webp", "heic", "heif"]);
+const financingDocumentMimeTypes = new Set([
+  "application/pdf",
+  "image/heic",
+  "image/heif",
+  "image/jpeg",
+  "image/jpg",
+  "image/png",
+  "image/webp",
+  "application/octet-stream",
+]);
+const maxFinancingDocumentBytes = 10 * 1024 * 1024;
 
 type LineDraft = {
   product_id: string;
@@ -155,6 +167,7 @@ function FinancingWorkspace({ businessId }: { businessId: string }) {
   const [paymentDrafts, setPaymentDrafts] = useState<Record<string, string>>({});
   const [paymentRefs, setPaymentRefs] = useState<Record<string, string>>({});
   const [documentDrafts, setDocumentDrafts] = useState<Record<string, File | null>>({});
+  const [documentUploading, setDocumentUploading] = useState<Record<string, boolean>>({});
   const [savedSummary, setSavedSummary] = useState<FinancingShareableSummaryData | null>(null);
   const [summaryDialogOpen, setSummaryDialogOpen] = useState(false);
 
@@ -450,8 +463,17 @@ function FinancingWorkspace({ businessId }: { businessId: string }) {
     }
   };
 
-  const customerSummary = (agreement: FinancingAgreement) =>
-    t("summaryTemplate", {
+  const customerDetailLabel = (kind: string, label: string) => {
+    if (label) return label;
+    if (kind === "brand") return t("brand");
+    if (kind === "model_name") return t("modelName");
+    if (kind === "color") return t("color");
+    if (kind === "capacity_size") return t("capacitySize");
+    return kind;
+  };
+
+  const customerSummary = (agreement: FinancingAgreement) => {
+    const summary = t("summaryTemplate", {
       reference: agreement.reference,
       customer: agreement.customer_name,
       type: t(agreement.agreement_type),
@@ -461,6 +483,31 @@ function FinancingWorkspace({ businessId }: { businessId: string }) {
       balance: money(agreement.outstanding_balance, locale),
       due: agreement.next_due_date ?? "—",
     });
+    const products = agreement.items
+      .map((item) => {
+        const details = item.customer_details.map(
+          (detail) => `${customerDetailLabel(detail.kind, detail.label)}: ${detail.value}`,
+        );
+        return [
+          `${t("shareableSummary.product")}: ${item.product_name || item.item_name}`,
+          ...details,
+          `${t("shareableSummary.quantity")}: ${
+            item.product_unit
+              ? formatQuantityWithUnit(item.quantity, item.product_unit, locale)
+              : item.quantity
+          }`,
+          ...(item.warranty_months
+            ? [
+                `${t("shareableSummary.warranty")}: ${t("warrantyMonths", {
+                  months: item.warranty_months,
+                })}`,
+              ]
+            : []),
+        ].join("\n");
+      })
+      .join("\n\n");
+    return products ? `${summary}\n\n${products}` : summary;
+  };
 
   const reminderText = (agreement: FinancingAgreement) =>
     t("dueReminderTemplate", {
@@ -533,10 +580,33 @@ function FinancingWorkspace({ businessId }: { businessId: string }) {
     }
   };
 
+  const chooseDocument = (agreementId: string, file: File | null) => {
+    if (!file) {
+      setDocumentDrafts((current) => ({ ...current, [agreementId]: null }));
+      return;
+    }
+    const extension = file.name.split(".").pop()?.toLowerCase() ?? "";
+    if (file.size > maxFinancingDocumentBytes) {
+      setDocumentDrafts((current) => ({ ...current, [agreementId]: null }));
+      notify({ message: t("documentTooLarge"), tone: "error" });
+      return;
+    }
+    if (
+      !financingDocumentExtensions.has(extension) &&
+      !financingDocumentMimeTypes.has(file.type)
+    ) {
+      setDocumentDrafts((current) => ({ ...current, [agreementId]: null }));
+      notify({ message: t("documentUnsupported"), tone: "error" });
+      return;
+    }
+    setDocumentDrafts((current) => ({ ...current, [agreementId]: file }));
+  };
+
   const saveDocument = async (agreement: FinancingAgreement) => {
     if (!accessToken || !canManageDocuments) return;
     const file = documentDrafts[agreement.id];
-    if (!file) return;
+    if (!file || documentUploading[agreement.id]) return;
+    setDocumentUploading((current) => ({ ...current, [agreement.id]: true }));
     try {
       await uploadFinancingDocument(
         businessId,
@@ -548,10 +618,15 @@ function FinancingWorkspace({ businessId }: { businessId: string }) {
       notify({ message: t("documentUploaded"), tone: "success" });
       await load();
     } catch (reason) {
-      notify({
-        message: reason instanceof Error ? reason.message : t("saveError"),
-        tone: "error",
-      });
+      let message = reason instanceof Error ? reason.message : t("documentUploadFailed");
+      if (message.startsWith("The server could not store this document")) {
+        message = t("documentStorageFailed");
+      } else if (message === "An unexpected error occurred.") {
+        message = t("documentUploadFailed");
+      }
+      notify({ message, tone: "error" });
+    } finally {
+      setDocumentUploading((current) => ({ ...current, [agreement.id]: false }));
     }
   };
 
@@ -570,30 +645,9 @@ function FinancingWorkspace({ businessId }: { businessId: string }) {
           </h2>
         </div>
         <div className="grid grid-cols-3 divide-x divide-slate-200 overflow-hidden rounded-md bg-slate-50 dark:divide-slate-800 dark:bg-slate-900/55">
-          <div className="min-w-0 px-2 py-2 sm:px-3">
-            <span className="block truncate text-[10px] font-semibold uppercase tracking-[0.04em] text-slate-500 dark:text-slate-400">
-              {t("activeAgreements")}
-            </span>
-            <strong className="mt-0.5 block truncate text-[11px] font-semibold text-slate-950 dark:text-white sm:text-xs">
-              {activeCount}
-            </strong>
-          </div>
-          <div className="min-w-0 px-2 py-2 sm:px-3">
-            <span className="block truncate text-[10px] font-semibold uppercase tracking-[0.04em] text-slate-500 dark:text-slate-400">
-              {t("dueAgreements")}
-            </span>
-            <strong className="mt-0.5 block truncate text-[11px] font-semibold text-slate-950 dark:text-white sm:text-xs">
-              {dueCount}
-            </strong>
-          </div>
-          <div className="min-w-0 px-2 py-2 sm:px-3">
-            <span className="block truncate text-[10px] font-semibold uppercase tracking-[0.04em] text-slate-500 dark:text-slate-400">
-              {t("outstanding")}
-            </span>
-            <strong className="mt-0.5 block truncate text-[11px] font-semibold text-slate-950 dark:text-white sm:text-xs">
-              {money(outstandingTotal, locale)}
-            </strong>
-          </div>
+          <div className="min-w-0 px-2 py-2 sm:px-3"><span className="block truncate text-[10px] font-semibold uppercase tracking-[0.04em] text-slate-500 dark:text-slate-400">{t("activeAgreements")}</span><strong className="mt-0.5 block truncate text-[11px] font-semibold text-slate-950 dark:text-white sm:text-xs">{activeCount}</strong></div>
+          <div className="min-w-0 px-2 py-2 sm:px-3"><span className="block truncate text-[10px] font-semibold uppercase tracking-[0.04em] text-slate-500 dark:text-slate-400">{t("dueAgreements")}</span><strong className="mt-0.5 block truncate text-[11px] font-semibold text-slate-950 dark:text-white sm:text-xs">{dueCount}</strong></div>
+          <div className="min-w-0 px-2 py-2 sm:px-3"><span className="block truncate text-[10px] font-semibold uppercase tracking-[0.04em] text-slate-500 dark:text-slate-400">{t("outstanding")}</span><strong className="mt-0.5 block truncate text-[11px] font-semibold text-slate-950 dark:text-white sm:text-xs">{money(outstandingTotal, locale)}</strong></div>
         </div>
       </section>
 
@@ -601,12 +655,7 @@ function FinancingWorkspace({ businessId }: { businessId: string }) {
         <section className={`${shell} px-2 py-2`}>
           <div className="flex items-center justify-between gap-2">
             <strong className="text-sm">{t("recordAgreement")}</strong>
-            <Button
-              className="h-8 px-3 text-xs"
-              onClick={showRecorder ? closeRecorder : () => setShowRecorder(true)}
-              type="button"
-              variant="outline"
-            >
+            <Button className="h-8 px-3 text-xs" onClick={showRecorder ? closeRecorder : () => setShowRecorder(true)} type="button" variant="outline">
               {showRecorder ? <X className="size-3.5" /> : <Plus className="size-3.5" />}
               {showRecorder ? t("closeRecorder") : t("recordAgreement")}
             </Button>
@@ -618,12 +667,7 @@ function FinancingWorkspace({ businessId }: { businessId: string }) {
         <form className={`${shell} grid gap-3 p-3 sm:p-4`} onSubmit={(event) => void onSubmit(event)}>
           <div className="flex w-full overflow-x-auto border-b border-slate-100 pb-2 dark:border-slate-800 sm:overflow-visible">
             {stepKeys.map((key, index) => (
-              <button
-                className={`flex shrink-0 items-center gap-1 text-xs font-semibold sm:flex-1 sm:justify-center ${index === step ? "text-slate-950 dark:text-white" : "text-slate-400"}`}
-                key={key}
-                onClick={() => index <= step && setStep(index)}
-                type="button"
-              >
+              <button className={`flex shrink-0 items-center gap-1 text-xs font-semibold sm:flex-1 sm:justify-center ${index === step ? "text-slate-950 dark:text-white" : "text-slate-400"}`} key={key} onClick={() => index <= step && setStep(index)} type="button">
                 <span>{index + 1}. {t(`steps.${key}`)}</span>
                 {index < stepKeys.length - 1 ? <ChevronRight className="mx-1 size-3" /> : null}
               </button>
@@ -657,11 +701,7 @@ function FinancingWorkspace({ businessId }: { businessId: string }) {
                 const hasExactItems = Boolean(product?.available_units.length);
                 const acquisitionCost = trackedUnit?.acquisition_unit_cost ?? (!hasExactItems ? product?.acquisition_unit_cost : undefined);
                 const acquisitionQuantity = Number(line.quantity);
-                const acquisitionTotal =
-                  acquisitionCost === undefined ||
-                  (!trackedUnit && (!Number.isFinite(acquisitionQuantity) || acquisitionQuantity <= 0))
-                    ? undefined
-                    : Number(acquisitionCost) * (trackedUnit ? 1 : acquisitionQuantity);
+                const acquisitionTotal = acquisitionCost === undefined || (!trackedUnit && (!Number.isFinite(acquisitionQuantity) || acquisitionQuantity <= 0)) ? undefined : Number(acquisitionCost) * (trackedUnit ? 1 : acquisitionQuantity);
                 return (
                   <div className="grid gap-2 rounded-lg border border-slate-200 p-2.5 dark:border-slate-800" key={index}>
                     {source === "independent" ? (
@@ -680,25 +720,10 @@ function FinancingWorkspace({ businessId }: { businessId: string }) {
                       </div>
                     ) : (
                       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-                        <Select className={control} value={line.product_id} onChange={(event) => chooseProduct(index, event.target.value)}>
-                          <option value="">{t("chooseProduct")}</option>
-                          {availability.map((item) => <option key={item.id} value={item.id}>{item.name} · {item.sku} · {formatQuantityWithUnit(item.current_quantity, item.unit, locale)}</option>)}
-                        </Select>
-                        {hasExactItems && product ? (
-                          <Select className={control} value={line.tracked_unit_id} onChange={(event) => chooseTrackedUnit(index, product, event.target.value)}>
-                            <option value="">{t("chooseItem")}</option>
-                            {product.available_units.map((unit) => <option key={unit.id} value={unit.id}>{unitLabel(unit)}</option>)}
-                          </Select>
-                        ) : (
-                          <Input className={control} disabled={hasExactItems} min="0.001" placeholder={t("quantity")} step="0.001" type="number" value={hasExactItems ? "1" : line.quantity} onChange={(event) => updateLine(index, { quantity: event.target.value })} />
-                        )}
+                        <Select className={control} value={line.product_id} onChange={(event) => chooseProduct(index, event.target.value)}><option value="">{t("chooseProduct")}</option>{availability.map((item) => <option key={item.id} value={item.id}>{item.name} · {item.sku} · {formatQuantityWithUnit(item.current_quantity, item.unit, locale)}</option>)}</Select>
+                        {hasExactItems && product ? <Select className={control} value={line.tracked_unit_id} onChange={(event) => chooseTrackedUnit(index, product, event.target.value)}><option value="">{t("chooseItem")}</option>{product.available_units.map((unit) => <option key={unit.id} value={unit.id}>{unitLabel(unit)}</option>)}</Select> : <Input className={control} disabled={hasExactItems} min="0.001" placeholder={t("quantity")} step="0.001" type="number" value={hasExactItems ? "1" : line.quantity} onChange={(event) => updateLine(index, { quantity: event.target.value })} />}
                         <Input className={control} min="0" placeholder={t("unitPrice")} step="0.01" type="number" value={line.unit_price} onChange={(event) => updateLine(index, { unit_price: event.target.value })} />
-                        {acquisitionTotal !== undefined ? (
-                          <label className={field}>
-                            {trackedUnit ? t("acquisitionCost") : t("acquisitionTotal")}
-                            <Input className={control} disabled value={money(acquisitionTotal, locale)} />
-                          </label>
-                        ) : null}
+                        {acquisitionTotal !== undefined ? <label className={field}>{trackedUnit ? t("acquisitionCost") : t("acquisitionTotal")}<Input className={control} disabled value={money(acquisitionTotal, locale)} /></label> : null}
                       </div>
                     )}
                     <div className="flex items-end justify-between gap-2">
@@ -732,133 +757,10 @@ function FinancingWorkspace({ businessId }: { businessId: string }) {
           {step === 4 ? (
             <div className="grid gap-2 text-sm">
               <p className="text-xs text-slate-500">{t("reviewHint")}</p>
-
-              <details className="group rounded-lg border border-slate-200 dark:border-slate-800">
-                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2.5">
-                  <div className="min-w-0">
-                    <h3 className="text-xs font-bold uppercase tracking-wide text-slate-500">{t("reviewSetup")}</h3>
-                    <p className="mt-0.5 truncate text-xs text-slate-700 dark:text-slate-300">
-                      {t(agreementType)} · {t(source === "stock" ? "stock" : "independent")} · {t(financingMode === "partner" ? "partnerFinanced" : "businessFinanced")}
-                    </p>
-                  </div>
-                  <ChevronDown className="size-4 shrink-0 text-slate-400 transition-transform group-open:rotate-180" />
-                </summary>
-                <div className="border-t border-slate-100 px-3 py-3 dark:border-slate-800">
-                  <div className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-5">
-                    <div><span className="block text-slate-500">{t("agreementType")}</span><strong>{t(agreementType)}</strong></div>
-                    <div><span className="block text-slate-500">{t("transactionType")}</span><strong>{t(transactionType === "trade_in" ? "tradeIn" : transactionType)}</strong></div>
-                    <div><span className="block text-slate-500">{t("source")}</span><strong>{t(source === "stock" ? "stock" : "independent")}</strong></div>
-                    <div><span className="block text-slate-500">{t("marketType")}</span><strong>{t(marketType)}</strong></div>
-                    <div><span className="block text-slate-500">{t("financingMode")}</span><strong>{t(financingMode === "partner" ? "partnerFinanced" : "businessFinanced")}</strong></div>
-                  </div>
-                </div>
-              </details>
-
-              <details className="group rounded-lg border border-slate-200 dark:border-slate-800">
-                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2.5">
-                  <div className="min-w-0">
-                    <h3 className="text-xs font-bold uppercase tracking-wide text-slate-500">{t("reviewCustomer")}</h3>
-                    <p className="mt-0.5 truncate text-xs text-slate-700 dark:text-slate-300">
-                      {customerName}{customerRegion ? ` · ${customerRegion}` : customerPhone ? ` · ${customerPhone}` : ""}
-                    </p>
-                  </div>
-                  <ChevronDown className="size-4 shrink-0 text-slate-400 transition-transform group-open:rotate-180" />
-                </summary>
-                <div className="border-t border-slate-100 px-3 py-3 dark:border-slate-800">
-                  <div className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-3">
-                    <div><span className="block text-slate-500">{t("customerName")}</span><strong>{customerName}</strong></div>
-                    <div><span className="block text-slate-500">{t("customerPhone")}</span><strong>{customerPhone || t("notProvided")}</strong></div>
-                    <div><span className="block text-slate-500">{t("customerRegion")}</span><strong>{customerRegion || t("notProvided")}</strong></div>
-                  </div>
-                </div>
-              </details>
-
-              <details className="group rounded-lg border border-slate-200 dark:border-slate-800">
-                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2.5">
-                  <div className="min-w-0">
-                    <h3 className="text-xs font-bold uppercase tracking-wide text-slate-500">{t("reviewProducts")}</h3>
-                    <p className="mt-0.5 truncate text-xs text-slate-700 dark:text-slate-300">
-                      {source === "stock"
-                        ? availability.find((item) => item.id === lines[0]?.product_id)?.name ?? "—"
-                        : lines[0]?.item_name || "—"}
-                      {lines.length > 1 ? ` · +${lines.length - 1}` : ""}
-                    </p>
-                  </div>
-                  <ChevronDown className="size-4 shrink-0 text-slate-400 transition-transform group-open:rotate-180" />
-                </summary>
-                <div className="grid gap-2 border-t border-slate-100 px-3 py-3 dark:border-slate-800">
-                  {lines.map((line, index) => {
-                    const product = availability.find((item) => item.id === line.product_id);
-                    const trackedUnit = product?.available_units.find((unit) => unit.id === line.tracked_unit_id);
-                    const quantity = trackedUnit ? 1 : Number(line.quantity || 0);
-                    const acquisitionUnitCost = source === "independent"
-                      ? line.acquisition_unit_cost
-                      : trackedUnit?.acquisition_unit_cost ?? product?.acquisition_unit_cost ?? "";
-                    const acquisitionTotal = acquisitionUnitCost
-                      ? Number(acquisitionUnitCost) * quantity
-                      : null;
-                    const productName = source === "stock" ? product?.name ?? "—" : line.item_name;
-                    const identityRows = source === "independent"
-                      ? [
-                          [t("acquiredFrom"), line.acquired_from],
-                          [t("brand"), line.brand],
-                          [t("modelName"), line.model_name],
-                          [t("color"), line.color],
-                          [t("capacitySize"), line.capacity_size],
-                          [line.identifier_type || t("identifierType"), line.identifier_value],
-                        ]
-                      : [
-                          [t("sku"), product?.sku ?? ""],
-                          [t("brand"), trackedUnit?.brand ?? ""],
-                          [t("modelName"), trackedUnit?.model_name ?? ""],
-                          [t("color"), trackedUnit?.color ?? ""],
-                          [t("capacitySize"), trackedUnit?.capacity ?? ""],
-                          ...(trackedUnit?.identifiers.map((identifier) => [identifier.kind.toUpperCase(), identifier.value]) ?? []),
-                        ];
-                    return (
-                      <div className="rounded-md bg-slate-50 p-3 dark:bg-slate-900/60" key={`${productName}-${index}`}>
-                        <strong className="block">{productName}</strong>
-                        <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-xs sm:grid-cols-3">
-                          {identityRows.filter(([, value]) => Boolean(value)).map(([label, value]) => (
-                            <div key={`${label}-${value}`}><span className="block text-slate-500">{label}</span><strong className="wrap-anywhere">{value}</strong></div>
-                          ))}
-                          <div><span className="block text-slate-500">{t("quantity")}</span><strong>{source === "stock" && product?.unit ? formatQuantityWithUnit(String(quantity), product.unit, locale) : quantity}</strong></div>
-                          <div><span className="block text-slate-500">{t("unitPrice")}</span><strong>{money(line.unit_price || 0, locale)}</strong></div>
-                          <div><span className="block text-slate-500">{t("sellingTotal")}</span><strong>{money(quantity * Number(line.unit_price || 0), locale)}</strong></div>
-                          <div><span className="block text-slate-500">{t("acquisitionTotal")}</span><strong>{acquisitionTotal == null ? t("notProvided") : money(acquisitionTotal, locale)}</strong></div>
-                          <div><span className="block text-slate-500">{t("warranty")}</span><strong>{line.warranty_months ? t("warrantyMonths", { months: line.warranty_months }) : t("noWarranty")}</strong></div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </details>
-
-              <details className="group rounded-lg border border-slate-200 dark:border-slate-800">
-                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2.5">
-                  <div className="min-w-0">
-                    <h3 className="text-xs font-bold uppercase tracking-wide text-slate-500">{t("reviewTerms")}</h3>
-                    <p className="mt-0.5 truncate text-xs text-slate-700 dark:text-slate-300">
-                      {t("contractTotal")}: {money(contractTotal || 0, locale)} · {t("installmentAmount")}: {money(installmentAmount || 0, locale)}
-                    </p>
-                  </div>
-                  <ChevronDown className="size-4 shrink-0 text-slate-400 transition-transform group-open:rotate-180" />
-                </summary>
-                <div className="border-t border-slate-100 px-3 py-3 dark:border-slate-800">
-                  <div className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
-                    <div><span className="block text-slate-500">{t("contractTotal")}</span><strong>{money(contractTotal || 0, locale)}</strong></div>
-                    <div><span className="block text-slate-500">{t("initialContribution")}</span><strong>{money((transactionType === "upfront" ? Number(upfrontCash || 0) : 0) + (transactionType === "trade_in" ? Number(tradeInCredit || 0) : 0), locale)}</strong></div>
-                    {transactionType === "upfront" ? <div><span className="block text-slate-500">{t("upfrontCash")}</span><strong>{money(upfrontCash || 0, locale)}</strong></div> : null}
-                    {transactionType === "trade_in" ? <><div><span className="block text-slate-500">{t("tradeInItem")}</span><strong>{tradeInItem}</strong></div><div><span className="block text-slate-500">{t("tradeInCredit")}</span><strong>{money(tradeInCredit || 0, locale)}</strong></div></> : null}
-                    <div><span className="block text-slate-500">{t("installmentAmount")}</span><strong>{money(installmentAmount || 0, locale)}</strong></div>
-                    <div><span className="block text-slate-500">{t("frequency")}</span><strong>{t(frequency)}</strong></div>
-                    <div><span className="block text-slate-500">{t("nextDueDate")}</span><strong>{nextDueDate}</strong></div>
-                    {agreementType === "installment" ? <div><span className="block text-slate-500">{t("releaseThreshold")}</span><strong>{releaseThreshold}%</strong></div> : null}
-                    {financingMode === "partner" ? <><div><span className="block text-slate-500">{t("partnerName")}</span><strong>{partnerName}</strong></div><div><span className="block text-slate-500">{t("partnerSettlement")}</span><strong>{money(partnerSettlement || 0, locale)}</strong></div><div><span className="block text-slate-500">{t("businessCommission")}</span><strong>{money(businessCommission || 0, locale)}</strong></div></> : null}
-                    {notes ? <div className="col-span-2 sm:col-span-4"><span className="block text-slate-500">{t("notes")}</span><strong>{notes}</strong></div> : null}
-                  </div>
-                </div>
-              </details>
+              <details className="group rounded-lg border border-slate-200 dark:border-slate-800"><summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2.5"><div className="min-w-0"><h3 className="text-xs font-bold uppercase tracking-wide text-slate-500">{t("reviewSetup")}</h3><p className="mt-0.5 truncate text-xs text-slate-700 dark:text-slate-300">{t(agreementType)} · {t(source === "stock" ? "stock" : "independent")} · {t(financingMode === "partner" ? "partnerFinanced" : "businessFinanced")}</p></div><ChevronDown className="size-4 shrink-0 text-slate-400 transition-transform group-open:rotate-180" /></summary><div className="border-t border-slate-100 px-3 py-3 dark:border-slate-800"><div className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-5"><div><span className="block text-slate-500">{t("agreementType")}</span><strong>{t(agreementType)}</strong></div><div><span className="block text-slate-500">{t("transactionType")}</span><strong>{t(transactionType === "trade_in" ? "tradeIn" : transactionType)}</strong></div><div><span className="block text-slate-500">{t("source")}</span><strong>{t(source === "stock" ? "stock" : "independent")}</strong></div><div><span className="block text-slate-500">{t("marketType")}</span><strong>{t(marketType)}</strong></div><div><span className="block text-slate-500">{t("financingMode")}</span><strong>{t(financingMode === "partner" ? "partnerFinanced" : "businessFinanced")}</strong></div></div></div></details>
+              <details className="group rounded-lg border border-slate-200 dark:border-slate-800"><summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2.5"><div className="min-w-0"><h3 className="text-xs font-bold uppercase tracking-wide text-slate-500">{t("reviewCustomer")}</h3><p className="mt-0.5 truncate text-xs text-slate-700 dark:text-slate-300">{customerName}{customerRegion ? ` · ${customerRegion}` : customerPhone ? ` · ${customerPhone}` : ""}</p></div><ChevronDown className="size-4 shrink-0 text-slate-400 transition-transform group-open:rotate-180" /></summary><div className="border-t border-slate-100 px-3 py-3 dark:border-slate-800"><div className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-3"><div><span className="block text-slate-500">{t("customerName")}</span><strong>{customerName}</strong></div><div><span className="block text-slate-500">{t("customerPhone")}</span><strong>{customerPhone || t("notProvided")}</strong></div><div><span className="block text-slate-500">{t("customerRegion")}</span><strong>{customerRegion || t("notProvided")}</strong></div></div></div></details>
+              <details className="group rounded-lg border border-slate-200 dark:border-slate-800"><summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2.5"><div className="min-w-0"><h3 className="text-xs font-bold uppercase tracking-wide text-slate-500">{t("reviewProducts")}</h3><p className="mt-0.5 truncate text-xs text-slate-700 dark:text-slate-300">{source === "stock" ? availability.find((item) => item.id === lines[0]?.product_id)?.name ?? "—" : lines[0]?.item_name || "—"}{lines.length > 1 ? ` · +${lines.length - 1}` : ""}</p></div><ChevronDown className="size-4 shrink-0 text-slate-400 transition-transform group-open:rotate-180" /></summary><div className="grid gap-2 border-t border-slate-100 px-3 py-3 dark:border-slate-800">{lines.map((line, index) => { const product = availability.find((item) => item.id === line.product_id); const trackedUnit = product?.available_units.find((unit) => unit.id === line.tracked_unit_id); const quantity = trackedUnit ? 1 : Number(line.quantity || 0); const acquisitionUnitCost = source === "independent" ? line.acquisition_unit_cost : trackedUnit?.acquisition_unit_cost ?? product?.acquisition_unit_cost ?? ""; const acquisitionTotal = acquisitionUnitCost ? Number(acquisitionUnitCost) * quantity : null; const productName = source === "stock" ? product?.name ?? "—" : line.item_name; const identityRows = source === "independent" ? [[t("acquiredFrom"), line.acquired_from], [t("brand"), line.brand], [t("modelName"), line.model_name], [t("color"), line.color], [t("capacitySize"), line.capacity_size], [line.identifier_type || t("identifierType"), line.identifier_value]] : [[t("sku"), product?.sku ?? ""], [t("brand"), trackedUnit?.brand ?? ""], [t("modelName"), trackedUnit?.model_name ?? ""], [t("color"), trackedUnit?.color ?? ""], [t("capacitySize"), trackedUnit?.capacity ?? ""], ...(trackedUnit?.identifiers.map((identifier) => [identifier.kind.toUpperCase(), identifier.value]) ?? [])]; return <div className="rounded-md bg-slate-50 p-3 dark:bg-slate-900/60" key={`${productName}-${index}`}><strong className="block">{productName}</strong><div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-xs sm:grid-cols-3">{identityRows.filter(([, value]) => Boolean(value)).map(([label, value]) => <div key={`${label}-${value}`}><span className="block text-slate-500">{label}</span><strong className="wrap-anywhere">{value}</strong></div>)}<div><span className="block text-slate-500">{t("quantity")}</span><strong>{source === "stock" && product?.unit ? formatQuantityWithUnit(String(quantity), product.unit, locale) : quantity}</strong></div><div><span className="block text-slate-500">{t("unitPrice")}</span><strong>{money(line.unit_price || 0, locale)}</strong></div><div><span className="block text-slate-500">{t("sellingTotal")}</span><strong>{money(quantity * Number(line.unit_price || 0), locale)}</strong></div><div><span className="block text-slate-500">{t("acquisitionTotal")}</span><strong>{acquisitionTotal == null ? t("notProvided") : money(acquisitionTotal, locale)}</strong></div><div><span className="block text-slate-500">{t("warranty")}</span><strong>{line.warranty_months ? t("warrantyMonths", { months: line.warranty_months }) : t("noWarranty")}</strong></div></div></div>; })}</div></details>
+              <details className="group rounded-lg border border-slate-200 dark:border-slate-800"><summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2.5"><div className="min-w-0"><h3 className="text-xs font-bold uppercase tracking-wide text-slate-500">{t("reviewTerms")}</h3><p className="mt-0.5 truncate text-xs text-slate-700 dark:text-slate-300">{t("contractTotal")}: {money(contractTotal || 0, locale)} · {t("installmentAmount")}: {money(installmentAmount || 0, locale)}</p></div><ChevronDown className="size-4 shrink-0 text-slate-400 transition-transform group-open:rotate-180" /></summary><div className="border-t border-slate-100 px-3 py-3 dark:border-slate-800"><div className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-4"><div><span className="block text-slate-500">{t("contractTotal")}</span><strong>{money(contractTotal || 0, locale)}</strong></div><div><span className="block text-slate-500">{t("initialContribution")}</span><strong>{money((transactionType === "upfront" ? Number(upfrontCash || 0) : 0) + (transactionType === "trade_in" ? Number(tradeInCredit || 0) : 0), locale)}</strong></div>{transactionType === "upfront" ? <div><span className="block text-slate-500">{t("upfrontCash")}</span><strong>{money(upfrontCash || 0, locale)}</strong></div> : null}{transactionType === "trade_in" ? <><div><span className="block text-slate-500">{t("tradeInItem")}</span><strong>{tradeInItem}</strong></div><div><span className="block text-slate-500">{t("tradeInCredit")}</span><strong>{money(tradeInCredit || 0, locale)}</strong></div></> : null}<div><span className="block text-slate-500">{t("installmentAmount")}</span><strong>{money(installmentAmount || 0, locale)}</strong></div><div><span className="block text-slate-500">{t("frequency")}</span><strong>{t(frequency)}</strong></div><div><span className="block text-slate-500">{t("nextDueDate")}</span><strong>{nextDueDate}</strong></div>{agreementType === "installment" ? <div><span className="block text-slate-500">{t("releaseThreshold")}</span><strong>{releaseThreshold}%</strong></div> : null}{financingMode === "partner" ? <><div><span className="block text-slate-500">{t("partnerName")}</span><strong>{partnerName}</strong></div><div><span className="block text-slate-500">{t("partnerSettlement")}</span><strong>{money(partnerSettlement || 0, locale)}</strong></div><div><span className="block text-slate-500">{t("businessCommission")}</span><strong>{money(businessCommission || 0, locale)}</strong></div></> : null}{notes ? <div className="col-span-2 sm:col-span-4"><span className="block text-slate-500">{t("notes")}</span><strong>{notes}</strong></div> : null}</div></div></details>
             </div>
           ) : null}
 
@@ -872,58 +774,51 @@ function FinancingWorkspace({ businessId }: { businessId: string }) {
       <section className="space-y-2">
         <h2 className="text-base font-bold">{t("recentAgreements")}</h2>
         {agreements.map((agreement) => (
-          <details className={`${shell} group p-3`} key={agreement.id}>
-            <summary className="flex cursor-pointer list-none items-center justify-between gap-3">
+          <article className={`${shell} p-3`} key={agreement.id}>
+            <div className="flex items-center justify-between gap-3">
               <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <strong className="truncate text-sm">{agreement.customer_name}</strong>
-                  <span className="rounded-full border border-slate-200 px-2 py-0.5 text-[10px] font-semibold dark:border-slate-800">{agreement.reference}</span>
-                </div>
+                <div className="flex flex-wrap items-center gap-2"><strong className="truncate text-sm">{agreement.customer_name}</strong><span className="rounded-full border border-slate-200 px-2 py-0.5 text-[10px] font-semibold dark:border-slate-800">{agreement.reference}</span></div>
                 <p className="mt-1 text-xs text-slate-500">{agreement.items[0]?.product_name || agreement.items[0]?.item_name || "—"} · {t(agreement.agreement_type)} · {t(`status${agreement.status.charAt(0).toUpperCase()}${agreement.status.slice(1)}`)}</p>
               </div>
-              <div className="shrink-0 text-right">
-                <strong className="block text-sm">{money(agreement.outstanding_balance, locale)}</strong>
-                <span className="text-[10px] text-slate-500">{t("balance")}</span>
-              </div>
-            </summary>
-
-            <div className="mt-3 grid gap-3 border-t border-slate-100 pt-3 dark:border-slate-800">
-              <div className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
-                <div><span className="text-slate-500">{t("contract")}</span><strong className="block">{money(agreement.contract_total, locale)}</strong></div>
-                <div><span className="text-slate-500">{t("paid")}</span><strong className="block">{money(Number(agreement.contribution_total) + Number(agreement.payments_total), locale)}</strong></div>
-                <div><span className="text-slate-500">{t("balance")}</span><strong className="block">{money(agreement.outstanding_balance, locale)}</strong></div>
-                <div><span className="text-slate-500">{t("nextDue")}</span><strong className="block">{agreement.next_due_date ?? "—"}</strong></div>
-              </div>
-
-              <div className="grid gap-1 text-xs">
-                {agreement.items.map((item) => <div className="rounded-md bg-slate-50 p-2 dark:bg-slate-900" key={item.id}><strong>{item.product_name || item.item_name}</strong><span className="ml-2 text-slate-500">{item.product_unit ? formatQuantityWithUnit(item.quantity, item.product_unit, locale) : item.quantity} · {money(item.line_total, locale)}</span>{item.warranty_months ? <span className="ml-2 text-slate-500">{t("warrantyMonths", { months: item.warranty_months })}</span> : null}</div>)}
-              </div>
-
-              <div className="flex flex-wrap gap-2">
-                <Button className="h-8 px-2 text-xs" onClick={() => void copyText(customerSummary(agreement), t("copied"))} type="button" variant="outline"><Copy className="size-3.5" />{t("copy")}</Button>
-                <Button className="h-8 px-2 text-xs" onClick={() => void shareText(agreement.reference, customerSummary(agreement))} type="button" variant="outline"><Share2 className="size-3.5" />{t("share")}</Button>
-                <Button className="h-8 px-2 text-xs" onClick={() => printSummary(agreement)} type="button" variant="outline"><Printer className="size-3.5" />{t("print")}</Button>
-                {agreement.next_due_date ? <><Button className="h-8 px-2 text-xs" onClick={() => void copyText(reminderText(agreement), t("reminderCopied"))} type="button" variant="outline"><Copy className="size-3.5" />{t("copyReminder")}</Button><Button className="h-8 px-2 text-xs" onClick={() => void shareText(t("reminder"), reminderText(agreement))} type="button" variant="outline"><Share2 className="size-3.5" />{t("shareReminder")}</Button></> : null}
-              </div>
-
-              {canRecordPayment && !["paid", "cancelled"].includes(agreement.status) ? <div className="grid gap-2 rounded-lg border border-slate-200 p-2.5 dark:border-slate-800 sm:grid-cols-[1fr_1fr_auto]"><Input className={control} min="0" placeholder={t("paymentAmount")} step="0.01" type="number" value={paymentDrafts[agreement.id] ?? ""} onChange={(event) => setPaymentDrafts((current) => ({ ...current, [agreement.id]: event.target.value }))} /><Input className={control} placeholder={t("paymentReference")} value={paymentRefs[agreement.id] ?? ""} onChange={(event) => setPaymentRefs((current) => ({ ...current, [agreement.id]: event.target.value }))} /><Button className="h-9 px-3 text-xs" onClick={() => void savePayment(agreement)} type="button">{t("recordPayment")}</Button></div> : null}
-
-              {canManageDocuments ? <div className="grid gap-2 rounded-lg border border-slate-200 p-2.5 dark:border-slate-800"><div className="flex items-center justify-between gap-2"><strong className="text-xs">{t("documents")}</strong><label className="inline-flex cursor-pointer items-center gap-1 text-xs font-semibold"><Upload className="size-3.5" />{t("uploadDocument")}<input className="sr-only" type="file" onChange={(event) => setDocumentDrafts((current) => ({ ...current, [agreement.id]: event.target.files?.[0] ?? null }))} /></label></div>{documentDrafts[agreement.id] ? <Button className="h-8 w-fit px-2 text-xs" onClick={() => void saveDocument(agreement)} type="button">{t("uploadDocument")}: {documentDrafts[agreement.id]?.name}</Button> : null}{agreement.documents.length ? <div className="grid gap-1">{agreement.documents.map((document) => <div className="flex items-center justify-between gap-2 text-xs" key={document.id}><span className="truncate">{document.original_name}</span><Button className="h-7 px-2 text-[11px]" onClick={() => accessToken && void downloadFinancingDocument(document.download_path, accessToken, document.original_name)} type="button" variant="outline"><Download className="size-3" />{t("download")}</Button></div>)}</div> : <p className="text-xs text-slate-500">{t("noDocuments")}</p>}</div> : null}
-
-              {agreement.expected_business_income ? <div className="rounded-lg bg-slate-50 p-2.5 text-xs dark:bg-slate-900"><strong>{t("internalFinance")}</strong><div className="mt-1 grid grid-cols-2 gap-2 sm:grid-cols-3"><div><span className="text-slate-500">{t("expectedIncome")}</span><strong className="block">{money(agreement.expected_business_income, locale)}</strong></div>{agreement.partner_settlement_amount ? <div><span className="text-slate-500">{t("partnerSettlementLabel")}</span><strong className="block">{money(agreement.partner_settlement_amount, locale)}</strong></div> : null}{agreement.business_commission ? <div><span className="text-slate-500">{t("commission")}</span><strong className="block">{money(agreement.business_commission, locale)}</strong></div> : null}</div></div> : null}
+              <div className="shrink-0 text-right"><strong className="block text-sm">{money(agreement.outstanding_balance, locale)}</strong><span className="text-[10px] text-slate-500">{t("balance")}</span></div>
             </div>
-          </details>
+
+            <div className="mt-2 flex flex-wrap gap-2">
+              <Button className="h-8 px-2 text-xs" onClick={() => void copyText(customerSummary(agreement), t("copied"))} type="button" variant="outline"><Copy className="size-3.5" />{t("copy")}</Button>
+              <Button className="h-8 px-2 text-xs" onClick={() => void shareText(agreement.reference, customerSummary(agreement))} type="button" variant="outline"><Share2 className="size-3.5" />{t("share")}</Button>
+              <Button className="h-8 px-2 text-xs" onClick={() => printSummary(agreement)} type="button" variant="outline"><Printer className="size-3.5" />{t("print")}</Button>
+              {agreement.next_due_date ? <><Button className="h-8 px-2 text-xs" onClick={() => void copyText(reminderText(agreement), t("reminderCopied"))} type="button" variant="outline"><Copy className="size-3.5" />{t("copyReminder")}</Button><Button className="h-8 px-2 text-xs" onClick={() => void shareText(t("reminder"), reminderText(agreement))} type="button" variant="outline"><Share2 className="size-3.5" />{t("shareReminder")}</Button></> : null}
+            </div>
+
+            <details className="group mt-2 border-t border-slate-100 pt-2 dark:border-slate-800">
+              <summary className="flex w-fit cursor-pointer list-none items-center gap-1.5 rounded-md px-1 py-1 text-xs font-semibold text-slate-600 hover:text-slate-950 dark:text-slate-300 dark:hover:text-white"><span className="group-open:hidden">{t("viewMore")}</span><span className="hidden group-open:inline">{t("viewLess")}</span><ChevronDown className="size-3.5 transition-transform group-open:rotate-180" /></summary>
+              <div className="mt-2 grid gap-3 border-t border-slate-100 pt-3 dark:border-slate-800">
+                <div className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-4"><div><span className="text-slate-500">{t("contract")}</span><strong className="block">{money(agreement.contract_total, locale)}</strong></div><div><span className="text-slate-500">{t("paid")}</span><strong className="block">{money(Number(agreement.contribution_total) + Number(agreement.payments_total), locale)}</strong></div><div><span className="text-slate-500">{t("balance")}</span><strong className="block">{money(agreement.outstanding_balance, locale)}</strong></div><div><span className="text-slate-500">{t("nextDue")}</span><strong className="block">{agreement.next_due_date ?? "—"}</strong></div></div>
+
+                <div className="grid gap-1 text-xs">
+                  {agreement.items.map((item) => (
+                    <div className="rounded-md bg-slate-50 p-2 dark:bg-slate-900" key={item.id}>
+                      <strong>{item.product_name || item.item_name}</strong>
+                      <span className="ml-2 text-slate-500">{item.product_unit ? formatQuantityWithUnit(item.quantity, item.product_unit, locale) : item.quantity} · {money(item.line_total, locale)}</span>
+                      {item.warranty_months ? <span className="ml-2 text-slate-500">{t("warrantyMonths", { months: item.warranty_months })}</span> : null}
+                      {item.customer_details.length ? <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-slate-500">{item.customer_details.map((detail) => <span key={`${detail.kind}-${detail.label}-${detail.value}`}>{customerDetailLabel(detail.kind, detail.label)}: <strong className="text-slate-700 dark:text-slate-300">{detail.value}</strong></span>)}</div> : null}
+                    </div>
+                  ))}
+                </div>
+
+                {canRecordPayment && !["paid", "cancelled"].includes(agreement.status) ? <div className="grid gap-2 rounded-lg border border-slate-200 p-2.5 dark:border-slate-800 sm:grid-cols-[1fr_1fr_auto]"><Input className={control} min="0" placeholder={t("paymentAmount")} step="0.01" type="number" value={paymentDrafts[agreement.id] ?? ""} onChange={(event) => setPaymentDrafts((current) => ({ ...current, [agreement.id]: event.target.value }))} /><Input className={control} placeholder={t("paymentReference")} value={paymentRefs[agreement.id] ?? ""} onChange={(event) => setPaymentRefs((current) => ({ ...current, [agreement.id]: event.target.value }))} /><Button className="h-9 px-3 text-xs" onClick={() => void savePayment(agreement)} type="button">{t("recordPayment")}</Button></div> : null}
+
+                {canManageDocuments ? <div className="grid gap-2 rounded-lg border border-slate-200 p-2.5 dark:border-slate-800"><div className="flex items-center justify-between gap-2"><strong className="text-xs">{t("documents")}</strong><label className="inline-flex cursor-pointer items-center gap-1 text-xs font-semibold"><Upload className="size-3.5" />{t("uploadDocument")}<input accept=".pdf,.jpg,.jpeg,.png,.webp,.heic,.heif,application/pdf,image/jpeg,image/png,image/webp,image/heic,image/heif" className="sr-only" type="file" onChange={(event) => chooseDocument(agreement.id, event.target.files?.[0] ?? null)} /></label></div>{documentDrafts[agreement.id] ? <Button className="h-8 w-fit max-w-full px-2 text-xs" disabled={Boolean(documentUploading[agreement.id])} onClick={() => void saveDocument(agreement)} type="button">{documentUploading[agreement.id] ? t("uploading") : t("uploadDocument")}: <span className="max-w-52 truncate">{documentDrafts[agreement.id]?.name}</span></Button> : null}{agreement.documents.length ? <div className="grid gap-1">{agreement.documents.map((document) => <div className="flex items-center justify-between gap-2 text-xs" key={document.id}><span className="truncate">{document.original_name}</span><Button className="h-7 px-2 text-[11px]" onClick={() => accessToken && void downloadFinancingDocument(document.download_path, accessToken, document.original_name)} type="button" variant="outline"><Download className="size-3" />{t("download")}</Button></div>)}</div> : <p className="text-xs text-slate-500">{t("noDocuments")}</p>}</div> : null}
+
+                {agreement.expected_business_income ? <div className="rounded-lg bg-slate-50 p-2.5 text-xs dark:bg-slate-900"><strong>{t("internalFinance")}</strong><div className="mt-1 grid grid-cols-2 gap-2 sm:grid-cols-3"><div><span className="text-slate-500">{t("expectedIncome")}</span><strong className="block">{money(agreement.expected_business_income, locale)}</strong></div>{agreement.partner_settlement_amount ? <div><span className="text-slate-500">{t("partnerSettlementLabel")}</span><strong className="block">{money(agreement.partner_settlement_amount, locale)}</strong></div> : null}{agreement.business_commission ? <div><span className="text-slate-500">{t("commission")}</span><strong className="block">{money(agreement.business_commission, locale)}</strong></div> : null}</div></div> : null}
+              </div>
+            </details>
+          </article>
         ))}
         {!agreements.length ? <div className={`${shell} p-4 text-sm text-slate-500`}>{t("noAgreements")}</div> : null}
       </section>
 
-      {savedSummary ? (
-        <FinancingShareableSummaryDialog
-          data={savedSummary}
-          onClose={() => setSummaryDialogOpen(false)}
-          open={summaryDialogOpen}
-        />
-      ) : null}
+      {savedSummary ? <FinancingShareableSummaryDialog data={savedSummary} onClose={() => setSummaryDialogOpen(false)} open={summaryDialogOpen} /> : null}
     </section>
   );
 }

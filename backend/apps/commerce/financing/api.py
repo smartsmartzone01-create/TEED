@@ -35,6 +35,7 @@ def _agreement_queryset(business):
         .prefetch_related(
             "items__product",
             "items__tracked_unit",
+            "items__tracked_unit__identifiers",
             "payments",
             "documents",
         )
@@ -247,13 +248,24 @@ class FinancingDocumentListCreateAPIView(CommerceBaseAPIView):
             from rest_framework.exceptions import ValidationError
 
             raise ValidationError({"file": ["Choose a document to upload."]})
-        document = attach_financing_document(
-            actor=request.user,
-            business_id=business_id,
-            agreement_id=agreement_id,
-            file=uploaded,
-            description=request.data.get("description", ""),
-        )
+        try:
+            document = attach_financing_document(
+                actor=request.user,
+                business_id=business_id,
+                agreement_id=agreement_id,
+                file=uploaded,
+                description=request.data.get("description", ""),
+            )
+        except OSError as exc:
+            from rest_framework.exceptions import ValidationError
+
+            raise ValidationError(
+                {
+                    "file": [
+                        "The server could not store this document. Try the upload again or use another supported file."
+                    ]
+                }
+            ) from exc
         return SuccessResponse(
             message="Financing document uploaded successfully.",
             data=FinancingDocumentSerializer(document).data,
