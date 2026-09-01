@@ -32,7 +32,7 @@
     "chooseItem": "Choose exact item",
     "itemName": "Product name",
     "quantity": "Quantity",
-    "unitPrice": "Agreed product value",
+    "unitPrice": "Selling value / unit",
     "acquisitionCost": "Acquisition cost / unit",
     "addProduct": "Add another product",
     "remove": "Remove",
