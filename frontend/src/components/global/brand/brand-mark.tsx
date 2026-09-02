@@ -13,25 +13,25 @@ function BrandMark({
   href = "/",
   tone = "default",
 }: BrandMarkProps) {
-  const firstHalfClassName = {
-    adaptive: "text-brand-navy dark:text-white",
-    default: "text-brand-navy",
-    inverse: "text-white",
-  }[tone];
-
   return (
     <Link
       aria-label="Tunakuza"
       className={cn(
-        "inline-flex items-center font-black leading-none tracking-[-0.045em]",
+        "inline-flex h-14 w-14 shrink-0 items-center justify-center",
         className,
       )}
+      data-tone={tone}
       href={href}
     >
-      <span aria-hidden="true">
-        <span className={firstHalfClassName}>Tuna</span>
-        <span className="text-brand-orange">kuza</span>
-      </span>
+      <img
+        alt=""
+        aria-hidden="true"
+        className="h-full w-full select-none object-contain"
+        draggable={false}
+        height="198"
+        src="/brand/tunakuza-logo.svg"
+        width="200"
+      />
     </Link>
   );
 }
