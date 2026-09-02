@@ -7,7 +7,11 @@ import {
   financingPaymentResponseSchema,
 } from "@/schemas/commerce/financing";
 import { commerceBase } from "@/services/commerce/shared";
-import { ApiClientError, requestApi } from "@/services/global/api-client";
+import {
+  ApiClientError,
+  getApiBaseUrl,
+  requestApi,
+} from "@/services/global/api-client";
 import { withCsrfRetry } from "@/services/identity/csrf";
 
 function getFinancingAgreements(
@@ -135,11 +139,7 @@ async function downloadFinancingDocument(
   accessToken: string,
   filename: string,
 ) {
-  const developmentApiBaseUrl =
-    process.env.NODE_ENV === "development" ? "http://localhost:8000" : "";
-  const baseUrl =
-    process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ?? developmentApiBaseUrl;
-  const response = await fetch(`${baseUrl}${downloadPath}`, {
+  const response = await fetch(`${getApiBaseUrl()}${downloadPath}`, {
     credentials: "include",
     headers: { Authorization: `Bearer ${accessToken}` },
   });

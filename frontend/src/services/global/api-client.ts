@@ -9,14 +9,24 @@ import type {
   NormalizedApiError,
 } from "@/types/global/api";
 
-const developmentApiBaseUrl =
-  process.env.NODE_ENV === "development"
-    ? "http://localhost:8000"
-    : "";
+function getApiBaseUrl() {
+  const configuredApiBaseUrl =
+    process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "");
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ??
-  developmentApiBaseUrl;
+  if (configuredApiBaseUrl !== undefined) {
+    return configuredApiBaseUrl;
+  }
+
+  if (process.env.NODE_ENV !== "development") {
+    return "";
+  }
+
+  if (typeof window !== "undefined") {
+    return `http://${window.location.hostname}:8000`;
+  }
+
+  return "http://localhost:8000";
+}
 
 type ApiRequestOptions<T> = {
   accessToken?: string;
@@ -51,7 +61,7 @@ function buildUrl(path: string) {
     ? path
     : `/${path}`;
 
-  return `${API_BASE_URL}${normalizedPath}`;
+  return `${getApiBaseUrl()}${normalizedPath}`;
 }
 
 async function parseJson(response: Response) {
@@ -139,5 +149,10 @@ async function requestApi<T>({
   return payload;
 }
 
-export { ApiClientError, isRequestCancelled, requestApi };
+export {
+  ApiClientError,
+  getApiBaseUrl,
+  isRequestCancelled,
+  requestApi,
+};
 export type { ApiRequestOptions };
