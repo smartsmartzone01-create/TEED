@@ -19,21 +19,18 @@ import { ApiClientError } from "@/services/global/api-client";
 import { completeOnboarding } from "@/services/identity/entry";
 import type { OnboardingFormValues } from "@/types/identity/entry";
 
+function supportedCountry(value?: string | null): "KE" | "TZ" | "UG" {
+  return value === "KE" || value === "UG" || value === "TZ" ? value : "TZ";
+}
+
 function OnboardingForm() {
   const t = useTranslations("Onboarding");
   const signupT = useTranslations("Signup");
   const errorsT = useTranslations("IdentityErrors");
   const router = useRouter();
   const { notify } = useNotification();
-  const {
-    accessToken,
-    clearSession,
-    refreshAccessToken,
-    updateUser,
-    user,
-  } = useIdentitySession();
-  const { getErrorMessage, getFieldMessage } =
-    useApiErrorMessages();
+  const { accessToken, clearSession, refreshAccessToken, updateUser, user } = useIdentitySession();
+  const { getErrorMessage, getFieldMessage } = useApiErrorMessages();
 
   const schema = useMemo(
     () =>
@@ -56,19 +53,18 @@ function OnboardingForm() {
     setError,
   } = useForm<OnboardingFormValues>({
     defaultValues: {
-      countryCode: "TZ",
-      phoneNumber: "",
+      countryCode: supportedCountry(user?.countryCode),
+      phoneNumber: user?.phoneNumber ?? "",
       username: "",
     },
     resolver: zodResolver(schema),
   });
 
+  const verifiedRegistrationPhone = Boolean(user?.isPhoneVerified && user.phoneNumber);
+
   const onSubmit = handleSubmit(async (values) => {
     if (!accessToken || !user) {
-      notify({
-        message: t("sessionRequired"),
-        tone: "error",
-      });
+      notify({ message: t("sessionRequired"), tone: "error" });
       return;
     }
 
@@ -84,155 +80,80 @@ function OnboardingForm() {
 
     try {
       let response;
-
       try {
         response = await submitOnboarding(accessToken);
       } catch (error) {
-        if (
-          !(error instanceof ApiClientError) ||
-          error.details.kind !== "unauthenticated"
-        ) {
+        if (!(error instanceof ApiClientError) || error.details.kind !== "unauthenticated") {
           throw error;
         }
-
-        const refreshedAccessToken =
-          await refreshAccessToken();
-        response = await submitOnboarding(
-          refreshedAccessToken,
-        );
+        response = await submitOnboarding(await refreshAccessToken());
       }
 
       const data = response.data;
-
-      if (!data) {
-        throw new Error("Onboarding response data missing.");
-      }
+      if (!data) throw new Error("Onboarding response data missing.");
 
       updateUser({
+        countryCode: data.country_code,
         email: data.email,
         isOnboardingComplete: true,
+        isPhoneVerified: user.isPhoneVerified,
+        phoneNumber: data.phone_number,
         userId: data.user_id,
         username: data.username,
       });
-
-      notify({
-        message: t("success"),
-        tone: "success",
-      });
+      notify({ message: t("success"), tone: "success" });
       router.push("/dashboard");
     } catch (error) {
       if (error instanceof ApiClientError) {
         if (error.details.kind === "unauthenticated") {
           clearSession();
-          notify({
-            message: getErrorMessage(error.details),
-            tone: "error",
-          });
+          notify({ message: getErrorMessage(error.details), tone: "error" });
           router.replace("/login");
           return;
         }
-
-        const usernameIssue = firstFieldIssue(
-          error.details.fieldErrors,
-          "username",
-        );
-        const countryIssue = firstFieldIssue(
-          error.details.fieldErrors,
-          "country_code",
-        );
-        const phoneIssue = firstFieldIssue(
-          error.details.fieldErrors,
-          "phone_number",
-        );
-
-        if (usernameIssue) {
-          setError("username", {
-            message: getFieldMessage(usernameIssue),
-          });
+        const mappings = [
+          ["username", "username"],
+          ["country_code", "countryCode"],
+          ["phone_number", "phoneNumber"],
+        ] as const;
+        for (const [apiField, formField] of mappings) {
+          const issue = firstFieldIssue(error.details.fieldErrors, apiField);
+          if (issue) setError(formField, { message: getFieldMessage(issue) });
         }
-
-        if (countryIssue) {
-          setError("countryCode", {
-            message: getFieldMessage(countryIssue),
-          });
-        }
-
-        if (phoneIssue) {
-          setError("phoneNumber", {
-            message: getFieldMessage(phoneIssue),
-          });
-        }
-
-        notify({
-          message: getErrorMessage(error.details),
-          tone: "error",
-        });
+        notify({ message: getErrorMessage(error.details), tone: "error" });
         return;
       }
-
-      notify({
-        message: errorsT("unexpected_error"),
-        tone: "error",
-      });
+      notify({ message: errorsT("unexpected_error"), tone: "error" });
     }
   });
 
   return (
     <>
       <div className="mb-6">
-        <div
-          aria-label={t("eyebrow")}
-          className="mb-5 flex items-center gap-2"
-          role="img"
-        >
+        <div aria-label={t("eyebrow")} className="mb-5 flex items-center gap-2" role="img">
           <span className="h-1.5 flex-1 rounded-full bg-[var(--brand-red)]" />
           <span className="h-1.5 flex-1 rounded-full bg-[var(--brand-green)]" />
           <span className="h-1.5 flex-1 rounded-full bg-primary" />
         </div>
-
-        <h2 className="text-xl font-semibold tracking-tight">
-          {t("cardTitle")}
-        </h2>
-        <p className="mt-2 text-sm leading-6 text-muted-foreground">
-          {t("cardDescription")}
-        </p>
+        <h2 className="text-xl font-semibold tracking-tight">{t("cardTitle")}</h2>
+        <p className="mt-2 text-sm leading-6 text-muted-foreground">{t("cardDescription")}</p>
       </div>
 
       <form className="grid gap-5" onSubmit={onSubmit}>
-        <FormField
-          error={errors.username?.message}
-          htmlFor="onboarding-username"
-          label={t("username")}
-          required
-        >
-          <Input
-            autoComplete="username"
-            id="onboarding-username"
-            invalid={Boolean(errors.username)}
-            placeholder={t("usernamePlaceholder")}
-            {...register("username")}
-          />
+        <FormField error={errors.username?.message} htmlFor="onboarding-username" label={t("username")} required>
+          <Input autoComplete="username" id="onboarding-username" invalid={Boolean(errors.username)} placeholder={t("usernamePlaceholder")} {...register("username")} />
         </FormField>
 
         <div className="grid gap-5 sm:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
-          <FormField
-            error={errors.countryCode?.message}
-            htmlFor="onboarding-country"
-            label={t("country")}
-            required
-          >
-            <Select
-              id="onboarding-country"
-              invalid={Boolean(errors.countryCode)}
-              {...register("countryCode")}
-            >
+          <FormField error={errors.countryCode?.message} htmlFor="onboarding-country" label={t("country")} required>
+            <Select id="onboarding-country" invalid={Boolean(errors.countryCode)} {...register("countryCode")}>
               <option value="TZ">{t("countries.TZ")}</option>
               <option value="KE">{t("countries.KE")}</option>
               <option value="UG">{t("countries.UG")}</option>
             </Select>
           </FormField>
-
           <FormField
+            description={verifiedRegistrationPhone ? t("verifiedPhone") : undefined}
             error={errors.phoneNumber?.message}
             htmlFor="onboarding-phone"
             label={t("phone")}
@@ -244,19 +165,14 @@ function OnboardingForm() {
               inputMode="tel"
               invalid={Boolean(errors.phoneNumber)}
               placeholder={t("phonePlaceholder")}
+              readOnly={verifiedRegistrationPhone}
               type="tel"
               {...register("phoneNumber")}
             />
           </FormField>
         </div>
 
-        <Button
-          className="w-full"
-          loading={isSubmitting}
-          loadingLabel={t("submitting")}
-          size="large"
-          type="submit"
-        >
+        <Button className="w-full" loading={isSubmitting} loadingLabel={t("submitting")} size="large" type="submit">
           {t("submit")}
         </Button>
       </form>

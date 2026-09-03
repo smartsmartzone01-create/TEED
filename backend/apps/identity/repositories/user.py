@@ -10,13 +10,7 @@ def create_user(
     password=None,
     **extra_fields,
 ):
-    """
-    Persist a new TEED user.
-
-    Business rules and transaction boundaries belong to
-    the service layer, not this repository.
-    """
-
+    """Persist a new TEED user. Business rules stay in the service layer."""
     return User.objects.create_user(
         email=email,
         phone_number=phone_number,
@@ -25,22 +19,15 @@ def create_user(
     )
 
 
-def mark_user_email_verified(
-    *,
-    user: User,
-) -> User:
-    """
-    Mark the user's current email address as verified.
-    """
-
+def mark_user_email_verified(*, user: User) -> User:
     user.is_email_verified = True
-    user.save(
-        update_fields=[
-            "is_email_verified",
-            "updated_at",
-        ]
-    )
+    user.save(update_fields=["is_email_verified", "updated_at"])
+    return user
 
+
+def mark_user_phone_verified(*, user: User) -> User:
+    user.is_phone_verified = True
+    user.save(update_fields=["is_phone_verified", "updated_at"])
     return user
 
 
@@ -51,15 +38,10 @@ def complete_user_onboarding(
     phone_number: str,
     country_code: str,
 ) -> User:
-    """
-    Persist the required onboarding identity fields.
-    """
-
     user.username = username
     user.phone_number = phone_number
     user.country_code = country_code
     user.onboarding_completed_at = timezone.now()
-
     user.save(
         update_fields=[
             "username",
@@ -69,5 +51,4 @@ def complete_user_onboarding(
             "updated_at",
         ]
     )
-
     return user

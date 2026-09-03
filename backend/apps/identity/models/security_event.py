@@ -16,18 +16,9 @@ class IdentitySecurityEvent(BaseModel):
     """Append-only security record without credentials or direct contact data."""
 
     class EventType(models.TextChoices):
-        EMAIL_CHALLENGE_ISSUED = (
-            "email_challenge_issued",
-            "Email challenge issued",
-        )
-        EMAIL_DELIVERY_SUCCEEDED = (
-            "email_delivery_succeeded",
-            "Email delivery succeeded",
-        )
-        EMAIL_DELIVERY_FAILED = (
-            "email_delivery_failed",
-            "Email delivery failed",
-        )
+        EMAIL_CHALLENGE_ISSUED = "email_challenge_issued", "Email challenge issued"
+        EMAIL_DELIVERY_SUCCEEDED = "email_delivery_succeeded", "Email delivery succeeded"
+        EMAIL_DELIVERY_FAILED = "email_delivery_failed", "Email delivery failed"
         EMAIL_DELIVERY_QUEUED = "email_delivery_queued", "Email delivery queued"
         EMAIL_DELIVERY_RETRY = "email_delivery_retry", "Email delivery retry"
         EMAIL_DELIVERY_DEAD = "email_delivery_dead", "Email delivery dead letter"
@@ -39,16 +30,22 @@ class IdentitySecurityEvent(BaseModel):
             "email_verification_failed",
             "Email verification failed",
         )
-        EMAIL_RESEND_BLOCKED = (
-            "email_resend_blocked",
-            "Email resend blocked",
+        EMAIL_RESEND_BLOCKED = "email_resend_blocked", "Email resend blocked"
+        PHONE_CHALLENGE_ISSUED = "phone_challenge_issued", "Phone challenge issued"
+        PHONE_DELIVERY_SUCCEEDED = "phone_delivery_succeeded", "Phone delivery succeeded"
+        PHONE_DELIVERY_FAILED = "phone_delivery_failed", "Phone delivery failed"
+        PHONE_VERIFICATION_SUCCEEDED = (
+            "phone_verification_succeeded",
+            "Phone verification succeeded",
         )
+        PHONE_VERIFICATION_FAILED = (
+            "phone_verification_failed",
+            "Phone verification failed",
+        )
+        PHONE_RESEND_BLOCKED = "phone_resend_blocked", "Phone resend blocked"
         LOGIN_SUCCEEDED = "login_succeeded", "Login succeeded"
         LOGIN_FAILED = "login_failed", "Login failed"
-        REGISTRATION_SUCCEEDED = (
-            "registration_succeeded",
-            "Registration succeeded",
-        )
+        REGISTRATION_SUCCEEDED = "registration_succeeded", "Registration succeeded"
         REGISTRATION_FAILED = "registration_failed", "Registration failed"
         PASSWORD_RESET_REQUESTED = (
             "password_reset_requested",
@@ -66,19 +63,10 @@ class IdentitySecurityEvent(BaseModel):
             "password_reset_code_failed",
             "Password reset code failed",
         )
-        PASSWORD_RESET_SUCCEEDED = (
-            "password_reset_succeeded",
-            "Password reset succeeded",
-        )
-        PASSWORD_RESET_FAILED = (
-            "password_reset_failed",
-            "Password reset failed",
-        )
+        PASSWORD_RESET_SUCCEEDED = "password_reset_succeeded", "Password reset succeeded"
+        PASSWORD_RESET_FAILED = "password_reset_failed", "Password reset failed"
         PROFILE_UPDATED = "profile_updated", "Profile updated"
-        PROFILE_IMAGE_REMOVED = (
-            "profile_image_removed",
-            "Profile image removed",
-        )
+        PROFILE_IMAGE_REMOVED = "profile_image_removed", "Profile image removed"
         PASSWORD_CHANGED = "password_changed", "Password changed"
         SESSION_REVOKED = "session_revoked", "Session revoked"
         OTHER_SESSIONS_REVOKED = (
@@ -98,40 +86,16 @@ class IdentitySecurityEvent(BaseModel):
         null=True,
         blank=True,
     )
-    event_type = models.CharField(
-        max_length=64,
-        choices=EventType.choices,
-        db_index=True,
-    )
-    outcome = models.CharField(
-        max_length=16,
-        choices=Outcome.choices,
-        db_index=True,
-    )
-    challenge_id = models.UUIDField(
-        null=True,
-        blank=True,
-    )
+    event_type = models.CharField(max_length=64, choices=EventType.choices, db_index=True)
+    outcome = models.CharField(max_length=16, choices=Outcome.choices, db_index=True)
+    challenge_id = models.UUIDField(null=True, blank=True)
     session_id = models.UUIDField(null=True, blank=True)
     device_id = models.UUIDField(null=True, blank=True, db_index=True)
     identifier_hash = models.CharField(max_length=64, blank=True, default="")
-    ip_address = models.GenericIPAddressField(
-        null=True,
-        blank=True,
-    )
-    user_agent_hash = models.CharField(
-        max_length=64,
-        blank=True,
-        default="",
-    )
-    metadata = models.JSONField(
-        default=dict,
-        blank=True,
-    )
-    expires_at = models.DateTimeField(
-        default=default_security_event_expiry,
-        db_index=True,
-    )
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent_hash = models.CharField(max_length=64, blank=True, default="")
+    metadata = models.JSONField(default=dict, blank=True)
+    expires_at = models.DateTimeField(default=default_security_event_expiry, db_index=True)
 
     class Meta:
         db_table = "identity_security_events"

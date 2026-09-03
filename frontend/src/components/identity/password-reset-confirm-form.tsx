@@ -25,14 +25,13 @@ function PasswordResetConfirmForm() {
   const router = useRouter();
   const { notify } = useNotification();
   const { clearSession } = useIdentitySession();
-  const { getErrorMessage, getFieldMessage } =
-    useApiErrorMessages();
+  const { getErrorMessage, getFieldMessage } = useApiErrorMessages();
 
   const schema = useMemo(
     () =>
       createPasswordResetConfirmSchema({
         code: t("validation.code"),
-        email: t("validation.email"),
+        identifier: t("validation.email"),
         password: t("validation.password"),
         passwordMatch: t("validation.passwordMatch"),
         passwordMinimum: t("validation.passwordMinimum"),
@@ -56,21 +55,12 @@ function PasswordResetConfirmForm() {
         new_password_confirm: values.newPasswordConfirm,
       });
       clearSession();
-      notify({
-        message: t("success"),
-        tone: "success",
-      });
+      notify({ message: t("success"), tone: "success" });
       router.replace("/login");
     } catch (error) {
       if (error instanceof ApiClientError) {
-        if (
-          error.details.code ===
-          "password_reset_grant_invalid"
-        ) {
-          notify({
-            message: getErrorMessage(error.details),
-            tone: "error",
-          });
+        if (error.details.code === "password_reset_grant_invalid") {
+          notify({ message: getErrorMessage(error.details), tone: "error" });
           router.replace("/forgot-password");
           return;
         }
@@ -85,37 +75,26 @@ function PasswordResetConfirmForm() {
         );
 
         if (passwordIssue) {
-          setError("newPassword", {
-            message: getFieldMessage(passwordIssue),
-          });
+          setError("newPassword", { message: getFieldMessage(passwordIssue) });
         }
-
         if (confirmationIssue) {
           setError("newPasswordConfirm", {
             message: getFieldMessage(confirmationIssue),
           });
         }
 
-        notify({
-          message: getErrorMessage(error.details),
-          tone: "error",
-        });
+        notify({ message: getErrorMessage(error.details), tone: "error" });
         return;
       }
 
-      notify({
-        message: errorsT("unexpected_error"),
-        tone: "error",
-      });
+      notify({ message: errorsT("unexpected_error"), tone: "error" });
     }
   });
 
   return (
     <>
       <div className="mb-6">
-        <h2 className="text-xl font-semibold tracking-tight">
-          {t("cardTitle")}
-        </h2>
+        <h2 className="text-xl font-semibold tracking-tight">{t("cardTitle")}</h2>
         <p className="mt-2 text-sm leading-6 text-muted-foreground">
           {t("cardDescription")}
         </p>

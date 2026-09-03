@@ -39,6 +39,42 @@ class EmailVerificationDailyLimitReached(TEEDException):
     default_status_code = status.HTTP_429_TOO_MANY_REQUESTS
 
 
+class PhoneVerificationChallengeNotFound(TEEDException):
+    default_message = "No phone verification challenge was found."
+    default_code = "phone_verification_not_found"
+    default_status_code = status.HTTP_400_BAD_REQUEST
+
+
+class PhoneVerificationCodeInvalid(TEEDException):
+    default_message = "The phone verification code is invalid."
+    default_code = "phone_verification_code_invalid"
+    default_status_code = status.HTTP_400_BAD_REQUEST
+
+
+class PhoneVerificationCodeExpired(TEEDException):
+    default_message = "The phone verification code has expired."
+    default_code = "phone_verification_code_expired"
+    default_status_code = status.HTTP_400_BAD_REQUEST
+
+
+class PhoneVerificationAttemptLimitReached(TEEDException):
+    default_message = "The phone verification attempt limit has been reached."
+    default_code = "phone_verification_attempt_limit_reached"
+    default_status_code = status.HTTP_429_TOO_MANY_REQUESTS
+
+
+class PhoneVerificationResendCooldown(TEEDException):
+    default_message = "Wait before requesting another verification code."
+    default_code = "phone_verification_resend_cooldown"
+    default_status_code = status.HTTP_429_TOO_MANY_REQUESTS
+
+
+class PhoneVerificationDailyLimitReached(TEEDException):
+    default_message = "The daily phone verification limit has been reached."
+    default_code = "phone_verification_daily_limit_reached"
+    default_status_code = status.HTTP_429_TOO_MANY_REQUESTS
+
+
 class EmailAlreadyRegistered(TEEDException):
     default_message = "An account with this email address already exists."
     default_code = "email_already_registered"
@@ -55,6 +91,12 @@ class PhoneNumberAlreadyRegistered(TEEDException):
     default_message = "This phone number is already in use."
     default_code = "phone_number_already_registered"
     default_status_code = status.HTTP_409_CONFLICT
+
+
+class VerifiedPhoneChangeNotAllowed(TEEDException):
+    default_message = "Use your verified phone number during onboarding. You can change it later from account security."
+    default_code = "verified_phone_change_not_allowed"
+    default_status_code = status.HTTP_400_BAD_REQUEST
 
 
 class IdentityVerificationRequired(TEEDException):
@@ -78,6 +120,12 @@ class InvalidCredentials(TEEDException):
 class EmailVerificationRequired(TEEDException):
     default_message = "Verify your email address before signing in."
     default_code = "email_verification_required"
+    default_status_code = status.HTTP_403_FORBIDDEN
+
+
+class PhoneVerificationRequired(TEEDException):
+    default_message = "Verify your phone number before signing in."
+    default_code = "phone_verification_required"
     default_status_code = status.HTTP_403_FORBIDDEN
 
 

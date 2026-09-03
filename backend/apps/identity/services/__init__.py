@@ -1,4 +1,4 @@
-from .authentication import login_email_user
+from .authentication import login_email_user, login_phone_user
 from .email_delivery import (
     enqueue_email_delivery,
     process_email_deliveries,
@@ -15,7 +15,11 @@ from .password_reset import (
     request_password_reset,
     verify_password_reset_code,
 )
-from .registration import register_email_user
+from .phone_verification import (
+    issue_phone_verification_challenge,
+    verify_phone_verification_code,
+)
+from .registration import register_email_user, register_phone_user
 from .security_event import (
     hash_identity_identifier,
     hash_user_agent,
@@ -30,18 +34,22 @@ from .session import (
 
 __all__ = [
     "issue_email_verification_challenge",
+    "issue_phone_verification_challenge",
     "enqueue_email_delivery",
     "process_email_delivery",
     "process_email_deliveries",
     "process_one_email_delivery",
     "issue_token_pair",
     "register_email_user",
+    "register_phone_user",
     "verify_email_verification_code",
+    "verify_phone_verification_code",
     "complete_onboarding",
     "confirm_password_reset",
     "request_password_reset",
     "verify_password_reset_code",
     "login_email_user",
+    "login_phone_user",
     "revoke_all_user_sessions",
     "revoke_refresh_session",
     "hash_user_agent",

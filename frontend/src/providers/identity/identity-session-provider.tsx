@@ -13,8 +13,11 @@ import {
 import { restoreSession } from "@/services/identity/entry";
 
 type IdentitySessionUser = {
-  email: string;
+  countryCode?: string | null;
+  email: string | null;
   isOnboardingComplete: boolean;
+  isPhoneVerified?: boolean;
+  phoneNumber?: string | null;
   userId: string;
   username: string | null;
 };
@@ -29,39 +32,43 @@ type IdentitySessionContextValue = {
   clearSession: () => void;
   establishSession: (input: EstablishSessionInput) => void;
   refreshAccessToken: () => Promise<string>;
-  status:
-    | "authenticated"
-    | "initializing"
-    | "unauthenticated";
+  status: "authenticated" | "initializing" | "unauthenticated";
   updateUser: (user: IdentitySessionUser) => void;
   user: IdentitySessionUser | null;
 };
 
-const IdentitySessionContext =
-  createContext<IdentitySessionContextValue | null>(null);
-
+const IdentitySessionContext = createContext<IdentitySessionContextValue | null>(null);
 const SESSION_CHANNEL_NAME = "teed-identity-session";
 
-type IdentitySessionProviderProps = {
-  children: ReactNode;
-};
+type IdentitySessionProviderProps = { children: ReactNode };
 
-function IdentitySessionProvider({
-  children,
-}: IdentitySessionProviderProps) {
-  const [accessToken, setAccessToken] = useState<
-    string | null
-  >(null);
-  const [user, setUser] = useState<
-    IdentitySessionUser | null
-  >(null);
+function mapSessionUser(data: {
+  country_code?: string | null;
+  email: string | null;
+  id: string;
+  is_onboarding_complete: boolean;
+  is_phone_verified?: boolean;
+  phone_number?: string | null;
+  username: string | null;
+}): IdentitySessionUser {
+  return {
+    countryCode: data.country_code ?? null,
+    email: data.email,
+    isOnboardingComplete: data.is_onboarding_complete,
+    isPhoneVerified: data.is_phone_verified ?? false,
+    phoneNumber: data.phone_number ?? null,
+    userId: data.id,
+    username: data.username,
+  };
+}
+
+function IdentitySessionProvider({ children }: IdentitySessionProviderProps) {
+  const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [user, setUser] = useState<IdentitySessionUser | null>(null);
   const [initializing, setInitializing] = useState(true);
 
   const establishSession = useCallback(
-    ({
-      accessToken: nextAccessToken,
-      user: nextUser,
-    }: EstablishSessionInput) => {
+    ({ accessToken: nextAccessToken, user: nextUser }: EstablishSessionInput) => {
       setAccessToken(nextAccessToken);
       setUser(nextUser);
       setInitializing(false);
@@ -77,64 +84,36 @@ function IdentitySessionProvider({
 
   const clearSession = useCallback(() => {
     resetSession();
-
     if (typeof BroadcastChannel !== "undefined") {
-      const channel = new BroadcastChannel(
-        SESSION_CHANNEL_NAME,
-      );
+      const channel = new BroadcastChannel(SESSION_CHANNEL_NAME);
       channel.postMessage({ type: "session-ended" });
       channel.close();
     }
   }, [resetSession]);
 
-  const updateUser = useCallback(
-    (nextUser: IdentitySessionUser) => {
-      setUser(nextUser);
-    },
-    [],
-  );
+  const updateUser = useCallback((nextUser: IdentitySessionUser) => {
+    setUser(nextUser);
+  }, []);
 
   const refreshAccessToken = useCallback(async () => {
     const response = await restoreSession();
     const data = response.data;
-
-    if (!data) {
-      throw new Error("Session refresh response data missing.");
-    }
-
+    if (!data) throw new Error("Session refresh response data missing.");
     establishSession({
       accessToken: data.tokens.access,
-      user: {
-        email: data.user.email,
-        isOnboardingComplete:
-          data.user.is_onboarding_complete,
-        userId: data.user.id,
-        username: data.user.username,
-      },
+      user: mapSessionUser(data.user),
     });
-
     return data.tokens.access;
   }, [establishSession]);
 
   useEffect(() => {
     let active = true;
-
     restoreSession()
       .then((response) => {
         const data = response.data;
-
-        if (!active || !data) {
-          return;
-        }
-
+        if (!active || !data) return;
         setAccessToken(data.tokens.access);
-        setUser({
-          email: data.user.email,
-          isOnboardingComplete:
-            data.user.is_onboarding_complete,
-          userId: data.user.id,
-          username: data.user.username,
-        });
+        setUser(mapSessionUser(data.user));
       })
       .catch(() => {
         if (active) {
@@ -143,25 +122,16 @@ function IdentitySessionProvider({
         }
       })
       .finally(() => {
-        if (active) {
-          setInitializing(false);
-        }
+        if (active) setInitializing(false);
       });
-
     return () => {
       active = false;
     };
   }, []);
 
   useEffect(() => {
-    if (typeof BroadcastChannel === "undefined") {
-      return;
-    }
-
-    const channel = new BroadcastChannel(
-      SESSION_CHANNEL_NAME,
-    );
-
+    if (typeof BroadcastChannel === "undefined") return;
+    const channel = new BroadcastChannel(SESSION_CHANNEL_NAME);
     channel.addEventListener("message", (event) => {
       if (
         typeof event.data === "object" &&
@@ -171,10 +141,7 @@ function IdentitySessionProvider({
         resetSession();
       }
     });
-
-    return () => {
-      channel.close();
-    };
+    return () => channel.close();
   }, [resetSession]);
 
   const value = useMemo(
@@ -183,11 +150,7 @@ function IdentitySessionProvider({
       clearSession,
       establishSession,
       refreshAccessToken,
-      status: initializing
-        ? "initializing"
-        : user
-          ? "authenticated"
-          : "unauthenticated",
+      status: initializing ? "initializing" : user ? "authenticated" : "unauthenticated",
       updateUser,
       user,
     }) satisfies IdentitySessionContextValue,
@@ -211,18 +174,11 @@ function IdentitySessionProvider({
 
 function useIdentitySession() {
   const context = useContext(IdentitySessionContext);
-
   if (!context) {
-    throw new Error(
-      "useIdentitySession must be used within IdentitySessionProvider.",
-    );
+    throw new Error("useIdentitySession must be used within IdentitySessionProvider.");
   }
-
   return context;
 }
 
-export {
-  IdentitySessionProvider,
-  useIdentitySession,
-};
+export { IdentitySessionProvider, useIdentitySession };
 export type { IdentitySessionUser };

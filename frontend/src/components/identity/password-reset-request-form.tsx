@@ -22,14 +22,13 @@ function PasswordResetRequestForm() {
   const errorsT = useTranslations("IdentityErrors");
   const router = useRouter();
   const { notify } = useNotification();
-  const { getErrorMessage, getFieldMessage } =
-    useApiErrorMessages();
+  const { getErrorMessage, getFieldMessage } = useApiErrorMessages();
 
   const schema = useMemo(
     () =>
       createPasswordResetRequestSchema({
         code: t("validation.code"),
-        email: t("validation.email"),
+        identifier: t("validation.identifier"),
         password: t("validation.password"),
         passwordMatch: t("validation.passwordMatch"),
         passwordMinimum: t("validation.passwordMinimum"),
@@ -47,90 +46,48 @@ function PasswordResetRequestForm() {
   });
 
   const onSubmit = handleSubmit(async (values) => {
-    const email = values.email.trim().toLowerCase();
-
+    const identifier = values.identifier.trim();
     try {
-      await requestPasswordReset(email);
-      notify({
-        message: t("success"),
-        tone: "success",
-      });
-      router.push(
-        `/password-reset/verify?email=${encodeURIComponent(
-          email,
-        )}&sent=1`,
-      );
+      await requestPasswordReset(identifier);
+      notify({ message: t("success"), tone: "success" });
+      router.push(`/password-reset/verify?identifier=${encodeURIComponent(identifier)}&sent=1`);
     } catch (error) {
       if (error instanceof ApiClientError) {
-        const emailIssue = firstFieldIssue(
-          error.details.fieldErrors,
-          "email",
-        );
-
-        if (emailIssue) {
-          setError("email", {
-            message: getFieldMessage(emailIssue),
-          });
-        }
-
-        notify({
-          message: getErrorMessage(error.details),
-          tone: "error",
-        });
+        const issue =
+          firstFieldIssue(error.details.fieldErrors, "identifier") ??
+          firstFieldIssue(error.details.fieldErrors, "email");
+        if (issue) setError("identifier", { message: getFieldMessage(issue) });
+        notify({ message: getErrorMessage(error.details), tone: "error" });
         return;
       }
-
-      notify({
-        message: errorsT("unexpected_error"),
-        tone: "error",
-      });
+      notify({ message: errorsT("unexpected_error"), tone: "error" });
     }
   });
 
   return (
     <>
       <div className="mb-6">
-        <h2 className="text-xl font-semibold tracking-tight">
-          {t("cardTitle")}
-        </h2>
-        <p className="mt-2 text-sm leading-6 text-muted-foreground">
-          {t("cardDescription")}
-        </p>
+        <h2 className="text-xl font-semibold tracking-tight">{t("cardTitle")}</h2>
+        <p className="mt-2 text-sm leading-6 text-muted-foreground">{t("cardDescription")}</p>
       </div>
 
       <form className="grid gap-5" onSubmit={onSubmit}>
-        <FormField
-          error={errors.email?.message}
-          htmlFor="password-reset-email"
-          label={t("email")}
-          required
-        >
+        <FormField error={errors.identifier?.message} htmlFor="password-reset-identifier" label={t("identifier")} required>
           <Input
-            autoComplete="email"
-            id="password-reset-email"
-            invalid={Boolean(errors.email)}
-            placeholder={t("emailPlaceholder")}
-            type="email"
-            {...register("email")}
+            autoComplete="username"
+            id="password-reset-identifier"
+            invalid={Boolean(errors.identifier)}
+            placeholder={t("identifierPlaceholder")}
+            {...register("identifier")}
           />
         </FormField>
-
-        <Button
-          className="w-full"
-          loading={isSubmitting}
-          loadingLabel={t("submitting")}
-          size="large"
-          type="submit"
-        >
+        <Button className="w-full" loading={isSubmitting} loadingLabel={t("submitting")} size="large" type="submit">
           {t("submit")}
         </Button>
       </form>
 
       <p className="mt-6 text-center text-sm text-muted-foreground">
-        <Link
-          className="font-semibold text-foreground underline-offset-4 hover:underline"
-          href="/login"
-        >
+        <Link className="font-semibold text-foreground underline-offset-4 hover:underline" href="/login">
           {t("backToLogin")}
         </Link>
       </p>

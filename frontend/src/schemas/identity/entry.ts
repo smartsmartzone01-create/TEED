@@ -2,10 +2,12 @@ import { z } from "zod";
 
 import { createApiEnvelopeSchema } from "@/schemas/global/api";
 
+const countryCodeSchema = z.enum(["KE", "TZ", "UG"]);
 const nextStepSchema = z.enum([
   "complete_onboarding",
   "dashboard",
   "verify_email",
+  "verify_phone",
 ]);
 
 const accessTokenSchema = z.object({
@@ -14,16 +16,26 @@ const accessTokenSchema = z.object({
   token_type: z.literal("Bearer"),
 });
 
-const registrationDataSchema = z.object({
+const emailRegistrationDataSchema = z.object({
   email: z.email(),
   next_step: z.literal("verify_email"),
   user_id: z.uuid(),
 });
 
+const phoneRegistrationDataSchema = z.object({
+  country_code: countryCodeSchema,
+  next_step: z.literal("verify_phone"),
+  phone_number: z.string().min(1),
+  user_id: z.uuid(),
+});
+
 const authenticatedUserDataSchema = z.object({
-  email: z.email(),
+  country_code: z.string().nullable().optional(),
+  email: z.email().nullable(),
   is_onboarding_complete: z.boolean(),
+  is_phone_verified: z.boolean().optional().default(false),
   next_step: z.enum(["complete_onboarding", "dashboard"]),
+  phone_number: z.string().nullable().optional(),
   tokens: accessTokenSchema,
   user_id: z.uuid(),
   username: z.string().nullable(),
@@ -37,13 +49,23 @@ const verificationDataSchema = z.object({
   user_id: z.uuid(),
 });
 
+const phoneVerificationDataSchema = z.object({
+  country_code: z.string(),
+  email: z.email().nullable(),
+  is_phone_verified: z.literal(true),
+  next_step: z.literal("complete_onboarding"),
+  phone_number: z.string().min(1),
+  tokens: accessTokenSchema,
+  user_id: z.uuid(),
+});
+
 const csrfDataSchema = z.object({
   csrf_token: z.string().min(1),
 });
 
 const currentUserSchema = z.object({
   country_code: z.string().nullable(),
-  email: z.email(),
+  email: z.email().nullable(),
   first_name: z.string(),
   id: z.uuid(),
   is_email_verified: z.boolean(),
@@ -60,8 +82,8 @@ const refreshDataSchema = z.object({
 });
 
 const onboardingDataSchema = z.object({
-  country_code: z.enum(["KE", "TZ", "UG"]),
-  email: z.email(),
+  country_code: countryCodeSchema,
+  email: z.email().nullable(),
   is_onboarding_complete: z.literal(true),
   next_step: z.literal("dashboard"),
   phone_number: z.string().min(1),
@@ -70,20 +92,17 @@ const onboardingDataSchema = z.object({
 });
 
 const registrationResponseSchema =
-  createApiEnvelopeSchema(registrationDataSchema);
-const loginResponseSchema = createApiEnvelopeSchema(
-  authenticatedUserDataSchema,
-);
-const verificationResponseSchema =
-  createApiEnvelopeSchema(verificationDataSchema);
-const resendResponseSchema =
-  createApiEnvelopeSchema(z.null());
-const csrfResponseSchema =
-  createApiEnvelopeSchema(csrfDataSchema);
-const onboardingResponseSchema =
-  createApiEnvelopeSchema(onboardingDataSchema);
-const refreshResponseSchema =
-  createApiEnvelopeSchema(refreshDataSchema);
+  createApiEnvelopeSchema(emailRegistrationDataSchema);
+const phoneRegistrationResponseSchema =
+  createApiEnvelopeSchema(phoneRegistrationDataSchema);
+const loginResponseSchema = createApiEnvelopeSchema(authenticatedUserDataSchema);
+const verificationResponseSchema = createApiEnvelopeSchema(verificationDataSchema);
+const phoneVerificationResponseSchema =
+  createApiEnvelopeSchema(phoneVerificationDataSchema);
+const resendResponseSchema = createApiEnvelopeSchema(z.null());
+const csrfResponseSchema = createApiEnvelopeSchema(csrfDataSchema);
+const onboardingResponseSchema = createApiEnvelopeSchema(onboardingDataSchema);
+const refreshResponseSchema = createApiEnvelopeSchema(refreshDataSchema);
 
 type ValidationMessages = {
   code: string;
@@ -95,50 +114,94 @@ type ValidationMessages = {
   username: string;
 };
 
-function createRegistrationFormSchema(
-  messages: ValidationMessages,
-) {
+function createRegistrationFormSchema(messages: ValidationMessages) {
   return z
     .object({
-      email: z.email(messages.email),
+      countryCode: countryCodeSchema,
+      email: z.string(),
+      method: z.enum(["email", "phone"]),
       password: z
         .string()
         .min(1, messages.password)
         .min(8, messages.passwordMinimum),
       passwordConfirm: z.string().min(1, messages.password),
+      phoneNumber: z.string(),
     })
-    .refine(
-      (values) => values.password === values.passwordConfirm,
-      {
-        message: messages.passwordMatch,
-        path: ["passwordConfirm"],
-      },
-    );
+    .superRefine((values, context) => {
+      if (
+        values.method === "email" &&
+        !z.email().safeParse(values.email).success
+      ) {
+        context.addIssue({
+          code: "custom",
+          message: messages.email,
+          path: ["email"],
+        });
+      }
+      if (values.method === "phone" && !values.phoneNumber.trim()) {
+        context.addIssue({
+          code: "custom",
+          message: messages.phone,
+          path: ["phoneNumber"],
+        });
+      }
+      if (values.password !== values.passwordConfirm) {
+        context.addIssue({
+          code: "custom",
+          message: messages.passwordMatch,
+          path: ["passwordConfirm"],
+        });
+      }
+    });
 }
 
 function createLoginFormSchema(messages: ValidationMessages) {
+  return z
+    .object({
+      countryCode: countryCodeSchema,
+      email: z.string(),
+      method: z.enum(["email", "phone"]),
+      password: z.string().min(1, messages.password),
+      phoneNumber: z.string(),
+    })
+    .superRefine((values, context) => {
+      if (
+        values.method === "email" &&
+        !z.email().safeParse(values.email).success
+      ) {
+        context.addIssue({
+          code: "custom",
+          message: messages.email,
+          path: ["email"],
+        });
+      }
+      if (values.method === "phone" && !values.phoneNumber.trim()) {
+        context.addIssue({
+          code: "custom",
+          message: messages.phone,
+          path: ["phoneNumber"],
+        });
+      }
+    });
+}
+
+function createVerificationFormSchema(messages: ValidationMessages) {
   return z.object({
+    code: z.string().regex(/^\d{6}$/, messages.code),
     email: z.email(messages.email),
-    password: z.string().min(1, messages.password),
   });
 }
 
-function createVerificationFormSchema(
-  messages: ValidationMessages,
-) {
+function createPhoneVerificationFormSchema(messages: ValidationMessages) {
   return z.object({
-    code: z
-      .string()
-      .regex(/^\d{6}$/, messages.code),
-    email: z.email(messages.email),
+    code: z.string().regex(/^\d{6}$/, messages.code),
+    phoneNumber: z.string().min(1, messages.phone),
   });
 }
 
-function createOnboardingFormSchema(
-  messages: ValidationMessages,
-) {
+function createOnboardingFormSchema(messages: ValidationMessages) {
   return z.object({
-    countryCode: z.enum(["KE", "TZ", "UG"]),
+    countryCode: countryCodeSchema,
     phoneNumber: z.string().min(1, messages.phone),
     username: z
       .string()
@@ -152,12 +215,16 @@ export {
   authenticatedUserDataSchema,
   createLoginFormSchema,
   createOnboardingFormSchema,
+  createPhoneVerificationFormSchema,
   createRegistrationFormSchema,
   createVerificationFormSchema,
   csrfResponseSchema,
   loginResponseSchema,
   nextStepSchema,
   onboardingResponseSchema,
+  phoneRegistrationResponseSchema,
+  phoneVerificationDataSchema,
+  phoneVerificationResponseSchema,
   refreshResponseSchema,
   registrationResponseSchema,
   resendResponseSchema,

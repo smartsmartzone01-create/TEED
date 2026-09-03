@@ -1,25 +1,19 @@
 import {
   loginResponseSchema,
   onboardingResponseSchema,
+  phoneRegistrationResponseSchema,
+  phoneVerificationResponseSchema,
   refreshResponseSchema,
   registrationResponseSchema,
   resendResponseSchema,
   verificationResponseSchema,
 } from "@/schemas/identity/entry";
 import { requestApi } from "@/services/global/api-client";
-import {
-  initializeCsrf,
-  withCsrfRetry,
-} from "@/services/identity/csrf";
+import { initializeCsrf, withCsrfRetry } from "@/services/identity/csrf";
 
-let sessionRestoreRequest: ReturnType<
-  typeof performSessionRestore
-> | null = null;
+let sessionRestoreRequest: ReturnType<typeof performSessionRestore> | null = null;
 
-async function registerWithEmail(input: {
-  email: string;
-  password: string;
-}) {
+async function registerWithEmail(input: { email: string; password: string }) {
   return requestApi({
     body: input,
     method: "POST",
@@ -28,10 +22,20 @@ async function registerWithEmail(input: {
   });
 }
 
-async function loginWithEmail(input: {
-  email: string;
+async function registerWithPhone(input: {
+  country_code: "KE" | "TZ" | "UG";
+  phone_number: string;
   password: string;
 }) {
+  return requestApi({
+    body: input,
+    method: "POST",
+    path: "/api/v1/identity/registration/phone/",
+    schema: phoneRegistrationResponseSchema,
+  });
+}
+
+async function loginWithEmail(input: { email: string; password: string }) {
   return withCsrfRetry((token) =>
     requestApi({
       body: input,
@@ -43,10 +47,23 @@ async function loginWithEmail(input: {
   );
 }
 
-async function verifyEmail(input: {
-  code: string;
-  email: string;
+async function loginWithPhone(input: {
+  country_code: "KE" | "TZ" | "UG";
+  phone_number: string;
+  password: string;
 }) {
+  return withCsrfRetry((token) =>
+    requestApi({
+      body: input,
+      csrfToken: token,
+      method: "POST",
+      path: "/api/v1/identity/login/phone/",
+      schema: loginResponseSchema,
+    }),
+  );
+}
+
+async function verifyEmail(input: { code: string; email: string }) {
   return withCsrfRetry((token) =>
     requestApi({
       body: input,
@@ -58,11 +75,32 @@ async function verifyEmail(input: {
   );
 }
 
+async function verifyPhone(input: { code: string; phone_number: string }) {
+  return withCsrfRetry((token) =>
+    requestApi({
+      body: input,
+      csrfToken: token,
+      method: "POST",
+      path: "/api/v1/identity/phone-verification/",
+      schema: phoneVerificationResponseSchema,
+    }),
+  );
+}
+
 async function resendEmailVerification(email: string) {
   return requestApi({
     body: { email },
     method: "POST",
     path: "/api/v1/identity/email-verification/resend/",
+    schema: resendResponseSchema,
+  });
+}
+
+async function resendPhoneVerification(phoneNumber: string) {
+  return requestApi({
+    body: { phone_number: phoneNumber },
+    method: "POST",
+    path: "/api/v1/identity/phone-verification/resend/",
     schema: resendResponseSchema,
   });
 }
@@ -95,30 +133,17 @@ async function performSessionRestore() {
       }),
     );
 
-  if (
-    typeof navigator !== "undefined" &&
-    navigator.locks
-  ) {
-    return navigator.locks.request(
-      "teed-session-refresh",
-      request,
-    );
+  if (typeof navigator !== "undefined" && navigator.locks) {
+    return navigator.locks.request("teed-session-refresh", request);
   }
-
   return request();
 }
 
 function restoreSession() {
-  if (sessionRestoreRequest) {
-    return sessionRestoreRequest;
-  }
-
-  sessionRestoreRequest = performSessionRestore().finally(
-    () => {
-      sessionRestoreRequest = null;
-    },
-  );
-
+  if (sessionRestoreRequest) return sessionRestoreRequest;
+  sessionRestoreRequest = performSessionRestore().finally(() => {
+    sessionRestoreRequest = null;
+  });
   return sessionRestoreRequest;
 }
 
@@ -137,9 +162,13 @@ export {
   completeOnboarding,
   initializeCsrf,
   loginWithEmail,
+  loginWithPhone,
   logoutCurrentSession,
   registerWithEmail,
+  registerWithPhone,
   resendEmailVerification,
+  resendPhoneVerification,
   restoreSession,
   verifyEmail,
+  verifyPhone,
 };

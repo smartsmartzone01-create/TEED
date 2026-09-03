@@ -24,13 +24,24 @@ class LoginEmailThrottle(SimpleRateThrottle):
         email = request.data.get("email")
         if not isinstance(email, str):
             return None
-
-        normalized_email = email.strip().lower()
-        if not normalized_email:
+        normalized = email.strip().lower()
+        if not normalized:
             return None
+        digest = sha256(normalized.encode("utf-8")).hexdigest()
+        return self.cache_format % {"scope": self.scope, "ident": digest}
 
-        email_digest = sha256(normalized_email.encode("utf-8")).hexdigest()
-        return self.cache_format % {
-            "scope": self.scope,
-            "ident": email_digest,
-        }
+
+class LoginPhoneThrottle(SimpleRateThrottle):
+    """Use the established per-identifier login budget for phone attempts too."""
+
+    scope = "login_email"
+
+    def get_cache_key(self, request, view):
+        phone = request.data.get("phone_number")
+        if not isinstance(phone, str):
+            return None
+        normalized = phone.strip()
+        if not normalized:
+            return None
+        digest = sha256(normalized.encode("utf-8")).hexdigest()
+        return self.cache_format % {"scope": self.scope, "ident": digest}

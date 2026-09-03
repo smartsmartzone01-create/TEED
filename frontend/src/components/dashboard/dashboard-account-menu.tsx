@@ -39,19 +39,16 @@ function DashboardAccountMenu({
   const { notify } = useNotification();
   const { clearSession, user } = useIdentitySession();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const accountIdentifier = user?.email || user?.phoneNumber || t("account");
 
   async function handleLogout() {
     setIsLoggingOut(true);
-
     try {
       await logoutCurrentSession();
       clearSession();
       router.replace("/login");
     } catch {
-      notify({
-        message: errorsT("logout_failed"),
-        tone: "error",
-      });
+      notify({ message: errorsT("logout_failed"), tone: "error" });
       setIsLoggingOut(false);
     }
   }
@@ -77,7 +74,7 @@ function DashboardAccountMenu({
                 {user?.username || t("account")}
               </span>
               <span className="block truncate text-xs text-muted-foreground">
-                {user?.email}
+                {accountIdentifier}
               </span>
             </span>
           ) : null}
@@ -85,16 +82,12 @@ function DashboardAccountMenu({
       </DropdownMenuTrigger>
 
       <DropdownMenuContent align={align} className="w-64">
-        <DropdownMenuLabel>
-          {user?.email || t("account")}
-        </DropdownMenuLabel>
+        <DropdownMenuLabel>{accountIdentifier}</DropdownMenuLabel>
         <DropdownMenuItem onSelect={() => router.push("/dashboard/profile")}>
           <UserRound className="size-4" />
           {t("navigation.profile")}
         </DropdownMenuItem>
-        <DropdownMenuItem
-          onSelect={() => router.push("/dashboard/preferences")}
-        >
+        <DropdownMenuItem onSelect={() => router.push("/dashboard/preferences")}>
           <Settings2 className="size-4" />
           {t("navigation.preferences")}
         </DropdownMenuItem>

@@ -9,6 +9,8 @@ from common.exceptions.modules.identity import (
     PasswordResetChallengeInvalid,
     PasswordResetGrantInvalid,
     PasswordResetPasswordUnchanged,
+    PhoneVerificationDailyLimitReached,
+    PhoneVerificationResendCooldown,
 )
 from common.logging import get_logger
 from django.conf import settings
@@ -20,20 +22,25 @@ from ..models import (
     EmailDelivery,
     EmailVerificationChallenge,
     IdentitySecurityEvent,
+    PhoneVerificationChallenge,
     User,
     UserSession,
 )
 from ..repositories import (
     consume_email_verification_challenge,
     consume_password_reset_grant,
+    consume_phone_verification_challenge,
     create_password_reset_grant,
     get_email_verification_challenge_for_update,
     get_password_reset_grant_for_update,
+    get_phone_verification_challenge_for_update,
     increment_email_verification_attempt,
+    increment_phone_verification_attempt,
 )
-from ..selectors import get_user_by_email
+from ..selectors import get_user_by_email, get_user_by_phone_number
 from .email_delivery import enqueue_email_delivery
 from .email_verification import issue_email_verification_challenge
+from .phone_verification import issue_phone_verification_challenge
 from .security_event import hash_identity_identifier, record_identity_security_event
 from .session import revoke_all_user_sessions
 
@@ -44,154 +51,155 @@ def _digest_grant(raw_grant: str) -> str:
     return sha256(raw_grant.encode("utf-8")).hexdigest()
 
 
+def _resolve_identifier(*, identifier: str | None = None, email: str | None = None):
+    value = (identifier or email or "").strip()
+    if "@" in value:
+        normalized = value.lower()
+        return normalized, "email", get_user_by_email(email=normalized)
+    return value, "phone", get_user_by_phone_number(phone_number=value)
+
+
 def _assurance_level(*, user, device_id, ip_address) -> str:
-    if (
-        device_id
-        and UserSession.all_objects.filter(user=user, device_id=device_id).exists()
-    ):
+    if device_id and UserSession.all_objects.filter(user=user, device_id=device_id).exists():
         return "known_device"
-    if (
-        ip_address
-        and UserSession.all_objects.filter(user=user, ip_address=ip_address).exists()
-    ):
+    if ip_address and UserSession.all_objects.filter(user=user, ip_address=ip_address).exists():
         return "familiar_network"
     return "standard"
 
 
 def request_password_reset(
     *,
-    email: str,
+    identifier: str | None = None,
+    email: str | None = None,
     ip_address=None,
     user_agent="",
     device_id=None,
 ) -> None:
-    """Issue an email challenge while keeping the public response non-enumerating."""
-    normalized_email = email.strip().lower()
-    user = get_user_by_email(email=normalized_email)
-    if (
-        user is None
-        or not user.is_active
-        or not user.is_email_verified
-        or not user.has_usable_password()
-    ):
+    """Issue a reset challenge without revealing whether the identifier is eligible.
+
+    ``email`` remains accepted for service-level backwards compatibility while new
+    callers use ``identifier`` for either a verified email or verified E.164 phone.
+    """
+    normalized, channel, user = _resolve_identifier(identifier=identifier, email=email)
+    verified = bool(
+        user
+        and (user.is_email_verified if channel == "email" else user.is_phone_verified)
+    )
+    if user is None or not user.is_active or not verified or not user.has_usable_password():
         if user is None:
             reason = "account_not_found"
         elif not user.is_active:
             reason = "account_inactive"
-        elif not user.is_email_verified:
-            reason = "email_unverified"
+        elif not verified:
+            reason = f"{channel}_unverified"
         else:
             reason = "password_unusable"
         logger.info(
-            "Password reset email was not issued: identifier_hash=%s reason=%s",
-            hash_identity_identifier(normalized_email),
+            "Password reset was not issued: identifier_hash=%s reason=%s channel=%s",
+            hash_identity_identifier(normalized),
             reason,
+            channel,
         )
         record_identity_security_event(
             user=user,
-            identifier=normalized_email,
+            identifier=normalized,
             event_type=IdentitySecurityEvent.EventType.PASSWORD_RESET_REQUESTED,
             outcome=IdentitySecurityEvent.Outcome.SUCCESS,
             ip_address=ip_address,
             user_agent=user_agent,
             device_id=device_id,
-            metadata={"eligible": False},
+            metadata={"eligible": False, "channel": channel},
         )
         return
 
-    identifier_hash = hash_identity_identifier(normalized_email)
+    identifier_hash = hash_identity_identifier(normalized)
     recent_count = IdentitySecurityEvent.objects.filter(
         identifier_hash=identifier_hash,
         event_type=IdentitySecurityEvent.EventType.PASSWORD_RESET_REQUESTED,
         created_at__gte=timezone.now() - timedelta(hours=1),
     ).count()
     if recent_count >= settings.PASSWORD_RESET_REQUESTS_PER_HOUR:
-        logger.info(
-            "Password reset email was not issued: identifier_hash=%s reason=%s",
-            identifier_hash,
-            "adaptive_rate_limit",
-        )
         record_identity_security_event(
             user=user,
-            identifier=normalized_email,
-            event_type=(IdentitySecurityEvent.EventType.PASSWORD_RESET_REQUEST_BLOCKED),
+            identifier=normalized,
+            event_type=IdentitySecurityEvent.EventType.PASSWORD_RESET_REQUEST_BLOCKED,
             outcome=IdentitySecurityEvent.Outcome.BLOCKED,
             ip_address=ip_address,
             user_agent=user_agent,
             device_id=device_id,
-            metadata={"reason": "adaptive_rate_limit"},
+            metadata={"reason": "adaptive_rate_limit", "channel": channel},
         )
         return
 
-    assurance = _assurance_level(
-        user=user,
-        device_id=device_id,
-        ip_address=ip_address,
-    )
+    assurance = _assurance_level(user=user, device_id=device_id, ip_address=ip_address)
     try:
-        issue_email_verification_challenge(
-            user=user,
-            purpose=EmailVerificationChallenge.Purpose.PASSWORD_RESET,
-            enforce_resend_limits=True,
-            ip_address=ip_address,
-            user_agent=user_agent,
-            device_id=device_id,
-        )
+        if channel == "email":
+            issue_email_verification_challenge(
+                user=user,
+                purpose=EmailVerificationChallenge.Purpose.PASSWORD_RESET,
+                enforce_resend_limits=True,
+                ip_address=ip_address,
+                user_agent=user_agent,
+                device_id=device_id,
+            )
+        else:
+            issue_phone_verification_challenge(
+                user=user,
+                purpose=PhoneVerificationChallenge.Purpose.PASSWORD_RESET,
+                enforce_resend_limits=True,
+                ip_address=ip_address,
+                user_agent=user_agent,
+                device_id=device_id,
+            )
     except (
         EmailVerificationDailyLimitReached,
         EmailVerificationResendCooldown,
+        PhoneVerificationDailyLimitReached,
+        PhoneVerificationResendCooldown,
     ) as exc:
-        logger.info(
-            "Password reset email was not issued: identifier_hash=%s reason=%s",
-            identifier_hash,
-            exc.default_code,
-        )
         record_identity_security_event(
             user=user,
-            identifier=normalized_email,
-            event_type=(IdentitySecurityEvent.EventType.PASSWORD_RESET_REQUEST_BLOCKED),
+            identifier=normalized,
+            event_type=IdentitySecurityEvent.EventType.PASSWORD_RESET_REQUEST_BLOCKED,
             outcome=IdentitySecurityEvent.Outcome.BLOCKED,
             ip_address=ip_address,
             user_agent=user_agent,
             device_id=device_id,
-            metadata={"reason": exc.default_code},
+            metadata={"reason": exc.default_code, "channel": channel},
         )
         return
-    logger.info(
-        "Password reset challenge and email delivery were issued: identifier_hash=%s",
-        identifier_hash,
-    )
+
     record_identity_security_event(
         user=user,
-        identifier=normalized_email,
+        identifier=normalized,
         event_type=IdentitySecurityEvent.EventType.PASSWORD_RESET_REQUESTED,
         outcome=IdentitySecurityEvent.Outcome.SUCCESS,
         ip_address=ip_address,
         user_agent=user_agent,
         device_id=device_id,
-        metadata={"eligible": True, "assurance": assurance},
+        metadata={"eligible": True, "assurance": assurance, "channel": channel},
     )
 
 
 def verify_password_reset_code(
     *,
-    email: str,
     code: str,
+    identifier: str | None = None,
+    email: str | None = None,
     ip_address=None,
     user_agent="",
     device_id=None,
 ) -> tuple[str, object]:
-    normalized_email = email.strip().lower()
-    user = get_user_by_email(email=normalized_email)
+    normalized, channel, user = _resolve_identifier(identifier=identifier, email=email)
     if user is None:
         record_identity_security_event(
-            identifier=normalized_email,
+            identifier=normalized,
             event_type=IdentitySecurityEvent.EventType.PASSWORD_RESET_CODE_FAILED,
             outcome=IdentitySecurityEvent.Outcome.FAILURE,
             ip_address=ip_address,
             user_agent=user_agent,
             device_id=device_id,
-            metadata={"reason": "invalid_challenge"},
+            metadata={"reason": "invalid_challenge", "channel": channel},
         )
         raise PasswordResetChallengeInvalid()
 
@@ -200,10 +208,21 @@ def verify_password_reset_code(
     grant_expires_at = None
     with transaction.atomic():
         locked_user = User.objects.select_for_update().get(pk=user.pk)
-        challenge = get_email_verification_challenge_for_update(
-            user=locked_user,
-            purpose=EmailVerificationChallenge.Purpose.PASSWORD_RESET,
-        )
+        if channel == "email":
+            challenge = get_email_verification_challenge_for_update(
+                user=locked_user,
+                purpose=EmailVerificationChallenge.Purpose.PASSWORD_RESET,
+            )
+            increment_attempt = increment_email_verification_attempt
+            consume_challenge = consume_email_verification_challenge
+        else:
+            challenge = get_phone_verification_challenge_for_update(
+                user=locked_user,
+                purpose=PhoneVerificationChallenge.Purpose.PASSWORD_RESET,
+            )
+            increment_attempt = increment_phone_verification_attempt
+            consume_challenge = consume_phone_verification_challenge
+
         if challenge is None or challenge.is_expired or challenge.is_consumed:
             pending_exception = PasswordResetChallengeInvalid()
             reason = "invalid_challenge"
@@ -211,7 +230,7 @@ def verify_password_reset_code(
             pending_exception = PasswordResetAttemptLimitReached()
             reason = "attempt_limit"
         elif not check_password(code.strip(), challenge.code_digest):
-            challenge = increment_email_verification_attempt(challenge=challenge)
+            challenge = increment_attempt(challenge=challenge)
             reached = challenge.attempt_count >= challenge.max_attempts
             pending_exception = (
                 PasswordResetAttemptLimitReached()
@@ -220,7 +239,7 @@ def verify_password_reset_code(
             )
             reason = "attempt_limit" if reached else "invalid_code"
         else:
-            consume_email_verification_challenge(challenge=challenge)
+            consume_challenge(challenge=challenge)
             raw_grant = secrets.token_urlsafe(32)
             grant_expires_at = timezone.now() + timedelta(
                 minutes=settings.PASSWORD_RESET_GRANT_TTL_MINUTES
@@ -236,7 +255,7 @@ def verify_password_reset_code(
 
         record_identity_security_event(
             user=locked_user,
-            identifier=normalized_email,
+            identifier=normalized,
             event_type=(
                 IdentitySecurityEvent.EventType.PASSWORD_RESET_CODE_FAILED
                 if pending_exception
@@ -251,7 +270,11 @@ def verify_password_reset_code(
             ip_address=ip_address,
             user_agent=user_agent,
             device_id=device_id,
-            metadata={"reason": reason} if reason else {},
+            metadata=(
+                {"reason": reason, "channel": channel}
+                if reason
+                else {"channel": channel}
+            ),
         )
 
     if pending_exception:
@@ -269,9 +292,7 @@ def confirm_password_reset(
 ) -> None:
     pending_exception = None
     with transaction.atomic():
-        grant = get_password_reset_grant_for_update(
-            token_digest=_digest_grant(raw_grant)
-        )
+        grant = get_password_reset_grant_for_update(token_digest=_digest_grant(raw_grant))
         if (
             grant is None
             or grant.consumed_at is not None
@@ -303,22 +324,21 @@ def confirm_password_reset(
                 )
                 record_identity_security_event(
                     user=user,
-                    event_type=(
-                        IdentitySecurityEvent.EventType.PASSWORD_RESET_SUCCEEDED
-                    ),
+                    event_type=IdentitySecurityEvent.EventType.PASSWORD_RESET_SUCCEEDED,
                     outcome=IdentitySecurityEvent.Outcome.SUCCESS,
                     challenge_id=grant.challenge_id,
                     ip_address=ip_address,
                     user_agent=user_agent,
                     device_id=device_id,
                 )
-                enqueue_email_delivery(
-                    user=user,
-                    template=EmailDelivery.Template.PASSWORD_CHANGED,
-                    payload={},
-                    idempotency_key=f"password-changed:{grant.id}",
-                    challenge_id=grant.challenge_id,
-                )
+                if user.email and user.is_email_verified:
+                    enqueue_email_delivery(
+                        user=user,
+                        template=EmailDelivery.Template.PASSWORD_CHANGED,
+                        payload={},
+                        idempotency_key=f"password-changed:{grant.id}",
+                        challenge_id=grant.challenge_id,
+                    )
 
     if pending_exception:
         if isinstance(pending_exception, PasswordResetGrantInvalid):

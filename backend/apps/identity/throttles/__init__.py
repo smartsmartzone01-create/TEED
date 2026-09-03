@@ -1,4 +1,4 @@
-from .authentication import LoginEmailThrottle, LoginIPThrottle
+from .authentication import LoginEmailThrottle, LoginIPThrottle, LoginPhoneThrottle
 from .email_verification import (
     EmailRegistrationIPThrottle,
     EmailVerificationResendAccountThrottle,
@@ -11,12 +11,21 @@ from .password_reset import (
     PasswordResetVerifyAccountThrottle,
     PasswordResetVerifyIPThrottle,
 )
+from .phone_verification import (
+    PhoneRegistrationIPThrottle,
+    PhoneVerificationResendAccountThrottle,
+    PhoneVerificationResendIPThrottle,
+)
 
 __all__ = [
     "EmailRegistrationIPThrottle",
+    "PhoneRegistrationIPThrottle",
     "EmailVerificationResendAccountThrottle",
     "EmailVerificationResendIPThrottle",
+    "PhoneVerificationResendAccountThrottle",
+    "PhoneVerificationResendIPThrottle",
     "LoginEmailThrottle",
+    "LoginPhoneThrottle",
     "LoginIPThrottle",
     "PasswordResetConfirmIPThrottle",
     "PasswordResetRequestAccountThrottle",

@@ -13,40 +13,45 @@ import { useApiErrorMessages } from "@/hooks/global/use-api-error-messages";
 import { Link, useRouter } from "@/i18n/navigation";
 import { firstFieldIssue } from "@/lib/global/api-errors";
 import { useNotification } from "@/providers/global/notification-provider";
-import { createPasswordResetVerifySchema } from "@/schemas/identity/password-reset";
+import { useIdentitySession } from "@/providers/identity/identity-session-provider";
+import { createPhoneVerificationFormSchema } from "@/schemas/identity/entry";
 import { ApiClientError } from "@/services/global/api-client";
-import { requestPasswordReset, verifyPasswordResetCode } from "@/services/identity/password-reset";
-import type { PasswordResetVerifyValues } from "@/types/identity/password-reset";
+import { resendPhoneVerification, verifyPhone } from "@/services/identity/entry";
+import type { PhoneVerificationFormValues } from "@/types/identity/entry";
 
-const RESET_RESEND_COOLDOWN_SECONDS = 60;
+const RESEND_COOLDOWN_SECONDS = 60;
 
-type PasswordResetVerifyFormProps = {
+type PhoneVerificationFormProps = {
   initialCooldown?: boolean;
-  initialIdentifier?: string;
+  initialPhone?: string;
 };
 
-function PasswordResetVerifyForm({
+function PhoneVerificationForm({
   initialCooldown = false,
-  initialIdentifier = "",
-}: PasswordResetVerifyFormProps) {
-  const t = useTranslations("PasswordResetVerify");
+  initialPhone = "",
+}: PhoneVerificationFormProps) {
+  const t = useTranslations("VerifyPhone");
+  const signupT = useTranslations("Signup");
   const errorsT = useTranslations("IdentityErrors");
   const router = useRouter();
   const { notify } = useNotification();
+  const { establishSession } = useIdentitySession();
   const { getErrorMessage, getFieldMessage } = useApiErrorMessages();
-  const [cooldown, setCooldown] = useState(initialCooldown ? RESET_RESEND_COOLDOWN_SECONDS : 0);
+  const [cooldown, setCooldown] = useState(initialCooldown ? RESEND_COOLDOWN_SECONDS : 0);
   const [isResending, setIsResending] = useState(false);
 
   const schema = useMemo(
     () =>
-      createPasswordResetVerifySchema({
-        code: t("validation.code"),
-        identifier: t("validation.identifier"),
-        password: t("validation.password"),
-        passwordMatch: t("validation.passwordMatch"),
-        passwordMinimum: t("validation.passwordMinimum"),
+      createPhoneVerificationFormSchema({
+        code: signupT("validation.code"),
+        email: signupT("validation.email"),
+        password: signupT("validation.password"),
+        passwordMatch: signupT("validation.passwordMatch"),
+        passwordMinimum: signupT("validation.passwordMinimum"),
+        phone: signupT("validation.phone"),
+        username: signupT("validation.username"),
       }),
-    [t],
+    [signupT],
   );
 
   const {
@@ -55,8 +60,8 @@ function PasswordResetVerifyForm({
     handleSubmit,
     register,
     setError,
-  } = useForm<PasswordResetVerifyValues>({
-    defaultValues: { code: "", identifier: initialIdentifier },
+  } = useForm<PhoneVerificationFormValues>({
+    defaultValues: { code: "", phoneNumber: initialPhone },
     resolver: zodResolver(schema),
   });
 
@@ -70,19 +75,32 @@ function PasswordResetVerifyForm({
 
   const onSubmit = handleSubmit(async (values) => {
     try {
-      await verifyPasswordResetCode({
+      const response = await verifyPhone({
         code: values.code.trim(),
-        identifier: values.identifier.trim(),
+        phone_number: values.phoneNumber.trim(),
+      });
+      const data = response.data;
+      if (!data) throw new Error("Phone verification response data missing.");
+
+      establishSession({
+        accessToken: data.tokens.access,
+        user: {
+          countryCode: data.country_code,
+          email: data.email,
+          isOnboardingComplete: false,
+          isPhoneVerified: true,
+          phoneNumber: data.phone_number,
+          userId: data.user_id,
+          username: null,
+        },
       });
       notify({ message: t("success"), tone: "success" });
-      router.push("/password-reset/new");
+      router.push("/onboarding");
     } catch (error) {
       if (error instanceof ApiClientError) {
-        const identifierIssue =
-          firstFieldIssue(error.details.fieldErrors, "identifier") ??
-          firstFieldIssue(error.details.fieldErrors, "email");
+        const phoneIssue = firstFieldIssue(error.details.fieldErrors, "phone_number");
         const codeIssue = firstFieldIssue(error.details.fieldErrors, "code");
-        if (identifierIssue) setError("identifier", { message: getFieldMessage(identifierIssue) });
+        if (phoneIssue) setError("phoneNumber", { message: getFieldMessage(phoneIssue) });
         if (codeIssue) setError("code", { message: getFieldMessage(codeIssue) });
         notify({ message: getErrorMessage(error.details), tone: "error" });
         return;
@@ -93,15 +111,15 @@ function PasswordResetVerifyForm({
 
   async function handleResend() {
     if (cooldown > 0 || isResending) return;
-    const result = schema.shape.identifier.safeParse(getValues("identifier"));
-    if (!result.success) {
-      setError("identifier", { message: result.error.issues[0]?.message });
+    const phone = getValues("phoneNumber").trim();
+    if (!phone) {
+      setError("phoneNumber", { message: signupT("validation.phone") });
       return;
     }
     setIsResending(true);
     try {
-      await requestPasswordReset(result.data.trim());
-      setCooldown(RESET_RESEND_COOLDOWN_SECONDS);
+      await resendPhoneVerification(phone);
+      setCooldown(RESEND_COOLDOWN_SECONDS);
       notify({ message: t("resendSuccess"), tone: "success" });
     } catch (error) {
       notify({
@@ -121,11 +139,11 @@ function PasswordResetVerifyForm({
       </div>
 
       <form className="grid gap-5" onSubmit={onSubmit}>
-        <FormField error={errors.identifier?.message} htmlFor="password-reset-verify-identifier" label={t("identifier")} required>
-          <Input id="password-reset-verify-identifier" invalid={Boolean(errors.identifier)} {...register("identifier")} />
+        <FormField error={errors.phoneNumber?.message} htmlFor="verify-phone-number" label={t("phone")} required>
+          <Input id="verify-phone-number" inputMode="tel" invalid={Boolean(errors.phoneNumber)} type="tel" {...register("phoneNumber")} />
         </FormField>
-        <FormField error={errors.code?.message} htmlFor="password-reset-code" label={t("code")} required>
-          <VerificationCodeInput id="password-reset-code" invalid={Boolean(errors.code)} placeholder={t("codePlaceholder")} {...register("code")} />
+        <FormField error={errors.code?.message} htmlFor="verify-phone-code" label={t("code")} required>
+          <VerificationCodeInput id="verify-phone-code" invalid={Boolean(errors.code)} placeholder={t("codePlaceholder")} {...register("code")} />
         </FormField>
         <Button className="w-full" loading={isSubmitting} loadingLabel={t("submitting")} size="large" type="submit">
           {t("submit")}
@@ -136,12 +154,12 @@ function PasswordResetVerifyForm({
         <Button disabled={cooldown > 0} loading={isResending} onClick={handleResend} type="button" variant="ghost">
           {cooldown > 0 ? t("resendWait", { seconds: cooldown }) : t("resend")}
         </Button>
-        <Link className="font-semibold text-foreground underline-offset-4 hover:underline" href="/forgot-password">
-          {t("changeIdentifier")}
+        <Link className="font-semibold text-foreground underline-offset-4 hover:underline" href="/register">
+          {t("wrongPhone")}
         </Link>
       </div>
     </>
   );
 }
 
-export { PasswordResetVerifyForm };
+export { PhoneVerificationForm };

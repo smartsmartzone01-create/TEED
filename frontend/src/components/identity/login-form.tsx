@@ -9,6 +9,7 @@ import { Button } from "@/components/global/primitives/button";
 import { FormField } from "@/components/global/primitives/form-field";
 import { Input } from "@/components/global/primitives/input";
 import { PasswordInput } from "@/components/global/primitives/password-input";
+import { Select } from "@/components/global/primitives/select";
 import { useApiErrorMessages } from "@/hooks/global/use-api-error-messages";
 import { Link, useRouter } from "@/i18n/navigation";
 import { firstFieldIssue } from "@/lib/global/api-errors";
@@ -16,8 +17,31 @@ import { useNotification } from "@/providers/global/notification-provider";
 import { useIdentitySession } from "@/providers/identity/identity-session-provider";
 import { createLoginFormSchema } from "@/schemas/identity/entry";
 import { ApiClientError } from "@/services/global/api-client";
-import { loginWithEmail } from "@/services/identity/entry";
+import { loginWithEmail, loginWithPhone } from "@/services/identity/entry";
 import type { LoginFormValues } from "@/types/identity/entry";
+
+const CALLING_CODES = {
+  KE: "254",
+  TZ: "255",
+  UG: "256",
+} as const;
+
+function normalizePhoneForRoute(
+  countryCode: keyof typeof CALLING_CODES,
+  phoneNumber: string,
+) {
+  const compact = phoneNumber.replace(/[\s\-()]/g, "").trim();
+  if (compact.startsWith("+")) return compact;
+
+  const callingCode = CALLING_CODES[countryCode];
+  let nationalNumber = compact;
+  if (nationalNumber.startsWith(callingCode)) {
+    nationalNumber = nationalNumber.slice(callingCode.length);
+  } else if (nationalNumber.startsWith("0")) {
+    nationalNumber = nationalNumber.slice(1);
+  }
+  return `+${callingCode}${nationalNumber}`;
+}
 
 function LoginForm() {
   const t = useTranslations("Login");
@@ -48,22 +72,45 @@ function LoginForm() {
     handleSubmit,
     register,
     setError,
+    setValue,
+    watch,
   } = useForm<LoginFormValues>({
+    defaultValues: {
+      countryCode: "TZ",
+      email: "",
+      method: "email",
+      password: "",
+      phoneNumber: "",
+    },
     resolver: zodResolver(schema),
   });
 
+  const method = watch("method");
+
   const onSubmit = handleSubmit(async (values) => {
     try {
-      const response = await loginWithEmail(values);
+      const response =
+        values.method === "email"
+          ? await loginWithEmail({
+              email: values.email.trim().toLowerCase(),
+              password: values.password,
+            })
+          : await loginWithPhone({
+              country_code: values.countryCode,
+              phone_number: values.phoneNumber,
+              password: values.password,
+            });
       const data = response.data;
-
       if (!data) throw new Error("Login response data missing.");
 
       establishSession({
         accessToken: data.tokens.access,
         user: {
+          countryCode: data.country_code ?? null,
           email: data.email,
           isOnboardingComplete: data.is_onboarding_complete,
+          isPhoneVerified: data.is_phone_verified,
+          phoneNumber: data.phone_number ?? null,
           userId: data.user_id,
           username: data.username,
         },
@@ -82,21 +129,29 @@ function LoginForm() {
           );
           return;
         }
-
-        const emailIssue = firstFieldIssue(error.details.fieldErrors, "email");
-        const passwordIssue = firstFieldIssue(error.details.fieldErrors, "password");
-
-        if (emailIssue) {
-          setError("email", { message: getFieldMessage(emailIssue) });
+        if (error.details.code === "phone_verification_required") {
+          notify({ message: getErrorMessage(error.details), tone: "info" });
+          const phoneNumber = normalizePhoneForRoute(
+            values.countryCode,
+            values.phoneNumber,
+          );
+          router.push(`/verify-phone?phone=${encodeURIComponent(phoneNumber)}`);
+          return;
         }
-        if (passwordIssue) {
-          setError("password", { message: getFieldMessage(passwordIssue) });
-        }
 
+        const mappings = [
+          ["email", "email"],
+          ["phone_number", "phoneNumber"],
+          ["country_code", "countryCode"],
+          ["password", "password"],
+        ] as const;
+        for (const [apiField, formField] of mappings) {
+          const issue = firstFieldIssue(error.details.fieldErrors, apiField);
+          if (issue) setError(formField, { message: getFieldMessage(issue) });
+        }
         notify({ message: getErrorMessage(error.details), tone: "error" });
         return;
       }
-
       notify({ message: errorsT("unexpected_error"), tone: "error" });
     }
   });
@@ -110,23 +165,80 @@ function LoginForm() {
         </p>
       </div>
 
-      <form className="grid gap-5" onSubmit={onSubmit}>
-        <FormField
-          error={errors.email?.message}
-          htmlFor="login-email"
-          label={t("email")}
-          required
+      <div
+        className="mb-5 grid grid-cols-2 gap-2"
+        role="group"
+        aria-label={t("methodLabel")}
+      >
+        <Button
+          type="button"
+          variant={method === "email" ? "default" : "outline"}
+          onClick={() => setValue("method", "email", { shouldValidate: true })}
         >
-          <Input
-            aria-describedby={errors.email ? "login-email-error" : undefined}
-            autoComplete="email"
-            id="login-email"
-            invalid={Boolean(errors.email)}
-            placeholder={t("emailPlaceholder")}
-            type="email"
-            {...register("email")}
-          />
-        </FormField>
+          {t("methodEmail")}
+        </Button>
+        <Button
+          type="button"
+          variant={method === "phone" ? "default" : "outline"}
+          onClick={() => setValue("method", "phone", { shouldValidate: true })}
+        >
+          {t("methodPhone")}
+        </Button>
+      </div>
+
+      <form className="grid gap-5" onSubmit={onSubmit}>
+        {method === "email" ? (
+          <FormField
+            error={errors.email?.message}
+            htmlFor="login-email"
+            label={t("email")}
+            required
+          >
+            <Input
+              autoComplete="email"
+              id="login-email"
+              invalid={Boolean(errors.email)}
+              placeholder={t("emailPlaceholder")}
+              type="email"
+              {...register("email")}
+            />
+          </FormField>
+        ) : (
+          <div className="grid gap-5 sm:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
+            <FormField
+              error={errors.countryCode?.message}
+              htmlFor="login-country"
+              label={t("country")}
+              required
+            >
+              <Select
+                id="login-country"
+                invalid={Boolean(errors.countryCode)}
+                {...register("countryCode")}
+              >
+                <option value="TZ">{t("countries.TZ")}</option>
+                <option value="KE">{t("countries.KE")}</option>
+                <option value="UG">{t("countries.UG")}</option>
+              </Select>
+            </FormField>
+            <FormField
+              error={errors.phoneNumber?.message}
+              htmlFor="login-phone"
+              label={t("phone")}
+              required
+            >
+              <Input
+                autoComplete="tel"
+                id="login-phone"
+                inputMode="tel"
+                invalid={Boolean(errors.phoneNumber)}
+                placeholder={t("phonePlaceholder")}
+                type="tel"
+                {...register("phoneNumber")}
+              />
+            </FormField>
+          </div>
+        )}
 
         <FormField
           error={errors.password?.message}
@@ -135,7 +247,6 @@ function LoginForm() {
           required
         >
           <PasswordInput
-            aria-describedby={errors.password ? "login-password-error" : undefined}
             autoComplete="current-password"
             hideLabel={common("hidePassword")}
             id="login-password"

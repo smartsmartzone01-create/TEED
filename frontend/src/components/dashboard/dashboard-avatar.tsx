@@ -10,8 +10,16 @@ type DashboardAvatarProps = {
   size?: "large" | "small";
 };
 
-function getInitials(username: string | null, email: string) {
-  const source = username?.trim() || email.split("@")[0] || "";
+function getInitials(
+  username: string | null,
+  email: string | null,
+  phoneNumber?: string | null,
+) {
+  const source =
+    username?.trim() ||
+    email?.split("@")[0] ||
+    phoneNumber?.replace(/\D/g, "").slice(-4) ||
+    "";
   const parts = source
     .replace(/[._-]+/g, " ")
     .split(/\s+/)
@@ -30,7 +38,7 @@ function DashboardAvatar({
 }: DashboardAvatarProps) {
   const { user } = useIdentitySession();
   const initials = user
-    ? getInitials(user.username, user.email)
+    ? getInitials(user.username, user.email, user.phoneNumber)
     : "";
 
   return (
@@ -40,9 +48,7 @@ function DashboardAvatar({
         "inline-flex shrink-0 items-center justify-center rounded-full",
         "bg-gradient-to-br from-brand-navy to-brand-orange",
         "font-semibold tracking-tight text-white shadow-sm",
-        size === "large"
-          ? "size-11 text-sm"
-          : "size-9 text-xs",
+        size === "large" ? "size-11 text-sm" : "size-9 text-xs",
         className,
       )}
     >

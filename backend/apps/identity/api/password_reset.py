@@ -50,23 +50,17 @@ class PasswordResetRequestAPIView(APIView):
     serializer_class = PasswordResetRequestSerializer
     permission_classes = [AllowAny]
     authentication_classes = []
-    throttle_classes = [
-        PasswordResetRequestIPThrottle,
-        PasswordResetRequestAccountThrottle,
-    ]
+    throttle_classes = [PasswordResetRequestIPThrottle, PasswordResetRequestAccountThrottle]
 
     def post(self, request):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
-        metadata = get_request_session_metadata(request)
         request_password_reset(
-            email=serializer.validated_data["email"],
-            **metadata,
+            identifier=serializer.validated_data["identifier"],
+            **get_request_session_metadata(request),
         )
         response = SuccessResponse(
-            message=(
-                "If the account is eligible, a password reset code has been sent."
-            ),
+            message="If the account is eligible, a password reset code has been sent.",
             data={"next_step": "verify_reset_code"},
         )
         set_device_cookie(response, request)
@@ -78,28 +72,20 @@ class PasswordResetVerifyAPIView(APIView):
     serializer_class = PasswordResetVerifySerializer
     permission_classes = [AllowAny]
     authentication_classes = []
-    throttle_classes = [
-        PasswordResetVerifyIPThrottle,
-        PasswordResetVerifyAccountThrottle,
-    ]
+    throttle_classes = [PasswordResetVerifyIPThrottle, PasswordResetVerifyAccountThrottle]
 
     def post(self, request):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
-        metadata = get_request_session_metadata(request)
         raw_grant, expires_at = verify_password_reset_code(
             **serializer.validated_data,
-            **metadata,
+            **get_request_session_metadata(request),
         )
         response = SuccessResponse(
             message="Password reset code verified.",
             data={"next_step": "choose_new_password"},
         )
-        _set_reset_cookie(
-            response,
-            raw_grant=raw_grant,
-            expires_at=expires_at,
-        )
+        _set_reset_cookie(response, raw_grant=raw_grant, expires_at=expires_at)
         set_device_cookie(response, request)
         return response
 
@@ -114,14 +100,10 @@ class PasswordResetConfirmAPIView(APIView):
     def post(self, request):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
-        metadata = get_request_session_metadata(request)
         confirm_password_reset(
-            raw_grant=request.COOKIES.get(
-                settings.PASSWORD_RESET_COOKIE_NAME,
-                "",
-            ),
+            raw_grant=request.COOKIES.get(settings.PASSWORD_RESET_COOKIE_NAME, ""),
             new_password=serializer.validated_data["new_password"],
-            **metadata,
+            **get_request_session_metadata(request),
         )
         response = SuccessResponse(
             message="Password changed successfully. Sign in again.",

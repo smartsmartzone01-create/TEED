@@ -1,4 +1,4 @@
-from .authentication import EmailLoginSerializer
+from .authentication import EmailLoginSerializer, PhoneLoginSerializer
 from .email_verification import (
     EmailVerificationResendSerializer,
     EmailVerificationSerializer,
@@ -9,16 +9,22 @@ from .password_reset import (
     PasswordResetRequestSerializer,
     PasswordResetVerifySerializer,
 )
-from .registration import (
-    EmailRegistrationSerializer,
+from .phone_verification import (
+    PhoneVerificationResendSerializer,
+    PhoneVerificationSerializer,
 )
+from .registration import EmailRegistrationSerializer, PhoneRegistrationSerializer
 from .session import CurrentUserSerializer, SessionActionSerializer
 
 __all__ = [
     "EmailLoginSerializer",
+    "PhoneLoginSerializer",
     "EmailRegistrationSerializer",
+    "PhoneRegistrationSerializer",
     "EmailVerificationResendSerializer",
     "EmailVerificationSerializer",
+    "PhoneVerificationResendSerializer",
+    "PhoneVerificationSerializer",
     "OnboardingSerializer",
     "PasswordResetConfirmSerializer",
     "PasswordResetRequestSerializer",

@@ -6,9 +6,9 @@ import {
 import { requestApi } from "@/services/global/api-client";
 import { withCsrfRetry } from "@/services/identity/csrf";
 
-async function requestPasswordReset(email: string) {
+async function requestPasswordReset(identifier: string) {
   return requestApi({
-    body: { email },
+    body: { identifier },
     method: "POST",
     path: "/api/v1/identity/password-reset/request/",
     schema: passwordResetRequestResponseSchema,
@@ -17,7 +17,7 @@ async function requestPasswordReset(email: string) {
 
 async function verifyPasswordResetCode(input: {
   code: string;
-  email: string;
+  identifier: string;
 }) {
   return withCsrfRetry((token) =>
     requestApi({

@@ -1,4 +1,4 @@
-from .authentication import EmailLoginAPIView
+from .authentication import EmailLoginAPIView, PhoneLoginAPIView
 from .email_verification import (
     EmailVerificationAPIView,
     EmailVerificationResendAPIView,
@@ -9,7 +9,11 @@ from .password_reset import (
     PasswordResetRequestAPIView,
     PasswordResetVerifyAPIView,
 )
-from .registration import EmailRegistrationAPIView
+from .phone_verification import (
+    PhoneVerificationAPIView,
+    PhoneVerificationResendAPIView,
+)
+from .registration import EmailRegistrationAPIView, PhoneRegistrationAPIView
 from .session import (
     CurrentSessionAPIView,
     SessionCSRFAPIView,
@@ -20,9 +24,13 @@ from .session import (
 
 __all__ = [
     "EmailLoginAPIView",
+    "PhoneLoginAPIView",
     "EmailRegistrationAPIView",
+    "PhoneRegistrationAPIView",
     "EmailVerificationAPIView",
     "EmailVerificationResendAPIView",
+    "PhoneVerificationAPIView",
+    "PhoneVerificationResendAPIView",
     "OnboardingAPIView",
     "PasswordResetConfirmAPIView",
     "PasswordResetRequestAPIView",

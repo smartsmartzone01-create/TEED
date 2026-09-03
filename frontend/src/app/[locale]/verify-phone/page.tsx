@@ -2,32 +2,35 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 
 import { IdentityAccessBoundary } from "@/components/identity/identity-access-boundary";
 import { IdentityLayout } from "@/components/identity/identity-layout";
-import { PasswordResetVerifyForm } from "@/components/identity/password-reset-verify-form";
+import { PhoneVerificationForm } from "@/components/identity/phone-verification-form";
 
-type PasswordResetVerifyPageProps = {
+type VerifyPhonePageProps = {
   params: Promise<{ locale: string }>;
   searchParams: Promise<{
-    identifier?: string | string[];
+    phone?: string | string[];
     sent?: string | string[];
   }>;
 };
 
-export default async function PasswordResetVerifyPage({
-  params,
-  searchParams,
-}: PasswordResetVerifyPageProps) {
+export default async function VerifyPhonePage({ params, searchParams }: VerifyPhonePageProps) {
   const { locale } = await params;
   const query = await searchParams;
   setRequestLocale(locale);
-  const t = await getTranslations("PasswordResetVerify");
-  const identifier = typeof query.identifier === "string" ? query.identifier : "";
+  const t = await getTranslations("VerifyPhone");
+  const phone = typeof query.phone === "string" ? query.phone : "";
 
   return (
-    <IdentityLayout description={t("description")} eyebrow={t("eyebrow")} title={t("title")}>
+    <IdentityLayout
+      description={t("description")}
+      eyebrow={t("eyebrow")}
+      introductionVariant="compact"
+      notice={t("securityNote")}
+      title={t("title")}
+    >
       <IdentityAccessBoundary access="guest">
-        <PasswordResetVerifyForm
+        <PhoneVerificationForm
           initialCooldown={query.sent === "1"}
-          initialIdentifier={identifier}
+          initialPhone={phone}
         />
       </IdentityAccessBoundary>
     </IdentityLayout>
