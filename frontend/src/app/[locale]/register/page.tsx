@@ -20,6 +20,12 @@ export default async function RegistrationPage({
     <IdentityLayout
       description={t("description")}
       eyebrow={t("eyebrow")}
+      introductionVariant="compact"
+      steps={[
+        t("steps.account"),
+        t("steps.email"),
+        t("steps.workspace"),
+      ]}
       title={t("title")}
     >
       <IdentityAccessBoundary access="guest">

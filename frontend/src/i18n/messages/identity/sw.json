@@ -65,8 +65,13 @@
   },
   "Signup": {
     "eyebrow": "Fungua akaunti ya Tunakuza",
-    "title": "Anza na akaunti moja salama.",
-    "description": "Fungua akaunti, thibitisha barua pepe, kisha kamilisha wasifu wako kwa hatua chache zilizo wazi.",
+    "title": "Biashara yako, yenye mpangilio tangu siku ya kwanza.",
+    "description": "Hatua chache rahisi na utakuwa tayari kuanza.",
+    "steps": {
+      "account": "Fungua akaunti yako salama",
+      "email": "Thibitisha barua pepe yako",
+      "workspace": "Sanidi workspace yako"
+    },
     "cardTitle": "Fungua akaunti",
     "cardDescription": "Tumia anwani ya barua pepe unayoweza kufikia.",
     "email": "Anwani ya barua pepe",
@@ -91,8 +96,8 @@
   },
   "Login": {
     "eyebrow": "Karibu tena",
-    "title": "Endelea na shughuli zako.",
-    "description": "Ingia kwa usalama ili urudi kwenye workspace zako za Tunakuza na zana zako.",
+    "title": "Ni vizuri kukuona tena.",
+    "description": "Endelea pale ulipoishia.",
     "cardTitle": "Ingia",
     "cardDescription": "Weka barua pepe na nenosiri la akaunti yako ya Tunakuza.",
     "email": "Anwani ya barua pepe",

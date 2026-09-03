@@ -65,8 +65,13 @@
   },
   "Signup": {
     "eyebrow": "Create your Tunakuza account",
-    "title": "Start with one secure account.",
-    "description": "Create your account, verify your email, and finish your profile in a few clear steps.",
+    "title": "Your business, organized from day one.",
+    "description": "A few clear steps and you'll be ready to get started.",
+    "steps": {
+      "account": "Create your secure account",
+      "email": "Verify your email",
+      "workspace": "Set up your workspace"
+    },
     "cardTitle": "Create account",
     "cardDescription": "Use an email address you can access.",
     "email": "Email address",
@@ -91,8 +96,8 @@
   },
   "Login": {
     "eyebrow": "Welcome back",
-    "title": "Continue building your work.",
-    "description": "Sign in securely to return to your Tunakuza workspaces and tools.",
+    "title": "Good to see you again.",
+    "description": "Pick up where you left off.",
     "cardTitle": "Log in",
     "cardDescription": "Enter the email and password for your Tunakuza account.",
     "email": "Email address",
