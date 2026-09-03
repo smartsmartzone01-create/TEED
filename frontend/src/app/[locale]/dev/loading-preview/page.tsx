@@ -11,8 +11,6 @@ export default function LoadingPreviewPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    setIsLoading(true);
-
     const timeout = window.setTimeout(() => {
       setIsLoading(false);
     }, PREVIEW_DURATION_MS);
@@ -40,7 +38,10 @@ export default function LoadingPreviewPage() {
             </p>
             <button
               className="mt-4 rounded-xl bg-foreground px-4 py-2.5 text-sm font-semibold text-background transition-opacity hover:opacity-85 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              onClick={() => setRun((value) => value + 1)}
+              onClick={() => {
+                setIsLoading(true);
+                setRun((value) => value + 1);
+              }}
               type="button"
             >
               Replay 20-second test
