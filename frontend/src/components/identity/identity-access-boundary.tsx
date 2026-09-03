@@ -1,9 +1,9 @@
 "use client";
 
-import { LoaderCircle } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, type ReactNode } from "react";
 
+import { BrandLoader } from "@/components/global/brand/brand-loader";
 import { useRouter } from "@/i18n/navigation";
 import { useIdentitySession } from "@/providers/identity/identity-session-provider";
 
@@ -54,14 +54,18 @@ function IdentityAccessBoundary({
   }, [redirectTarget, router]);
 
   if (status === "initializing" || redirectTarget) {
+    const message = common(
+      status === "initializing" ? "restoringSession" : "redirecting",
+    );
+
     return (
-      <div
-        aria-live="polite"
-        className="flex min-h-[50svh] items-center justify-center gap-2 text-sm text-muted-foreground"
-        role="status"
-      >
-        <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />
-        {common(status === "initializing" ? "restoringSession" : "redirecting")}
+      <div className="fixed inset-0 z-[100] flex min-h-svh items-center justify-center bg-background px-6">
+        <div className="w-full max-w-sm text-center">
+          <BrandLoader label={message} />
+          <p className="mt-4 text-sm font-medium text-muted-foreground">
+            {message}
+          </p>
+        </div>
       </div>
     );
   }
