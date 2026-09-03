@@ -3,6 +3,7 @@ from .providers import (
     DeliveryProviderError,
     DeliveryReceipt,
     DjangoEmailProvider,
+    ResendEmailProvider,
 )
 
 __all__ = [
@@ -10,4 +11,5 @@ __all__ = [
     "DeliveryProviderError",
     "DeliveryReceipt",
     "DjangoEmailProvider",
+    "ResendEmailProvider",
 ]
