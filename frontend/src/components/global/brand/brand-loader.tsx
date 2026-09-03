@@ -1,3 +1,4 @@
+import { TunakuzaLoaderMark } from "@/components/global/brand/tunakuza-loader-mark";
 import { cn } from "@/lib/global/class-names";
 
 type BrandLoaderProps = {
@@ -25,17 +26,8 @@ function BrandLoader({
       )}
       role="status"
     >
-      <img
-        alt=""
-        aria-hidden="true"
-        className={cn(
-          "brand-loader-logo select-none object-contain",
-          sizeClassNames[size],
-        )}
-        draggable={false}
-        height="198"
-        src="/brand/tunakuza-logo.svg"
-        width="200"
+      <TunakuzaLoaderMark
+        className={cn("select-none", sizeClassNames[size])}
       />
       <span className="sr-only">{label}</span>
     </div>
