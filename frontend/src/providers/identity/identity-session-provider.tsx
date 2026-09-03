@@ -18,6 +18,7 @@ type IdentitySessionUser = {
   isOnboardingComplete: boolean;
   isPhoneVerified?: boolean;
   phoneNumber?: string | null;
+  suggestedUsername?: string | null;
   userId: string;
   username: string | null;
 };
@@ -49,6 +50,7 @@ function mapSessionUser(data: {
   is_onboarding_complete: boolean;
   is_phone_verified?: boolean;
   phone_number?: string | null;
+  suggested_username?: string | null;
   username: string | null;
 }): IdentitySessionUser {
   return {
@@ -57,6 +59,7 @@ function mapSessionUser(data: {
     isOnboardingComplete: data.is_onboarding_complete,
     isPhoneVerified: data.is_phone_verified ?? false,
     phoneNumber: data.phone_number ?? null,
+    suggestedUsername: data.suggested_username ?? null,
     userId: data.id,
     username: data.username,
   };

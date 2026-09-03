@@ -55,7 +55,7 @@ function OnboardingForm() {
     defaultValues: {
       countryCode: supportedCountry(user?.countryCode),
       phoneNumber: user?.phoneNumber ?? "",
-      username: "",
+      username: user?.suggestedUsername ?? "",
     },
     resolver: zodResolver(schema),
   });
@@ -98,6 +98,7 @@ function OnboardingForm() {
         isOnboardingComplete: true,
         isPhoneVerified: user.isPhoneVerified,
         phoneNumber: data.phone_number,
+        suggestedUsername: data.username,
         userId: data.user_id,
         username: data.username,
       });

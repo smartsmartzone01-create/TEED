@@ -1,4 +1,8 @@
-from .authentication import EmailLoginSerializer, PhoneLoginSerializer
+from .authentication import (
+    EmailLoginSerializer,
+    GoogleAuthenticationSerializer,
+    PhoneLoginSerializer,
+)
 from .email_verification import (
     EmailVerificationResendSerializer,
     EmailVerificationSerializer,
@@ -18,6 +22,7 @@ from .session import CurrentUserSerializer, SessionActionSerializer
 
 __all__ = [
     "EmailLoginSerializer",
+    "GoogleAuthenticationSerializer",
     "PhoneLoginSerializer",
     "EmailRegistrationSerializer",
     "PhoneRegistrationSerializer",

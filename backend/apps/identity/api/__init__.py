@@ -1,4 +1,8 @@
-from .authentication import EmailLoginAPIView, PhoneLoginAPIView
+from .authentication import (
+    EmailLoginAPIView,
+    GoogleAuthenticationAPIView,
+    PhoneLoginAPIView,
+)
 from .email_verification import (
     EmailVerificationAPIView,
     EmailVerificationResendAPIView,
@@ -24,6 +28,7 @@ from .session import (
 
 __all__ = [
     "EmailLoginAPIView",
+    "GoogleAuthenticationAPIView",
     "PhoneLoginAPIView",
     "EmailRegistrationAPIView",
     "PhoneRegistrationAPIView",

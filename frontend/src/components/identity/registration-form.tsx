@@ -10,6 +10,7 @@ import { FormField } from "@/components/global/primitives/form-field";
 import { Input } from "@/components/global/primitives/input";
 import { PasswordInput } from "@/components/global/primitives/password-input";
 import { Select } from "@/components/global/primitives/select";
+import { GoogleAuthButton } from "@/components/identity/google-auth-button";
 import { useApiErrorMessages } from "@/hooks/global/use-api-error-messages";
 import { Link, useRouter } from "@/i18n/navigation";
 import { firstFieldIssue } from "@/lib/global/api-errors";
@@ -110,6 +111,8 @@ function RegistrationForm() {
         <h2 className="text-xl font-semibold tracking-tight">{t("cardTitle")}</h2>
         <p className="mt-2 text-sm leading-6 text-muted-foreground">{t("cardDescription")}</p>
       </div>
+
+      <GoogleAuthButton />
 
       <div className="mb-5 grid grid-cols-2 gap-2" role="group" aria-label={t("methodLabel")}>
         <Button

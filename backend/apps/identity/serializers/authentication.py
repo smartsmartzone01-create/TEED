@@ -32,3 +32,10 @@ class PhoneLoginSerializer(serializers.Serializer):
             phone_number=attrs["phone_number"],
         )
         return attrs
+
+
+class GoogleAuthenticationSerializer(serializers.Serializer):
+    credential = serializers.CharField(
+        max_length=8192,
+        trim_whitespace=True,
+    )

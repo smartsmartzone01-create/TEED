@@ -1,4 +1,8 @@
-from .authentication import login_email_user, login_phone_user
+from .authentication import (
+    authenticated_login_result,
+    login_email_user,
+    login_phone_user,
+)
 from .email_delivery import (
     enqueue_email_delivery,
     process_email_deliveries,
@@ -9,6 +13,7 @@ from .email_verification import (
     issue_email_verification_challenge,
     verify_email_verification_code,
 )
+from .google_authentication import authenticate_google_user
 from .onboarding import complete_onboarding
 from .password_reset import (
     confirm_password_reset,
@@ -48,6 +53,8 @@ __all__ = [
     "confirm_password_reset",
     "request_password_reset",
     "verify_password_reset_code",
+    "authenticated_login_result",
+    "authenticate_google_user",
     "login_email_user",
     "login_phone_user",
     "revoke_all_user_sessions",

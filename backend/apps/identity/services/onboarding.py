@@ -9,7 +9,11 @@ from django.db import IntegrityError, transaction
 
 from ..models import User
 from ..repositories import complete_user_onboarding
-from ..selectors import get_user_by_phone_number, get_user_by_username
+from ..selectors import (
+    get_user_by_phone_number,
+    get_user_by_username,
+    has_external_identity,
+)
 
 
 def complete_onboarding(
@@ -22,7 +26,11 @@ def complete_onboarding(
     user.refresh_from_db()
     if user.is_onboarding_complete:
         raise OnboardingAlreadyCompleted()
-    if not (user.is_email_verified or user.is_phone_verified):
+    if not (
+        user.is_email_verified
+        or user.is_phone_verified
+        or has_external_identity(user=user)
+    ):
         raise IdentityVerificationRequired()
 
     username_owner = get_user_by_username(username=username)

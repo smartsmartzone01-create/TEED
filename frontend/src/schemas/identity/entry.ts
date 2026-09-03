@@ -36,6 +36,7 @@ const authenticatedUserDataSchema = z.object({
   is_phone_verified: z.boolean().optional().default(false),
   next_step: z.enum(["complete_onboarding", "dashboard"]),
   phone_number: z.string().nullable().optional(),
+  suggested_username: z.string().nullable().optional(),
   tokens: accessTokenSchema,
   user_id: z.uuid(),
   username: z.string().nullable(),
@@ -73,6 +74,7 @@ const currentUserSchema = z.object({
   is_phone_verified: z.boolean(),
   last_name: z.string(),
   phone_number: z.string().nullable(),
+  suggested_username: z.string().nullable().optional(),
   username: z.string().nullable(),
 });
 

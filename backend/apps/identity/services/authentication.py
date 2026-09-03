@@ -11,7 +11,14 @@ from .security_event import record_identity_security_event
 from .session import issue_token_pair
 
 
-def _login_result(*, user, identifier, ip_address, user_agent, device_id):
+def authenticated_login_result(
+    *,
+    user,
+    identifier,
+    ip_address,
+    user_agent,
+    device_id,
+):
     tokens = issue_token_pair(
         user=user,
         ip_address=ip_address,
@@ -70,7 +77,7 @@ def login_email_user(
             metadata={"reason": "email_unverified", "channel": "email"},
         )
         raise EmailVerificationRequired()
-    return _login_result(
+    return authenticated_login_result(
         user=user,
         identifier=normalized_email,
         ip_address=ip_address,
@@ -112,7 +119,7 @@ def login_phone_user(
             metadata={"reason": "phone_unverified", "channel": "phone"},
         )
         raise PhoneVerificationRequired()
-    return _login_result(
+    return authenticated_login_result(
         user=user,
         identifier=phone_number,
         ip_address=ip_address,

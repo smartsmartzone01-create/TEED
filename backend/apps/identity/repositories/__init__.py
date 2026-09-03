@@ -12,6 +12,10 @@ from .email_verification import (
     increment_email_verification_attempt,
     invalidate_outstanding_email_verification_challenges,
 )
+from .external_identity import (
+    create_external_identity,
+    update_external_identity_email_snapshot,
+)
 from .password_reset import (
     consume_password_reset_grant,
     create_password_reset_grant,
@@ -55,6 +59,8 @@ __all__ = [
     "get_phone_verification_challenge_for_update",
     "get_latest_email_challenge_including_invalidated",
     "get_latest_phone_challenge_including_invalidated",
+    "create_external_identity",
+    "update_external_identity_email_snapshot",
     "create_user",
     "increment_email_verification_attempt",
     "increment_phone_verification_attempt",

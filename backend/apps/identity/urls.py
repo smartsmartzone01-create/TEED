@@ -6,6 +6,7 @@ from .api import (
     EmailRegistrationAPIView,
     EmailVerificationAPIView,
     EmailVerificationResendAPIView,
+    GoogleAuthenticationAPIView,
     OnboardingAPIView,
     PasswordResetConfirmAPIView,
     PasswordResetRequestAPIView,
@@ -25,6 +26,7 @@ app_name = "identity"
 urlpatterns = [
     path("registration/email/", EmailRegistrationAPIView.as_view(), name="email-registration"),
     path("registration/phone/", PhoneRegistrationAPIView.as_view(), name="phone-registration"),
+    path("google/", GoogleAuthenticationAPIView.as_view(), name="google-authentication"),
     path("email-verification/", EmailVerificationAPIView.as_view(), name="email-verification"),
     path(
         "email-verification/resend/",

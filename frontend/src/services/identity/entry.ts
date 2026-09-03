@@ -35,6 +35,18 @@ async function registerWithPhone(input: {
   });
 }
 
+async function authenticateWithGoogle(input: { credential: string }) {
+  return withCsrfRetry((token) =>
+    requestApi({
+      body: input,
+      csrfToken: token,
+      method: "POST",
+      path: "/api/v1/identity/google/",
+      schema: loginResponseSchema,
+    }),
+  );
+}
+
 async function loginWithEmail(input: { email: string; password: string }) {
   return withCsrfRetry((token) =>
     requestApi({
@@ -159,6 +171,7 @@ async function logoutCurrentSession() {
 }
 
 export {
+  authenticateWithGoogle,
   completeOnboarding,
   initializeCsrf,
   loginWithEmail,

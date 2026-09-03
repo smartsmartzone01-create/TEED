@@ -10,6 +10,7 @@ import { FormField } from "@/components/global/primitives/form-field";
 import { Input } from "@/components/global/primitives/input";
 import { PasswordInput } from "@/components/global/primitives/password-input";
 import { Select } from "@/components/global/primitives/select";
+import { GoogleAuthButton } from "@/components/identity/google-auth-button";
 import { useApiErrorMessages } from "@/hooks/global/use-api-error-messages";
 import { Link, useRouter } from "@/i18n/navigation";
 import { firstFieldIssue } from "@/lib/global/api-errors";
@@ -111,6 +112,7 @@ function LoginForm() {
           isOnboardingComplete: data.is_onboarding_complete,
           isPhoneVerified: data.is_phone_verified,
           phoneNumber: data.phone_number ?? null,
+          suggestedUsername: data.suggested_username ?? null,
           userId: data.user_id,
           username: data.username,
         },
@@ -164,6 +166,8 @@ function LoginForm() {
           {t("cardDescription")}
         </p>
       </div>
+
+      <GoogleAuthButton />
 
       <div
         className="mb-5 grid grid-cols-2 gap-2"
