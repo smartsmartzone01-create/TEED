@@ -1,6 +1,13 @@
 "use client";
 
-import { Bell, Building2, Check, LayoutDashboard, Monitor, Moon, Plus, Sun, UserPlus } from "lucide-react";
+import {
+  Bell,
+  Building2,
+  Check,
+  Monitor,
+  Moon,
+  Sun,
+} from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useTheme } from "next-themes";
 import { useSyncExternalStore } from "react";
@@ -18,6 +25,7 @@ import type { AppLocale } from "@/i18n/routing";
 import { replaceDocumentLocale } from "@/lib/global/locale-navigation";
 import { useNotifications } from "@/providers/notifications/notifications-provider";
 import { useWorkspace } from "@/providers/workspace/workspace-provider";
+import { workspaceClassForType } from "@/utils/workspace/workspace-class";
 
 const subscribe = () => () => undefined;
 const getClientSnapshot = () => true;
@@ -28,21 +36,25 @@ function WorkspaceMobileMenu() {
   const pathname = usePathname();
   const router = useRouter();
   const t = useTranslations("WorkspaceShell");
+  const directoryT = useTranslations("WorkspaceRefinement.directory");
   const languageT = useTranslations("Language");
   const themeT = useTranslations("Theme");
   const { unreadCount } = useNotifications();
   const { businesses } = useWorkspace();
-  const activeBusinesses = businesses.filter((business) => business.status === "active");
+  const activeWorkspaces = businesses.filter((business) => business.status === "active");
   const { setTheme, theme } = useTheme();
   const mounted = useSyncExternalStore(subscribe, getClientSnapshot, getServerSnapshot);
-  const selectedTheme = mounted && ["system", "light", "dark"].includes(theme ?? "") ? theme : "system";
+  const selectedTheme =
+    mounted && ["system", "light", "dark"].includes(theme ?? "") ? theme : "system";
   const activeId = pathname.match(/^\/workspace\/([^/]+)/)?.[1];
-  const activeBusiness = activeId
-    ? activeBusinesses.find((business) => business.id === activeId)
-    : activeBusinesses[0];
-  const businessName = activeBusiness?.name ?? t("businessFallback");
-  const words = businessName.trim().split(/\s+/).filter(Boolean);
-  const initials = (words.length > 1 ? `${words[0][0]}${words[1][0]}` : businessName.slice(0, 2)).toUpperCase();
+  const activeWorkspace = activeId
+    ? activeWorkspaces.find((business) => business.id === activeId)
+    : activeWorkspaces[0];
+  const workspaceName = activeWorkspace?.name ?? t("businessFallback");
+  const words = workspaceName.trim().split(/\s+/).filter(Boolean);
+  const initials = (
+    words.length > 1 ? `${words[0][0]}${words[1][0]}` : workspaceName.slice(0, 2)
+  ).toUpperCase();
 
   const themeOptions = [
     { icon: Monitor, label: themeT("system"), value: "system" },
@@ -55,40 +67,52 @@ function WorkspaceMobileMenu() {
       <DropdownMenuTrigger asChild>
         <button
           aria-label={t("businessMenu")}
-          className="inline-flex size-10 items-center justify-center rounded-xl bg-slate-900 text-xs font-bold tracking-wide text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/40 dark:bg-white dark:text-slate-950"
+          className="inline-flex size-8 items-center justify-center rounded-lg bg-slate-900 text-[10px] font-bold tracking-wide text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/40 dark:bg-white dark:text-slate-950"
           type="button"
         >
           {initials}
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-72">
-        <DropdownMenuLabel>{t("currentBusiness")}</DropdownMenuLabel>
+        <DropdownMenuLabel>{workspaceName}</DropdownMenuLabel>
         <DropdownMenuItem className="justify-between">
-          <span className="flex items-center gap-2">
-            <Building2 className="size-4" />
-            {businessName}
+          <span className="flex min-w-0 items-center gap-2">
+            <Building2 className="size-4 shrink-0" />
+            <span className="truncate">{workspaceName}</span>
           </span>
-          <Check className="size-4" />
+          <span className="flex items-center gap-2">
+            {activeWorkspace ? (
+              <span className="text-[10px] text-slate-400">
+                {directoryT(
+                  workspaceClassForType(activeWorkspace.workspace_type) === "personal"
+                    ? "personalClass"
+                    : "businessClass",
+                )}
+              </span>
+            ) : null}
+            <Check className="size-4" />
+          </span>
         </DropdownMenuItem>
-        {activeBusinesses.filter((business) => business.id !== activeBusiness?.id).map((business) => (
-          <DropdownMenuItem key={business.id} onSelect={() => router.push(`/workspace/${business.id}`)}>
-            <Building2 className="size-4" />
-            <span className="truncate">{business.name}</span>
-          </DropdownMenuItem>
-        ))}
-        {activeBusinesses.length < 2 ? <DropdownMenuItem disabled>{t("noOtherBusinesses")}</DropdownMenuItem> : null}
-        <DropdownMenuItem onSelect={() => router.push("/dashboard/workspaces/create")}>
-          <Plus className="size-4" />
-          {t("createBusiness")}
-        </DropdownMenuItem>
-        <DropdownMenuItem onSelect={() => router.push("/dashboard/workspaces/access")}>
-          <UserPlus className="size-4" />
-          {t("requestAccess")}
-        </DropdownMenuItem>
-        <DropdownMenuItem onSelect={() => router.push("/dashboard")}>
-          <LayoutDashboard className="size-4" />
-          {t("backToDashboard")}
-        </DropdownMenuItem>
+
+        {activeWorkspaces
+          .filter((business) => business.id !== activeWorkspace?.id)
+          .map((business) => (
+            <DropdownMenuItem
+              key={business.id}
+              onSelect={() => router.push(`/workspace/${business.id}`)}
+            >
+              <Building2 className="size-4" />
+              <span className="min-w-0 flex-1 truncate">{business.name}</span>
+              <span className="text-[10px] text-slate-400">
+                {directoryT(
+                  workspaceClassForType(business.workspace_type) === "personal"
+                    ? "personalClass"
+                    : "businessClass",
+                )}
+              </span>
+            </DropdownMenuItem>
+          ))}
+
         <DropdownMenuSeparator />
         <DropdownMenuItem onSelect={() => router.push("/dashboard/notifications")}>
           <Bell className="size-4" />
@@ -99,18 +123,17 @@ function WorkspaceMobileMenu() {
             </span>
           ) : null}
         </DropdownMenuItem>
+
         <DropdownMenuSeparator />
         <DropdownMenuLabel>{languageT("label")}</DropdownMenuLabel>
         {(["en", "sw"] as const).map((value) => (
-          <DropdownMenuItem
-            key={value}
-            onSelect={() => replaceDocumentLocale(value)}
-          >
+          <DropdownMenuItem key={value} onSelect={() => replaceDocumentLocale(value)}>
             <span className="w-5 text-xs font-semibold">{value.toUpperCase()}</span>
             {languageT(value === "en" ? "english" : "swahili")}
             {locale === value ? <Check className="ml-auto size-4" /> : null}
           </DropdownMenuItem>
         ))}
+
         <DropdownMenuSeparator />
         <DropdownMenuLabel>{themeT("label")}</DropdownMenuLabel>
         {themeOptions.map((option) => {

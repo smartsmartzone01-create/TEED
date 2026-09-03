@@ -1,8 +1,14 @@
 "use client";
 
-import { Archive, ChevronDown, ChevronUp, CircleHelp } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
-import { useTranslations } from "next-intl";
+import { Archive, CircleHelp, Pencil, TrendingUp, X } from "lucide-react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type FormEvent,
+} from "react";
+import { useLocale, useTranslations } from "next-intl";
 
 import { Button } from "@/components/global/primitives/button";
 import { Input } from "@/components/global/primitives/input";
@@ -10,25 +16,13 @@ import { Select } from "@/components/global/primitives/select";
 import { Tooltip } from "@/components/global/primitives/tooltip";
 import { useIdentitySession } from "@/providers/identity/identity-session-provider";
 import { useNotification } from "@/providers/global/notification-provider";
-import { commercePatch, getProducts } from "@/services/commerce/commerce";
+import { commercePatch, getProducts, getSales } from "@/services/commerce/commerce";
 import type { Product } from "@/types/commerce/commerce";
-
-const countableUnits = new Set([
-  "piece",
-  "pair",
-  "packet",
-  "box",
-  "carton",
-  "crate",
-  "bottle",
-  "can",
-  "bag",
-  "sack",
-  "bundle",
-  "set",
-  "dozen",
-  "roll",
-]);
+import {
+  formatQuantityNumber,
+  formatQuantityWithUnit,
+  formatUnitName,
+} from "@/utils/commerce/quantity";
 
 const unitOptions = [
   "piece",
@@ -54,7 +48,11 @@ const unitOptions = [
 ] as const;
 
 const field =
-  "space-y-1 text-xs font-semibold text-slate-600 dark:text-slate-300";
+  "space-y-1.5 text-[13px] font-semibold text-slate-600 dark:text-slate-300";
+const controlClassName =
+  "h-10 rounded-md border-slate-300 bg-white shadow-none dark:border-slate-700 dark:bg-slate-950";
+const primaryAccentClassName =
+  "text-[var(--workspace-primary,var(--brand-navy))] dark:[color:color-mix(in_srgb,var(--workspace-primary,var(--brand-navy))_35%,white)]";
 
 type EditDraft = {
   name: string;
@@ -64,20 +62,67 @@ type EditDraft = {
   unit: string;
 };
 
-function displayQuantity(value: string, unit: string) {
-  const number = Number(value);
-  if (!Number.isFinite(number)) return value;
-  if (countableUnits.has(unit) && Number.isInteger(number)) return String(number);
-  return new Intl.NumberFormat(undefined, { maximumFractionDigits: 3 }).format(
-    number,
-  );
+type PerformanceSale = {
+  status: string;
+  sold_at: string;
+  items: Array<{
+    source: string;
+    product: string;
+    product_name: string;
+    item_name: string;
+    quantity: string;
+    returned_quantity: string;
+  }>;
+};
+
+type ProductPerformance = {
+  today: string;
+  week: string;
+  month: string;
+};
+
+function topProductSince(sales: PerformanceSale[], since: Date) {
+  const totals = new Map<string, { name: string; quantity: number }>();
+
+  for (const sale of sales) {
+    if (sale.status !== "active") continue;
+    const soldAt = new Date(sale.sold_at);
+    if (Number.isNaN(soldAt.getTime()) || soldAt < since) continue;
+
+    for (const item of sale.items) {
+      if (item.source !== "catalog" || !item.product) continue;
+      const soldQuantity = Math.max(
+        0,
+        Number(item.quantity) - Number(item.returned_quantity || 0),
+      );
+      if (!Number.isFinite(soldQuantity) || soldQuantity <= 0) continue;
+
+      const current = totals.get(item.product);
+      totals.set(item.product, {
+        name: item.product_name || item.item_name,
+        quantity: (current?.quantity ?? 0) + soldQuantity,
+      });
+    }
+  }
+
+  let top: { name: string; quantity: number } | null = null;
+  for (const candidate of totals.values()) {
+    if (!top || candidate.quantity > top.quantity) top = candidate;
+  }
+  return top?.name ?? "";
 }
 
 function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
   const t = useTranslations("Commerce");
+  const locale = useLocale();
   const { accessToken } = useIdentitySession();
   const { notify } = useNotification();
   const [products, setProducts] = useState<Product[]>([]);
+  const [performance, setPerformance] = useState<ProductPerformance>({
+    today: "",
+    week: "",
+    month: "",
+  });
   const [editingId, setEditingId] = useState("");
   const [draft, setDraft] = useState<EditDraft | null>(null);
   const [busy, setBusy] = useState(false);
@@ -91,12 +136,32 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
     () => products.filter((product) => Number(product.current_quantity) === 0),
     [products],
   );
+  const editingProduct = useMemo(
+    () => products.find((product) => product.id === editingId) ?? null,
+    [editingId, products],
+  );
 
   const load = useCallback(async () => {
     if (!accessToken) return;
     try {
-      const response = await getProducts(businessId, accessToken);
-      setProducts(response.data?.products ?? []);
+      const [productResponse, salesResponse] = await Promise.all([
+        getProducts(businessId, accessToken),
+        getSales(businessId, accessToken),
+      ]);
+      setProducts(productResponse.data?.products ?? []);
+
+      const now = new Date();
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const weekStart = new Date(todayStart);
+      weekStart.setDate(todayStart.getDate() - ((todayStart.getDay() + 6) % 7));
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const sales = (salesResponse.data?.sales ?? []) as PerformanceSale[];
+
+      setPerformance({
+        today: topProductSince(sales, todayStart),
+        week: topProductSince(sales, weekStart),
+        month: topProductSince(sales, monthStart),
+      });
     } catch (reason) {
       notify({
         message: reason instanceof Error ? reason.message : t("errors.load"),
@@ -110,13 +175,12 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
     return () => window.clearTimeout(timeout);
   }, [load]);
 
-  const toggleEdit = (product: Product) => {
-    if (editingId === product.id) {
-      setEditingId("");
-      setDraft(null);
-      return;
-    }
+  const closeEdit = () => {
+    setEditingId("");
+    setDraft(null);
+  };
 
+  const openEdit = (product: Product) => {
     setEditingId(product.id);
     setDraft({
       name: product.name,
@@ -127,10 +191,7 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
     });
   };
 
-  const save = async (
-    event: FormEvent<HTMLFormElement>,
-    product: Product,
-  ) => {
+  const save = async (event: FormEvent<HTMLFormElement>, product: Product) => {
     event.preventDefault();
     if (!accessToken || !draft) return;
 
@@ -153,8 +214,7 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
         unit: draft.unit,
       });
       notify({ message: t("success.itemCorrected"), tone: "success" });
-      setEditingId("");
-      setDraft(null);
+      closeEdit();
       await load();
     } catch (reason) {
       notify({
@@ -168,9 +228,7 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
 
   const archiveEmptyProduct = async (product: Product) => {
     if (!accessToken || Number(product.current_quantity) !== 0) return;
-    if (!window.confirm(t("messages.archiveItemConfirm", { name: product.name }))) {
-      return;
-    }
+    if (!window.confirm(t("messages.archiveItemConfirm", { name: product.name }))) return;
 
     setBusy(true);
     try {
@@ -178,10 +236,7 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
         is_active: false,
       });
       notify({ message: t("success.itemArchived"), tone: "success" });
-      if (editingId === product.id) {
-        setEditingId("");
-        setDraft(null);
-      }
+      if (editingId === product.id) closeEdit();
       await load();
     } catch (reason) {
       notify({
@@ -193,181 +248,72 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
     }
   };
 
-  const renderProduct = (product: Product) => {
-    const expanded = editingId === product.id && draft;
-    return (
-      <article
-        className="bg-white p-4 transition-colors hover:bg-slate-50/70 dark:bg-slate-950 dark:hover:bg-slate-900/40"
-        key={product.id}
-        style={
-          expanded
-            ? {
-                borderInlineStartColor:
-                  "var(--workspace-primary, var(--brand-navy))",
-                borderInlineStartStyle: "solid",
-                borderInlineStartWidth: 3,
-              }
-            : undefined
-        }
-      >
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-              <strong className="text-sm">{product.name}</strong>
-              <span className="text-xs text-slate-400">{product.sku}</span>
-            </div>
-            {product.brand || product.variant ? (
-              <p className="mt-1 text-xs text-slate-500">
-                {[product.brand, product.variant].filter(Boolean).join(" · ")}
-              </p>
-            ) : null}
-            <p className="mt-1 text-xs text-slate-500">
-              {product.tracking_mode === "individual"
-                ? t("values.individual")
-                : t("values.quantity")}
-              {product.barcode ? ` · ${product.barcode}` : ""}
-            </p>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <div className="text-right">
-              <strong
-                className="text-base"
-                style={{ color: "var(--workspace-primary, var(--brand-navy))" }}
-              >
-                {displayQuantity(product.current_quantity, product.unit)}
-              </strong>
-              <span className="ml-1 text-xs text-slate-500">{product.unit}</span>
-            </div>
-            <Tooltip content={t("tooltips.correctItem")}>
-              <Button
-                onClick={() => toggleEdit(product)}
-                size="small"
-                type="button"
-                variant="ghost"
-              >
-                {t("actions.correctItem")}
-                {expanded ? (
-                  <ChevronUp className="ml-1 size-4" />
-                ) : (
-                  <ChevronDown className="ml-1 size-4" />
-                )}
-              </Button>
-            </Tooltip>
-          </div>
-        </div>
-
-        {expanded ? (
-          <form
-            className="mt-4 grid gap-3 border-t border-slate-200 pt-4 dark:border-slate-800"
-            onSubmit={(event) => void save(event, product)}
-          >
-            <div className="grid gap-3 sm:grid-cols-2">
-              <label className={field}>
-                {t("fields.name")}
-                <Input
-                  value={draft.name}
-                  onChange={(event) =>
-                    setDraft({ ...draft, name: event.target.value })
-                  }
-                />
-              </label>
-              <label className={field}>
-                {t("fields.brandOptional")}
-                <Input
-                  value={draft.brand}
-                  onChange={(event) =>
-                    setDraft({ ...draft, brand: event.target.value })
-                  }
-                />
-              </label>
-              <label className={field}>
-                {t("fields.variant")}
-                <Input
-                  value={draft.variant}
-                  onChange={(event) =>
-                    setDraft({ ...draft, variant: event.target.value })
-                  }
-                />
-              </label>
-              <label className={field}>
-                {t("fields.barcode")}
-                <Input
-                  value={draft.barcode}
-                  onChange={(event) =>
-                    setDraft({ ...draft, barcode: event.target.value })
-                  }
-                />
-              </label>
-              <label className={field}>
-                <span className="flex items-center gap-1">
-                  {t("fields.unit")}
-                  <Tooltip content={t("tooltips.unitCorrection")}>
-                    <span
-                      className="inline-flex cursor-help text-slate-400"
-                      tabIndex={0}
-                    >
-                      <CircleHelp className="size-3.5" />
-                    </span>
-                  </Tooltip>
-                </span>
-                <Select
-                  value={draft.unit}
-                  onChange={(event) =>
-                    setDraft({ ...draft, unit: event.target.value })
-                  }
-                >
-                  {unitOptions.map((unit) => (
-                    <option key={unit} value={unit}>
-                      {t(`units.${unit}`)}
-                    </option>
-                  ))}
-                </Select>
-              </label>
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-              <Button disabled={busy} size="small" type="submit">
-                {t("actions.saveCorrection")}
-              </Button>
-              <Button
-                onClick={() => {
-                  setEditingId("");
-                  setDraft(null);
-                }}
-                size="small"
-                type="button"
-                variant="ghost"
-              >
-                {t("actions.cancel")}
-              </Button>
-            </div>
-          </form>
-        ) : null}
-      </article>
-    );
+  const headers = {
+    product: locale === "sw" ? "Bidhaa" : "Product",
+    brand: locale === "sw" ? "Chapa" : "Brand",
+    variant: locale === "sw" ? "Aina" : "Variant / type",
+    unit: locale === "sw" ? "Kipimo" : "Unit",
+    id: locale === "sw" ? "Namba ya bidhaa" : "Item ID",
+    quantity: locale === "sw" ? "Kiasi" : "Quantity",
+    tracking: locale === "sw" ? "Ufuatiliaji" : "Tracking",
+    action: locale === "sw" ? "Hatua" : "Action",
   };
+  const intro =
+    locale === "sw"
+      ? "Bidhaa zinazopatikana kwa sasa katika biashara hii."
+      : "Currently available products for this business.";
+  const editLabel = locale === "sw" ? "Hariri" : "Edit";
+  const noPerformance = locale === "sw" ? "Hakuna mauzo bado" : "No sales yet";
+  const performancePeriods = [
+    { key: "today" as const, label: locale === "sw" ? "Leo" : "Today" },
+    { key: "week" as const, label: locale === "sw" ? "Wiki hii" : "This week" },
+    { key: "month" as const, label: locale === "sw" ? "Mwezi huu" : "This month" },
+  ];
+  const emptyAvailable =
+    locale === "sw" ? "Hakuna bidhaa zinazopatikana sasa." : "No products are currently available.";
 
   return (
-    <section className="w-full space-y-4 px-2 py-4 sm:px-3 lg:px-4">
-      <header className="border-b border-slate-200 pb-4 dark:border-slate-800">
-        <p
-          className="text-xs font-bold uppercase tracking-[0.18em]"
-          style={{ color: "var(--workspace-secondary, var(--brand-orange))" }}
-        >
-          {t("eyebrow")}
-        </p>
-        <h1 className="mt-1 text-2xl font-bold text-slate-950 dark:text-white">
-          {t("views.products.title")}
-        </h1>
-        <p className="mt-1 max-w-2xl text-sm text-slate-500">
-          {t("views.products.description")}
-        </p>
-      </header>
+    <section className="w-full space-y-3 !px-0 py-4 sm:space-y-4">
+      <section
+        aria-label={locale === "sw" ? "Utendaji wa bidhaa" : "Product performance"}
+        className="rounded-lg border border-slate-200 bg-white px-3 py-2.5 dark:border-slate-800 dark:bg-slate-950 sm:px-4 sm:py-3"
+      >
+        <div className="mb-2 flex items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-2">
+            <span className="inline-flex size-7 shrink-0 items-center justify-center rounded-md bg-[color-mix(in_srgb,var(--workspace-primary,var(--brand-navy))_10%,white)] text-[var(--workspace-primary,var(--brand-navy))] dark:bg-[color-mix(in_srgb,var(--workspace-primary,var(--brand-navy))_20%,transparent)] dark:[color:color-mix(in_srgb,var(--workspace-primary,var(--brand-navy))_35%,white)]">
+              <TrendingUp className="size-3.5" />
+            </span>
+            <h2 className="truncate text-sm font-semibold text-slate-950 dark:text-white">
+              {locale === "sw" ? "Bidhaa zinazoongoza" : "Top-performing products"}
+            </h2>
+          </div>
+          <span className="hidden text-[10px] text-slate-400 sm:inline">
+            {locale === "sw" ? "Kulingana na mauzo" : "Based on sales"}
+          </span>
+        </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950">
-        <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-3 dark:border-slate-800">
-          <h2 className="font-semibold">{t("catalog")}</h2>
+        <div className="grid grid-cols-3 divide-x divide-slate-200 overflow-hidden rounded-md bg-slate-50 dark:divide-slate-800 dark:bg-slate-900/55">
+          {performancePeriods.map((period) => (
+            <div className="min-w-0 px-2 py-2 sm:px-3" key={period.key}>
+              <div className="flex items-center gap-1">
+                <TrendingUp className={`size-3 shrink-0 ${primaryAccentClassName}`} />
+                <p className="truncate text-[10px] font-semibold uppercase tracking-[0.04em] text-slate-500 dark:text-slate-400">
+                  {period.label}
+                </p>
+              </div>
+              <p className="mt-0.5 truncate text-[11px] font-semibold text-slate-950 dark:text-white sm:text-xs">
+                {performance[period.key] || noPerformance}
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <div className="overflow-hidden rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-4 py-4 dark:border-slate-800 sm:px-5">
+          <p className="max-w-3xl text-base font-semibold leading-6 text-slate-950 dark:text-white sm:text-lg">
+            {intro}
+          </p>
           {emptyProducts.length ? (
             <Tooltip content={t("tooltips.reviewEmptyItems")}>
               <Button
@@ -377,46 +323,142 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
                 variant="ghost"
               >
                 {t("actions.reviewEmptyItems", { count: emptyProducts.length })}
-                {showEmpty ? (
-                  <ChevronUp className="ml-1 size-4" />
-                ) : (
-                  <ChevronDown className="ml-1 size-4" />
-                )}
               </Button>
             </Tooltip>
           ) : null}
         </div>
 
-        <div className="divide-y divide-slate-200 dark:divide-slate-800">
-          {availableProducts.map(renderProduct)}
-          {!availableProducts.length ? (
-            <p className="p-4 text-sm text-slate-500">{t("empty.availableItems")}</p>
-          ) : null}
+        <div className="p-3 sm:p-4">
+          <div className="hidden overflow-x-auto rounded-md md:block">
+            <table className="mx-auto w-full min-w-[900px] border-collapse text-left text-xs">
+              <thead className="bg-[#DDE3E9] text-sm font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-100">
+                <tr>
+                  <th className="px-4 py-3">{headers.product}</th>
+                  <th className="px-3 py-3">{headers.brand}</th>
+                  <th className="px-3 py-3">{headers.variant}</th>
+                  <th className="px-3 py-3">{headers.unit}</th>
+                  <th className="px-3 py-3">{headers.id}</th>
+                  <th className="px-3 py-3 text-center">{headers.quantity}</th>
+                  <th className="px-3 py-3">{headers.tracking}</th>
+                  <th className="px-4 py-3 text-center">{headers.action}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+                {availableProducts.map((product, index) => (
+                  <tr
+                    className={
+                      index % 2 === 0
+                        ? "bg-white transition-colors hover:bg-slate-50 dark:bg-slate-950 dark:hover:bg-slate-900/60"
+                        : "bg-[#F4F7FA] transition-colors hover:bg-slate-100 dark:bg-slate-900/35 dark:hover:bg-slate-900/70"
+                    }
+                    key={product.id}
+                  >
+                    <td className="px-4 py-3">
+                      <div className="min-w-40">
+                        <strong className="block text-sm font-bold text-slate-950 dark:text-white">
+                          {product.name}
+                        </strong>
+                        {product.barcode ? (
+                          <span className="mt-0.5 block text-[11px] text-slate-400">{product.barcode}</span>
+                        ) : null}
+                      </div>
+                    </td>
+                    <td className="px-3 py-3 text-slate-600 dark:text-slate-300">{product.brand || "—"}</td>
+                    <td className="px-3 py-3 text-slate-600 dark:text-slate-300">
+                      {product.variant || product.group || "—"}
+                    </td>
+                    <td className="px-3 py-3 text-slate-600 dark:text-slate-300">
+                      {formatUnitName(product.unit, 2, locale)}
+                    </td>
+                    <td className="px-3 py-3 font-mono text-[11px] font-semibold text-[var(--workspace-secondary,var(--brand-orange))] dark:text-slate-200">
+                      {product.sku}
+                    </td>
+                    <td className="px-3 py-3 text-center">
+                      <strong className={`text-sm font-bold ${primaryAccentClassName}`}>
+                        {formatQuantityNumber(product.current_quantity, locale)}
+                      </strong>
+                    </td>
+                    <td className="px-3 py-3 text-slate-500 dark:text-slate-400">
+                      {product.tracking_mode === "individual" ? t("values.individual") : t("values.quantity")}
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <Tooltip content={editLabel}>
+                        <Button onClick={() => openEdit(product)} size="small" type="button" variant="outline">
+                          <Pencil className="size-3.5" />
+                          {editLabel}
+                        </Button>
+                      </Tooltip>
+                    </td>
+                  </tr>
+                ))}
+                {!availableProducts.length ? (
+                  <tr>
+                    <td className="px-4 py-7 text-sm text-slate-500" colSpan={8}>{emptyAvailable}</td>
+                  </tr>
+                ) : null}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="overflow-hidden rounded-md md:hidden">
+            {availableProducts.length ? (
+              <div className="divide-y divide-slate-200 dark:divide-slate-800">
+                {availableProducts.map((product, index) => (
+                  <div
+                    className={index % 2 === 0 ? "bg-white p-3.5 dark:bg-slate-950" : "bg-[#F4F7FA] p-3.5 dark:bg-slate-900/35"}
+                    key={product.id}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-bold text-slate-950 dark:text-white">{product.name}</p>
+                        <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">
+                          {[product.brand, product.variant || product.group].filter(Boolean).join(" · ") || "—"}
+                        </p>
+                      </div>
+                      <div className="shrink-0 text-right">
+                        <strong className={`text-sm font-bold ${primaryAccentClassName}`}>
+                          {formatQuantityWithUnit(
+                            product.current_quantity,
+                            product.unit,
+                            locale,
+                          )}
+                        </strong>
+                      </div>
+                    </div>
+                    <div className="mt-2 flex items-end justify-between gap-3">
+                      <div className="min-w-0 text-[11px] leading-4 text-slate-500 dark:text-slate-400">
+                        <p className="truncate font-mono font-semibold text-[var(--workspace-secondary,var(--brand-orange))] dark:text-slate-200">{product.sku}</p>
+                        <p>
+                          {product.tracking_mode === "individual" ? t("values.individual") : t("values.quantity")}
+                          {product.barcode ? ` · ${product.barcode}` : ""}
+                        </p>
+                      </div>
+                      <Button onClick={() => openEdit(product)} size="small" type="button" variant="outline">
+                        <Pencil className="size-3.5" />
+                        {editLabel}
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="p-4 text-sm text-slate-500">{emptyAvailable}</p>
+            )}
+          </div>
         </div>
 
         {showEmpty && emptyProducts.length ? (
-          <div className="border-t border-slate-200 dark:border-slate-800">
-            <div className="px-4 py-3 text-xs font-semibold text-slate-500">
-              {t("emptyItemsTitle")}
-            </div>
-            <div className="divide-y divide-slate-200 dark:divide-slate-800">
+          <div className="border-t border-slate-200 px-3 pb-3 pt-3 dark:border-slate-800 sm:px-4 sm:pb-4">
+            <div className="mb-2 text-xs font-semibold text-slate-500 dark:text-slate-400">{t("emptyItemsTitle")}</div>
+            <div className="divide-y divide-slate-200 overflow-hidden rounded-md dark:divide-slate-800">
               {emptyProducts.map((product) => (
-                <div
-                  className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm"
-                  key={product.id}
-                >
+                <div className="flex flex-wrap items-center justify-between gap-3 bg-white px-3 py-3 text-sm dark:bg-slate-950" key={product.id}>
                   <div>
                     <strong>{product.name}</strong>
-                    <p className="mt-1 text-xs text-slate-500">{product.sku}</p>
+                    <p className="mt-1 font-mono text-[11px] text-slate-500 dark:text-slate-400">{product.sku}</p>
                   </div>
                   <Tooltip content={t("tooltips.archiveEmptyItem")}>
-                    <Button
-                      disabled={busy}
-                      onClick={() => void archiveEmptyProduct(product)}
-                      size="small"
-                      type="button"
-                      variant="ghost"
-                    >
+                    <Button disabled={busy} onClick={() => void archiveEmptyProduct(product)} size="small" type="button" variant="ghost">
                       <Archive className="size-4" />
                       {t("actions.archiveItem")}
                     </Button>
@@ -427,6 +469,69 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
           </div>
         ) : null}
       </div>
+
+      {editingProduct && draft ? (
+        <div
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/35 p-4 backdrop-blur-[1px] sm:p-6"
+          role="dialog"
+        >
+          <div className="flex max-h-[82svh] w-full max-w-md min-h-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-950 sm:max-h-[90svh] sm:max-w-2xl">
+            <div className="flex shrink-0 items-start justify-between gap-3 border-b border-slate-200 px-4 py-3.5 dark:border-slate-800 sm:px-5">
+              <div>
+                <h2 className="text-sm font-semibold text-slate-950 dark:text-white sm:text-base">{editLabel}</h2>
+                <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{editingProduct.name}</p>
+              </div>
+              <button
+                aria-label={t("actions.cancel")}
+                className="inline-flex size-8 items-center justify-center rounded-lg text-slate-500 hover:bg-interactive-highlight hover:text-slate-950 dark:hover:text-white"
+                onClick={closeEdit}
+                type="button"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+
+            <form className="flex min-h-0 flex-1 flex-col" onSubmit={(event) => void save(event, editingProduct)}>
+              <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <label className={field}>
+                    {t("fields.name")}
+                    <Input className={controlClassName} value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} />
+                  </label>
+                  <label className={field}>
+                    {t("fields.brandOptional")}
+                    <Input className={controlClassName} value={draft.brand} onChange={(event) => setDraft({ ...draft, brand: event.target.value })} />
+                  </label>
+                  <label className={field}>
+                    {t("fields.variant")}
+                    <Input className={controlClassName} value={draft.variant} onChange={(event) => setDraft({ ...draft, variant: event.target.value })} />
+                  </label>
+                  <label className={field}>
+                    {t("fields.barcode")}
+                    <Input className={controlClassName} value={draft.barcode} onChange={(event) => setDraft({ ...draft, barcode: event.target.value })} />
+                  </label>
+                  <label className={field}>
+                    <span className="flex items-center gap-1">
+                      {t("fields.unit")}
+                      <Tooltip content={t("tooltips.unitCorrection")}>
+                        <span className="inline-flex cursor-help text-slate-400" tabIndex={0}><CircleHelp className="size-3.5" /></span>
+                      </Tooltip>
+                    </span>
+                    <Select className={controlClassName} value={draft.unit} onChange={(event) => setDraft({ ...draft, unit: event.target.value })}>
+                      {unitOptions.map((unit) => <option key={unit} value={unit}>{t(`units.${unit}`)}</option>)}
+                    </Select>
+                  </label>
+                </div>
+              </div>
+              <div className="flex shrink-0 flex-wrap justify-end gap-2 border-t border-slate-200 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-950 sm:px-5 sm:py-4">
+                <Button onClick={closeEdit} size="small" type="button" variant="ghost">{t("actions.cancel")}</Button>
+                <Button disabled={busy} size="small" type="submit">{t("actions.saveCorrection")}</Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }

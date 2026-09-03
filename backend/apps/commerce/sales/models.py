@@ -1,4 +1,6 @@
 from common.database.base_model import BaseModel
+from common.database.managers import BaseManager
+from common.database.querysets import BaseQuerySet
 from django.conf import settings
 from django.db import models
 
@@ -104,10 +106,38 @@ class SaleAudit(BaseModel):
         ordering = ["-created_at"]
 
 
+class SaleItemQuerySet(BaseQuerySet):
+    def select_for_update(
+        self,
+        nowait=False,
+        skip_locked=False,
+        of=(),
+        no_key=False,
+    ):
+        return super().select_for_update(
+            nowait=nowait,
+            skip_locked=skip_locked,
+            of=of or ("self",),
+            no_key=no_key,
+        )
+
+
+class SaleItemManager(BaseManager.from_queryset(SaleItemQuerySet)):
+    pass
+
+
 class SaleItem(BaseModel):
     class Source(models.TextChoices):
         CATALOG = "catalog", "TEED product / SKU"
         MANUAL = "manual", "Independent item"
+
+    class WarrantyMonths(models.IntegerChoices):
+        THREE = 3, "3 months"
+        SIX = 6, "6 months"
+        TWELVE = 12, "12 months"
+        TWENTY_FOUR = 24, "24 months"
+
+    objects = SaleItemManager()
 
     sale = models.ForeignKey(Sale, on_delete=models.CASCADE, related_name="items")
     source = models.CharField(
@@ -137,6 +167,9 @@ class SaleItem(BaseModel):
     line_total = models.DecimalField(max_digits=14, decimal_places=2)
     cost_total = models.DecimalField(max_digits=14, decimal_places=2, default=0)
     returned_quantity = models.DecimalField(max_digits=14, decimal_places=3, default=0)
+    warranty_months = models.PositiveSmallIntegerField(
+        choices=WarrantyMonths.choices, null=True, blank=True
+    )
 
     class Meta:
         db_table = "commerce_sale_items"

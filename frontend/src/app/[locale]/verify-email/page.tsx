@@ -29,6 +29,8 @@ export default async function VerifyEmailPage({
     <IdentityLayout
       description={t("description")}
       eyebrow={t("eyebrow")}
+      introductionVariant="compact"
+      notice={t("securityNote")}
       title={t("title")}
     >
       <IdentityAccessBoundary access="guest">

@@ -2,6 +2,13 @@
 
 from .catalog.models import Product, UnitDefinition
 from .finance.models import Budget, Expense
+from .financing.models import (
+    FinancingAgreement,
+    FinancingAllocation,
+    FinancingDocument,
+    FinancingItem,
+    FinancingPayment,
+)
 from .inventory.models import (
     InventoryMovement,
     StockBatch,
@@ -13,16 +20,28 @@ from .inventory.models import (
     TrackedUnitIdentifier,
 )
 from .overview.models import CommerceDecision
-from .returns.models import ReturnItem, SaleReturn
+from .returns.models import (
+    ReturnItem,
+    ReturnReplacement,
+    ReturnReplacementAllocation,
+    SaleReturn,
+)
 from .sales.models import Sale, SaleAllocation, SaleAudit, SaleItem, TradeInDetail
 
 __all__ = [
     "Budget",
     "CommerceDecision",
     "Expense",
+    "FinancingAgreement",
+    "FinancingAllocation",
+    "FinancingDocument",
+    "FinancingItem",
+    "FinancingPayment",
     "InventoryMovement",
     "Product",
     "ReturnItem",
+    "ReturnReplacement",
+    "ReturnReplacementAllocation",
     "Sale",
     "SaleAllocation",
     "SaleAudit",

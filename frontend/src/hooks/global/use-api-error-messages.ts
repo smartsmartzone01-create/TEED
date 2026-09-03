@@ -7,6 +7,7 @@ import type {
   ApiFieldIssue,
   NormalizedApiError,
 } from "@/types/global/api";
+import { frontendBrandText } from "@/utils/global/product-brand";
 
 function useApiErrorMessages() {
   const errors = useTranslations("IdentityErrors");
@@ -15,33 +16,24 @@ function useApiErrorMessages() {
   const getErrorMessage = useCallback(
     (error: NormalizedApiError) => {
       if (errors.has(error.code)) {
-        return errors(error.code);
+        return frontendBrandText(errors(error.code));
       }
 
-      return error.message || errors("unexpected_error");
+      return frontendBrandText(error.message || errors("unexpected_error"));
     },
     [errors],
   );
 
   const getFieldMessage = useCallback(
     (issue?: ApiFieldIssue) => {
-      if (!issue) {
-        return undefined;
-      }
-
-      if (fields.has(issue.code)) {
-        return fields(issue.code);
-      }
-
-      return issue.message;
+      if (!issue) return undefined;
+      if (fields.has(issue.code)) return frontendBrandText(fields(issue.code));
+      return frontendBrandText(issue.message);
     },
     [fields],
   );
 
-  return {
-    getErrorMessage,
-    getFieldMessage,
-  };
+  return { getErrorMessage, getFieldMessage };
 }
 
 export { useApiErrorMessages };

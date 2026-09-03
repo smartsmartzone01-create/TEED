@@ -2,6 +2,8 @@ from decimal import Decimal
 
 from rest_framework import serializers
 
+from ..catalog.models import Product
+from ..quantity_rules import require_valid_quantity
 from .models import Sale, SaleItem, TradeInDetail
 
 
@@ -26,6 +28,12 @@ class SaleItemInputSerializer(serializers.Serializer):
     unit_price = serializers.DecimalField(
         max_digits=14, decimal_places=2, min_value=Decimal("0"), required=False
     )
+    warranty_months = serializers.ChoiceField(
+        choices=SaleItem.WarrantyMonths.choices,
+        required=False,
+        allow_null=True,
+        default=None,
+    )
 
     def validate(self, attrs):
         source = attrs["source"]
@@ -36,7 +44,19 @@ class SaleItemInputSerializer(serializers.Serializer):
                 )
             if "unit_price" not in attrs:
                 raise serializers.ValidationError(
-                    {"unit_price": "Enter the selling price for an independent sale item."}
+                    {
+                        "unit_price": "Enter the selling price for an independent sale item."
+                    }
+                )
+            details = attrs.get("item_details", {})
+            if details.get("identifier_value") and attrs["quantity"] != Decimal("1"):
+                raise serializers.ValidationError(
+                    {
+                        "quantity": (
+                            "An independently sold item with a serial, IMEI, or other "
+                            "unique identifier must be recorded as one unit."
+                        )
+                    }
                 )
             attrs.pop("product_id", None)
             attrs.pop("tracked_unit_id", None)
@@ -44,6 +64,16 @@ class SaleItemInputSerializer(serializers.Serializer):
             raise serializers.ValidationError(
                 {"product_id": "Choose a TEED product / SKU."}
             )
+        else:
+            business_id = self.context.get("business_id")
+            if business_id:
+                product = Product.objects.filter(
+                    id=attrs["product_id"], business_id=business_id, is_active=True
+                ).first()
+                if product is not None:
+                    require_valid_quantity(
+                        quantity=attrs["quantity"], unit=product.unit, field="quantity"
+                    )
         return attrs
 
 
@@ -114,7 +144,9 @@ class SaleCreateSerializer(serializers.Serializer):
             )
         if any("unit_price" not in item for item in attrs["items"]):
             raise serializers.ValidationError(
-                {"items": "Enter the agreed sale value for every outgoing trade-in item."}
+                {
+                    "items": "Enter the agreed sale value for every outgoing trade-in item."
+                }
             )
         return attrs
 
@@ -126,6 +158,9 @@ class SaleVoidSerializer(serializers.Serializer):
 class SaleItemSerializer(serializers.ModelSerializer):
     product_name = serializers.SerializerMethodField()
     product_sku = serializers.SerializerMethodField()
+    product_unit = serializers.CharField(
+        source="product.unit", read_only=True, default=""
+    )
     tracked_unit_reference = serializers.SerializerMethodField()
     tracked_unit_details = serializers.SerializerMethodField()
 
@@ -137,6 +172,7 @@ class SaleItemSerializer(serializers.ModelSerializer):
             "product",
             "product_name",
             "product_sku",
+            "product_unit",
             "tracked_unit",
             "tracked_unit_reference",
             "tracked_unit_details",
@@ -148,6 +184,7 @@ class SaleItemSerializer(serializers.ModelSerializer):
             "line_total",
             "cost_total",
             "returned_quantity",
+            "warranty_months",
         ]
 
     def get_product_name(self, obj):

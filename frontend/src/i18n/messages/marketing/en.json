@@ -10,7 +10,7 @@
     "closeNavigation": "Close navigation",
     "primaryNavigation": "Primary navigation",
     "mobileNavigation": "Mobile navigation",
-    "navigationDescription": "Navigate TEED marketing pages and account actions.",
+    "navigationDescription": "Navigate Tunakuza marketing pages and account actions.",
     "openMenu": "Open {menu} menu",
     "closeMenu": "Close {menu} menu",
     "featuresMenu": {
@@ -61,12 +61,12 @@
     "title": "Grow your business with clearer tools and practical AI.",
     "description": "Manage operations, understand performance, reach more customers, and get intelligent guidance for what to do next.",
     "primaryAction": "Start growing",
-    "secondaryAction": "Explore TEED"
+    "secondaryAction": "Explore Tunakuza"
   },
   "TeedOverview": {
     "eyebrow": "Everything works together",
-    "title": "Five ways TEED helps your business grow.",
-    "description": "From daily operations to reaching more customers, TEED brings the essential parts of business growth into one clear experience.",
+    "title": "Five ways Tunakuza helps your business grow.",
+    "description": "From daily operations to reaching more customers, Tunakuza brings the essential parts of business growth into one clear experience.",
     "manage": {
       "title": "Manage",
       "description": "Keep track of sales, inventory, customers, and essential business records."
@@ -91,7 +91,7 @@
   "PlatformConnections": {
     "eyebrow": "Built for the way your business connects",
     "title": "Grow across platforms.",
-    "description": "TEED is designed to bring your digital activity into one clearer view, helping you understand performance and make better business decisions.",
-    "platformsLabel": "Digital platforms TEED is designed to connect with"
+    "description": "Tunakuza is designed to bring your digital activity into one clearer view, helping you understand performance and make better business decisions.",
+    "platformsLabel": "Digital platforms Tunakuza is designed to connect with"
   }
 }

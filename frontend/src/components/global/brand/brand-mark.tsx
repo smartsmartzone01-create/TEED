@@ -1,3 +1,4 @@
+import { TunakuzaWordmark } from "@/components/global/brand/tunakuza-wordmark";
 import { Link } from "@/i18n/navigation";
 
 import { cn } from "@/lib/global/class-names";
@@ -13,25 +14,29 @@ function BrandMark({
   href = "/",
   tone = "default",
 }: BrandMarkProps) {
-  const firstHalfClassName = {
-    adaptive: "text-brand-navy dark:text-white",
-    default: "text-brand-navy",
-    inverse: "text-white",
-  }[tone];
+  if (tone === "adaptive") {
+    return <TunakuzaWordmark className={className} href={href} />;
+  }
 
   return (
     <Link
-      aria-label="TEED"
+      aria-label="Tunakuza"
       className={cn(
-        "inline-flex items-center font-black leading-none tracking-[-0.06em]",
+        "inline-flex h-14 w-14 shrink-0 items-center justify-center",
         className,
       )}
+      data-tone={tone}
       href={href}
     >
-      <span aria-hidden="true">
-        <span className={firstHalfClassName}>TE</span>
-        <span className="text-brand-orange">ED</span>
-      </span>
+      <img
+        alt=""
+        aria-hidden="true"
+        className="h-full w-full select-none object-contain"
+        draggable={false}
+        height="198"
+        src="/brand/tunakuza-logo.svg"
+        width="200"
+      />
     </Link>
   );
 }

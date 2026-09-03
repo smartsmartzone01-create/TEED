@@ -1,0 +1,123 @@
+{
+  "CommerceFinance": {
+    "eyebrow": "Fedha za biashara",
+    "help": "Maelezo zaidi",
+    "loading": "Inapakia…",
+    "fields": {
+      "category": "Aina",
+      "amount": "Kiasi",
+      "date": "Tarehe na saa",
+      "payee": "Imelipwa kwa",
+      "description": "Maelezo",
+      "paymentMethod": "Njia ya malipo",
+      "reference": "Kumbukumbu / risiti",
+      "notes": "Dokezo",
+      "month": "Mwezi",
+      "week": "Wiki inayojumuisha",
+      "day": "Siku",
+      "budgetPeriod": "Kipindi cha bajeti",
+      "plannedAmount": "Kiasi kilichopangwa"
+    },
+    "actions": {
+      "edit": "Hariri",
+      "cancel": "Ghairi",
+      "close": "Funga risiti",
+      "receipt": "Risiti",
+      "saveChanges": "Hifadhi mabadiliko"
+    },
+    "placeholders": {
+      "category": "Chagua aina ya gharama",
+      "payee": "Mtu, mfanyakazi, msambazaji au mtoa huduma",
+      "description": "Gharama hii ilikuwa ya nini?",
+      "reference": "Risiti, ankara au kumbukumbu ya muamala",
+      "notes": "Dokezo la ndani la hiari",
+      "budgetNotes": "Dokezo la hiari la mpango"
+    },
+    "filters": {
+      "allCategories": "Aina zote"
+    },
+    "categories": {
+      "salaries_wages": "Mishahara na ujira",
+      "rent": "Kodi ya pango",
+      "utilities": "Huduma za msingi",
+      "internet_phone": "Intaneti na simu",
+      "transport_travel": "Usafiri na safari",
+      "marketing_advertising": "Masoko na matangazo",
+      "repairs_maintenance": "Matengenezo",
+      "software_subscriptions": "Programu na usajili",
+      "professional_services": "Huduma za kitaalamu",
+      "bank_payment_fees": "Ada za benki na malipo",
+      "insurance": "Bima",
+      "licenses_permits": "Leseni na vibali",
+      "office_admin": "Ofisi na utawala",
+      "security_cleaning": "Usalama na usafi",
+      "taxes_duties": "Kodi na ushuru",
+      "interest_finance": "Riba na gharama za kifedha",
+      "meals_hospitality": "Chakula na ukarimu",
+      "other": "Nyingine"
+    },
+    "paymentMethods": {
+      "cash": "Taslimu",
+      "bank_transfer": "Uhamisho wa benki",
+      "mobile_money": "Pesa ya simu",
+      "card": "Kadi",
+      "cheque": "Hundi",
+      "other": "Nyingine"
+    },
+    "expenses": {
+      "title": "Gharama",
+      "description": "Rekodi gharama za uendeshaji zinazopunguza matokeo ya biashara. Ununuzi wa stock na returns hushughulikiwa na kumbukumbu zao za Commerce.",
+      "tooltip": "Tumia Gharama kwa pesa ambazo biashara inatumia kujiendesha. Usirekodi tena thamani ya kununua stock au returns hapa kwa sababu Commerce tayari inazihesabu.",
+      "formTitle": "Rekodi gharama",
+      "editFormTitle": "Hariri {number}",
+      "editHelp": "Sahihisha maelezo ya gharama ya awali bila kuunda gharama nyingine.",
+      "record": "Rekodi gharama",
+      "saved": "Gharama imerekodiwa.",
+      "updated": "Gharama imesasishwa.",
+      "saveError": "Tunakuza haikuweza kurekodi gharama hii.",
+      "updateError": "Tunakuza haikuweza kusasisha gharama hii.",
+      "loadError": "Tunakuza haikuweza kupakia gharama.",
+      "periodTotal": "Jumla ya gharama kwenye mwonekano huu",
+      "history": "Historia ya gharama",
+      "empty": "Hakuna gharama zinazolingana na kipindi na aina hii.",
+      "expense": "Gharama",
+      "noDescription": "Hakuna mlipwaji wala maelezo yaliyorekodiwa.",
+      "receiptEyebrow": "Risiti ya gharama",
+      "receiptHelp": "Kumbukumbu ya ukaguzi ya Tunakuza kwa gharama hii ya biashara.",
+      "recordedBy": "Imerekodiwa na"
+    },
+    "budgetPeriods": {
+      "daily": "Bajeti ya siku",
+      "weekly": "Bajeti ya wiki",
+      "monthly": "Bajeti ya mwezi ya biashara"
+    },
+    "budgets": {
+      "title": "Bajeti",
+      "description": "Weka makadirio ya matumizi ya biashara na ulinganishe na kilichotokea kweli. Bajeti ni ya taarifa; haizuii matumizi.",
+      "formTitle": "Weka bajeti",
+      "save": "Hifadhi bajeti",
+      "saved": "Bajeti imehifadhiwa.",
+      "saveError": "Tunakuza haikuweza kuhifadhi bajeti hii.",
+      "loadError": "Tunakuza haikuweza kupakia bajeti.",
+      "current": "Utendaji wa bajeti",
+      "reportingHelp": "Tunakuza huripoti matumizi yanapokaribia au kuzidi mpango. Haizuii biashara kutumia fedha.",
+      "empty": "Bado hakuna bajeti iliyowekwa.",
+      "planned": "Iliyopangwa",
+      "actual": "Iliyotumika",
+      "remaining": "Iliyobaki",
+      "used": "Imetumika",
+      "expenseSpend": "Gharama za uendeshaji",
+      "stockSpend": "Ununuzi wa stock",
+      "scope": {
+        "daily": "Bajeti ya siku inalinganisha gharama za uendeshaji zilizorekodiwa siku hiyo na kiasi kilichopangwa.",
+        "weekly": "Bajeti ya wiki inalinganisha gharama za uendeshaji zilizorekodiwa katika wiki hiyo na kiasi kilichopangwa.",
+        "monthly": "Bajeti ya mwezi inalinganisha mpango wa biashara na gharama za uendeshaji pamoja na matumizi ya kununua stock yaliyorekodiwa mwezi huo."
+      }
+    },
+    "budgetStatus": {
+      "on_track": "Inaenda sawa",
+      "approaching_limit": "Inakaribia bajeti",
+      "over_budget": "Imezidi bajeti"
+    }
+  }
+}

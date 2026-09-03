@@ -1,0 +1,24 @@
+.scrollShell {
+  position: relative;
+}
+
+.scrollViewport {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  scroll-behavior: smooth;
+}
+
+.scrollViewport::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.scrollControl {
+  display: none !important;
+}
+
+.ledgerActions {
+  flex-direction: column !important;
+  gap: 0.08rem !important;
+}

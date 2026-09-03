@@ -9,16 +9,22 @@
       "stock": "Mzigo mpya",
       "lateDelivery": "Mzigo uliochelewa",
       "batch": "Fungu",
-      "products": "Unda bidhaa / SKU mpya",
-      "method": "Chagua namna ya kurekodi mzigo",
+      "products": "Bidhaa / SKU",
+      "method": "Njia ya kurekodi",
       "review": "Kagua na uhifadhi"
     },
+    "launcher": {
+      "title": "Anza kurekodi mzigo",
+      "description": "Anza kurekodi mzigo mpya. Taarifa ulizoingiza zitaendelea kuwepo unapohama kati ya hatua za kurekodi.",
+      "start": "Rekodi mzigo mpya",
+      "close": "Ficha rekodi"
+    },
     "help": {
-      "stock": "Weka taarifa za kupokea mzigo, kisha bonyeza Enter kuendelea.",
-      "batch": "Weka jina la fungu, kisha bonyeza Enter.",
+      "stock": "Weka taarifa za kupokea mzigo huu. Unaweza kurudi kwenye hatua hii wakati rekodi bado inaendelea.",
+      "batch": "Weka jina la fungu hili. Unaweza kurudi hapa kabla ya kuhifadhi mzigo.",
       "products": "Ongeza bidhaa mpya tu ikiwa haipo tayari kwenye bidhaa zako zinazopatikana. Unaweza kuruka hatua hii na kutumia bidhaa zilizopo wakati wa kurekodi.",
-      "method": "Chagua kama fungu hili litarekodiwa bidhaa moja moja au kupitia makundi.",
-      "individual": "Rekodi bidhaa moja ya kimwili kwa wakati. Baada ya Enter, bidhaa hiyo inahifadhiwa na fomu mpya inakuwa tayari kwa inayofuata.",
+      "method": "Chagua kama fungu hili litarekodiwa bidhaa moja moja au kupitia makundi. Hatua za awali zitaendelea kupatikana wakati wa kurekodi.",
+      "individual": "Rekodi bidhaa moja ya kimwili kwa wakati. Kila bidhaa uliyoingiza itaendelea kuwepo kwenye rekodi hii hadi ukague na kuhifadhi.",
       "group": "Weka jina la kundi, chagua kama litarekodiwa kwa idadi au bidhaa moja moja, kisha endelea ndani ya kundi hilo.",
       "review": "Kagua kilichorekodiwa. Hifadhi rasimu au maliza na upokee mzigo."
     },
@@ -58,11 +64,51 @@
       "identifierValue": "Namba ya utambulisho",
       "totalProducts": "Rekodi zilizowekwa"
     },
+    "ledger": {
+      "headers": {
+        "stockId": "Namba ya mzigo",
+        "supplier": "Msambazaji",
+        "batchName": "Jina la fungu",
+        "productGroup": "Kundi la bidhaa",
+        "recordingMethod": "Njia ya kurekodi",
+        "productInfo": "Taarifa za bidhaa",
+        "productSku": "Namba ya bidhaa / SKU",
+        "pricePerUnit": "Bei ya kununua / kipimo",
+        "expenses": "Gharama",
+        "total": "Jumla",
+        "actions": "Hatua"
+      },
+      "navigation": {
+        "previous": "Sogeza orodha ya mzigo kushoto",
+        "next": "Sogeza orodha ya mzigo kulia"
+      },
+      "status": {
+        "received": "Imepokelewa",
+        "draft": "Rasimu",
+        "archived": "Imehifadhiwa"
+      },
+      "recording": {
+        "individual": "Moja moja",
+        "groupIndividual": "Kwa kundi · moja moja",
+        "groupQuantity": "Kwa kundi · kwa idadi"
+      }
+    },
     "summary": {
       "title": "Muhtasari wa mzigo",
       "totalStockCost": "Jumla ya gharama ya mzigo",
       "batch": "Fungu",
       "group": "Kundi"
+    },
+    "receipt": {
+      "title": "Risiti ya mzigo",
+      "savedTitle": "Mzigo umepokelewa",
+      "savedHint": "Risiti yako iko tayari kushirikiwa, kunakiliwa au kuchapishwa.",
+      "stockId": "Namba ya mzigo",
+      "product": "Bidhaa",
+      "buyingAmount": "Kiasi cha ununuzi",
+      "totalBuyingPrice": "Jumla ya bei ya kununua",
+      "lateDelivery": "Mzigo uliochelewa",
+      "close": "Funga risiti"
     },
     "values": {
       "newProduct": "Ongeza bidhaa mpya",
@@ -74,12 +120,13 @@
       "entries": "rekodi"
     },
     "actions": {
-      "copy": "Nakili muhtasari",
-      "share": "Shiriki muhtasari",
-      "print": "Chapisha muhtasari",
+      "copy": "Nakili risiti",
+      "share": "Shiriki risiti",
+      "print": "Chapisha risiti",
       "saving": "Inahifadhi mzigo...",
       "enter": "Enter",
       "edit": "Hariri",
+      "editStock": "Hariri mzigo",
       "enterProduct": "Ingiza bidhaa",
       "updateProduct": "Sasisha bidhaa",
       "continue": "Endelea",
@@ -91,6 +138,17 @@
       "backToRecording": "Rudi kurekodi",
       "recordAnother": "Rekodi mzigo mwingine mpya",
       "cancelLateDelivery": "Ghairi mzigo uliochelewa"
+    },
+    "editStock": {
+      "title": "Hariri mzigo",
+      "chooseAction": "Chagua unachotaka kufanya kwenye mzigo.",
+      "correctHelp": "Sahihisha mzigo wakati muda wa marekebisho bado uko wazi.",
+      "lateDeliveryHelp": "Ongeza bidhaa zilizopokelewa baada ya mzigo wa awali.",
+      "chooseStock": "Chagua mzigo unaohusika na hatua hii.",
+      "correctionClosed": "Muda wa kusahihisha umefungwa",
+      "lateDeliveryUnavailable": "Mzigo uliochelewa haupatikani",
+      "back": "Rudi kwenye chaguo za kuhariri",
+      "noStock": "Hakuna rekodi za mzigo zinazopatikana."
     },
     "savedSoFar": "Kilichohifadhiwa hadi sasa",
     "savedCount": "Bidhaa {count} zimeingizwa moja moja",
@@ -119,7 +177,7 @@
       "groupNeedsProduct": "Weka angalau bidhaa moja kabla ya kumaliza kundi hili."
     },
     "success": {
-      "copied": "Muhtasari wa mzigo umenakiliwa.",
+      "copied": "Risiti ya mzigo imenakiliwa.",
       "draftSaved": "Rasimu ya mzigo imehifadhiwa.",
       "savedTitle": "Mzigo umehifadhiwa kikamilifu"
     }

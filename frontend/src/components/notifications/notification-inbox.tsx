@@ -122,7 +122,7 @@ function NotificationInbox({
         {items.map((item) => {
           const titleKey = `templates.${item.template}.title`;
           const messageKey = `templates.${item.template}.message`;
-          const title = t.has(titleKey) ? t(titleKey) : t("templates.default.title");
+          const title = t.has(titleKey) ? t(titleKey, item.context) : t("templates.default.title");
           const message = t.has(messageKey)
             ? t(messageKey, item.context)
             : t("templates.default.message");

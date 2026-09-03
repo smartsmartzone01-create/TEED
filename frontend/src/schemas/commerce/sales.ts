@@ -47,6 +47,11 @@ const trackedSaleUnitDetailsSchema = z.object({
   identifiers: z.array(trackedIdentifierSchema),
 });
 
+const warrantyMonthsSchema = z
+  .union([z.literal(3), z.literal(6), z.literal(12), z.literal(24)])
+  .nullable()
+  .default(null);
+
 const saleItemSchema = z
   .object({
     id: z.string(),
@@ -54,6 +59,7 @@ const saleItemSchema = z
     product: z.string().nullable().transform((value) => value ?? ""),
     product_name: z.string(),
     product_sku: z.string(),
+    product_unit: z.string().default(""),
     tracked_unit: z.string().nullable(),
     tracked_unit_reference: z.string(),
     tracked_unit_details: trackedSaleUnitDetailsSchema.nullable(),
@@ -65,6 +71,7 @@ const saleItemSchema = z
     line_total: decimal,
     cost_total: decimal.optional(),
     returned_quantity: decimal,
+    warranty_months: warrantyMonthsSchema,
   })
   .passthrough();
 
@@ -126,4 +133,5 @@ export {
   salesResponseSchema,
   saleStockTargetSchema,
   tradeInDetailSchema,
+  warrantyMonthsSchema,
 };

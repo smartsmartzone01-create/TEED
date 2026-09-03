@@ -1,0 +1,72 @@
+{
+  "WorkspaceRefinement": {
+    "create": {
+      "eyebrow": "Workspace setup",
+      "title": "Choose how this workspace will operate",
+      "description": "The workspace class changes how access and collaboration work. You can refine business operations later without changing the workspace shell.",
+      "name": "Workspace name",
+      "country": "Country",
+      "class": "Workspace class",
+      "business": {
+        "title": "Business workspace",
+        "description": "For businesses and organizations. Supports members, roles, invitations and operational modules.",
+        "impact": "Team-ready · roles and permissions · business operations"
+      },
+      "personal": {
+        "title": "Personal workspace",
+        "description": "For your own finances and personal activity. Owner-only: no members, invitations or access requests.",
+        "impact": "Private · owner-only · personal finance foundation"
+      },
+      "countries": {"TZ": "Tanzania", "KE": "Kenya", "UG": "Uganda"},
+      "validation": {
+        "name": "Enter a workspace name between 2 and 120 characters.",
+        "country": "Select a supported country.",
+        "class": "Choose a workspace class."
+      },
+      "submit": "Create workspace",
+      "creating": "Creating…",
+      "success": "Workspace created successfully."
+    },
+    "directory": {
+      "eyebrow": "Tunakuza workspaces",
+      "title": "Choose where you want to work",
+      "description": "Select a Business workspace, open your Personal workspace, or return to your personal dashboard.",
+      "embeddedTitle": "Your workspaces",
+      "embeddedDescription": "Open a workspace, create another one, or manage pending invitations.",
+      "create": "Create workspace",
+      "request": "Request business access",
+      "personalDashboard": "Personal dashboard",
+      "loading": "Loading your workspaces…",
+      "loadError": "Tunakuza could not load your workspace directory.",
+      "retry": "Try again",
+      "currentBusinessTitle": "Current business workspaces",
+      "businessTitle": "Business workspaces",
+      "personalTitle": "Personal workspaces",
+      "businessEmpty": "You do not belong to a Business workspace yet.",
+      "personalEmpty": "You have not created a Personal workspace yet.",
+      "open": "Open {name}",
+      "businessClass": "Business",
+      "personalClass": "Personal",
+      "ownerOnly": "Owner-only",
+      "legacyService": "Business · service setup",
+      "meta": "{country} · {role}",
+      "invitationsTitle": "Pending business invitations",
+      "noInvitations": "You have no pending Business invitations.",
+      "invitation": {
+        "title": "Business invitation",
+        "details": "Business {businessId} · {role}",
+        "accept": "Accept",
+        "decline": "Decline",
+        "acceptSuccess": "Invitation accepted.",
+        "declineSuccess": "Invitation declined.",
+        "decisionError": "Tunakuza could not update this invitation."
+      },
+      "roles": {"owner": "Owner", "partner": "Partner", "administrator": "Administrator", "manager": "Manager", "member": "Member"}
+    },
+    "routing": {
+      "title": "Opening Tunakuza",
+      "description": "Checking which workspace destination fits this account…",
+      "error": "Tunakuza could not determine your workspace destination. Opening your personal dashboard instead."
+    }
+  }
+}

@@ -31,8 +31,7 @@ function OnboardingForm() {
     refreshAccessToken,
     updateUser,
     user,
-  } =
-    useIdentitySession();
+  } = useIdentitySession();
   const { getErrorMessage, getFieldMessage } =
     useApiErrorMessages();
 
@@ -181,6 +180,16 @@ function OnboardingForm() {
   return (
     <>
       <div className="mb-6">
+        <div
+          aria-label={t("eyebrow")}
+          className="mb-5 flex items-center gap-2"
+          role="img"
+        >
+          <span className="h-1.5 flex-1 rounded-full bg-[var(--brand-red)]" />
+          <span className="h-1.5 flex-1 rounded-full bg-[var(--brand-green)]" />
+          <span className="h-1.5 flex-1 rounded-full bg-primary" />
+        </div>
+
         <h2 className="text-xl font-semibold tracking-tight">
           {t("cardTitle")}
         </h2>
@@ -205,39 +214,41 @@ function OnboardingForm() {
           />
         </FormField>
 
-        <FormField
-          error={errors.countryCode?.message}
-          htmlFor="onboarding-country"
-          label={t("country")}
-          required
-        >
-          <Select
-            id="onboarding-country"
-            invalid={Boolean(errors.countryCode)}
-            {...register("countryCode")}
+        <div className="grid gap-5 sm:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
+          <FormField
+            error={errors.countryCode?.message}
+            htmlFor="onboarding-country"
+            label={t("country")}
+            required
           >
-            <option value="TZ">{t("countries.TZ")}</option>
-            <option value="KE">{t("countries.KE")}</option>
-            <option value="UG">{t("countries.UG")}</option>
-          </Select>
-        </FormField>
+            <Select
+              id="onboarding-country"
+              invalid={Boolean(errors.countryCode)}
+              {...register("countryCode")}
+            >
+              <option value="TZ">{t("countries.TZ")}</option>
+              <option value="KE">{t("countries.KE")}</option>
+              <option value="UG">{t("countries.UG")}</option>
+            </Select>
+          </FormField>
 
-        <FormField
-          error={errors.phoneNumber?.message}
-          htmlFor="onboarding-phone"
-          label={t("phone")}
-          required
-        >
-          <Input
-            autoComplete="tel"
-            id="onboarding-phone"
-            inputMode="tel"
-            invalid={Boolean(errors.phoneNumber)}
-            placeholder={t("phonePlaceholder")}
-            type="tel"
-            {...register("phoneNumber")}
-          />
-        </FormField>
+          <FormField
+            error={errors.phoneNumber?.message}
+            htmlFor="onboarding-phone"
+            label={t("phone")}
+            required
+          >
+            <Input
+              autoComplete="tel"
+              id="onboarding-phone"
+              inputMode="tel"
+              invalid={Boolean(errors.phoneNumber)}
+              placeholder={t("phonePlaceholder")}
+              type="tel"
+              {...register("phoneNumber")}
+            />
+          </FormField>
+        </div>
 
         <Button
           className="w-full"

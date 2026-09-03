@@ -13,10 +13,10 @@ import "../globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "TEED",
-    template: "%s | TEED",
+    default: "Tunakuza",
+    template: "%s | Tunakuza",
   },
-  description: "TEED software-as-a-service platform",
+  description: "Tunakuza business and personal operations platform",
 };
 
 type LocaleLayoutProps = {
@@ -27,9 +27,7 @@ type LocaleLayoutProps = {
 };
 
 export function generateStaticParams() {
-  return routing.locales.map((locale) => ({
-    locale,
-  }));
+  return routing.locales.map((locale) => ({ locale }));
 }
 
 export default async function LocaleLayout({
@@ -38,9 +36,7 @@ export default async function LocaleLayout({
 }: LocaleLayoutProps) {
   const { locale } = await params;
 
-  if (!hasLocale(routing.locales, locale)) {
-    notFound();
-  }
+  if (!hasLocale(routing.locales, locale)) notFound();
 
   setRequestLocale(locale);
 

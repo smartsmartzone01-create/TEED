@@ -23,7 +23,7 @@ const DropdownMenuItem = forwardRef<
       "flex cursor-pointer select-none items-center gap-3 rounded-xl",
       "px-3 py-2.5 text-sm font-medium text-foreground/75",
       "outline-none transition-colors",
-      "data-highlighted:bg-foreground/5 data-highlighted:text-foreground",
+      "data-highlighted:bg-interactive-highlight data-highlighted:text-foreground",
       "data-disabled:pointer-events-none data-disabled:opacity-50",
       className,
     )}
@@ -89,7 +89,7 @@ const DropdownMenuRadioItem = forwardRef<
       "relative flex cursor-pointer select-none items-center",
       "gap-3 rounded-xl px-3 py-2.5 text-sm font-medium",
       "text-foreground/75 outline-none transition-colors",
-      "data-highlighted:bg-brand-navy/10",
+      "data-highlighted:bg-interactive-highlight",
       "data-highlighted:text-brand-navy",
       "data-[state=checked]:bg-brand-orange/15",
       "data-[state=checked]:text-brand-navy",

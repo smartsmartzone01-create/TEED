@@ -117,7 +117,9 @@ class SaleListCreateAPIView(CommerceBaseAPIView):
                 "trade_in_detail__stock_product",
                 "trade_in_detail__stock_receipt",
             )
-            .prefetch_related("items__product", "items__tracked_unit__identifiers")[:100]
+            .prefetch_related("items__product", "items__tracked_unit__identifiers")[
+                :100
+            ]
         )
         return SuccessResponse(
             message="Sales retrieved successfully.",
@@ -136,7 +138,9 @@ class SaleListCreateAPIView(CommerceBaseAPIView):
 
     @method_decorator(csrf_protect)
     def post(self, request, business_id):
-        serializer = SaleCreateSerializer(data=request.data)
+        serializer = SaleCreateSerializer(
+            data=request.data, context={"business_id": business_id}
+        )
         serializer.is_valid(raise_exception=True)
         sale = record_sale(
             actor=request.user, business_id=business_id, **serializer.validated_data
@@ -160,7 +164,9 @@ class SaleListCreateAPIView(CommerceBaseAPIView):
 class SaleDetailAPIView(CommerceBaseAPIView):
     @method_decorator(csrf_protect)
     def patch(self, request, business_id, sale_id):
-        serializer = SaleCreateSerializer(data=request.data)
+        serializer = SaleCreateSerializer(
+            data=request.data, context={"business_id": business_id}
+        )
         serializer.is_valid(raise_exception=True)
         sale = edit_sale(
             actor=request.user,

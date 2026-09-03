@@ -6,7 +6,7 @@
   min-height: 4.75rem;
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--state-accent) 28%, transparent);
-  border-radius: 1rem;
+  border-radius: 0.5rem;
   background:
     linear-gradient(135deg, color-mix(in srgb, var(--state-soft) 72%, white), white 58%);
   color: var(--state-accent);

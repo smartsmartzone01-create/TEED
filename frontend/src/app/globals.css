@@ -21,6 +21,7 @@
 
   --color-muted-foreground: var(--muted-foreground);
   --color-soft-background: var(--soft-background);
+  --color-interactive-highlight: var(--interactive-highlight);
   --color-border: var(--border);
 
   --color-brand-navy: var(--brand-navy);
@@ -31,4 +32,795 @@
 
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+}
+
+@media (max-width: 639px) {
+  .stock-recorder-editor > form:has(input[name="group-method"]),
+  .stock-recorder-editor > div.grid:has(> form select[data-stock-active-step]) {
+    gap: 0.65rem !important;
+  }
+
+  .stock-recorder-editor
+    > form:has(input[name="group-method"])
+    > div:first-child {
+    display: none !important;
+  }
+
+  .stock-recorder-editor
+    > form:has(input[name="group-method"])
+    > p {
+    margin: 0 !important;
+    font-size: 0.7rem !important;
+    line-height: 0.9rem !important;
+  }
+
+  .stock-recorder-editor
+    > form:has(input[name="group-method"])
+    > label,
+  .stock-recorder-editor
+    > div.grid:has(> form select[data-stock-active-step])
+    > form
+    label {
+    gap: 0.3rem !important;
+    color: rgb(71 85 105) !important;
+    font-size: 0.75rem !important;
+    font-weight: 600 !important;
+    letter-spacing: normal !important;
+    text-transform: none !important;
+  }
+
+  .dark
+    .stock-recorder-editor
+    > form:has(input[name="group-method"])
+    > label,
+  .dark
+    .stock-recorder-editor
+    > div.grid:has(> form select[data-stock-active-step])
+    > form
+    label {
+    color: rgb(203 213 225) !important;
+  }
+
+  .stock-recorder-editor
+    > form:has(input[name="group-method"])
+    > label
+    input,
+  .stock-recorder-editor
+    > div.grid:has(> form select[data-stock-active-step])
+    > form
+    input:not([type="radio"]):not([type="checkbox"]),
+  .stock-recorder-editor
+    > div.grid:has(> form select[data-stock-active-step])
+    > form
+    select {
+    height: 2.25rem !important;
+    min-height: 0 !important;
+    border: 1px solid rgb(203 213 225) !important;
+    border-radius: 0.5rem !important;
+    background: rgb(255 255 255) !important;
+    padding: 0 0.65rem !important;
+    color: rgb(15 23 42) !important;
+    font-size: 0.8125rem !important;
+    font-weight: 500 !important;
+    letter-spacing: normal !important;
+    text-transform: none !important;
+    box-shadow: none !important;
+  }
+
+  .dark
+    .stock-recorder-editor
+    > form:has(input[name="group-method"])
+    > label
+    input,
+  .dark
+    .stock-recorder-editor
+    > div.grid:has(> form select[data-stock-active-step])
+    > form
+    input:not([type="radio"]):not([type="checkbox"]),
+  .dark
+    .stock-recorder-editor
+    > div.grid:has(> form select[data-stock-active-step])
+    > form
+    select {
+    border-color: rgb(51 65 85) !important;
+    background: rgb(15 23 42) !important;
+    color: rgb(248 250 252) !important;
+  }
+
+  .stock-recorder-editor
+    > form:has(input[name="group-method"])
+    > label {
+    width: min(100%, 18rem);
+  }
+
+  .stock-recorder-editor
+    > form:has(input[name="group-method"])
+    > div:has(input[name="group-method"]) {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 0.5rem !important;
+  }
+
+  .stock-recorder-editor
+    > form:has(input[name="group-method"])
+    > div:has(input[name="group-method"])
+    > label {
+    position: relative;
+    display: flex !important;
+    min-height: 2.5rem !important;
+    align-items: center !important;
+    gap: 0.4rem !important;
+    border-radius: 0.5rem !important;
+    padding: 0.5rem 1.9rem 0.5rem 0.55rem !important;
+    font-size: 0.75rem !important;
+  }
+
+  .stock-recorder-editor
+    > form:has(input[name="group-method"])
+    > div:has(input[name="group-method"])
+    > label
+    strong {
+    font-size: 0.75rem !important;
+    font-weight: 600 !important;
+  }
+
+  .stock-recorder-editor
+    > form:has(input[name="group-method"])
+    > div:has(input[name="group-method"])
+    > label::after {
+    content: "ⓘ";
+    position: absolute;
+    top: 50%;
+    right: 0.55rem;
+    transform: translateY(-50%);
+    color: rgb(148 163 184);
+    font-size: 0.78rem;
+    line-height: 1;
+  }
+
+  .stock-recorder-editor
+    > form:has(input[name="group-method"])
+    > div:has(input[name="group-method"])
+    > label
+    > p {
+    position: absolute !important;
+    z-index: 20;
+    right: 0;
+    bottom: calc(100% + 0.4rem);
+    display: none !important;
+    width: min(15rem, 78vw);
+    margin: 0 !important;
+    border: 1px solid rgb(203 213 225);
+    border-radius: 0.5rem;
+    background: white;
+    padding: 0.5rem 0.6rem;
+    color: rgb(71 85 105) !important;
+    font-size: 0.7rem !important;
+    font-weight: 500 !important;
+    line-height: 1rem !important;
+    box-shadow: 0 8px 24px rgb(15 23 42 / 0.12);
+  }
+
+  .dark
+    .stock-recorder-editor
+    > form:has(input[name="group-method"])
+    > div:has(input[name="group-method"])
+    > label
+    > p {
+    border-color: rgb(51 65 85);
+    background: rgb(15 23 42);
+    color: rgb(203 213 225) !important;
+  }
+
+  .stock-recorder-editor
+    > form:has(input[name="group-method"])
+    > div:has(input[name="group-method"])
+    > label:hover
+    > p,
+  .stock-recorder-editor
+    > form:has(input[name="group-method"])
+    > div:has(input[name="group-method"])
+    > label:focus-within
+    > p {
+    display: block !important;
+  }
+
+  .stock-recorder-editor
+    > div.grid:has(> form select[data-stock-active-step])
+    > div:first-child {
+    margin: 0 !important;
+  }
+
+  .stock-recorder-editor
+    > div.grid:has(> form select[data-stock-active-step])
+    > div:first-child
+    h2 {
+    margin: 0 !important;
+    color: rgb(71 85 105) !important;
+    font-size: 0.75rem !important;
+    font-weight: 600 !important;
+    line-height: 1rem !important;
+    letter-spacing: normal !important;
+    text-transform: none !important;
+  }
+
+  .dark
+    .stock-recorder-editor
+    > div.grid:has(> form select[data-stock-active-step])
+    > div:first-child
+    h2 {
+    color: rgb(203 213 225) !important;
+  }
+
+  .stock-recorder-editor
+    > div.grid:has(> form select[data-stock-active-step])
+    > div:first-child
+    > p {
+    display: none !important;
+  }
+
+  .stock-recorder-editor
+    > div.grid:has(> form select[data-stock-active-step])
+    > form {
+    gap: 0.65rem !important;
+    width: 100% !important;
+  }
+
+  .stock-recorder-editor
+    > div.grid:has(> form select[data-stock-active-step])
+    > form
+    > label:first-child {
+    width: 100%;
+  }
+
+  .stock-recorder-editor
+    > div.grid:has(> form select[data-stock-active-step])
+    > form
+    > label:nth-child(2):has(input[type="number"]) {
+    width: min(100%, 12rem);
+  }
+
+  .stock-recorder-editor
+    > div.grid:has(> form select[data-stock-active-step])
+    > form
+    label
+    > div.grid {
+    grid-template-columns: 8rem minmax(0, 1fr) !important;
+    gap: 0.5rem !important;
+  }
+
+  .stock-recorder-editor
+    > div.grid:has(> form select[data-stock-active-step])
+    > form
+    > div.grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 0.6rem !important;
+  }
+
+  .stock-recorder-editor
+    > div.grid:has(> form select[data-stock-active-step])
+    > div[class*="rounded-xl"] {
+    border-radius: 0.5rem !important;
+    padding-inline: 0.6rem !important;
+  }
+
+  .stock-recorder-editor
+    > div.grid:has(> form select[data-stock-active-step])
+    > div[class*="rounded-xl"]
+    > div {
+    padding-block: 0.45rem !important;
+    font-size: 0.75rem !important;
+  }
+}
+
+.stock-progressive-host > div > section:nth-of-type(2) {
+  overflow: hidden;
+  border-radius: 0.5rem !important;
+  border: 1px solid rgb(226 232 240) !important;
+  background: white !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+}
+
+.dark .stock-progressive-host > div > section:nth-of-type(2) {
+  border-color: rgb(30 41 59) !important;
+  background: rgb(2 6 23) !important;
+}
+
+.stock-progressive-host
+  > div
+  > section:nth-of-type(2)
+  > div:first-child {
+  min-height: 3.5rem;
+  border-bottom: 1px solid rgb(226 232 240);
+  padding: 1rem;
+}
+
+.dark
+  .stock-progressive-host
+  > div
+  > section:nth-of-type(2)
+  > div:first-child {
+  border-bottom-color: rgb(30 41 59);
+}
+
+.stock-progressive-host
+  > div
+  > section:nth-of-type(2)
+  > div:first-child
+  h2 {
+  color: rgb(15 23 42);
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.5rem;
+}
+
+.dark
+  .stock-progressive-host
+  > div
+  > section:nth-of-type(2)
+  > div:first-child
+  h2 {
+  color: white;
+}
+
+.stock-progressive-host
+  > div
+  > section:nth-of-type(2)
+  > div:nth-child(2) {
+  display: block !important;
+  margin-top: 0 !important;
+  padding: 0.75rem;
+}
+
+.stock-progressive-host
+  > div
+  > section:nth-of-type(2)
+  > div:nth-child(2)
+  > article {
+  gap: 0.75rem !important;
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  padding: 0.875rem !important;
+  box-shadow: none !important;
+}
+
+.stock-progressive-host
+  > div
+  > section:nth-of-type(2)
+  > div:nth-child(2)
+  > article:nth-of-type(odd) {
+  background: white !important;
+}
+
+.stock-progressive-host
+  > div
+  > section:nth-of-type(2)
+  > div:nth-child(2)
+  > article:nth-of-type(even) {
+  background: rgb(244 247 250) !important;
+}
+
+.dark
+  .stock-progressive-host
+  > div
+  > section:nth-of-type(2)
+  > div:nth-child(2)
+  > article:nth-of-type(odd) {
+  background: rgb(2 6 23) !important;
+}
+
+.dark
+  .stock-progressive-host
+  > div
+  > section:nth-of-type(2)
+  > div:nth-child(2)
+  > article:nth-of-type(even) {
+  background: rgb(15 23 42 / 0.35) !important;
+}
+
+.stock-progressive-host
+  > div
+  > section:nth-of-type(2)
+  > div:nth-child(2)
+  > article
+  + article {
+  border-top: 1px solid rgb(226 232 240) !important;
+}
+
+.dark
+  .stock-progressive-host
+  > div
+  > section:nth-of-type(2)
+  > div:nth-child(2)
+  > article
+  + article {
+  border-top-color: rgb(30 41 59) !important;
+}
+
+.stock-progressive-host
+  > div
+  > section:nth-of-type(2)
+  > div:nth-child(2)
+  > article
+  > div:first-child
+  strong {
+  color: rgb(15 23 42);
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.dark
+  .stock-progressive-host
+  > div
+  > section:nth-of-type(2)
+  > div:nth-child(2)
+  > article
+  > div:first-child
+  strong {
+  color: white;
+}
+
+.stock-progressive-host
+  > div
+  > section:nth-of-type(2)
+  > div:nth-child(2)
+  > article
+  > div:first-child
+  > span {
+  font-size: 0.6875rem;
+}
+
+@media (min-width: 640px) {
+  .stock-progressive-host
+    > div
+    > section:nth-of-type(2)
+    > div:first-child {
+    padding-inline: 1.25rem;
+  }
+
+  .stock-progressive-host
+    > div
+    > section:nth-of-type(2)
+    > div:nth-child(2) {
+    padding: 1rem;
+  }
+}
+
+/* Stock received: flat ledger/list treatment matching Available Products. */
+.stock-progressive-host
+  > div
+  > section:nth-of-type(2)
+  > div:nth-child(2)
+  > article
+  > div.grid.gap-2.border-t {
+  border-top: 0 !important;
+  padding-top: 0 !important;
+}
+
+.stock-progressive-host
+  > div
+  > section:nth-of-type(2)
+  > div:nth-child(2)
+  > article
+  > div.grid.gap-2.border-t
+  > strong {
+  display: block;
+  margin-bottom: 0.3rem;
+  color: rgb(100 116 139);
+  font-size: 0.6875rem !important;
+  font-weight: 700;
+  letter-spacing: 0.02em !important;
+  text-transform: none !important;
+}
+
+.stock-progressive-host
+  > div
+  > section:nth-of-type(2)
+  > div:nth-child(2)
+  > article
+  > div.grid.gap-2.border-t
+  > div.grid.gap-2.rounded-lg {
+  gap: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0 !important;
+}
+
+.stock-progressive-host
+  > div
+  > section:nth-of-type(2)
+  > div:nth-child(2)
+  > article
+  > div.grid.gap-2.border-t
+  > div.grid.gap-2.rounded-lg
+  > div.flex.justify-between.gap-3.text-xs {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem !important;
+  min-width: 0;
+  padding: 0.45rem 0;
+  border-top: 1px solid rgb(226 232 240);
+  font-size: 0.75rem !important;
+}
+
+.dark
+  .stock-progressive-host
+  > div
+  > section:nth-of-type(2)
+  > div:nth-child(2)
+  > article
+  > div.grid.gap-2.border-t
+  > div.grid.gap-2.rounded-lg
+  > div.flex.justify-between.gap-3.text-xs {
+  border-top-color: rgb(30 41 59);
+}
+
+.stock-progressive-host
+  > div
+  > section:nth-of-type(2)
+  > div:nth-child(2)
+  > article
+  > div.grid.gap-2.border-t
+  > div.grid.gap-2.rounded-lg
+  > div.flex.justify-between.gap-3.text-xs
+  > span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  color: rgb(15 23 42);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dark
+  .stock-progressive-host
+  > div
+  > section:nth-of-type(2)
+  > div:nth-child(2)
+  > article
+  > div.grid.gap-2.border-t
+  > div.grid.gap-2.rounded-lg
+  > div.flex.justify-between.gap-3.text-xs
+  > span:first-child {
+  color: white;
+}
+
+.stock-progressive-host
+  > div
+  > section:nth-of-type(2)
+  > div:nth-child(2)
+  > article
+  > div.grid.gap-2.border-t
+  > div.grid.gap-2.rounded-lg
+  > div.flex.justify-between.gap-3.text-xs
+  > span:last-child {
+  color: rgb(71 85 105);
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.dark
+  .stock-progressive-host
+  > div
+  > section:nth-of-type(2)
+  > div:nth-child(2)
+  > article
+  > div.grid.gap-2.border-t
+  > div.grid.gap-2.rounded-lg
+  > div.flex.justify-between.gap-3.text-xs
+  > span:last-child {
+  color: rgb(203 213 225);
+}
+
+.stock-progressive-host
+  > div
+  > section:nth-of-type(2)
+  > div:nth-child(2)
+  > article
+  > .order-2 {
+  gap: 0.15rem !important;
+}
+
+.stock-progressive-host
+  > div
+  > section:nth-of-type(2)
+  > div:nth-child(2)
+  > article
+  > .order-2
+  > button {
+  width: 2rem !important;
+  height: 2rem !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+}
+
+@media (max-width: 767px) {
+  .stock-progressive-host
+    > div
+    > section:nth-of-type(2)
+    > div:nth-child(2) {
+    padding: 0.75rem !important;
+  }
+
+  .stock-progressive-host
+    > div
+    > section:nth-of-type(2)
+    > div:nth-child(2)
+    > article {
+    display: block !important;
+    padding: 0.85rem !important;
+  }
+
+  .stock-progressive-host
+    > div
+    > section:nth-of-type(2)
+    > div:nth-child(2)
+    > article
+    > div:first-child {
+    display: flex !important;
+    align-items: flex-start !important;
+    justify-content: space-between !important;
+    gap: 0.75rem !important;
+    margin-bottom: 0.65rem;
+  }
+
+  .stock-progressive-host
+    > div
+    > section:nth-of-type(2)
+    > div:nth-child(2)
+    > article
+    > div.grid.gap-2.border-t {
+    margin-top: 0.55rem;
+    padding-top: 0 !important;
+  }
+
+  .stock-progressive-host
+    > div
+    > section:nth-of-type(2)
+    > div:nth-child(2)
+    > article
+    > .order-2,
+  .stock-progressive-host
+    > div
+    > section:nth-of-type(2)
+    > div:nth-child(2)
+    > article
+    > .flex.flex-wrap.gap-2:not(:first-child) {
+    display: inline-flex !important;
+    margin-top: 0.65rem;
+    vertical-align: middle;
+  }
+
+  .stock-progressive-host
+    > div
+    > section:nth-of-type(2)
+    > div:nth-child(2)
+    > article
+    > .order-2 {
+    margin-left: 0.35rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .stock-progressive-host
+    > div
+    > section:nth-of-type(2)
+    > div:nth-child(2)
+    > article {
+    display: grid !important;
+    grid-template-columns:
+      minmax(10rem, 1.05fr)
+      minmax(20rem, 2.35fr)
+      minmax(10rem, 1.05fr)
+      auto;
+    align-items: center;
+    column-gap: 1rem !important;
+    row-gap: 0.35rem !important;
+    padding: 0.9rem 1rem !important;
+  }
+
+  .stock-progressive-host
+    > div
+    > section:nth-of-type(2)
+    > div:nth-child(2)
+    > article
+    > div:first-child {
+    grid-column: 1;
+    grid-row: 1;
+    display: block !important;
+    min-width: 0;
+  }
+
+  .stock-progressive-host
+    > div
+    > section:nth-of-type(2)
+    > div:nth-child(2)
+    > article
+    > div:first-child
+    > div {
+    min-width: 0;
+  }
+
+  .stock-progressive-host
+    > div
+    > section:nth-of-type(2)
+    > div:nth-child(2)
+    > article
+    > div:first-child
+    > div
+    > strong,
+  .stock-progressive-host
+    > div
+    > section:nth-of-type(2)
+    > div:nth-child(2)
+    > article
+    > div:first-child
+    > div
+    > p {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .stock-progressive-host
+    > div
+    > section:nth-of-type(2)
+    > div:nth-child(2)
+    > article
+    > div:first-child
+    > span {
+    display: block;
+    margin-top: 0.25rem;
+    text-transform: capitalize;
+  }
+
+  .stock-progressive-host
+    > div
+    > section:nth-of-type(2)
+    > div:nth-child(2)
+    > article
+    > div.grid.gap-2.border-t {
+    grid-column: 2;
+    min-width: 0;
+  }
+
+  .stock-progressive-host
+    > div
+    > section:nth-of-type(2)
+    > div:nth-child(2)
+    > article
+    > .flex.flex-wrap.gap-2:not(:first-child) {
+    grid-column: 3;
+    grid-row: 1;
+    align-self: center;
+    flex-wrap: nowrap !important;
+    justify-content: flex-start;
+  }
+
+  .stock-progressive-host
+    > div
+    > section:nth-of-type(2)
+    > div:nth-child(2)
+    > article
+    > .order-2 {
+    grid-column: 4;
+    grid-row: 1;
+    align-self: center;
+    flex-wrap: nowrap !important;
+    justify-content: flex-end;
+  }
+
+  .stock-progressive-host
+    > div
+    > section:nth-of-type(2)
+    > div:nth-child(2)
+    > article
+    > div.grid.gap-3.border-t {
+    grid-column: 1 / -1;
+    margin-top: 0.4rem;
+  }
 }

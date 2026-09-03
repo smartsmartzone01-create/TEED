@@ -1,13 +1,15 @@
 "use client";
 
-import { ChevronDown, ChevronUp, Pencil, Plus, Trash2 } from "lucide-react";
+import { CircleHelp, Pencil, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useTranslations } from "next-intl";
 
+import { StockEditControl } from "@/components/commerce/stock/stock-edit-control";
 import { StockProductSummary, StockSummaryActions } from "@/components/commerce/stock/stock-summary";
 import { Button } from "@/components/global/primitives/button";
 import { Input } from "@/components/global/primitives/input";
 import { Select } from "@/components/global/primitives/select";
+import { Tooltip } from "@/components/global/primitives/tooltip";
 import { useNotification } from "@/providers/global/notification-provider";
 import { useIdentitySession } from "@/providers/identity/identity-session-provider";
 import { getProducts } from "@/services/commerce/catalog";
@@ -22,7 +24,6 @@ import type { Product } from "@/types/commerce/catalog";
 import type {
   StockCostMode,
   StockReceipt,
-  StockReceiptLine,
   StockTrackingMode,
   StockUnitDefinition,
 } from "@/types/commerce/inventory";
@@ -260,6 +261,7 @@ function ProgressiveStockWorkspace({ businessId }: { businessId: string }) {
     unit: "piece",
   });
   const [editingPreparedKey, setEditingPreparedKey] = useState("");
+  const [productEntryOpen, setProductEntryOpen] = useState(true);
   const [recordMethod, setRecordMethod] = useState<RecordMethod | "">("");
   const [directLines, setDirectLines] = useState<RecordedLine[]>([]);
   const [groups, setGroups] = useState<RecordedGroup[]>([]);
@@ -373,6 +375,7 @@ function ProgressiveStockWorkspace({ businessId }: { businessId: string }) {
       return;
     }
     setBatchCommitted(true);
+    setProductEntryOpen(true);
     moveTo("products");
   };
 
@@ -402,11 +405,23 @@ function ProgressiveStockWorkspace({ businessId }: { businessId: string }) {
     );
     setPreparedDraft({ key: "", name: "", brand: "", variant: "", unit: "piece" });
     setEditingPreparedKey("");
+    setProductEntryOpen(false);
+    moveTo("method");
+  };
+
+  const beginAnotherPreparedProduct = () => {
+    setPreparedDraft({ key: "", name: "", brand: "", variant: "", unit: "piece" });
+    setEditingPreparedKey("");
+    setProductEntryOpen(true);
+    requestAnimationFrame(() => {
+      document.querySelector<HTMLElement>("[data-stock-active-step]")?.focus();
+    });
   };
 
   const editPrepared = (product: PreparedProduct) => {
     setPreparedDraft(product);
     setEditingPreparedKey(product.key);
+    setProductEntryOpen(true);
     moveTo("products");
   };
 
@@ -634,6 +649,8 @@ function ProgressiveStockWorkspace({ businessId }: { businessId: string }) {
     setBatchCommitted(false);
     setPreparedProducts([]);
     setPreparedDraft({ key: "", name: "", brand: "", variant: "", unit: "piece" });
+    setEditingPreparedKey("");
+    setProductEntryOpen(true);
     setRecordMethod("");
     setDirectLines([]);
     setGroups([]);
@@ -745,7 +762,7 @@ function ProgressiveStockWorkspace({ businessId }: { businessId: string }) {
       <SummaryRow
         title={t("steps.method")}
         detail={recordMethod ? t(`recordMethod.${recordMethod}`) : t("values.notEntered")}
-        onEdit={recordMethod ? () => moveTo("method") : undefined}
+        onEdit={batchCommitted ? () => moveTo("method") : undefined}
       />
       {directLines.map((line, index) => {
         const product = choiceFor(line.productKey);
@@ -812,7 +829,7 @@ function ProgressiveStockWorkspace({ businessId }: { businessId: string }) {
 
   if (step === "products") {
     activeEditor = (
-      <div className="grid gap-4">
+      <div className="grid gap-4" data-stock-products-step>
         <div><h2 className="text-lg font-bold">{t("steps.products")}</h2><p className="mt-1 text-sm text-slate-500">{t("help.products")}</p></div>
         {preparedProducts.length ? (
           <div className={`${inset} divide-y divide-slate-200 px-3 dark:divide-slate-800`}>
@@ -824,34 +841,51 @@ function ProgressiveStockWorkspace({ businessId }: { businessId: string }) {
             ))}
           </div>
         ) : null}
-        <form className={`${inset} grid gap-3 p-3`} onSubmit={savePreparedProduct}>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label className={field}>{t("fields.productName")}<Input autoFocus data-stock-active-step tabIndex={-1} value={preparedDraft.name} onChange={(event) => setPreparedDraft({ ...preparedDraft, name: event.target.value })} /></label>
-            <label className={field}>{commerceT("fields.brandOptional")}<Input value={preparedDraft.brand} onChange={(event) => setPreparedDraft({ ...preparedDraft, brand: event.target.value })} /></label>
-            <label className={field}>{commerceT("fields.variant")}<Input value={preparedDraft.variant} onChange={(event) => setPreparedDraft({ ...preparedDraft, variant: event.target.value })} /></label>
-            <label className={field}>{t("fields.unit")}<Select value={preparedDraft.unit} onChange={(event) => setPreparedDraft({ ...preparedDraft, unit: event.target.value })}>{units.map((unit) => <option key={unit} value={unit}>{commerceT(`units.${unit}`)}</option>)}{unitDefinitions.map((unit) => <option key={unit.id} value={unit.name}>{unit.name}</option>)}</Select></label>
-          </div>
-          <Button type="submit">{editingPreparedKey ? t("actions.updateProduct") : t("actions.enterProduct")}</Button>
-        </form>
-        <Button type="button" variant="outline" onClick={() => moveTo("method")}>{t("actions.continue")}</Button>
+        {productEntryOpen ? (
+          <form className={`${inset} grid gap-3 p-3`} onSubmit={savePreparedProduct}>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className={field}>{t("fields.productName")}<Input autoFocus data-stock-active-step tabIndex={-1} value={preparedDraft.name} onChange={(event) => setPreparedDraft({ ...preparedDraft, name: event.target.value })} /></label>
+              <label className={field}>{commerceT("fields.brandOptional")}<Input value={preparedDraft.brand} onChange={(event) => setPreparedDraft({ ...preparedDraft, brand: event.target.value })} /></label>
+              <label className={field}>{commerceT("fields.variant")}<Input value={preparedDraft.variant} onChange={(event) => setPreparedDraft({ ...preparedDraft, variant: event.target.value })} /></label>
+              <label className={field}>{t("fields.unit")}<Select value={preparedDraft.unit} onChange={(event) => setPreparedDraft({ ...preparedDraft, unit: event.target.value })}>{units.map((unit) => <option key={unit} value={unit}>{commerceT(`units.${unit}`)}</option>)}{unitDefinitions.map((unit) => <option key={unit.id} value={unit.name}>{unit.name}</option>)}</Select></label>
+            </div>
+            <Button type="submit">{editingPreparedKey ? t("actions.updateProduct") : t("actions.enterProduct")}</Button>
+          </form>
+        ) : (
+          <Button size="small" type="button" variant="outline" onClick={beginAnotherPreparedProduct}>
+            {t("values.newProduct")}
+          </Button>
+        )}
       </div>
     );
   }
 
   if (step === "method") {
     activeEditor = (
-      <form className="grid gap-4" onSubmit={commitMethod}>
-        <div><h2 className="text-lg font-bold">{t("steps.method")}</h2><p className="mt-1 text-sm text-slate-500">{t("help.method")}</p></div>
-        <div className="grid gap-3 sm:grid-cols-2" data-stock-active-step tabIndex={-1}>
+      <form className="grid max-w-xl gap-3" onSubmit={commitMethod}>
+        <div className="grid gap-2 sm:grid-cols-2" data-stock-active-step tabIndex={-1}>
           {(["individual", "group"] as const).map((method) => (
-            <label className={`cursor-pointer rounded-xl border p-4 ${recordMethod === method ? "border-slate-950 dark:border-white" : "border-slate-200 dark:border-slate-800"}`} key={method}>
-              <input className="mr-2" checked={recordMethod === method} name="record-method" type="radio" value={method} onChange={() => setRecordMethod(method)} />
-              <strong>{t(`recordMethod.${method}`)}</strong>
-              <p className="mt-1 text-xs text-slate-500">{t(`recordMethodHelp.${method}`)}</p>
-            </label>
+            <div
+              className={`flex min-h-10 items-center gap-2 rounded-lg border px-2.5 py-2 ${recordMethod === method ? "border-slate-500 bg-slate-50 dark:border-slate-500 dark:bg-slate-900/70" : "border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950"}`}
+              key={method}
+            >
+              <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-200">
+                <input checked={recordMethod === method} name="record-method" type="radio" value={method} onChange={() => setRecordMethod(method)} />
+                <span>{t(`recordMethod.${method}`)}</span>
+              </label>
+              <Tooltip content={t(`recordMethodHelp.${method}`)} side="top">
+                <button
+                  aria-label={t(`recordMethodHelp.${method}`)}
+                  className="inline-flex size-7 shrink-0 items-center justify-center rounded-md text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/50 dark:text-slate-500 dark:hover:bg-slate-900 dark:hover:text-slate-200"
+                  type="button"
+                >
+                  <CircleHelp className="size-3.5" />
+                </button>
+              </Tooltip>
+            </div>
           ))}
         </div>
-        <Button type="submit">{t("actions.enter")}</Button>
+        <Button className="h-8 w-fit px-3 text-xs" type="submit">{t("actions.enter")}</Button>
       </form>
     );
   }
@@ -913,6 +947,10 @@ function ProgressiveStockWorkspace({ businessId }: { businessId: string }) {
     );
   }
 
+  const correctionReceipt = correctionId
+    ? receipts.find((receipt) => receipt.id === correctionId) ?? null
+    : null;
+
   return (
     <div className="grid gap-5">
       <section className={panel}>
@@ -942,13 +980,57 @@ function ProgressiveStockWorkspace({ businessId }: { businessId: string }) {
               <div className="border-b border-slate-200 p-4 dark:border-slate-800"><p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t("savedSoFar")}</p></div>
               {recordedSummary}
             </aside>
-            <div className="min-h-[30rem] p-5">{activeEditor}</div>
+            <div className="min-h-120 p-5">{activeEditor}</div>
           </div>
         )}
       </section>
 
       <section className={`${panel} p-4`}>
-        <div className="flex items-center justify-between gap-3"><h2 className="font-bold">{commerceT("receivedStock")}</h2>{lateDeliveryParent ? <Button type="button" variant="ghost" onClick={() => resetRecorder()}>{t("actions.cancelLateDelivery")}</Button> : null}</div>
+        <div className="flex flex-wrap items-center gap-2">
+          <h2 className="mr-auto font-bold">{commerceT("receivedStock")}</h2>
+          {lateDeliveryParent ? (
+            <Button type="button" variant="ghost" onClick={() => resetRecorder()}>
+              {t("actions.cancelLateDelivery")}
+            </Button>
+          ) : null}
+          <StockEditControl
+            receipts={receipts}
+            onCorrect={(receipt) => beginCorrection(receipt)}
+            onLateDelivery={(receipt) => {
+              setCorrectionId("");
+              setCorrection(null);
+              resetRecorder(receipt);
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }}
+          />
+        </div>
+
+        {correctionReceipt && correction ? (
+          <div className={`${inset} mt-3 p-3`}>
+            <div className="mb-3 min-w-0">
+              <strong className="text-sm text-slate-950 dark:text-white">
+                {commerceT("actions.correctStock")} · {correctionReceipt.reference}
+              </strong>
+              <p className="mt-0.5 text-xs text-slate-500">
+                {[
+                  correctionReceipt.supplier_name || t("values.noSupplier"),
+                  ...correctionReceipt.batches.map((batch) => batch.name).filter(Boolean),
+                ].join(" · ")}
+              </p>
+            </div>
+            <CorrectionEditor
+              correction={correction}
+              busy={busy}
+              onCancel={() => {
+                setCorrectionId("");
+                setCorrection(null);
+              }}
+              onChange={setCorrection}
+              onSave={() => void saveCorrection(correctionReceipt)}
+            />
+          </div>
+        ) : null}
+
         <div className="mt-4 grid gap-3">
           {(showAll ? receipts : receipts.slice(0, 5)).map((receipt, index) => (
             <article className="grid gap-3 rounded-xl border border-slate-200 bg-white p-4 text-sm shadow-sm dark:border-slate-800 dark:bg-slate-950" key={receipt.id} style={{ borderInlineStartColor: index % 2 === 0 ? "var(--workspace-primary, var(--brand-navy))" : "var(--workspace-secondary, var(--brand-orange))", borderInlineStartWidth: 3 }}>
@@ -968,11 +1050,11 @@ function ProgressiveStockWorkspace({ businessId }: { businessId: string }) {
                 </div>
               ))}
               <StockSummaryActions receipt={receipt} />
-              <div className="flex flex-wrap gap-2">
-                <Button disabled={!receipt.correction_open} size="small" type="button" variant="outline" onClick={() => correctionId === receipt.id ? (setCorrectionId(""), setCorrection(null)) : beginCorrection(receipt)}>{commerceT("actions.correctStock")}{correctionId === receipt.id ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}</Button>
-                {receipt.status === "received" ? <Button size="small" type="button" variant="outline" onClick={() => { resetRecorder(receipt); window.scrollTo({ top: 0, behavior: "smooth" }); }}>{commerceT("actions.addLateDelivery")}</Button> : <Button size="small" type="button" variant="ghost" onClick={() => void archiveDraft(receipt)}><Trash2 className="size-4" /> {commerceT("actions.archiveDraft")}</Button>}
-              </div>
-              {correctionId === receipt.id && correction ? <CorrectionEditor correction={correction} busy={busy} onCancel={() => { setCorrectionId(""); setCorrection(null); }} onChange={setCorrection} onSave={() => void saveCorrection(receipt)} /> : null}
+              {receipt.status === "draft" ? (
+                <div className="flex flex-wrap gap-2">
+                  <Button size="small" type="button" variant="ghost" onClick={() => void archiveDraft(receipt)}><Trash2 className="size-4" /> {commerceT("actions.archiveDraft")}</Button>
+                </div>
+              ) : null}
             </article>
           ))}
           {!receipts.length ? <p className="text-sm text-slate-500">{commerceT("empty.stock")}</p> : null}

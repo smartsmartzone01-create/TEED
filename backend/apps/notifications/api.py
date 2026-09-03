@@ -4,7 +4,7 @@ from common.pagination import TEEDPagination
 from common.responses import PaginatedResponse, SuccessResponse
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_protect
-from rest_framework.exceptions import NotFound, ValidationError
+from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 
@@ -75,6 +75,20 @@ class NotificationListAPIView(NotificationBaseAPIView):
                     ]
                 }
             )
+        if business_id and scope == UserNotification.Scope.WORKSPACE:
+            from apps.commerce.financing.services import (
+                sync_financing_due_notifications,
+            )
+
+            try:
+                sync_financing_due_notifications(
+                    actor=request.user,
+                    business_id=business_id,
+                )
+            except (NotFound, PermissionDenied, ValidationError):
+                # Notification access must not be blocked when Financing is not
+                # available to this member or Business.
+                pass
         unread_only = request.query_params.get("unread", "").lower() in {"1", "true"}
         paginator = TEEDPagination()
         page = paginator.paginate_queryset(

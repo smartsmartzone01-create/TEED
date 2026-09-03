@@ -25,6 +25,7 @@ type SaleAvailabilityProduct = SaleStockTarget & {
   current_quantity: string;
   selling_price: string | null;
   available_units: SaleAvailabilityUnit[];
+  is_active?: boolean;
 };
 
 type TrackedSaleUnitDetails = {
@@ -37,12 +38,15 @@ type TrackedSaleUnitDetails = {
   identifiers: Array<{ kind: string; value: string }>;
 };
 
+type WarrantyMonths = 3 | 6 | 12 | 24;
+
 type SaleItem = {
   id: string;
   source: "catalog" | "manual";
   product: string;
   product_name: string;
   product_sku: string;
+  product_unit: string;
   tracked_unit: string | null;
   tracked_unit_reference: string;
   tracked_unit_details: TrackedSaleUnitDetails | null;
@@ -54,6 +58,7 @@ type SaleItem = {
   line_total: string;
   cost_total?: string;
   returned_quantity: string;
+  warranty_months: WarrantyMonths | null;
 };
 
 type TradeInDetail = {
@@ -99,4 +104,5 @@ export type {
   SaleStockTarget,
   TradeInDetail,
   TrackedSaleUnitDetails,
+  WarrantyMonths,
 };

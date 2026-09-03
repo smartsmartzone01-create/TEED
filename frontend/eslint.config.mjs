@@ -5,12 +5,13 @@ import nextTs from "eslint-config-next/typescript";
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
-  // These two workspace components perform initial API synchronization through
+  // These workspace components perform initial API synchronization through
   // an async loader invoked by an effect. State updates happen after awaited
   // network work, not synchronously in the effect body, but the React rule
   // currently flags the loader invocation itself.
   {
     files: [
+      "src/components/commerce/financing/financing-workspace.tsx",
       "src/components/commerce/sales/sales-workspace.tsx",
       "src/components/commerce/stock/stock-progressive-workspace.tsx",
     ],

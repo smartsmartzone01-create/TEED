@@ -1,3 +1,70 @@
+@keyframes tunakuza-loader-red-pulse {
+  0%,
+  18%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  9% {
+    opacity: 0.7;
+    transform: scale(1.025);
+  }
+}
+
+@keyframes tunakuza-loader-green-pulse {
+  0%,
+  24%,
+  42%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  33% {
+    opacity: 0.7;
+    transform: scale(1.025);
+  }
+}
+
+@keyframes tunakuza-loader-blue-pulse {
+  0%,
+  48%,
+  66%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  57% {
+    opacity: 0.7;
+    transform: scale(1.025);
+  }
+}
+
+.tunakuza-loader-mark {
+  display: block;
+  overflow: visible;
+}
+
+.tunakuza-loader-section {
+  transform-box: fill-box;
+  transform-origin: center;
+  will-change: opacity, transform;
+}
+
+.tunakuza-loader-red {
+  animation: tunakuza-loader-red-pulse 1.25s ease-in-out infinite;
+}
+
+.tunakuza-loader-green {
+  animation: tunakuza-loader-green-pulse 1.25s ease-in-out infinite;
+}
+
+.tunakuza-loader-blue {
+  animation: tunakuza-loader-blue-pulse 1.25s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -6,6 +73,12 @@
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+
+  .tunakuza-loader-section {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
   }
 }
 
@@ -16,4 +89,10 @@ html.reduce-motion *::after {
   animation-duration: 0.01ms !important;
   animation-iteration-count: 1 !important;
   transition-duration: 0.01ms !important;
+}
+
+html.reduce-motion .tunakuza-loader-section {
+  animation: none !important;
+  opacity: 1 !important;
+  transform: none !important;
 }
