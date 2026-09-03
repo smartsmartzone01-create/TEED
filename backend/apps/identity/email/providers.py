@@ -85,6 +85,7 @@ class ResendEmailProvider:
                 "Authorization": f"Bearer {self.api_key}",
                 "Content-Type": "application/json",
                 "Idempotency-Key": idempotency_key,
+                "User-Agent": "Tunakuza/1.0",
             },
         )
 

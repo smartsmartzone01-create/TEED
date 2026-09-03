@@ -58,6 +58,7 @@ class ResendEmailProviderTests(SimpleTestCase):
             request.get_header("Idempotency-key"),
             "challenge:test-123",
         )
+        self.assertEqual(request.get_header("User-agent"), "Tunakuza/1.0")
         self.assertEqual(payload["from"], "Tunakuza <onboarding@resend.dev>")
         self.assertEqual(payload["to"], ["delivered@resend.dev"])
         self.assertEqual(payload["text"], self.message().body)
