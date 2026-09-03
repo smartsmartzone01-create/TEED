@@ -112,8 +112,9 @@
   },
   "VerifyEmail": {
     "eyebrow": "Verify your email",
-    "title": "One quick check protects your account.",
-    "description": "Enter the six-digit code sent to your email. Tunakuza never asks you to share this code elsewhere.",
+    "title": "Check your inbox.",
+    "description": "Your six-digit code is waiting in your email. Enter it to continue.",
+    "securityNote": "Keep this code private. Tunakuza will never ask you to share it.",
     "cardTitle": "Email verification",
     "cardDescription": "Confirm the email and enter your verification code.",
     "email": "Email address",

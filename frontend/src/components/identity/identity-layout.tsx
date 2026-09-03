@@ -14,6 +14,7 @@ type IdentityLayoutProps = {
   eyebrow?: ReactNode;
   footer?: ReactNode;
   introductionVariant?: IdentityIntroductionVariant;
+  notice?: ReactNode;
   steps?: readonly string[];
   title: ReactNode;
 };
@@ -24,6 +25,7 @@ function IdentityLayout({
   eyebrow,
   footer,
   introductionVariant = "default",
+  notice,
   steps,
   title,
 }: IdentityLayoutProps) {
@@ -50,6 +52,15 @@ function IdentityLayout({
           </h1>
 
           <p className={styles.description}>{description}</p>
+
+          {notice ? (
+            <div className={styles.notice}>
+              <span aria-hidden="true" className={styles.noticeMark}>
+                ✓
+              </span>
+              <p className={styles.noticeText}>{notice}</p>
+            </div>
+          ) : null}
 
           {steps?.length ? (
             <ul className={styles.steps}>

@@ -112,8 +112,9 @@
   },
   "VerifyEmail": {
     "eyebrow": "Thibitisha barua pepe",
-    "title": "Ukaguzi mmoja mfupi unalinda akaunti yako.",
-    "description": "Weka nambari ya tarakimu sita iliyotumwa kwenye barua pepe yako. Tunakuza haitakuomba ushiriki nambari hii mahali pengine.",
+    "title": "Angalia barua pepe yako.",
+    "description": "Nambari yako ya tarakimu sita imetumwa kwenye barua pepe. Iweke ili kuendelea.",
+    "securityNote": "Weka nambari hii kwa siri. Tunakuza haitakuomba uishiriki.",
     "cardTitle": "Uthibitishaji wa barua pepe",
     "cardDescription": "Thibitisha barua pepe na uweke nambari ya uthibitishaji.",
     "email": "Anwani ya barua pepe",
