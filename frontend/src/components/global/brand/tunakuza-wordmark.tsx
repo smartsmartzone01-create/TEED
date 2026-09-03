@@ -15,7 +15,7 @@ function TunakuzaWordmark({
     <Link
       aria-label="Tunakuza"
       className={cn(
-        "inline-flex shrink-0 items-center font-black leading-none tracking-[-0.045em] text-slate-950 dark:text-white",
+        "inline-flex shrink-0 items-center font-semibold leading-none tracking-[-0.025em] text-slate-950 dark:text-white",
         className,
       )}
       href={href}
