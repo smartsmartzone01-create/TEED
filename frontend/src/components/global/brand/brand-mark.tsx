@@ -1,3 +1,4 @@
+import { TunakuzaWordmark } from "@/components/global/brand/tunakuza-wordmark";
 import { Link } from "@/i18n/navigation";
 
 import { cn } from "@/lib/global/class-names";
@@ -13,6 +14,10 @@ function BrandMark({
   href = "/",
   tone = "default",
 }: BrandMarkProps) {
+  if (tone === "adaptive") {
+    return <TunakuzaWordmark className={className} href={href} />;
+  }
+
   return (
     <Link
       aria-label="Tunakuza"
