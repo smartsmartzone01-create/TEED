@@ -2,6 +2,13 @@
 
 from .catalog.models import Product, UnitDefinition
 from .finance.models import Budget, Expense
+from .financing.models import (
+    FinancingAgreement,
+    FinancingAllocation,
+    FinancingDocument,
+    FinancingItem,
+    FinancingPayment,
+)
 from .inventory.models import (
     InventoryMovement,
     StockBatch,
@@ -25,6 +32,11 @@ __all__ = [
     "Budget",
     "CommerceDecision",
     "Expense",
+    "FinancingAgreement",
+    "FinancingAllocation",
+    "FinancingDocument",
+    "FinancingItem",
+    "FinancingPayment",
     "InventoryMovement",
     "Product",
     "ReturnItem",

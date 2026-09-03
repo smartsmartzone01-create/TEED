@@ -4,7 +4,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { Menu, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 
-import { BrandMark } from "@/components/global/brand/brand-mark";
+import { TunakuzaWordmark } from "@/components/global/brand/tunakuza-wordmark";
 import { LanguageSwitcher } from "@/components/global/controls/language-switcher";
 import { ThemeSwitcher } from "@/components/global/controls/theme-switcher";
 import {
@@ -46,7 +46,7 @@ function MarketingHeader() {
   return (
     <header className="relative z-40 border-b border-border/40 bg-background/25 backdrop-blur-lg">
       <div className="page-container relative flex h-20 items-center justify-between">
-        <BrandMark className="text-3xl" />
+        <TunakuzaWordmark className="text-3xl" />
 
         <nav
           aria-label={t("primaryNavigation")}
@@ -139,7 +139,7 @@ function MarketingHeader() {
               </Dialog.Description>
 
               <div className="flex items-center justify-between">
-                <BrandMark className="text-3xl" />
+                <TunakuzaWordmark className="text-3xl" />
 
                 <Dialog.Close asChild>
                   <Button

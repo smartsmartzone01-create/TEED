@@ -4,7 +4,18 @@ from .catalog.api import (
     ActiveProductListCreatePolishAPIView,
     ProductDetailOperationsPolishAPIView,
 )
-from .finance.api import BudgetListCreateAPIView, ExpenseListCreateAPIView
+from .finance.api import (
+    BudgetListCreateAPIView,
+    ExpenseDetailAPIView,
+    ExpenseListCreateAPIView,
+)
+from .financing.api import (
+    FinancingAgreementListCreateAPIView,
+    FinancingAvailabilityAPIView,
+    FinancingDocumentDownloadAPIView,
+    FinancingDocumentListCreateAPIView,
+    FinancingPaymentCreateAPIView,
+)
 from .inventory.api import (
     ActiveStockReceiptListCreatePolishAPIView,
     AdjustmentCreateAPIView,
@@ -90,6 +101,31 @@ urlpatterns = [
         name="sale-void",
     ),
     path(
+        "businesses/<uuid:business_id>/financing/availability/",
+        FinancingAvailabilityAPIView.as_view(),
+        name="financing-availability",
+    ),
+    path(
+        "businesses/<uuid:business_id>/financing/",
+        FinancingAgreementListCreateAPIView.as_view(),
+        name="financing",
+    ),
+    path(
+        "businesses/<uuid:business_id>/financing/<uuid:agreement_id>/payments/",
+        FinancingPaymentCreateAPIView.as_view(),
+        name="financing-payments",
+    ),
+    path(
+        "businesses/<uuid:business_id>/financing/<uuid:agreement_id>/documents/",
+        FinancingDocumentListCreateAPIView.as_view(),
+        name="financing-documents",
+    ),
+    path(
+        "businesses/<uuid:business_id>/financing/<uuid:agreement_id>/documents/<uuid:document_id>/download/",
+        FinancingDocumentDownloadAPIView.as_view(),
+        name="financing-document-download",
+    ),
+    path(
         "businesses/<uuid:business_id>/returns/",
         ReturnListCreateAPIView.as_view(),
         name="returns",
@@ -98,6 +134,11 @@ urlpatterns = [
         "businesses/<uuid:business_id>/expenses/",
         ExpenseListCreateAPIView.as_view(),
         name="expenses",
+    ),
+    path(
+        "businesses/<uuid:business_id>/expenses/<uuid:expense_id>/",
+        ExpenseDetailAPIView.as_view(),
+        name="expense-detail",
     ),
     path(
         "businesses/<uuid:business_id>/budgets/",

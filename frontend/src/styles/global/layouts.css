@@ -11,3 +11,477 @@
 .page-section {
   padding-block: var(--section-block-space);
 }
+
+/* Stock received: modern card-ledger treatment. */
+.stock-received-ledger-entry {
+  display: none;
+}
+
+.stock-summary-actions-standalone {
+  display: flex;
+}
+
+body
+  .stock-progressive-host
+  > div
+  > section:nth-of-type(2)
+  > div:nth-child(2)
+  > article {
+  display: block !important;
+  gap: 0 !important;
+  padding: 0 !important;
+}
+
+body
+  .stock-progressive-host
+  > div
+  > section:nth-of-type(2)
+  > div:nth-child(2)
+  > article
+  > :not(.stock-received-ledger-entry):not(.stock-summary-actions-standalone) {
+  display: none !important;
+}
+
+body
+  .stock-progressive-host
+  > div
+  > section:nth-of-type(2)
+  > div:nth-child(2)
+  > article
+  > .stock-summary-actions-standalone {
+  display: none !important;
+}
+
+body
+  .stock-progressive-host
+  > div
+  > section:nth-of-type(2)
+  > div:nth-child(2)
+  > article
+  > .stock-received-ledger-entry {
+  display: block !important;
+}
+
+.stock-ledger-desktop {
+  display: none;
+  overflow-x: auto;
+}
+
+.stock-ledger-header,
+.stock-ledger-desktop-body {
+  min-width: 58.5rem;
+  grid-template-columns:
+    minmax(5.4rem, 0.9fr)
+    minmax(5rem, 1fr)
+    minmax(5rem, 0.9fr)
+    minmax(5rem, 0.9fr)
+    minmax(5rem, 0.95fr)
+    minmax(7.5rem, 1.5fr)
+    minmax(5.5rem, 1.05fr)
+    minmax(5.5rem, 1.05fr)
+    minmax(4.4rem, 0.75fr)
+    minmax(4.6rem, 0.8fr)
+    minmax(5.4rem, 0.8fr);
+}
+
+.stock-ledger-header {
+  display: none;
+  border-bottom: 1px solid rgb(203 213 225);
+  background: #dde3e9;
+  color: rgb(51 65 85);
+}
+
+.dark .stock-ledger-header {
+  border-bottom-color: rgb(51 65 85);
+  background: rgb(30 41 59);
+  color: rgb(226 232 240);
+}
+
+body
+  .stock-progressive-host
+  > div
+  > section:nth-of-type(2)
+  > div:nth-child(2)
+  > article:first-of-type
+  .stock-ledger-header {
+  display: grid;
+}
+
+.stock-ledger-header-cell {
+  min-width: 0;
+  border-right: 1px solid rgb(203 213 225 / 0.65);
+  padding: 0.68rem 0.52rem;
+  font-size: 0.69rem;
+  font-weight: 700;
+  line-height: 0.92rem;
+}
+
+.dark .stock-ledger-header-cell {
+  border-right-color: rgb(71 85 105 / 0.65);
+}
+
+.stock-ledger-header-cell:last-child {
+  border-right: 0;
+  text-align: center;
+}
+
+.stock-ledger-desktop-body {
+  display: grid;
+  align-items: stretch;
+  color: rgb(51 65 85);
+}
+
+.dark .stock-ledger-desktop-body {
+  color: rgb(203 213 225);
+}
+
+.stock-ledger-cell {
+  min-width: 0;
+  border-right: 1px solid rgb(226 232 240 / 0.9);
+  padding: 0.68rem 0.52rem;
+  font-size: 0.72rem;
+  line-height: 1rem;
+}
+
+.dark .stock-ledger-cell {
+  border-right-color: rgb(30 41 59 / 0.95);
+}
+
+.stock-ledger-stock-cell {
+  grid-column: 1;
+}
+
+.stock-ledger-supplier-cell {
+  grid-column: 2;
+}
+
+.stock-ledger-expense-cell {
+  grid-column: 9;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  text-align: center;
+}
+
+.stock-ledger-total-cell {
+  grid-column: 10;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  color: rgb(15 23 42);
+  text-align: center;
+}
+
+.dark .stock-ledger-total-cell {
+  color: white;
+}
+
+.stock-ledger-actions-cell {
+  grid-column: 11;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  border-right: 0;
+}
+
+.stock-ledger-reference {
+  display: block;
+  color: rgb(15 23 42);
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1rem;
+}
+
+.dark .stock-ledger-reference {
+  color: white;
+}
+
+.stock-ledger-status,
+.stock-ledger-date {
+  display: block;
+  margin-top: 0.16rem;
+  font-size: 0.625rem;
+  font-weight: 600;
+  line-height: 0.8rem;
+}
+
+.stock-ledger-status-received {
+  color: rgb(22 163 74);
+}
+
+.stock-ledger-status-draft {
+  color: rgb(217 119 6);
+}
+
+.stock-ledger-status-archived {
+  color: rgb(100 116 139);
+}
+
+.stock-ledger-date {
+  color: rgb(100 116 139);
+  font-weight: 500;
+}
+
+.dark .stock-ledger-date {
+  color: rgb(148 163 184);
+}
+
+.stock-ledger-lines {
+  grid-column: 3 / 9;
+  min-width: 0;
+}
+
+.stock-ledger-line {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1.5fr 1.1fr 1.1fr;
+  min-width: 0;
+}
+
+.stock-ledger-line + .stock-ledger-line {
+  border-top: 1px solid rgb(226 232 240);
+}
+
+.dark .stock-ledger-line + .stock-ledger-line {
+  border-top-color: rgb(30 41 59);
+}
+
+.stock-ledger-line-cell {
+  min-width: 0;
+  border-right: 1px solid rgb(226 232 240 / 0.9);
+  padding: 0.68rem 0.52rem;
+  color: rgb(71 85 105);
+  font-size: 0.7rem;
+  line-height: 0.98rem;
+  overflow-wrap: anywhere;
+}
+
+.dark .stock-ledger-line-cell {
+  border-right-color: rgb(30 41 59 / 0.95);
+  color: rgb(203 213 225);
+}
+
+.stock-ledger-line-cell > strong,
+.stock-ledger-line-cell > span {
+  display: block;
+}
+
+.stock-ledger-line-cell > span {
+  margin-top: 0.12rem;
+  color: rgb(100 116 139);
+  font-size: 0.625rem;
+}
+
+.dark .stock-ledger-line-cell > span {
+  color: rgb(148 163 184);
+}
+
+.stock-ledger-recording-cell {
+  color: rgb(51 65 85);
+  font-size: 0.66rem;
+  font-weight: 600;
+}
+
+.dark .stock-ledger-recording-cell {
+  color: rgb(226 232 240);
+}
+
+.stock-ledger-sku-cell {
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 0.66rem;
+  font-weight: 600;
+}
+
+.stock-ledger-price-cell strong {
+  color: rgb(15 23 42);
+  font-weight: 600;
+}
+
+.dark .stock-ledger-price-cell strong {
+  color: white;
+}
+
+.stock-ledger-product-info {
+  min-width: 0;
+}
+
+.stock-ledger-product-info strong,
+.stock-ledger-product-info span {
+  display: block;
+}
+
+.stock-ledger-product-info strong {
+  color: rgb(15 23 42);
+  font-size: 0.69rem;
+  font-weight: 700;
+}
+
+.dark .stock-ledger-product-info strong {
+  color: white;
+}
+
+.stock-ledger-product-info span {
+  margin-top: 0.1rem;
+  color: rgb(100 116 139);
+  font-size: 0.6rem;
+  line-height: 0.82rem;
+}
+
+.dark .stock-ledger-product-info span {
+  color: rgb(148 163 184);
+}
+
+.stock-ledger-icon-actions {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.05rem;
+}
+
+.stock-ledger-icon-actions > button {
+  width: 1.85rem !important;
+  height: 1.85rem !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+}
+
+.stock-ledger-mobile {
+  display: block;
+}
+
+.stock-ledger-mobile-band {
+  display: grid;
+  gap: 0.55rem;
+  padding: 0.72rem 0.78rem;
+}
+
+.stock-ledger-mobile-band + .stock-ledger-mobile-band {
+  border-top: 1px solid rgb(226 232 240);
+}
+
+.dark .stock-ledger-mobile-band + .stock-ledger-mobile-band {
+  border-top-color: rgb(30 41 59);
+}
+
+.stock-ledger-mobile-band-one {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
+.stock-ledger-mobile-band-two {
+  grid-template-columns: 0.9fr 1.45fr 1fr;
+}
+
+.stock-ledger-mobile-band-three {
+  grid-template-columns: 1.08fr 1.16fr 0.72fr 0.78fr auto;
+}
+
+.stock-ledger-mobile-cell {
+  min-width: 0;
+  color: rgb(51 65 85);
+  font-size: 0.67rem;
+  line-height: 0.92rem;
+  overflow-wrap: anywhere;
+}
+
+.dark .stock-ledger-mobile-cell {
+  color: rgb(203 213 225);
+}
+
+.stock-ledger-mobile-cell > strong {
+  display: block;
+  color: rgb(15 23 42);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.dark .stock-ledger-mobile-cell > strong {
+  color: white;
+}
+
+.stock-ledger-mobile-label {
+  display: block;
+  margin-bottom: 0.3rem;
+  color: rgb(100 116 139);
+  font-size: 0.59rem;
+  font-weight: 700;
+  line-height: 0.75rem;
+}
+
+.dark .stock-ledger-mobile-label {
+  color: rgb(148 163 184);
+}
+
+.stock-ledger-mobile-stack {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.stock-ledger-mobile-stack > span,
+.stock-ledger-mobile-stack > .stock-ledger-product-info {
+  display: block;
+  min-width: 0;
+}
+
+.stock-ledger-mobile-stack > span + span,
+.stock-ledger-mobile-stack > .stock-ledger-product-info + .stock-ledger-product-info {
+  border-top: 1px solid rgb(226 232 240 / 0.75);
+  padding-top: 0.25rem;
+}
+
+.dark .stock-ledger-mobile-stack > span + span,
+.dark .stock-ledger-mobile-stack > .stock-ledger-product-info + .stock-ledger-product-info {
+  border-top-color: rgb(30 41 59 / 0.85);
+}
+
+.stock-ledger-mobile-sku-stack {
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 0.61rem;
+  font-weight: 600;
+}
+
+.stock-ledger-mobile-actions-cell {
+  text-align: center;
+}
+
+.stock-ledger-icon-actions-mobile > button {
+  width: 1.65rem !important;
+  height: 1.65rem !important;
+}
+
+@media (min-width: 768px) {
+  .stock-ledger-desktop {
+    display: block;
+  }
+
+  .stock-ledger-mobile {
+    display: none;
+  }
+}
+
+@media (max-width: 420px) {
+  .stock-ledger-mobile-band {
+    gap: 0.38rem;
+    padding-inline: 0.62rem;
+  }
+
+  .stock-ledger-mobile-label {
+    font-size: 0.55rem;
+  }
+
+  .stock-ledger-mobile-cell {
+    font-size: 0.62rem;
+  }
+
+  .stock-ledger-mobile-cell > strong {
+    font-size: 0.65rem;
+  }
+
+  .stock-ledger-icon-actions-mobile {
+    gap: 0;
+  }
+
+  .stock-ledger-icon-actions-mobile > button {
+    width: 1.45rem !important;
+    height: 1.45rem !important;
+  }
+}

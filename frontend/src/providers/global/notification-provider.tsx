@@ -81,7 +81,11 @@ function NotificationProvider({ children }: NotificationProviderProps) {
 
   const notify = useCallback(
     ({ duration = 5000, message, title, tone = "info" }: NotificationInput) => {
-      const id = crypto.randomUUID();
+      const id =
+        typeof globalThis.crypto !== "undefined" &&
+        typeof globalThis.crypto.randomUUID === "function"
+        ? globalThis.crypto.randomUUID()
+        : `notification-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
       setNotifications((current) => [
         ...current,
@@ -117,7 +121,7 @@ function NotificationProvider({ children }: NotificationProviderProps) {
       <div
         aria-label={t("regionLabel")}
         className={cn(
-          "pointer-events-none fixed inset-x-4 top-4 z-[200]",
+          "pointer-events-none fixed inset-x-4 top-4 z-200",
           "flex flex-col items-center gap-3 sm:top-6",
         )}
       >

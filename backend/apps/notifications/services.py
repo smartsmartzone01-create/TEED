@@ -64,6 +64,10 @@ def notify_user(
             "unit",
             "threshold",
             "sku",
+            "customer_name",
+            "agreement_reference",
+            "due_date",
+            "amount",
         }
         and isinstance(value, (str, int))
     }

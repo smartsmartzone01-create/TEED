@@ -1,14 +1,6 @@
 "use client";
 
-import {
-  Building2,
-  Check,
-  ChevronDown,
-  FolderKanban,
-  LayoutDashboard,
-  Plus,
-  UserPlus,
-} from "lucide-react";
+import { Building2, Check, ChevronDown } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { BusinessIcon } from "@/components/workspace/business-icon";
@@ -17,7 +9,6 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/global/primitives/dropdown-menu";
 import { usePathname, useRouter } from "@/i18n/navigation";
@@ -54,11 +45,12 @@ function WorkspaceBusinessMenu({ showLabel = true }: WorkspaceBusinessMenuProps)
             "flex min-w-0 items-center rounded-xl text-left transition-colors",
             "hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/40",
             "dark:hover:bg-slate-900",
-            "gap-2 p-1",
+            showLabel ? "gap-2 p-1" : "size-8 justify-center rounded-lg p-0",
           )}
           type="button"
         >
           <BusinessIcon
+            className={showLabel ? undefined : "size-7 rounded-lg text-[0.6rem]"}
             logoUrl={activeBusiness?.logo_url ?? null}
             name={workspaceName}
             primaryColor={activeBusiness?.primary_brand_color ?? "#0B1F3A"}
@@ -120,25 +112,6 @@ function WorkspaceBusinessMenu({ showLabel = true }: WorkspaceBusinessMenuProps)
               </span>
             </DropdownMenuItem>
           ))}
-
-        <DropdownMenuSeparator />
-        <DropdownMenuItem onSelect={() => router.push("/workspaces")}>
-          <FolderKanban className="size-4" />
-          {directoryT("embeddedTitle")}
-        </DropdownMenuItem>
-        <DropdownMenuItem onSelect={() => router.push("/dashboard/workspaces/create")}>
-          <Plus className="size-4" />
-          {directoryT("create")}
-        </DropdownMenuItem>
-        <DropdownMenuItem onSelect={() => router.push("/dashboard/workspaces/access")}>
-          <UserPlus className="size-4" />
-          {directoryT("request")}
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem onSelect={() => router.push("/dashboard")}>
-          <LayoutDashboard className="size-4" />
-          {directoryT("personalDashboard")}
-        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

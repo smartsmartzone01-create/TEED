@@ -23,6 +23,12 @@ class WorkspacePermission(StrEnum):
     EDIT_OWN_SALES = "commerce.sales.edit_own"
     EDIT_ANY_SALES = "commerce.sales.edit_any"
     VOID_SALES = "commerce.sales.void"
+    VIEW_FINANCING = "commerce.financing.view"
+    RECORD_FINANCING = "commerce.financing.record"
+    EDIT_OWN_FINANCING = "commerce.financing.edit_own"
+    EDIT_ANY_FINANCING = "commerce.financing.edit_any"
+    RECORD_FINANCING_PAYMENT = "commerce.financing.payment.record"
+    MANAGE_FINANCING_DOCUMENTS = "commerce.financing.documents.manage"
     MANAGE_FINANCE = "commerce.finance.manage"
 
 
@@ -46,6 +52,12 @@ ROLE_PERMISSIONS = {
             WorkspacePermission.EDIT_OWN_SALES,
             WorkspacePermission.EDIT_ANY_SALES,
             WorkspacePermission.VOID_SALES,
+            WorkspacePermission.VIEW_FINANCING,
+            WorkspacePermission.RECORD_FINANCING,
+            WorkspacePermission.EDIT_OWN_FINANCING,
+            WorkspacePermission.EDIT_ANY_FINANCING,
+            WorkspacePermission.RECORD_FINANCING_PAYMENT,
+            WorkspacePermission.MANAGE_FINANCING_DOCUMENTS,
             WorkspacePermission.MANAGE_FINANCE,
         }
     ),
@@ -59,6 +71,12 @@ ROLE_PERMISSIONS = {
             WorkspacePermission.RECORD_SALES,
             WorkspacePermission.EDIT_OWN_SALES,
             WorkspacePermission.EDIT_ANY_SALES,
+            WorkspacePermission.VIEW_FINANCING,
+            WorkspacePermission.RECORD_FINANCING,
+            WorkspacePermission.EDIT_OWN_FINANCING,
+            WorkspacePermission.EDIT_ANY_FINANCING,
+            WorkspacePermission.RECORD_FINANCING_PAYMENT,
+            WorkspacePermission.MANAGE_FINANCING_DOCUMENTS,
         }
     ),
     WorkspaceRole.MEMBER: frozenset(
@@ -67,6 +85,11 @@ ROLE_PERMISSIONS = {
             WorkspacePermission.VIEW_COMMERCE,
             WorkspacePermission.RECORD_SALES,
             WorkspacePermission.EDIT_OWN_SALES,
+            WorkspacePermission.VIEW_FINANCING,
+            WorkspacePermission.RECORD_FINANCING,
+            WorkspacePermission.EDIT_OWN_FINANCING,
+            WorkspacePermission.RECORD_FINANCING_PAYMENT,
+            WorkspacePermission.MANAGE_FINANCING_DOCUMENTS,
         }
     ),
 }

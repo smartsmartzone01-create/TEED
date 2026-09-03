@@ -1,34 +1,52 @@
 :root {
   color-scheme: light;
 
-  /* Brand */
-  --brand-navy: #000080;
-  --brand-navy-hover: #000066;
-  --brand-navy-active: #00004d;
+  /* Tunakuza application brand */
+  --brand-red: #e53935;
+  --brand-red-hover: #cf332f;
+  --brand-red-active: #b72e2b;
+  --brand-red-accessible: #c62828;
+  --brand-red-soft: #fdeceb;
 
-  --brand-orange: #ff6a00;
-  --brand-orange-hover: #e57200;
-  --brand-orange-accessible: #c45100;
+  --brand-green: #2e7d32;
+  --brand-green-hover: #286d2c;
+  --brand-green-active: #225e26;
+  --brand-green-soft: #eaf4eb;
+
+  --brand-blue: #1565c0;
+  --brand-blue-hover: #1257a8;
+  --brand-blue-active: #0f498f;
+  --brand-blue-soft: #e8f1fb;
+
+  /* Backward-compatible brand aliases. Keep feature code semantic while
+     the application transitions away from the previous navy/orange naming. */
+  --brand-navy: var(--brand-blue);
+  --brand-navy-hover: var(--brand-blue-hover);
+  --brand-navy-active: var(--brand-blue-active);
+  --brand-navy-soft: var(--brand-blue-soft);
+
+  --brand-orange: var(--brand-red);
+  --brand-orange-hover: var(--brand-red-hover);
+  --brand-orange-accessible: var(--brand-red-accessible);
+  --brand-orange-soft: var(--brand-red-soft);
 
   /* Semantic colors */
   --background: #ffffff;
   --foreground: #111827;
 
-  --primary: var(--brand-navy);
-  --primary-hover: var(--brand-navy-hover);
-  --primary-active: var(--brand-navy-active);
+  --primary: var(--brand-blue);
+  --primary-hover: var(--brand-blue-hover);
+  --primary-active: var(--brand-blue-active);
   --primary-foreground: #ffffff;
 
-  --secondary: var(--brand-orange);
-  --secondary-hover: var(--brand-orange-hover);
-  --secondary-foreground: var(--brand-navy);
+  --secondary: var(--brand-green);
+  --secondary-hover: var(--brand-green-hover);
+  --secondary-foreground: #ffffff;
 
   --muted-foreground: #4b5563;
   --soft-background: #f7f8fc;
+  --interactive-highlight: #f4f7fa;
   --border: #d9dee8;
-
-  --brand-navy-soft: #eeeeff;
-  --brand-orange-soft: #fff1e6;
 
   /* Layout */
   --page-inline-space: clamp(1rem, 4vw, 3rem);
@@ -44,32 +62,49 @@
 .dark {
   color-scheme: dark;
 
-  /* Brand adaptations for dark surfaces */
-  --brand-navy: #a3a3ff;
-  --brand-navy-hover: #b8b8ff;
-  --brand-navy-active: #ccccff;
+  /* Preserve Tunakuza identity on dark surfaces while allowing brighter
+     interaction states for contrast. */
+  --brand-red: #e53935;
+  --brand-red-hover: #ec5753;
+  --brand-red-active: #f06d69;
+  --brand-red-accessible: #ff7a76;
+  --brand-red-soft: #351516;
 
-  --brand-orange: #ff7a1a;
-  --brand-orange-hover: #ff8d3d;
-  --brand-orange-accessible: #ff9a52;
+  --brand-green: #2e7d32;
+  --brand-green-hover: #459548;
+  --brand-green-active: #5aaa5d;
+  --brand-green-soft: #142b17;
+
+  --brand-blue: #1565c0;
+  --brand-blue-hover: #3479ca;
+  --brand-blue-active: #508bd2;
+  --brand-blue-soft: #132844;
+
+  --brand-navy: var(--brand-blue);
+  --brand-navy-hover: var(--brand-blue-hover);
+  --brand-navy-active: var(--brand-blue-active);
+  --brand-navy-soft: var(--brand-blue-soft);
+
+  --brand-orange: var(--brand-red);
+  --brand-orange-hover: var(--brand-red-hover);
+  --brand-orange-accessible: var(--brand-red-accessible);
+  --brand-orange-soft: var(--brand-red-soft);
 
   /* Semantic colors */
   --background: #080b1a;
   --foreground: #f7f8ff;
 
-  --primary: var(--brand-navy);
-  --primary-hover: var(--brand-navy-hover);
-  --primary-active: var(--brand-navy-active);
-  --primary-foreground: #080b1a;
+  --primary: var(--brand-blue);
+  --primary-hover: var(--brand-blue-hover);
+  --primary-active: var(--brand-blue-active);
+  --primary-foreground: #ffffff;
 
-  --secondary: var(--brand-orange);
-  --secondary-hover: var(--brand-orange-hover);
-  --secondary-foreground: #111827;
+  --secondary: var(--brand-green);
+  --secondary-hover: var(--brand-green-hover);
+  --secondary-foreground: #ffffff;
 
   --muted-foreground: #aeb6ca;
   --soft-background: #11162a;
+  --interactive-highlight: #111827;
   --border: #2b3350;
-
-  --brand-navy-soft: #1a1b46;
-  --brand-orange-soft: #321a0c;
 }

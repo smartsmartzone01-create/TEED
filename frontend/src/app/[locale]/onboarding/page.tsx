@@ -20,6 +20,7 @@ export default async function OnboardingPage({
     <IdentityLayout
       description={t("description")}
       eyebrow={t("eyebrow")}
+      introductionVariant="compact"
       title={t("title")}
     >
       <IdentityAccessBoundary access="onboarding">

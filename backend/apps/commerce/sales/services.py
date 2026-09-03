@@ -146,6 +146,7 @@ def _record_items(*, sale, actor, business, items):
                 unit_price=unit_price,
                 line_total=line_total,
                 cost_total=cost_total,
+                warranty_months=item.get("warranty_months"),
             )
             subtotal += line_total
             total_cost += cost_total
@@ -181,6 +182,7 @@ def _record_items(*, sale, actor, business, items):
             quantity=quantity,
             unit_price=unit_price,
             line_total=line_total,
+            warranty_months=item.get("warranty_months"),
         )
         if tracked_unit_id:
             cost = _allocate_tracked_unit(
@@ -220,7 +222,11 @@ def _record_trade_in(*, sale, actor, business_id, trade_in):
         ).first()
         if stock_product is None:
             raise ValidationError(
-                {"trade_in": ["Choose an active SKU from this business for the received item."]}
+                {
+                    "trade_in": [
+                        "Choose an active SKU from this business for the received item."
+                    ]
+                }
             )
 
     if trade_in.get("add_to_stock"):
@@ -400,6 +406,7 @@ def _sale_snapshot(sale):
                 ),
                 "quantity": str(item.quantity),
                 "unit_price": str(item.unit_price),
+                "warranty_months": item.warranty_months,
             }
             for item in sale.items.all()
         ],
@@ -426,7 +433,9 @@ def _can_edit_sale(*, membership, actor, sale):
 
 def _restore_sale_inventory(sale):
     tracked_ids = list(
-        sale.items.exclude(tracked_unit_id=None).values_list("tracked_unit_id", flat=True)
+        sale.items.exclude(tracked_unit_id=None).values_list(
+            "tracked_unit_id", flat=True
+        )
     )
     if tracked_ids:
         TrackedUnit.objects.filter(id__in=tracked_ids).update(

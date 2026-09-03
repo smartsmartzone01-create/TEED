@@ -49,10 +49,16 @@ class Migration(migrations.Migration):
                 ("deleted_at", models.DateTimeField(blank=True, null=True)),
                 ("incoming_item_name", models.CharField(max_length=160)),
                 ("incoming_item_details", models.JSONField(blank=True, default=dict)),
-                ("incoming_value", models.DecimalField(decimal_places=2, max_digits=14)),
+                (
+                    "incoming_value",
+                    models.DecimalField(decimal_places=2, max_digits=14),
+                ),
                 ("cash_top_up", models.DecimalField(decimal_places=2, max_digits=14)),
                 ("add_to_stock", models.BooleanField(default=False)),
-                ("stock_group_name", models.CharField(blank=True, default="", max_length=120)),
+                (
+                    "stock_group_name",
+                    models.CharField(blank=True, default="", max_length=120),
+                ),
                 (
                     "sale",
                     models.OneToOneField(

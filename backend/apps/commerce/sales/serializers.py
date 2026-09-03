@@ -28,6 +28,12 @@ class SaleItemInputSerializer(serializers.Serializer):
     unit_price = serializers.DecimalField(
         max_digits=14, decimal_places=2, min_value=Decimal("0"), required=False
     )
+    warranty_months = serializers.ChoiceField(
+        choices=SaleItem.WarrantyMonths.choices,
+        required=False,
+        allow_null=True,
+        default=None,
+    )
 
     def validate(self, attrs):
         source = attrs["source"]
@@ -38,7 +44,9 @@ class SaleItemInputSerializer(serializers.Serializer):
                 )
             if "unit_price" not in attrs:
                 raise serializers.ValidationError(
-                    {"unit_price": "Enter the selling price for an independent sale item."}
+                    {
+                        "unit_price": "Enter the selling price for an independent sale item."
+                    }
                 )
             details = attrs.get("item_details", {})
             if details.get("identifier_value") and attrs["quantity"] != Decimal("1"):
@@ -136,7 +144,9 @@ class SaleCreateSerializer(serializers.Serializer):
             )
         if any("unit_price" not in item for item in attrs["items"]):
             raise serializers.ValidationError(
-                {"items": "Enter the agreed sale value for every outgoing trade-in item."}
+                {
+                    "items": "Enter the agreed sale value for every outgoing trade-in item."
+                }
             )
         return attrs
 
@@ -148,7 +158,9 @@ class SaleVoidSerializer(serializers.Serializer):
 class SaleItemSerializer(serializers.ModelSerializer):
     product_name = serializers.SerializerMethodField()
     product_sku = serializers.SerializerMethodField()
-    product_unit = serializers.CharField(source="product.unit", read_only=True, default="")
+    product_unit = serializers.CharField(
+        source="product.unit", read_only=True, default=""
+    )
     tracked_unit_reference = serializers.SerializerMethodField()
     tracked_unit_details = serializers.SerializerMethodField()
 
@@ -172,6 +184,7 @@ class SaleItemSerializer(serializers.ModelSerializer):
             "line_total",
             "cost_total",
             "returned_quantity",
+            "warranty_months",
         ]
 
     def get_product_name(self, obj):

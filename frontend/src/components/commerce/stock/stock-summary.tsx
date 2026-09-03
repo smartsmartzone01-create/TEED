@@ -1,18 +1,18 @@
 "use client";
 
-import { Copy, Printer, Share2 } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 
+import {
+  StockReceiptDialog,
+  StockReceiptIconActions,
+} from "@/components/commerce/stock/stock-shareable-receipt";
 import { Button } from "@/components/global/primitives/button";
-import { useNotification } from "@/providers/global/notification-provider";
 import type { StockReceipt, StockReceiptLine } from "@/types/commerce/inventory";
+import { formatQuantityWithUnit, formatUnitName } from "@/utils/commerce/quantity";
 
-const numberText = (value: string | number | null | undefined) => {
-  const number = Number(value ?? 0);
-  return Number.isFinite(number)
-    ? new Intl.NumberFormat(undefined, { maximumFractionDigits: 3 }).format(number)
-    : String(value ?? "");
-};
+import styles from "./stock-summary.module.css";
 
 const moneyText = (value: string | number | null | undefined) => {
   if (value == null) return "—";
@@ -22,8 +22,117 @@ const moneyText = (value: string | number | null | undefined) => {
     : String(value);
 };
 
+type LedgerLine = {
+  batchName: string;
+  groupName: string;
+  groupQuantity: string;
+  groupUnit: string;
+  direct: boolean;
+  line: StockReceiptLine;
+};
+
+const ledgerLinesForReceipt = (receipt: StockReceipt): LedgerLine[] =>
+  receipt.batches.flatMap((batch) =>
+    batch.groups.flatMap((group) => {
+      const direct =
+        group.types.length === 1 && group.name === group.types[0].product_name;
+      return group.types.map((line) => ({
+        batchName: batch.name,
+        groupName: group.name,
+        groupQuantity: group.quantity,
+        groupUnit: group.unit,
+        direct,
+        line,
+      }));
+    }),
+  );
+
+function StockLedgerScroller({
+  children,
+  previousLabel,
+  nextLabel,
+}: {
+  children: ReactNode;
+  previousLabel: string;
+  nextLabel: string;
+}) {
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const previousRef = useRef<HTMLButtonElement>(null);
+  const nextRef = useRef<HTMLButtonElement>(null);
+
+  const syncControls = useCallback(() => {
+    const viewport = viewportRef.current;
+    const previous = previousRef.current;
+    const next = nextRef.current;
+    if (!viewport || !previous || !next) return;
+
+    const maxScroll = Math.max(0, viewport.scrollWidth - viewport.clientWidth);
+    const hasOverflow = maxScroll > 2;
+    previous.hidden = !hasOverflow || viewport.scrollLeft <= 2;
+    next.hidden = !hasOverflow || viewport.scrollLeft >= maxScroll - 2;
+  }, []);
+
+  useEffect(() => {
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+
+    const frame = window.requestAnimationFrame(syncControls);
+    const observer = new ResizeObserver(syncControls);
+    observer.observe(viewport);
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      observer.disconnect();
+    };
+  }, [syncControls]);
+
+  const scroll = (direction: -1 | 1) => {
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+    viewport.scrollBy({
+      left: direction * Math.max(280, viewport.clientWidth * 0.72),
+      behavior: "smooth",
+    });
+  };
+
+  return (
+    <div className={styles.scrollShell}>
+      <div
+        className={`stock-ledger-desktop ${styles.scrollViewport}`}
+        onScroll={syncControls}
+        ref={viewportRef}
+      >
+        {children}
+      </div>
+      <button
+        aria-label={previousLabel}
+        className={`${styles.scrollControl} ${styles.scrollControlLeft}`}
+        hidden
+        onClick={() => scroll(-1)}
+        ref={previousRef}
+        title={previousLabel}
+        type="button"
+      >
+        <ChevronLeft className="size-4" />
+      </button>
+      <button
+        aria-label={nextLabel}
+        className={`${styles.scrollControl} ${styles.scrollControlRight}`}
+        hidden
+        onClick={() => scroll(1)}
+        ref={nextRef}
+        title={nextLabel}
+        type="button"
+      >
+        <ChevronRight className="size-4" />
+      </button>
+    </div>
+  );
+}
+
 function StockProductSummary({ line }: { line: StockReceiptLine }) {
   const t = useTranslations("CommerceStock");
+  const locale = useLocale();
   const quantity =
     Number(line.quantity_received) / Number(line.conversion_to_base || "1");
   return (
@@ -34,7 +143,7 @@ function StockProductSummary({ line }: { line: StockReceiptLine }) {
           <p className="text-xs text-slate-500">{line.product_sku}</p>
         </div>
         <span className="text-sm font-medium">
-          {numberText(quantity)} {line.received_unit}
+          {formatQuantityWithUnit(quantity, line.received_unit, locale)}
         </span>
       </div>
       <div className="grid gap-2 text-xs sm:grid-cols-2">
@@ -76,184 +185,315 @@ function StockProductSummary({ line }: { line: StockReceiptLine }) {
   );
 }
 
-function formatStockSummary(receipt: StockReceipt, labels: Record<string, string>) {
-  const rows = [
-    labels.title,
-    receipt.reference,
-    `${labels.status}: ${receipt.status}`,
-    `${labels.date}: ${receipt.received_at ? new Date(receipt.received_at).toLocaleString() : "—"}`,
-    `${labels.supplier}: ${receipt.supplier_name || "—"}`,
-    "",
-  ];
-
-  for (const batch of receipt.batches) {
-    rows.push(`${labels.batch}: ${batch.name}`);
-    for (const group of batch.groups) {
-      const isDirectItem =
-        group.types.length === 1 && group.name === group.types[0].product_name;
-      if (!isDirectItem) {
-        rows.push(
-          `  ${labels.group}: ${group.name} · ${numberText(group.quantity)} ${group.unit}`,
-        );
-      }
-      for (const line of group.types) {
-        const quantity =
-          Number(line.quantity_received) / Number(line.conversion_to_base || "1");
-        rows.push(`${isDirectItem ? "  " : "    "}${line.product_name} (${line.product_sku})`);
-        rows.push(
-          `${isDirectItem ? "    " : "      "}${labels.quantity}: ${numberText(quantity)} ${line.received_unit}`,
-        );
-        rows.push(
-          `${isDirectItem ? "    " : "      "}${labels.costPerUnit}: ${moneyText(line.received_unit_cost)}`,
-        );
-        rows.push(
-          `${isDirectItem ? "    " : "      "}${labels.totalBuyingCost}: ${moneyText(line.total_buying_cost)}`,
-        );
-        for (const unit of line.tracked_units) {
-          const details = [
-            unit.model_name,
-            unit.brand,
-            unit.color,
-            unit.capacity,
-            unit.internal_serial,
-            ...unit.identifiers.map(
-              (identifier) => `${identifier.kind}: ${identifier.value}`,
-            ),
-          ].filter(Boolean);
-          rows.push(`${isDirectItem ? "    " : "      "}- ${details.join(" · ")}`);
-        }
-      }
-    }
-    rows.push("");
-  }
-
-  const buying = Number(receipt.total_buying_value || 0);
-  const expenses = Number(receipt.additional_cost || 0);
-  rows.push(`${labels.buyingValue}: ${moneyText(buying)}`);
-  rows.push(`${labels.stockExpense}: ${moneyText(expenses)}`);
-  rows.push(`${labels.totalStockCost}: ${moneyText(buying + expenses)}`);
-
-  if (receipt.late_deliveries.length) {
-    rows.push("", labels.lateDeliveries);
-    for (const delivery of receipt.late_deliveries) {
-      rows.push("", ...formatStockSummary(delivery, labels).split("\n").slice(1));
-    }
-  }
-  return rows.join("\n");
-}
-
 function StockSummaryActions({ receipt }: { receipt: StockReceipt }) {
   const stockT = useTranslations("CommerceStock");
   const commerceT = useTranslations("Commerce");
-  const { notify } = useNotification();
-  const labels = {
-    title: stockT("summary.title"),
-    status: stockT("fields.status"),
-    date: stockT("fields.dateReceived"),
-    supplier: stockT("fields.supplier"),
-    batch: stockT("summary.batch"),
-    group: stockT("summary.group"),
-    quantity: stockT("fields.quantity"),
-    costPerUnit: stockT("fields.costPerUnit"),
-    totalBuyingCost: stockT("fields.totalBuyingCost"),
-    buyingValue: stockT("fields.totalBuyingValue"),
-    stockExpense: stockT("fields.stockExpenses"),
-    totalStockCost: stockT("summary.totalStockCost"),
-    lateDeliveries: commerceT("lateDeliveries"),
-  };
-  const text = formatStockSummary(receipt, labels);
+  const locale = useLocale();
+  const [mobileExpanded, setMobileExpanded] = useState(false);
+  const [receiptDialogOpen, setReceiptDialogOpen] = useState(false);
+  const standaloneActionsRef = useRef<HTMLDivElement>(null);
+  const ledgerLines = ledgerLinesForReceipt(receipt);
+  const total =
+    Number(receipt.total_buying_value || 0) + Number(receipt.additional_cost || 0);
+  const receiptDate = receipt.received_at || receipt.created_at;
+  const mobileDetailsId = `stock-mobile-details-${receipt.id}`;
+  const statusTone =
+    receipt.status === "received"
+      ? "stock-ledger-status-received"
+      : receipt.status === "draft"
+        ? "stock-ledger-status-draft"
+        : "stock-ledger-status-archived";
 
-  const copy = async () => {
-    await navigator.clipboard.writeText(text);
-    notify({ message: stockT("success.copied"), tone: "success" });
-  };
-
-  const share = async () => {
-    if (navigator.share) {
-      await navigator.share({
-        title: `${stockT("summary.title")} ${receipt.reference}`,
-        text,
-      });
-      return;
-    }
-    await copy();
+  const statusLabel = stockT(`ledger.status.${receipt.status}`);
+  const recordingLabel = (entry: LedgerLine) => {
+    if (entry.direct) return stockT("ledger.recording.individual");
+    return entry.line.tracking_mode === "individual"
+      ? stockT("ledger.recording.groupIndividual")
+      : stockT("ledger.recording.groupQuantity");
   };
 
-  const print = () => {
-    const escaped = text
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;");
-    const frame = document.createElement("iframe");
-    frame.setAttribute("aria-hidden", "true");
-    frame.style.position = "fixed";
-    frame.style.width = "1px";
-    frame.style.height = "1px";
-    frame.style.right = "0";
-    frame.style.bottom = "0";
-    frame.style.border = "0";
-    frame.style.opacity = "0";
-    document.body.appendChild(frame);
+  useEffect(() => {
+    const root = standaloneActionsRef.current;
+    if (receipt.status !== "received" || !root || root.closest("article")) return;
+    setReceiptDialogOpen(true);
+  }, [receipt.id, receipt.status]);
 
-    const printWindow = frame.contentWindow;
-    const printDocument = frame.contentDocument;
-    if (!printWindow || !printDocument) {
-      frame.remove();
-      return;
-    }
+  const renderProductInfo = (line: StockReceiptLine) => (
+    <div className="stock-ledger-product-info" key={`info-${line.id}`}>
+      <strong>{line.product_name}</strong>
+      {[line.product_brand, line.product_variant].filter(Boolean).length ? (
+        <span>{[line.product_brand, line.product_variant].filter(Boolean).join(" · ")}</span>
+      ) : null}
+      {line.tracked_units.map((unit) => {
+        const details = [
+          unit.model_name,
+          unit.brand,
+          unit.color,
+          unit.capacity,
+          unit.internal_serial,
+          ...unit.identifiers.map(
+            (identifier) => `${identifier.kind}: ${identifier.value}`,
+          ),
+        ].filter(Boolean);
+        return details.length ? <span key={unit.id}>{details.join(" · ")}</span> : null;
+      })}
+    </div>
+  );
 
-    printDocument.open();
-    printDocument.write(
-      `<!doctype html><html><head><meta charset="utf-8"><title>${receipt.reference}</title><style>@page{margin:16mm}body{font-family:Arial,sans-serif;color:#111;margin:0}pre{white-space:pre-wrap;overflow-wrap:anywhere;font:14px/1.55 Arial,sans-serif;margin:0}</style></head><body><pre>${escaped}</pre></body></html>`,
-    );
-    printDocument.close();
-
-    const cleanup = () => window.setTimeout(() => frame.remove(), 500);
-    window.setTimeout(() => {
-      printWindow.focus();
-      printWindow.print();
-      cleanup();
-    }, 150);
-  };
-
-  const iconButtonClass = "size-9 rounded-full p-0";
+  const desktopHeaders = [
+    stockT("ledger.headers.stockId"),
+    stockT("ledger.headers.supplier"),
+    stockT("ledger.headers.batchName"),
+    stockT("ledger.headers.productGroup"),
+    stockT("ledger.headers.recordingMethod"),
+    stockT("ledger.headers.productInfo"),
+    stockT("ledger.headers.productSku"),
+    stockT("ledger.headers.pricePerUnit"),
+    stockT("ledger.headers.expenses"),
+    stockT("ledger.headers.total"),
+    stockT("ledger.headers.actions"),
+  ];
 
   return (
-    <div className="order-2 flex flex-wrap items-center gap-1.5">
-      <Button
-        aria-label={stockT("actions.copy")}
-        className={iconButtonClass}
-        onClick={() => void copy()}
-        size="small"
-        title={stockT("actions.copy")}
-        type="button"
-        variant="ghost"
+    <>
+      <div className="stock-received-ledger-entry">
+        <StockLedgerScroller
+          nextLabel={stockT("ledger.navigation.next")}
+          previousLabel={stockT("ledger.navigation.previous")}
+        >
+          <div className="stock-ledger-header">
+            {desktopHeaders.map((header) => (
+              <div className="stock-ledger-header-cell" key={header}>
+                {header}
+              </div>
+            ))}
+          </div>
+
+          <div className="stock-ledger-desktop-body">
+            <div className="stock-ledger-cell stock-ledger-stock-cell">
+              <strong className="stock-ledger-reference">{receipt.reference}</strong>
+              <span className={`stock-ledger-status ${statusTone}`}>{statusLabel}</span>
+              <span className="stock-ledger-date">
+                {receiptDate
+                  ? new Date(receiptDate).toLocaleDateString(locale, {
+                      year: "numeric",
+                      month: "short",
+                      day: "numeric",
+                    })
+                  : "—"}
+              </span>
+            </div>
+
+            <div className="stock-ledger-cell stock-ledger-supplier-cell">
+              {receipt.supplier_name || stockT("values.noSupplier")}
+            </div>
+
+            <div className="stock-ledger-lines">
+              {ledgerLines.length ? (
+                ledgerLines.map((entry) => {
+                  const quantity =
+                    Number(entry.line.quantity_received) /
+                    Number(entry.line.conversion_to_base || "1");
+                  return (
+                    <div className="stock-ledger-line" key={entry.line.id}>
+                      <div className="stock-ledger-line-cell">{entry.batchName || "—"}</div>
+                      <div className="stock-ledger-line-cell">
+                        {entry.direct ? (
+                          "—"
+                        ) : (
+                          <>
+                            <strong>{entry.groupName}</strong>
+                            <span>
+                              {formatQuantityWithUnit(
+                                entry.groupQuantity,
+                                entry.groupUnit,
+                                locale,
+                              )}
+                            </span>
+                          </>
+                        )}
+                      </div>
+                      <div className="stock-ledger-line-cell stock-ledger-recording-cell">
+                        {recordingLabel(entry)}
+                      </div>
+                      <div className="stock-ledger-line-cell">{renderProductInfo(entry.line)}</div>
+                      <div className="stock-ledger-line-cell stock-ledger-sku-cell">
+                        {entry.line.product_sku || "—"}
+                      </div>
+                      <div className="stock-ledger-line-cell stock-ledger-price-cell">
+                        <strong>
+                          {moneyText(entry.line.received_unit_cost)} /{" "}
+                          {formatUnitName(entry.line.received_unit, 1, locale)}
+                        </strong>
+                        <span>
+                          {formatQuantityWithUnit(quantity, entry.line.received_unit, locale)}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="stock-ledger-line stock-ledger-line-empty">
+                  {Array.from({ length: 6 }).map((_, index) => (
+                    <div className="stock-ledger-line-cell" key={index}>—</div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="stock-ledger-cell stock-ledger-expense-cell">
+              {moneyText(receipt.additional_cost)}
+            </div>
+            <div className="stock-ledger-cell stock-ledger-total-cell">
+              <strong>{moneyText(total)}</strong>
+            </div>
+            <div className="stock-ledger-cell stock-ledger-actions-cell">
+              <StockReceiptIconActions
+                className={`stock-ledger-icon-actions ${styles.ledgerActions}`}
+                receipt={receipt}
+              />
+            </div>
+          </div>
+        </StockLedgerScroller>
+
+        <div className="stock-ledger-mobile">
+          <div className="stock-ledger-mobile-band stock-ledger-mobile-band-one">
+            <div className="stock-ledger-mobile-cell">
+              <span className="stock-ledger-mobile-label">{stockT("ledger.headers.stockId")}</span>
+              <strong>{receipt.reference}</strong>
+              <span className={`stock-ledger-status ${statusTone}`}>{statusLabel}</span>
+              <span className="stock-ledger-date">
+                {receiptDate
+                  ? new Date(receiptDate).toLocaleDateString(locale, {
+                      year: "numeric",
+                      month: "short",
+                      day: "numeric",
+                    })
+                  : "—"}
+              </span>
+            </div>
+            <div className="stock-ledger-mobile-cell">
+              <span className="stock-ledger-mobile-label">{stockT("ledger.headers.supplier")}</span>
+              <strong>{receipt.supplier_name || stockT("values.noSupplier")}</strong>
+            </div>
+            <div className="stock-ledger-mobile-cell">
+              <span className="stock-ledger-mobile-label">{stockT("ledger.headers.batchName")}</span>
+              <div className="stock-ledger-mobile-stack">
+                {Array.from(new Set(ledgerLines.map((entry) => entry.batchName))).map((name) => (
+                  <span key={name}>{name || "—"}</span>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div hidden={!mobileExpanded} id={mobileDetailsId}>
+            <div className="stock-ledger-mobile-band stock-ledger-mobile-band-two">
+              <div className="stock-ledger-mobile-cell">
+                <span className="stock-ledger-mobile-label">{stockT("ledger.headers.recordingMethod")}</span>
+                <div className="stock-ledger-mobile-stack">
+                  {ledgerLines.map((entry) => (
+                    <span key={`method-${entry.line.id}`}>{recordingLabel(entry)}</span>
+                  ))}
+                </div>
+              </div>
+              <div className="stock-ledger-mobile-cell">
+                <span className="stock-ledger-mobile-label">{stockT("ledger.headers.productInfo")}</span>
+                <div className="stock-ledger-mobile-stack">
+                  {ledgerLines.map((entry) => renderProductInfo(entry.line))}
+                </div>
+              </div>
+              <div className="stock-ledger-mobile-cell">
+                <span className="stock-ledger-mobile-label">{stockT("ledger.headers.productGroup")}</span>
+                <div className="stock-ledger-mobile-stack">
+                  {ledgerLines.map((entry) => (
+                    <span key={`group-${entry.line.id}`}>
+                      {entry.direct
+                        ? "—"
+                        : `${entry.groupName} · ${formatQuantityWithUnit(
+                            entry.groupQuantity,
+                            entry.groupUnit,
+                            locale,
+                          )}`}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="stock-ledger-mobile-band stock-ledger-mobile-band-three">
+              <div className="stock-ledger-mobile-cell">
+                <span className="stock-ledger-mobile-label">{stockT("ledger.headers.productSku")}</span>
+                <div className="stock-ledger-mobile-stack stock-ledger-mobile-sku-stack">
+                  {ledgerLines.map((entry) => (
+                    <span key={`sku-${entry.line.id}`}>{entry.line.product_sku || "—"}</span>
+                  ))}
+                </div>
+              </div>
+              <div className="stock-ledger-mobile-cell">
+                <span className="stock-ledger-mobile-label">{stockT("ledger.headers.pricePerUnit")}</span>
+                <div className="stock-ledger-mobile-stack">
+                  {ledgerLines.map((entry) => (
+                    <span key={`price-${entry.line.id}`}>
+                      {moneyText(entry.line.received_unit_cost)} /{" "}
+                      {formatUnitName(entry.line.received_unit, 1, locale)}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div className="stock-ledger-mobile-cell">
+                <span className="stock-ledger-mobile-label">{stockT("ledger.headers.expenses")}</span>
+                <strong>{moneyText(receipt.additional_cost)}</strong>
+              </div>
+              <div className="stock-ledger-mobile-cell">
+                <span className="stock-ledger-mobile-label">{stockT("ledger.headers.total")}</span>
+                <strong>{moneyText(total)}</strong>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between gap-2 border-t border-slate-200 px-3 py-1.5 dark:border-slate-800">
+            <div className="flex min-w-0 items-center gap-1">
+              <span className="stock-ledger-mobile-label mb-0 shrink-0">
+                {stockT("ledger.headers.actions")}
+              </span>
+              <StockReceiptIconActions
+                className="stock-ledger-icon-actions stock-ledger-icon-actions-mobile"
+                receipt={receipt}
+              />
+            </div>
+            <Button
+              aria-controls={mobileDetailsId}
+              aria-expanded={mobileExpanded}
+              className="h-7 min-h-0 shrink-0 gap-1 px-2 text-[0.65rem]"
+              onClick={() => setMobileExpanded((current) => !current)}
+              size="small"
+              type="button"
+              variant="ghost"
+            >
+              {mobileExpanded ? commerceT("actions.showLess") : commerceT("actions.viewMore")}
+              {mobileExpanded ? (
+                <ChevronUp className="size-3.5" />
+              ) : (
+                <ChevronDown className="size-3.5" />
+              )}
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      <div
+        className="stock-summary-actions-standalone order-2 flex flex-wrap items-center gap-1.5"
+        ref={standaloneActionsRef}
       >
-        <Copy className="size-4" />
-      </Button>
-      <Button
-        aria-label={stockT("actions.share")}
-        className={iconButtonClass}
-        onClick={() => void share()}
-        size="small"
-        title={stockT("actions.share")}
-        type="button"
-        variant="ghost"
-      >
-        <Share2 className="size-4" />
-      </Button>
-      <Button
-        aria-label={stockT("actions.print")}
-        className={iconButtonClass}
-        onClick={print}
-        size="small"
-        title={stockT("actions.print")}
-        type="button"
-        variant="ghost"
-      >
-        <Printer className="size-4" />
-      </Button>
-    </div>
+        <StockReceiptIconActions className="flex flex-wrap items-center gap-1.5" receipt={receipt} />
+      </div>
+
+      <StockReceiptDialog
+        onClose={() => setReceiptDialogOpen(false)}
+        open={receiptDialogOpen}
+        receipt={receipt}
+      />
+    </>
   );
 }
 

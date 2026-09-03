@@ -117,7 +117,9 @@ class SaleListCreateAPIView(CommerceBaseAPIView):
                 "trade_in_detail__stock_product",
                 "trade_in_detail__stock_receipt",
             )
-            .prefetch_related("items__product", "items__tracked_unit__identifiers")[:100]
+            .prefetch_related("items__product", "items__tracked_unit__identifiers")[
+                :100
+            ]
         )
         return SuccessResponse(
             message="Sales retrieved successfully.",

@@ -57,6 +57,13 @@ function WorkspaceShell({ children }: WorkspaceShellProps) {
     return () => controller.abort();
   }, [businessId, currentBusiness?.status, loadProfile, loadSettings]);
 
+  useEffect(() => {
+    if (!businessId) return;
+    if (pathname.startsWith(`/workspace/${businessId}/commerce`)) {
+      window.localStorage.setItem(`tunakuza:workspace:${businessId}:started`, "1");
+    }
+  }, [businessId, pathname]);
+
   const brandStyle = businessId && colors ? ({ "--workspace-primary": colors.primary, "--workspace-secondary": colors.secondary } as CSSProperties) : undefined;
 
   return (
@@ -70,11 +77,13 @@ function WorkspaceShell({ children }: WorkspaceShellProps) {
       <div
         className={cn(
           "min-h-svh transition-[padding] duration-300 ease-out",
-          collapsed ? "lg:pl-[5.25rem]" : "lg:pl-72",
+          collapsed ? "lg:pl-21" : "lg:pl-64",
         )}
       >
         <WorkspaceHeader businessId={businessId} onOpenNavigation={() => setMobileOpen(true)} />
-        <main className="mx-auto w-full max-w-[96rem] p-4 sm:p-6 lg:p-8">{children}</main>
+        <div className="min-h-[calc(100svh-3.5rem)] bg-[#F4F7FA] dark:bg-slate-950">
+          <main className="mx-auto w-full max-w-384 p-4 sm:p-6 lg:p-8">{children}</main>
+        </div>
       </div>
     </div>
   );

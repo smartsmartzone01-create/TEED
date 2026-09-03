@@ -37,6 +37,7 @@
       "business_control_decision": {"title":"Mzunguko wa biashara umebadilishwa","message":"{decision, select, approve {{action, select, delete {{workspace_name} sasa imepangwa kufutwa. Unaweza kughairi ufutaji wakati wa kipindi cha kurejesha.} disable {{workspace_name} sasa imezimwa.} reactivate {{workspace_name} imerudi kutumika.} cancel_deletion {Ufutaji wa {workspace_name} umeghairiwa na biashara imerudi kutumika.} other {Ombi la mzunguko wa {workspace_name} limeidhinishwa.}}} reject {Ombi la {action} kwa {workspace_name} limekataliwa. Hakuna mabadiliko yaliyofanyika.} other {Ombi la mzunguko wa {workspace_name} limeamuliwa.}}"},
       "commerce_sold_out": {"title":"Bidhaa imeisha","message":"{item_name} ({sku}) imeisha. Rekodi mzigo mpya ili ipatikane tena."},
       "commerce_low_stock": {"title":"Stock imepungua","message":"{item_name} imebaki {quantity} {unit}. Kiwango chako cha tahadhari ni {threshold}."},
+      "commerce_financing_due": {"title":"Malipo ya ufadhili: {status}","message":"{customer_name} · {agreement_reference} · {amount} inatakiwa tarehe {due_date}. Fungua makubaliano ili kunakili au kushiriki kikumbusho cha mteja."},
       "system_announcement": {"title":"Taarifa ya TEED","message":"Taarifa muhimu ya akaunti ya TEED inapatikana."},
       "default": {"title":"Arifa ya akaunti","message":"Taarifa muhimu inapatikana kwa akaunti yako."}
     }

@@ -48,6 +48,10 @@ class UserNotification(BaseModel):
         )
         COMMERCE_SOLD_OUT = "commerce_sold_out", "Commerce item sold out"
         COMMERCE_LOW_STOCK = "commerce_low_stock", "Commerce item low stock"
+        COMMERCE_FINANCING_DUE = (
+            "commerce_financing_due",
+            "Commerce financing payment due",
+        )
         SYSTEM_ANNOUNCEMENT = "system_announcement", "System announcement"
 
     user = models.ForeignKey(

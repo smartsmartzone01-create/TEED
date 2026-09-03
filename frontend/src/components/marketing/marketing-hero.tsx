@@ -1,7 +1,7 @@
 import { getTranslations } from "next-intl/server";
 
-import { Button } from "@/components/global/primitives/button";
 import { BrandMark } from "@/components/global/brand/brand-mark";
+import { Button } from "@/components/global/primitives/button";
 import { Link } from "@/i18n/navigation";
 
 async function MarketingHero() {
@@ -9,8 +9,8 @@ async function MarketingHero() {
 
   return (
     <section className="pt-12 pb-3 sm:pt-16 sm:pb-4">
-     <div className="page-container flex flex-col items-center justify-center text-center">
-       <BrandMark className="text-6xl sm:text-7xl lg:text-8xl" />
+      <div className="page-container flex flex-col items-center justify-center text-center">
+        <BrandMark className="h-32 w-32 sm:h-36 sm:w-36 lg:h-40 lg:w-40" />
 
         <h1 className="mt-7 max-w-3xl text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
           {t("title")}

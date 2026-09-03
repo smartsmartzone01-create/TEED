@@ -9,16 +9,22 @@
       "stock": "New stock",
       "lateDelivery": "Late delivery",
       "batch": "Batch",
-      "products": "Create new products / SKUs",
-      "method": "Choose how to record this stock",
+      "products": "Product / SKU",
+      "method": "Recording method",
       "review": "Review and save"
     },
+    "launcher": {
+      "title": "Start recording stock",
+      "description": "Start a new stock recording. Your progress stays available while you move between the recording steps.",
+      "start": "Record new stock",
+      "close": "Hide recording"
+    },
     "help": {
-      "stock": "Enter the receiving details, then press Enter to continue.",
-      "batch": "Name this batch, then press Enter.",
-      "products": "Add a new product only if it does not already exist in your available items. You can skip this step and use existing products while recording.",
-      "method": "Choose whether this batch will be recorded item by item or through groups.",
-      "individual": "Record one physical item at a time. After Enter, the item is saved and a fresh form is ready for the next one.",
+      "stock": "Enter the receiving details for this stock. You can return to this step while the recording is in progress.",
+      "batch": "Name this batch. You can return here before the stock is saved.",
+      "products": "Add a new product only if it does not already exist in your available products. You can skip this step and use existing products while recording.",
+      "method": "Choose whether this batch will be recorded item by item or through groups. Earlier steps stay available while you record.",
+      "individual": "Record one physical item at a time. Each entered item stays in the current recording until you review and save.",
       "group": "Name the group, choose whether it is recorded by quantity or by individual items, then continue inside that group.",
       "review": "Check what has been recorded. Save a draft or finish and receive the stock."
     },
@@ -58,11 +64,51 @@
       "identifierValue": "Identifier number",
       "totalProducts": "Recorded entries"
     },
+    "ledger": {
+      "headers": {
+        "stockId": "Stock ID",
+        "supplier": "Supplier",
+        "batchName": "Batch name",
+        "productGroup": "Product group",
+        "recordingMethod": "Recording method",
+        "productInfo": "Product info",
+        "productSku": "Product ID / SKU",
+        "pricePerUnit": "Buying price / unit",
+        "expenses": "Expenses",
+        "total": "Total",
+        "actions": "Actions"
+      },
+      "navigation": {
+        "previous": "Move stock list left",
+        "next": "Move stock list right"
+      },
+      "status": {
+        "received": "Received",
+        "draft": "Draft",
+        "archived": "Archived"
+      },
+      "recording": {
+        "individual": "As individual",
+        "groupIndividual": "As group · individual",
+        "groupQuantity": "As group · quantity"
+      }
+    },
     "summary": {
       "title": "Stock summary",
       "totalStockCost": "Total stock cost",
       "batch": "Batch",
       "group": "Group"
+    },
+    "receipt": {
+      "title": "Stock receipt",
+      "savedTitle": "Stock received",
+      "savedHint": "Your receipt is ready to share, copy, or print.",
+      "stockId": "Stock ID",
+      "product": "Product",
+      "buyingAmount": "Buying amount",
+      "totalBuyingPrice": "Total buying price",
+      "lateDelivery": "Late delivery",
+      "close": "Close receipt"
     },
     "values": {
       "newProduct": "Add a new product",
@@ -74,12 +120,13 @@
       "entries": "entries"
     },
     "actions": {
-      "copy": "Copy summary",
-      "share": "Share summary",
-      "print": "Print summary",
+      "copy": "Copy receipt",
+      "share": "Share receipt",
+      "print": "Print receipt",
       "saving": "Saving stock...",
       "enter": "Enter",
       "edit": "Edit",
+      "editStock": "Edit stock",
       "enterProduct": "Enter product",
       "updateProduct": "Update product",
       "continue": "Continue",
@@ -91,6 +138,17 @@
       "backToRecording": "Back to recording",
       "recordAnother": "Record another new stock",
       "cancelLateDelivery": "Cancel late delivery"
+    },
+    "editStock": {
+      "title": "Edit stock",
+      "chooseAction": "Choose what you want to change.",
+      "correctHelp": "Correct a stock while its correction window is open.",
+      "lateDeliveryHelp": "Add stock received after the original delivery.",
+      "chooseStock": "Choose the stock this action applies to.",
+      "correctionClosed": "Correction window closed",
+      "lateDeliveryUnavailable": "Late delivery unavailable",
+      "back": "Back to edit options",
+      "noStock": "No stock records are available."
     },
     "savedSoFar": "Saved so far",
     "savedCount": "{count} individual items entered",
@@ -119,7 +177,7 @@
       "groupNeedsProduct": "Enter at least one product before finishing this group."
     },
     "success": {
-      "copied": "Stock summary copied.",
+      "copied": "Stock receipt copied.",
       "draftSaved": "Stock draft saved.",
       "savedTitle": "Stock saved successfully"
     }

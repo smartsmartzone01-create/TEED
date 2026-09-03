@@ -4,9 +4,16 @@ import { getRequestConfig } from "next-intl/server";
 import { routing } from "@/i18n/routing";
 import { frontendBrandText } from "@/utils/global/product-brand";
 
+function frontendTerminologyText(value: string) {
+  return value
+    .replace(/Available Items/g, "Available Products")
+    .replace(/Available items/g, "Available Products")
+    .replace(/available items/g, "available products");
+}
+
 function brandFrontendMessages<T>(value: T): T {
   if (typeof value === "string") {
-    return frontendBrandText(value) as T;
+    return frontendTerminologyText(frontendBrandText(value)) as T;
   }
   if (Array.isArray(value)) {
     return value.map((item) => brandFrontendMessages(item)) as T;
@@ -17,6 +24,36 @@ function brandFrontendMessages<T>(value: T): T {
     ) as T;
   }
   return value;
+}
+
+function withCommerceStockReceiptFallback<T extends Record<string, unknown>>(
+  messages: T,
+): T {
+  const commerceStock = messages.CommerceStock;
+  if (!commerceStock || typeof commerceStock !== "object") return messages;
+
+  const stockMessages = commerceStock as Record<string, unknown>;
+  const receipt = stockMessages.receipt;
+  const costMode = stockMessages.costMode;
+  if (!receipt || typeof receipt !== "object") return messages;
+  if (!costMode || typeof costMode !== "object") return messages;
+
+  const receiptMessages = receipt as Record<string, unknown>;
+  if (typeof receiptMessages.buyingAmount === "string") return messages;
+
+  const fallbackLabel = (costMode as Record<string, unknown>).label;
+  if (typeof fallbackLabel !== "string") return messages;
+
+  return {
+    ...messages,
+    CommerceStock: {
+      ...stockMessages,
+      receipt: {
+        ...receiptMessages,
+        buyingAmount: fallbackLabel,
+      },
+    },
+  } as T;
 }
 
 export default getRequestConfig(async ({ requestLocale }) => {
@@ -41,6 +78,8 @@ export default getRequestConfig(async ({ requestLocale }) => {
     commerceStockMessages,
     commerceSalesMessages,
     commerceReturnsMessages,
+    commerceFinanceMessages,
+    commerceFinancingMessages,
   ] = await Promise.all([
     import(`@/i18n/messages/dashboard/${locale}.json`),
     import(`@/i18n/messages/global/${locale}.json`),
@@ -56,6 +95,8 @@ export default getRequestConfig(async ({ requestLocale }) => {
     import(`@/i18n/messages/commerce-stock/${locale}.json`),
     import(`@/i18n/messages/commerce-sales/${locale}.json`),
     import(`@/i18n/messages/commerce-returns/${locale}.json`),
+    import(`@/i18n/messages/commerce-finance/${locale}.json`),
+    import(`@/i18n/messages/commerce-financing/${locale}.json`),
   ]);
 
   const messages = {
@@ -73,10 +114,12 @@ export default getRequestConfig(async ({ requestLocale }) => {
     ...commerceStockMessages.default,
     ...commerceSalesMessages.default,
     ...commerceReturnsMessages.default,
+    ...commerceFinanceMessages.default,
+    ...commerceFinancingMessages.default,
   };
 
   return {
     locale,
-    messages: brandFrontendMessages(messages),
+    messages: brandFrontendMessages(withCommerceStockReceiptFallback(messages)),
   };
 });

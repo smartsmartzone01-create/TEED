@@ -131,6 +131,12 @@ class SaleItem(BaseModel):
         CATALOG = "catalog", "TEED product / SKU"
         MANUAL = "manual", "Independent item"
 
+    class WarrantyMonths(models.IntegerChoices):
+        THREE = 3, "3 months"
+        SIX = 6, "6 months"
+        TWELVE = 12, "12 months"
+        TWENTY_FOUR = 24, "24 months"
+
     objects = SaleItemManager()
 
     sale = models.ForeignKey(Sale, on_delete=models.CASCADE, related_name="items")
@@ -161,6 +167,9 @@ class SaleItem(BaseModel):
     line_total = models.DecimalField(max_digits=14, decimal_places=2)
     cost_total = models.DecimalField(max_digits=14, decimal_places=2, default=0)
     returned_quantity = models.DecimalField(max_digits=14, decimal_places=3, default=0)
+    warranty_months = models.PositiveSmallIntegerField(
+        choices=WarrantyMonths.choices, null=True, blank=True
+    )
 
     class Meta:
         db_table = "commerce_sale_items"
