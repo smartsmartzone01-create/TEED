@@ -8,8 +8,8 @@ type BrandLoaderProps = {
 };
 
 const sizeClassNames = {
-  compact: "h-14 w-14",
-  page: "h-24 w-24 sm:h-28 sm:w-28",
+  compact: "h-12 w-12",
+  page: "h-20 w-20 sm:h-24 sm:w-24",
 } as const;
 
 function BrandLoader({

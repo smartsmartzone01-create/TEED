@@ -1,12 +1,12 @@
 @keyframes tunakuza-loader-red-pulse {
   0%,
-  20%,
+  18%,
   100% {
     opacity: 1;
     transform: scale(1);
   }
 
-  10% {
+  9% {
     opacity: 0.7;
     transform: scale(1.025);
   }
@@ -14,14 +14,14 @@
 
 @keyframes tunakuza-loader-green-pulse {
   0%,
-  28%,
-  48%,
+  24%,
+  42%,
   100% {
     opacity: 1;
     transform: scale(1);
   }
 
-  38% {
+  33% {
     opacity: 0.7;
     transform: scale(1.025);
   }
@@ -29,14 +29,14 @@
 
 @keyframes tunakuza-loader-blue-pulse {
   0%,
-  56%,
-  76%,
+  48%,
+  66%,
   100% {
     opacity: 1;
     transform: scale(1);
   }
 
-  66% {
+  57% {
     opacity: 0.7;
     transform: scale(1.025);
   }
@@ -54,15 +54,15 @@
 }
 
 .tunakuza-loader-red {
-  animation: tunakuza-loader-red-pulse 1.65s ease-in-out infinite;
+  animation: tunakuza-loader-red-pulse 1.25s ease-in-out infinite;
 }
 
 .tunakuza-loader-green {
-  animation: tunakuza-loader-green-pulse 1.65s ease-in-out infinite;
+  animation: tunakuza-loader-green-pulse 1.25s ease-in-out infinite;
 }
 
 .tunakuza-loader-blue {
-  animation: tunakuza-loader-blue-pulse 1.65s ease-in-out infinite;
+  animation: tunakuza-loader-blue-pulse 1.25s ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
