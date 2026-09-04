@@ -4,6 +4,7 @@ from apps.commerce.finance.selectors import (
     current_budget_health,
     operating_expense_summary,
 )
+from apps.commerce.financing.selectors import financing_portfolio_summary
 from apps.commerce.inventory.selectors import inventory_health
 from apps.commerce.sales.selectors import sales_summary
 from apps.workspaces.policy import WorkspacePermission, role_has_permission
@@ -45,6 +46,10 @@ def build_commerce_tool_registry(*, membership, context):
     can_manage_finance = role_has_permission(
         membership.role,
         WorkspacePermission.MANAGE_FINANCE,
+    )
+    can_view_financing = role_has_permission(
+        membership.role,
+        WorkspacePermission.VIEW_FINANCING,
     )
 
     def business_pulse():
@@ -93,6 +98,12 @@ def build_commerce_tool_registry(*, membership, context):
 
     def current_inventory_health():
         return inventory_health(business=business)
+
+    def current_financing_summary():
+        return financing_portfolio_summary(
+            business=business,
+            as_of_date=context.local_date,
+        )
 
     def expense_period_summary(*, start_date, end_date):
         start, end = _parse_period(start_date=start_date, end_date=end_date)
@@ -168,6 +179,26 @@ def build_commerce_tool_registry(*, membership, context):
             handler=current_inventory_health,
         ),
     ]
+
+    if can_view_financing:
+        tools.append(
+            AgentTool(
+                name="commerce_financing_summary",
+                description=(
+                    "Return the current verified loans and installment portfolio summary "
+                    "for the authorized workspace, including open balances, due and "
+                    "overdue exposure, agreement mix, and installment release state. "
+                    "The summary excludes customer identity, documents, notes, and "
+                    "internal acquisition-cost or profit details."
+                ),
+                input_schema={
+                    "type": "object",
+                    "properties": {},
+                    "additionalProperties": False,
+                },
+                handler=current_financing_summary,
+            )
+        )
 
     if can_manage_finance:
         tools.extend(

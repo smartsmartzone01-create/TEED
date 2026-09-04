@@ -295,6 +295,7 @@ class CommerceToolRegistryTests(SimpleTestCase):
                 "commerce_business_pulse",
                 "commerce_sales_summary",
                 "commerce_inventory_health",
+                "commerce_financing_summary",
                 "commerce_expense_summary",
                 "commerce_budget_status",
             },
