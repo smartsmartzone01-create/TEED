@@ -1,11 +1,18 @@
 import json
-from urllib.error import HTTPError, URLError
-from urllib.request import Request, urlopen
 
 from django.conf import settings
+from groq import APIConnectionError, APIStatusError, APITimeoutError, Groq
 
 from ..exceptions import IntelligenceConfigurationError, ProviderRequestError
 from .base import IntelligenceProvider, ProviderResponse, ToolCall
+
+
+def _sdk_base_url(base_url):
+    normalized = base_url.rstrip("/")
+    suffix = "/openai/v1"
+    if normalized.endswith(suffix):
+        return normalized[: -len(suffix)]
+    return normalized
 
 
 class GroqProvider(IntelligenceProvider):
@@ -42,37 +49,34 @@ class GroqProvider(IntelligenceProvider):
             reasoning_effort=settings.AI_REASONING_EFFORT,
         )
 
+    def _client(self):
+        return Groq(
+            api_key=self.api_key,
+            base_url=_sdk_base_url(self.base_url),
+            timeout=self.timeout_seconds,
+            max_retries=0,
+        )
+
     def generate(self, *, messages, tools=()):
         payload = {
             "model": self.model,
             "messages": list(messages),
             "max_completion_tokens": self.max_output_tokens,
             "reasoning_effort": self.reasoning_effort,
-            "reasoning_format": "hidden",
+            "include_reasoning": False,
         }
         if tools:
             payload["tools"] = list(tools)
             payload["tool_choice"] = "auto"
 
-        request = Request(
-            f"{self.base_url}/chat/completions",
-            data=json.dumps(payload).encode("utf-8"),
-            headers={
-                "Authorization": f"Bearer {self.api_key}",
-                "Content-Type": "application/json",
-            },
-            method="POST",
-        )
-
         try:
-            with urlopen(request, timeout=self.timeout_seconds) as response:
-                data = json.loads(response.read().decode("utf-8"))
-        except HTTPError as exc:
-            detail = exc.read().decode("utf-8", errors="replace")
+            completion = self._client().chat.completions.create(**payload)
+            data = completion.model_dump(exclude_none=True)
+        except APIStatusError as exc:
             raise ProviderRequestError(
-                f"Groq request failed with HTTP {exc.code}: {detail[:500]}"
+                f"Groq request failed with HTTP {exc.status_code}."
             ) from exc
-        except (URLError, TimeoutError, json.JSONDecodeError) as exc:
+        except (APIConnectionError, APITimeoutError) as exc:
             raise ProviderRequestError("Groq request failed.") from exc
 
         try:
@@ -85,8 +89,12 @@ class GroqProvider(IntelligenceProvider):
             function = raw_call.get("function") or {}
             raw_arguments = function.get("arguments") or "{}"
             try:
-                arguments = json.loads(raw_arguments)
-            except json.JSONDecodeError as exc:
+                arguments = (
+                    raw_arguments
+                    if isinstance(raw_arguments, dict)
+                    else json.loads(raw_arguments)
+                )
+            except (TypeError, json.JSONDecodeError) as exc:
                 raise ProviderRequestError(
                     "Groq returned invalid tool arguments."
                 ) from exc
