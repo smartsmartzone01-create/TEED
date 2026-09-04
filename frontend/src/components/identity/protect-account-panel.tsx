@@ -98,7 +98,6 @@ function ProtectAccountPanel({
 
   useEffect(() => {
     let active = true;
-    setLoadFailed(false);
     withFreshToken((token) => getAccountProtection(token))
       .then((response) => {
         if (!active || !response.data) return;
