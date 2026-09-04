@@ -15,6 +15,7 @@ import { useApiErrorMessages } from "@/hooks/global/use-api-error-messages";
 import { Link, useRouter } from "@/i18n/navigation";
 import { firstFieldIssue } from "@/lib/global/api-errors";
 import { useNotification } from "@/providers/global/notification-provider";
+import { useIdentityTransition } from "@/providers/identity/identity-transition-provider";
 import { createRegistrationFormSchema } from "@/schemas/identity/entry";
 import { ApiClientError } from "@/services/global/api-client";
 import { registerWithEmail, registerWithPhone } from "@/services/identity/entry";
@@ -26,6 +27,7 @@ function RegistrationForm() {
   const errorsT = useTranslations("IdentityErrors");
   const router = useRouter();
   const { notify } = useNotification();
+  const { beginTransition, endTransition } = useIdentityTransition();
   const { getErrorMessage, getFieldMessage } = useApiErrorMessages();
 
   const schema = useMemo(
@@ -43,7 +45,7 @@ function RegistrationForm() {
   );
 
   const {
-    formState: { errors, isSubmitting },
+    formState: { errors },
     handleSubmit,
     register,
     setError,
@@ -64,6 +66,7 @@ function RegistrationForm() {
   const method = watch("method");
 
   const onSubmit = handleSubmit(async (values) => {
+    beginTransition("registering");
     try {
       if (values.method === "email") {
         const response = await registerWithEmail({
@@ -87,6 +90,7 @@ function RegistrationForm() {
       notify({ message: t("successPhone"), tone: "success" });
       router.push(`/verify-phone?phone=${encodeURIComponent(data.phone_number)}&sent=1`);
     } catch (error) {
+      endTransition();
       if (error instanceof ApiClientError) {
         const mappings = [
           ["email", "email"],
@@ -112,7 +116,7 @@ function RegistrationForm() {
         <p className="mt-2 text-sm leading-6 text-muted-foreground">{t("cardDescription")}</p>
       </div>
 
-      <GoogleAuthButton />
+      <GoogleAuthButton mode="registering" />
 
       <div className="mb-5 grid grid-cols-2 gap-2" role="group" aria-label={t("methodLabel")}>
         <Button
@@ -188,7 +192,7 @@ function RegistrationForm() {
           />
         </FormField>
 
-        <Button className="mt-1 w-full" loading={isSubmitting} loadingLabel={t("submitting")} size="large" type="submit">
+        <Button className="mt-1 w-full" size="large" type="submit">
           {t("submit")}
         </Button>
       </form>

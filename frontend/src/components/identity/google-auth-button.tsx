@@ -8,29 +8,37 @@ import { useApiErrorMessages } from "@/hooks/global/use-api-error-messages";
 import { useRouter } from "@/i18n/navigation";
 import { useNotification } from "@/providers/global/notification-provider";
 import { useIdentitySession } from "@/providers/identity/identity-session-provider";
+import {
+  useIdentityTransition,
+  type IdentityTransition,
+} from "@/providers/identity/identity-transition-provider";
 import { ApiClientError } from "@/services/global/api-client";
 import { authenticateWithGoogle } from "@/services/identity/entry";
 import type { GoogleCredentialResponse } from "@/types/identity/google";
 
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID?.trim() ?? "";
 
-function GoogleAuthButton() {
+type GoogleAuthButtonProps = {
+  mode: Extract<IdentityTransition, "authenticating" | "registering">;
+};
+
+function GoogleAuthButton({ mode }: GoogleAuthButtonProps) {
   const locale = useLocale();
   const errorsT = useTranslations("IdentityErrors");
   const loginT = useTranslations("Login");
   const router = useRouter();
   const { notify } = useNotification();
   const { establishSession } = useIdentitySession();
+  const { beginTransition, endTransition, transition } = useIdentityTransition();
   const { getErrorMessage } = useApiErrorMessages();
   const containerRef = useRef<HTMLDivElement>(null);
   const [googleReady, setGoogleReady] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleCredential = useCallback(
     async (response: GoogleCredentialResponse) => {
-      if (isSubmitting || !response.credential) return;
+      if (transition || !response.credential) return;
 
-      setIsSubmitting(true);
+      beginTransition(mode);
       try {
         const authResponse = await authenticateWithGoogle({
           credential: response.credential,
@@ -55,23 +63,25 @@ function GoogleAuthButton() {
         notify({ message: loginT("success"), tone: "success" });
         router.push(data.next_step === "dashboard" ? "/home" : "/onboarding");
       } catch (error) {
+        endTransition();
         if (error instanceof ApiClientError) {
           notify({ message: getErrorMessage(error.details), tone: "error" });
         } else {
           notify({ message: errorsT("unexpected_error"), tone: "error" });
         }
-      } finally {
-        setIsSubmitting(false);
       }
     },
     [
+      beginTransition,
+      endTransition,
       errorsT,
       establishSession,
       getErrorMessage,
-      isSubmitting,
       loginT,
+      mode,
       notify,
       router,
+      transition,
     ],
   );
 
@@ -112,14 +122,7 @@ function GoogleAuthButton() {
         src="https://accounts.google.com/gsi/client"
         strategy="afterInteractive"
       />
-      <div
-        aria-busy={isSubmitting}
-        className={
-          isSubmitting
-            ? "mb-5 pointer-events-none opacity-60"
-            : "mb-5"
-        }
-      >
+      <div className="mb-5">
         <div className="flex w-full justify-center" ref={containerRef} />
       </div>
     </>

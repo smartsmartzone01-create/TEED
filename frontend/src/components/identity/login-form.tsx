@@ -16,6 +16,7 @@ import { Link, useRouter } from "@/i18n/navigation";
 import { firstFieldIssue } from "@/lib/global/api-errors";
 import { useNotification } from "@/providers/global/notification-provider";
 import { useIdentitySession } from "@/providers/identity/identity-session-provider";
+import { useIdentityTransition } from "@/providers/identity/identity-transition-provider";
 import { createLoginFormSchema } from "@/schemas/identity/entry";
 import { ApiClientError } from "@/services/global/api-client";
 import { loginWithEmail, loginWithPhone } from "@/services/identity/entry";
@@ -52,6 +53,7 @@ function LoginForm() {
   const router = useRouter();
   const { notify } = useNotification();
   const { establishSession } = useIdentitySession();
+  const { beginTransition, endTransition } = useIdentityTransition();
   const { getErrorMessage, getFieldMessage } = useApiErrorMessages();
 
   const schema = useMemo(
@@ -69,7 +71,7 @@ function LoginForm() {
   );
 
   const {
-    formState: { errors, isSubmitting },
+    formState: { errors },
     handleSubmit,
     register,
     setError,
@@ -89,6 +91,7 @@ function LoginForm() {
   const method = watch("method");
 
   const onSubmit = handleSubmit(async (values) => {
+    beginTransition("authenticating");
     try {
       const response =
         values.method === "email"
@@ -141,6 +144,7 @@ function LoginForm() {
           return;
         }
 
+        endTransition();
         const mappings = [
           ["email", "email"],
           ["phone_number", "phoneNumber"],
@@ -154,6 +158,7 @@ function LoginForm() {
         notify({ message: getErrorMessage(error.details), tone: "error" });
         return;
       }
+      endTransition();
       notify({ message: errorsT("unexpected_error"), tone: "error" });
     }
   });
@@ -167,7 +172,7 @@ function LoginForm() {
         </p>
       </div>
 
-      <GoogleAuthButton />
+      <GoogleAuthButton mode="authenticating" />
 
       <div
         className="mb-5 grid grid-cols-2 gap-2"
@@ -269,13 +274,7 @@ function LoginForm() {
           </Link>
         </div>
 
-        <Button
-          className="w-full"
-          loading={isSubmitting}
-          loadingLabel={t("submitting")}
-          size="large"
-          type="submit"
-        >
+        <Button className="w-full" size="large" type="submit">
           {t("submit")}
         </Button>
       </form>

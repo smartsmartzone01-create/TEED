@@ -14,6 +14,7 @@ import { useRouter } from "@/i18n/navigation";
 import { firstFieldIssue } from "@/lib/global/api-errors";
 import { useNotification } from "@/providers/global/notification-provider";
 import { useIdentitySession } from "@/providers/identity/identity-session-provider";
+import { useIdentityTransition } from "@/providers/identity/identity-transition-provider";
 import { createOnboardingFormSchema } from "@/schemas/identity/entry";
 import { ApiClientError } from "@/services/global/api-client";
 import { completeOnboarding } from "@/services/identity/entry";
@@ -30,6 +31,7 @@ function OnboardingForm() {
   const router = useRouter();
   const { notify } = useNotification();
   const { accessToken, clearSession, refreshAccessToken, updateUser, user } = useIdentitySession();
+  const { beginTransition, endTransition } = useIdentityTransition();
   const { getErrorMessage, getFieldMessage } = useApiErrorMessages();
 
   const schema = useMemo(
@@ -47,7 +49,7 @@ function OnboardingForm() {
   );
 
   const {
-    formState: { errors, isSubmitting },
+    formState: { errors },
     handleSubmit,
     register,
     setError,
@@ -67,6 +69,8 @@ function OnboardingForm() {
       notify({ message: t("sessionRequired"), tone: "error" });
       return;
     }
+
+    beginTransition("onboarding");
 
     const submitOnboarding = (token: string) =>
       completeOnboarding(
@@ -112,6 +116,7 @@ function OnboardingForm() {
           router.replace("/login");
           return;
         }
+        endTransition();
         const mappings = [
           ["username", "username"],
           ["country_code", "countryCode"],
@@ -124,6 +129,7 @@ function OnboardingForm() {
         notify({ message: getErrorMessage(error.details), tone: "error" });
         return;
       }
+      endTransition();
       notify({ message: errorsT("unexpected_error"), tone: "error" });
     }
   });
@@ -173,7 +179,7 @@ function OnboardingForm() {
           </FormField>
         </div>
 
-        <Button className="w-full" loading={isSubmitting} loadingLabel={t("submitting")} size="large" type="submit">
+        <Button className="w-full" size="large" type="submit">
           {t("submit")}
         </Button>
       </form>
