@@ -17,6 +17,7 @@ import {
 } from "react";
 
 import { KuzaAIIcon } from "@/components/intelligence/kuza-ai-icon";
+import { KuzaAIResponse } from "@/components/intelligence/kuza-ai-response";
 import { useKuzaAIConversation } from "@/hooks/intelligence/use-kuza-ai-conversation";
 import { cn } from "@/lib/global/class-names";
 import type { KuzaAIMode } from "@/types/intelligence/kuza-ai";
@@ -27,6 +28,14 @@ type KuzaAICompanionProps = {
   onModeChange: (mode: KuzaAIMode) => void;
 };
 
+function resizeComposer(textarea: HTMLTextAreaElement) {
+  textarea.style.height = "0px";
+  const maxHeight = 144;
+  const nextHeight = Math.min(Math.max(textarea.scrollHeight, 40), maxHeight);
+  textarea.style.height = `${nextHeight}px`;
+  textarea.style.overflowY = textarea.scrollHeight > maxHeight ? "auto" : "hidden";
+}
+
 function KuzaAICompanion({
   businessId,
   mode,
@@ -35,6 +44,7 @@ function KuzaAICompanion({
   const t = useTranslations("KuzaAI");
   const locale = useLocale() === "sw" ? "sw" : "en";
   const [draft, setDraft] = useState("");
+  const composerRef = useRef<HTMLTextAreaElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const { clearError, error, messages, sendMessage, sending } =
     useKuzaAIConversation({ businessId, locale });
@@ -48,6 +58,10 @@ function KuzaAICompanion({
     const cleaned = message.trim();
     if (!cleaned || sending) return;
     setDraft("");
+    if (composerRef.current) {
+      composerRef.current.style.height = "40px";
+      composerRef.current.style.overflowY = "hidden";
+    }
     clearError();
     void sendMessage(cleaned);
   };
@@ -90,7 +104,7 @@ function KuzaAICompanion({
         "lg:sticky lg:inset-auto lg:top-14 lg:z-20 lg:h-[calc(100svh-3.5rem)] lg:min-h-[calc(100svh-3.5rem)] lg:self-start lg:border-l lg:border-slate-200 lg:dark:border-slate-800",
         mode === "expanded"
           ? "lg:min-w-0 lg:flex-1"
-          : "lg:w-[min(28rem,38vw)] lg:shrink-0",
+          : "lg:w-[min(23rem,34vw)] lg:shrink-0",
       )}
     >
       <div className="flex h-16 shrink-0 items-center justify-between gap-3 border-b border-slate-200 px-4 dark:border-slate-800">
@@ -162,30 +176,23 @@ function KuzaAICompanion({
               </div>
             </div>
           ) : (
-            <div className="mx-auto flex w-full max-w-3xl flex-col gap-4">
-              {messages.map((message) => (
-                <div
-                  className={cn(
-                    "flex",
-                    message.role === "user" ? "justify-end" : "justify-start",
-                  )}
-                  key={message.id}
-                >
-                  <div
-                    className={cn(
-                      "max-w-[88%] whitespace-pre-wrap break-words rounded-2xl px-4 py-3 text-sm leading-6",
-                      message.role === "user"
-                        ? "rounded-br-md bg-slate-950 text-white dark:bg-white dark:text-slate-950"
-                        : "rounded-bl-md border border-slate-200 bg-slate-50 text-slate-800 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200",
-                    )}
-                  >
-                    {message.content}
+            <div className="mx-auto flex w-full max-w-3xl flex-col gap-5">
+              {messages.map((message) =>
+                message.role === "user" ? (
+                  <div className="flex justify-end" key={message.id}>
+                    <div className="max-w-[88%] whitespace-pre-wrap break-words rounded-2xl rounded-br-md bg-slate-950 px-4 py-3 text-sm leading-6 text-white dark:bg-white dark:text-slate-950">
+                      {message.content}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ) : (
+                  <div className="w-full min-w-0 py-1" key={message.id}>
+                    <KuzaAIResponse content={message.content} />
+                  </div>
+                ),
+              )}
               {sending ? (
                 <div className="flex justify-start">
-                  <div className="inline-flex items-center gap-2 rounded-2xl rounded-bl-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
+                  <div className="inline-flex items-center gap-2 rounded-2xl bg-slate-50 px-3 py-2 text-sm text-slate-600 dark:bg-slate-900 dark:text-slate-300">
                     <LoaderCircle className="size-4 animate-spin" />
                     <span>{t("thinking")}</span>
                   </div>
@@ -196,40 +203,37 @@ function KuzaAICompanion({
           )}
         </div>
 
-        <div className="shrink-0 border-t border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-950 sm:p-4">
+        <div className="shrink-0 border-t border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-950">
           {error ? (
             <div
-              className="mb-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700 dark:border-rose-950 dark:bg-rose-950/30 dark:text-rose-300"
+              className="mx-auto mb-2 max-w-3xl rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700 dark:border-rose-950 dark:bg-rose-950/30 dark:text-rose-300"
               role="alert"
             >
               {t("error")}
             </div>
           ) : null}
-          <form
-            className="mx-auto w-full max-w-3xl"
-            onSubmit={handleSubmit}
-          >
-            <div className="rounded-2xl border border-slate-300 bg-white p-2 shadow-sm focus-within:border-slate-400 focus-within:ring-2 focus-within:ring-slate-200 dark:border-slate-700 dark:bg-slate-900 dark:focus-within:border-slate-600 dark:focus-within:ring-slate-800">
-              <textarea
-                aria-label={t("composerLabel")}
-                className="max-h-40 min-h-16 w-full resize-none bg-transparent px-2 py-1.5 text-sm leading-6 text-slate-950 outline-none placeholder:text-slate-400 dark:text-white dark:placeholder:text-slate-500"
-                disabled={sending}
-                maxLength={4000}
-                onChange={(event) => {
-                  setDraft(event.target.value);
-                  if (error) clearError();
-                }}
-                onKeyDown={handleComposerKeyDown}
-                placeholder={t("placeholder")}
-                value={draft}
-              />
-              <div className="flex items-center justify-between gap-3 px-1 pb-0.5">
-                <span className="text-[11px] text-slate-400 dark:text-slate-500">
-                  {draft.length}/4000
-                </span>
+          <form className="mx-auto w-full max-w-3xl" onSubmit={handleSubmit}>
+            <div className="rounded-2xl border border-slate-300 bg-white px-2 py-1.5 shadow-sm focus-within:border-slate-400 focus-within:ring-2 focus-within:ring-slate-200 dark:border-slate-700 dark:bg-slate-900 dark:focus-within:border-slate-600 dark:focus-within:ring-slate-800">
+              <div className="flex items-end gap-2">
+                <textarea
+                  aria-label={t("composerLabel")}
+                  className="min-h-10 max-h-36 flex-1 resize-none overflow-y-hidden bg-transparent px-2 py-2 text-sm leading-6 text-slate-950 outline-none placeholder:text-slate-400 dark:text-white dark:placeholder:text-slate-500"
+                  disabled={sending}
+                  maxLength={4000}
+                  onChange={(event) => {
+                    setDraft(event.target.value);
+                    resizeComposer(event.currentTarget);
+                    if (error) clearError();
+                  }}
+                  onKeyDown={handleComposerKeyDown}
+                  placeholder={t("placeholder")}
+                  ref={composerRef}
+                  rows={1}
+                  value={draft}
+                />
                 <button
                   aria-label={t("send")}
-                  className="inline-flex size-9 items-center justify-center rounded-xl bg-slate-950 text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
+                  className="mb-0.5 inline-flex size-9 shrink-0 items-center justify-center rounded-xl bg-slate-950 text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
                   disabled={sending || draft.trim().length === 0}
                   title={t("send")}
                   type="submit"
@@ -241,8 +245,13 @@ function KuzaAICompanion({
                   )}
                 </button>
               </div>
+              {draft.length > 3200 ? (
+                <p className="px-2 pb-1 text-right text-[10px] text-slate-400 dark:text-slate-500">
+                  {draft.length}/4000
+                </p>
+              ) : null}
             </div>
-            <p className="mt-2 px-1 text-center text-[11px] leading-4 text-slate-400 dark:text-slate-500">
+            <p className="mt-1.5 px-1 text-center text-[10px] leading-4 text-slate-400 dark:text-slate-500">
               {t("disclaimer")}
             </p>
           </form>
