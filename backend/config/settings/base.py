@@ -61,6 +61,7 @@ LOCAL_APPS = [
     "apps.notifications.apps.NotificationsConfig",
     "apps.workspaces.apps.WorkspacesConfig",
     "apps.commerce.apps.CommerceConfig",
+    "apps.intelligence.apps.IntelligenceConfig",
 ]
 
 # =====================================================
@@ -417,3 +418,18 @@ EMAIL_DELIVERY_RETENTION_DAYS = config(
     default=30,
     cast=int,
 )
+
+# Tunakuza Intelligence
+AI_ENABLED = config("AI_ENABLED", default=False, cast=bool)
+AI_PROVIDER = config("AI_PROVIDER", default="groq")
+AI_MAX_TOOL_CALLS = config("AI_MAX_TOOL_CALLS", default=6, cast=int)
+AI_MAX_OUTPUT_TOKENS = config("AI_MAX_OUTPUT_TOKENS", default=2000, cast=int)
+AI_REASONING_EFFORT = config("AI_REASONING_EFFORT", default="medium")
+
+GROQ_API_KEY = config("GROQ_API_KEY", default="")
+GROQ_MODEL = config("GROQ_MODEL", default="openai/gpt-oss-120b")
+GROQ_API_BASE_URL = config(
+    "GROQ_API_BASE_URL",
+    default="https://api.groq.com/openai/v1",
+)
+GROQ_TIMEOUT_SECONDS = config("GROQ_TIMEOUT_SECONDS", default=30, cast=int)
