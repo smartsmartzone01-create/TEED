@@ -108,6 +108,46 @@ function WorkspaceCard({
   );
 }
 
+function StandaloneWorkspaceTile({
+  business,
+}: {
+  business: WorkspaceBusinessListItem;
+}) {
+  const t = useTranslations("WorkspaceRefinement.directory");
+  const href =
+    business.status === "active"
+      ? `/workspace/${business.id}`
+      : `/dashboard/workspaces/${business.id}/lifecycle`;
+
+  return (
+    <Link
+      aria-label={t("open", { name: business.name })}
+      className="group flex aspect-square min-w-0 flex-col rounded-3xl border border-slate-200 bg-white p-5 transition duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-navy/30 dark:border-slate-800 dark:bg-slate-950 dark:hover:border-slate-700 sm:p-6"
+      href={href}
+    >
+      <BusinessIcon
+        className="size-14 shrink-0 rounded-2xl sm:size-16"
+        logoUrl={business.logo_url}
+        name={business.name}
+        primaryColor={business.primary_brand_color}
+        secondaryColor={business.secondary_brand_color}
+      />
+
+      <div className="mt-auto min-w-0 pt-5">
+        <h3 className="truncate text-base font-semibold tracking-tight sm:text-lg">
+          {business.name}
+        </h3>
+        <p className="mt-1 truncate text-sm text-slate-500 dark:text-slate-400">
+          @{business.public_handle}
+        </p>
+        <p className="mt-3 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
+          {t(`roles.${business.membership.role}`)}
+        </p>
+      </div>
+    </Link>
+  );
+}
+
 function DirectoryActions({ standalone }: { standalone: boolean }) {
   const t = useTranslations("WorkspaceRefinement.directory");
 
@@ -169,7 +209,7 @@ function WorkspaceDirectory({ surface = "standalone" }: WorkspaceDirectoryProps)
 
   const workspaceState =
     status === "loading" ? (
-      <p className="rounded-2xl border border-white/50 bg-white/70 p-5 text-sm text-slate-500 backdrop-blur dark:border-white/10 dark:bg-slate-950/70">
+      <p className="rounded-2xl border border-slate-200 bg-white p-5 text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-950">
         {t("loading")}
       </p>
     ) : error ? (
@@ -188,46 +228,63 @@ function WorkspaceDirectory({ surface = "standalone" }: WorkspaceDirectoryProps)
     ) : (
       <>
         <section className="space-y-3" aria-labelledby="business-workspaces-title">
-          <div className="flex items-center gap-2">
-            <BriefcaseBusiness className="size-5 text-brand-navy dark:text-brand-orange" />
-            <h2 className="text-lg font-semibold" id="business-workspaces-title">
-              {surface === "standalone"
-                ? t("currentBusinessTitle")
-                : t("businessTitle")}
-            </h2>
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <BriefcaseBusiness className="size-5 text-brand-navy dark:text-brand-orange" />
+              <h2 className="text-lg font-semibold" id="business-workspaces-title">
+                {surface === "standalone"
+                  ? t("currentBusinessTitle")
+                  : t("businessTitle")}
+              </h2>
+            </div>
+            {surface === "standalone" ? (
+              <span className="text-sm text-slate-500 dark:text-slate-400">
+                {businessWorkspaces.length}
+              </span>
+            ) : null}
           </div>
           {businessWorkspaces.length ? (
-            <div className="grid gap-3 xl:grid-cols-2">
-              {businessWorkspaces.map((business) => (
-                <WorkspaceCard business={business} key={business.id} personal={false} />
-              ))}
-            </div>
+            surface === "standalone" ? (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {businessWorkspaces.map((business) => (
+                  <StandaloneWorkspaceTile business={business} key={business.id} />
+                ))}
+              </div>
+            ) : (
+              <div className="grid gap-3 xl:grid-cols-2">
+                {businessWorkspaces.map((business) => (
+                  <WorkspaceCard business={business} key={business.id} personal={false} />
+                ))}
+              </div>
+            )
           ) : (
-            <div className="rounded-2xl border border-dashed border-slate-300 bg-white/70 p-6 text-sm text-slate-500 backdrop-blur dark:border-slate-700 dark:bg-slate-950/70">
+            <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-6 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-950">
               {t("businessEmpty")}
             </div>
           )}
         </section>
 
-        <section className="space-y-3" aria-labelledby="personal-workspaces-title">
-          <div className="flex items-center gap-2">
-            <UserRound className="size-5 text-slate-500" />
-            <h2 className="text-lg font-semibold" id="personal-workspaces-title">
-              {t("personalTitle")}
-            </h2>
-          </div>
-          {personalWorkspaces.length ? (
-            <div className="grid gap-3 xl:grid-cols-2">
-              {personalWorkspaces.map((business) => (
-                <WorkspaceCard business={business} key={business.id} personal />
-              ))}
+        {surface === "standalone" ? null : (
+          <section className="space-y-3" aria-labelledby="personal-workspaces-title">
+            <div className="flex items-center gap-2">
+              <UserRound className="size-5 text-slate-500" />
+              <h2 className="text-lg font-semibold" id="personal-workspaces-title">
+                {t("personalTitle")}
+              </h2>
             </div>
-          ) : (
-            <div className="rounded-2xl border border-dashed border-slate-300 bg-white/70 p-6 text-sm text-slate-500 backdrop-blur dark:border-slate-700 dark:bg-slate-950/70">
-              {t("personalEmpty")}
-            </div>
-          )}
-        </section>
+            {personalWorkspaces.length ? (
+              <div className="grid gap-3 xl:grid-cols-2">
+                {personalWorkspaces.map((business) => (
+                  <WorkspaceCard business={business} key={business.id} personal />
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-6 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-950">
+                {t("personalEmpty")}
+              </div>
+            )}
+          </section>
+        )}
       </>
     );
 
@@ -287,26 +344,24 @@ function WorkspaceDirectory({ surface = "standalone" }: WorkspaceDirectoryProps)
 
   if (surface === "standalone") {
     return (
-      <div className="grid gap-6 lg:grid-cols-[minmax(19rem,0.72fr)_minmax(0,1.28fr)] lg:items-start">
-        <section className="rounded-[2rem] border border-white/60 bg-white/90 p-6 shadow-xl shadow-slate-950/5 backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/88 lg:sticky lg:top-24 sm:p-7">
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-brand-orange">
-            {t("eyebrow")}
-          </p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
-            {t("title")}
-          </h1>
-          <p className="mt-4 text-sm leading-6 text-slate-600 dark:text-slate-300">
-            {t("description")}
-          </p>
-          <div className="mt-6">
-            <DirectoryActions standalone />
+      <div className="space-y-8">
+        <header className="flex flex-col gap-4 border-b border-slate-200 pb-5 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">
+              {t("currentBusinessTitle")}
+            </h1>
           </div>
-        </section>
+          <Link
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950/20 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300 dark:hover:bg-slate-900 dark:hover:text-white"
+            href="/dashboard"
+          >
+            <LayoutDashboard className="size-4" />
+            {t("personalDashboard")}
+          </Link>
+        </header>
 
-        <div className="space-y-7">
-          {workspaceState}
-          {invitationSection}
-        </div>
+        {workspaceState}
+        {invitationSection}
       </div>
     );
   }
