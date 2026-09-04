@@ -1,3 +1,10 @@
+from .account_protection import (
+    AccountProtectionEmailRequestAPIView,
+    AccountProtectionEmailVerifyAPIView,
+    AccountProtectionPhoneRequestAPIView,
+    AccountProtectionPhoneVerifyAPIView,
+    AccountProtectionStatusAPIView,
+)
 from .authentication import (
     EmailLoginAPIView,
     GoogleAuthenticationAPIView,
@@ -27,6 +34,11 @@ from .session import (
 )
 
 __all__ = [
+    "AccountProtectionEmailRequestAPIView",
+    "AccountProtectionEmailVerifyAPIView",
+    "AccountProtectionPhoneRequestAPIView",
+    "AccountProtectionPhoneVerifyAPIView",
+    "AccountProtectionStatusAPIView",
     "EmailLoginAPIView",
     "GoogleAuthenticationAPIView",
     "PhoneLoginAPIView",

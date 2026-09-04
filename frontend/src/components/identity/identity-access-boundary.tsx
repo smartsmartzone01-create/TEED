@@ -6,6 +6,7 @@ import { useEffect, type ReactNode } from "react";
 import { IdentityFullPageLoader } from "@/components/identity/identity-full-page-loader";
 import { useRouter } from "@/i18n/navigation";
 import { useIdentitySession } from "@/providers/identity/identity-session-provider";
+import { useIdentityTransition } from "@/providers/identity/identity-transition-provider";
 
 type IdentityAccess = "dashboard" | "guest" | "onboarding";
 
@@ -40,8 +41,9 @@ function IdentityAccessBoundary({
   const common = useTranslations("IdentityCommon");
   const router = useRouter();
   const { status, user } = useIdentitySession();
+  const { transition } = useIdentityTransition();
   const redirectTarget =
-    status === "initializing"
+    status === "initializing" || transition
       ? null
       : getRedirectTarget(
           access,

@@ -15,6 +15,7 @@ import { restoreSession } from "@/services/identity/entry";
 type IdentitySessionUser = {
   countryCode?: string | null;
   email: string | null;
+  isEmailVerified?: boolean;
   isOnboardingComplete: boolean;
   isPhoneVerified?: boolean;
   phoneNumber?: string | null;
@@ -47,6 +48,7 @@ function mapSessionUser(data: {
   country_code?: string | null;
   email: string | null;
   id: string;
+  is_email_verified?: boolean;
   is_onboarding_complete: boolean;
   is_phone_verified?: boolean;
   phone_number?: string | null;
@@ -56,6 +58,7 @@ function mapSessionUser(data: {
   return {
     countryCode: data.country_code ?? null,
     email: data.email,
+    isEmailVerified: data.is_email_verified ?? false,
     isOnboardingComplete: data.is_onboarding_complete,
     isPhoneVerified: data.is_phone_verified ?? false,
     phoneNumber: data.phone_number ?? null,

@@ -1,3 +1,7 @@
+from .account_protection import (
+    AccountProtectionCodeSerializer,
+    AccountProtectionEmailRequestSerializer,
+)
 from .authentication import (
     EmailLoginSerializer,
     GoogleAuthenticationSerializer,
@@ -21,6 +25,8 @@ from .registration import EmailRegistrationSerializer, PhoneRegistrationSerializ
 from .session import CurrentUserSerializer, SessionActionSerializer
 
 __all__ = [
+    "AccountProtectionCodeSerializer",
+    "AccountProtectionEmailRequestSerializer",
     "EmailLoginSerializer",
     "GoogleAuthenticationSerializer",
     "PhoneLoginSerializer",

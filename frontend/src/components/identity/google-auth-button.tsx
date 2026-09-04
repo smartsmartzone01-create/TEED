@@ -51,6 +51,7 @@ function GoogleAuthButton({ mode }: GoogleAuthButtonProps) {
           user: {
             countryCode: data.country_code ?? null,
             email: data.email,
+            isEmailVerified: data.is_email_verified,
             isOnboardingComplete: data.is_onboarding_complete,
             isPhoneVerified: data.is_phone_verified,
             phoneNumber: data.phone_number ?? null,

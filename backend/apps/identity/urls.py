@@ -1,6 +1,11 @@
 from django.urls import path
 
 from .api import (
+    AccountProtectionEmailRequestAPIView,
+    AccountProtectionEmailVerifyAPIView,
+    AccountProtectionPhoneRequestAPIView,
+    AccountProtectionPhoneVerifyAPIView,
+    AccountProtectionStatusAPIView,
     CurrentSessionAPIView,
     EmailLoginAPIView,
     EmailRegistrationAPIView,
@@ -40,6 +45,31 @@ urlpatterns = [
         name="phone-verification-resend",
     ),
     path("onboarding/", OnboardingAPIView.as_view(), name="onboarding"),
+    path(
+        "account-protection/",
+        AccountProtectionStatusAPIView.as_view(),
+        name="account-protection-status",
+    ),
+    path(
+        "account-protection/phone/request/",
+        AccountProtectionPhoneRequestAPIView.as_view(),
+        name="account-protection-phone-request",
+    ),
+    path(
+        "account-protection/phone/verify/",
+        AccountProtectionPhoneVerifyAPIView.as_view(),
+        name="account-protection-phone-verify",
+    ),
+    path(
+        "account-protection/email/request/",
+        AccountProtectionEmailRequestAPIView.as_view(),
+        name="account-protection-email-request",
+    ),
+    path(
+        "account-protection/email/verify/",
+        AccountProtectionEmailVerifyAPIView.as_view(),
+        name="account-protection-email-verify",
+    ),
     path("login/email/", EmailLoginAPIView.as_view(), name="email-login"),
     path("login/phone/", PhoneLoginAPIView.as_view(), name="phone-login"),
     path(

@@ -87,6 +87,7 @@ function PhoneVerificationForm({
         user: {
           countryCode: data.country_code,
           email: data.email,
+          isEmailVerified: false,
           isOnboardingComplete: false,
           isPhoneVerified: true,
           phoneNumber: data.phone_number,

@@ -43,6 +43,7 @@ from .user import (
     create_user,
     mark_user_email_verified,
     mark_user_phone_verified,
+    set_user_email,
 )
 
 __all__ = [
@@ -68,6 +69,7 @@ __all__ = [
     "invalidate_outstanding_phone_verification_challenges",
     "mark_user_email_verified",
     "mark_user_phone_verified",
+    "set_user_email",
     "complete_user_onboarding",
     "create_user_session",
     "create_identity_security_event",

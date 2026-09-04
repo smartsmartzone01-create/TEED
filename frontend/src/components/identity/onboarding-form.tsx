@@ -99,15 +99,16 @@ function OnboardingForm() {
       updateUser({
         countryCode: data.country_code,
         email: data.email,
+        isEmailVerified: data.is_email_verified,
         isOnboardingComplete: true,
-        isPhoneVerified: user.isPhoneVerified,
+        isPhoneVerified: data.is_phone_verified,
         phoneNumber: data.phone_number,
         suggestedUsername: data.username,
         userId: data.user_id,
         username: data.username,
       });
       notify({ message: t("success"), tone: "success" });
-      router.push("/dashboard");
+      router.push(data.recommended_step ? "/protect-account" : "/dashboard");
     } catch (error) {
       if (error instanceof ApiClientError) {
         if (error.details.kind === "unauthenticated") {

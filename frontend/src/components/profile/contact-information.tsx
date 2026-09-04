@@ -1,19 +1,22 @@
 "use client";
 
 import { CheckCircle2, Mail, Phone, ShieldAlert } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
-import { useTranslations } from "next-intl";
 
-import { ProfilePage } from "@/components/profile/profile-page";
 import { Button } from "@/components/global/primitives/button";
+import { ProfilePage } from "@/components/profile/profile-page";
 import { Link } from "@/i18n/navigation";
+import { getProtectAccountCopy } from "@/i18n/messages/identity/protect-account-copy";
 import { useIdentitySession } from "@/providers/identity/identity-session-provider";
 import { ApiClientError } from "@/services/global/api-client";
 import { getContactInformation } from "@/services/profile/profile";
 import type { ContactInformation as ContactInformationType } from "@/types/profile/profile";
 
 function ContactInformation() {
+  const locale = useLocale();
   const t = useTranslations("ContactInformation");
+  const copy = getProtectAccountCopy(locale);
   const { accessToken, refreshAccessToken } = useIdentitySession();
   const [contacts, setContacts] = useState<ContactInformationType | null>(null);
   const [failed, setFailed] = useState(false);
@@ -56,7 +59,10 @@ function ContactInformation() {
             const contact = contacts[key];
             const Icon = key === "email" ? Mail : Phone;
             return (
-              <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950" key={key}>
+              <section
+                className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950"
+                key={key}
+              >
                 <div className="flex items-start gap-3">
                   <span className="inline-flex size-10 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-900">
                     <Icon className="size-4.5" />
@@ -68,16 +74,37 @@ function ContactInformation() {
                     </p>
                   </div>
                 </div>
-                <p className={`mt-4 flex items-center gap-2 text-sm ${contact.verified ? "text-emerald-700 dark:text-emerald-300" : "text-amber-700 dark:text-amber-300"}`}>
-                  {contact.verified ? <CheckCircle2 className="size-4" /> : <ShieldAlert className="size-4" />}
+                <p
+                  className={`mt-4 flex items-center gap-2 text-sm ${
+                    contact.verified
+                      ? "text-emerald-700 dark:text-emerald-300"
+                      : "text-amber-700 dark:text-amber-300"
+                  }`}
+                >
+                  {contact.verified ? (
+                    <CheckCircle2 className="size-4" />
+                  ) : (
+                    <ShieldAlert className="size-4" />
+                  )}
                   {t(contact.verified ? "verified" : "unverified")}
                 </p>
                 <p className="mt-4 text-sm leading-6 text-slate-500 dark:text-slate-400">
                   {t(`${key}.purpose`)}
                 </p>
                 <p className="mt-3 text-xs text-slate-500">
-                  {t(contact.recovery_available ? "recoveryAvailable" : "recoveryUnavailable")}
+                  {t(
+                    contact.recovery_available
+                      ? "recoveryAvailable"
+                      : "recoveryUnavailable",
+                  )}
                 </p>
+                {!contact.verified ? (
+                  <Button asChild className="mt-4" size="small" variant="outline">
+                    <Link href="/dashboard/profile/contacts/protect">
+                      {copy.protectAction}
+                    </Link>
+                  </Button>
+                ) : null}
               </section>
             );
           })}

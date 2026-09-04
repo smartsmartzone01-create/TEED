@@ -31,6 +31,13 @@ def mark_user_phone_verified(*, user: User) -> User:
     return user
 
 
+def set_user_email(*, user: User, email: str) -> User:
+    user.email = email
+    user.is_email_verified = False
+    user.save(update_fields=["email", "is_email_verified", "updated_at"])
+    return user
+
+
 def complete_user_onboarding(
     *,
     user: User,

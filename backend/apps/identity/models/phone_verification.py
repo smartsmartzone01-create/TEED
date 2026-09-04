@@ -10,6 +10,7 @@ class PhoneVerificationChallenge(BaseModel):
     class Purpose(models.TextChoices):
         REGISTRATION = "registration", "Registration"
         PASSWORD_RESET = "password_reset", "Password reset"
+        ACCOUNT_PROTECTION = "account_protection", "Account protection"
 
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,

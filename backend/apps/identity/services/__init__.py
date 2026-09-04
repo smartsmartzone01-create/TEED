@@ -1,3 +1,10 @@
+from .account_protection import (
+    get_account_protection_recommendation,
+    request_email_account_protection,
+    request_phone_account_protection,
+    verify_email_account_protection,
+    verify_phone_account_protection,
+)
 from .authentication import (
     authenticated_login_result,
     login_email_user,
@@ -38,6 +45,11 @@ from .session import (
 )
 
 __all__ = [
+    "get_account_protection_recommendation",
+    "request_email_account_protection",
+    "request_phone_account_protection",
+    "verify_email_account_protection",
+    "verify_phone_account_protection",
     "issue_email_verification_challenge",
     "issue_phone_verification_challenge",
     "enqueue_email_delivery",

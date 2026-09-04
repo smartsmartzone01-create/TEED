@@ -32,6 +32,7 @@ def _login_response(*, request, result):
             "email": user.email,
             "phone_number": user.phone_number,
             "country_code": user.country_code,
+            "is_email_verified": user.is_email_verified,
             "is_phone_verified": user.is_phone_verified,
             "username": user.username,
             "suggested_username": result.get("suggested_username"),

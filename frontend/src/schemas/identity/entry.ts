@@ -9,6 +9,9 @@ const nextStepSchema = z.enum([
   "verify_email",
   "verify_phone",
 ]);
+const protectionStepSchema = z
+  .enum(["add_email", "verify_email", "verify_phone"])
+  .nullable();
 
 const accessTokenSchema = z.object({
   access: z.string().min(1),
@@ -32,6 +35,7 @@ const phoneRegistrationDataSchema = z.object({
 const authenticatedUserDataSchema = z.object({
   country_code: z.string().nullable().optional(),
   email: z.email().nullable(),
+  is_email_verified: z.boolean().optional().default(false),
   is_onboarding_complete: z.boolean(),
   is_phone_verified: z.boolean().optional().default(false),
   next_step: z.enum(["complete_onboarding", "dashboard"]),
@@ -86,11 +90,22 @@ const refreshDataSchema = z.object({
 const onboardingDataSchema = z.object({
   country_code: countryCodeSchema,
   email: z.email().nullable(),
+  is_email_verified: z.boolean(),
   is_onboarding_complete: z.literal(true),
+  is_phone_verified: z.boolean(),
   next_step: z.literal("dashboard"),
   phone_number: z.string().min(1),
+  recommended_step: protectionStepSchema,
   user_id: z.uuid(),
   username: z.string().min(1),
+});
+
+const accountProtectionDataSchema = z.object({
+  email: z.email().nullable(),
+  is_email_verified: z.boolean(),
+  is_phone_verified: z.boolean(),
+  phone_number: z.string().nullable(),
+  recommended_step: protectionStepSchema,
 });
 
 const registrationResponseSchema =
@@ -105,6 +120,8 @@ const resendResponseSchema = createApiEnvelopeSchema(z.null());
 const csrfResponseSchema = createApiEnvelopeSchema(csrfDataSchema);
 const onboardingResponseSchema = createApiEnvelopeSchema(onboardingDataSchema);
 const refreshResponseSchema = createApiEnvelopeSchema(refreshDataSchema);
+const accountProtectionResponseSchema =
+  createApiEnvelopeSchema(accountProtectionDataSchema);
 
 type ValidationMessages = {
   code: string;
@@ -214,6 +231,7 @@ function createOnboardingFormSchema(messages: ValidationMessages) {
 }
 
 export {
+  accountProtectionResponseSchema,
   authenticatedUserDataSchema,
   createLoginFormSchema,
   createOnboardingFormSchema,
@@ -227,6 +245,7 @@ export {
   phoneRegistrationResponseSchema,
   phoneVerificationDataSchema,
   phoneVerificationResponseSchema,
+  protectionStepSchema,
   refreshResponseSchema,
   registrationResponseSchema,
   resendResponseSchema,

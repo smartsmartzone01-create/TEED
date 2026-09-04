@@ -1,6 +1,6 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import {
   createContext,
   useCallback,
@@ -14,8 +14,13 @@ import {
 
 import { IdentityFullPageLoader } from "@/components/identity/identity-full-page-loader";
 import { usePathname } from "@/i18n/navigation";
+import { getProtectAccountCopy } from "@/i18n/messages/identity/protect-account-copy";
 
-type IdentityTransition = "authenticating" | "onboarding" | "registering";
+type IdentityTransition =
+  | "authenticating"
+  | "onboarding"
+  | "protecting"
+  | "registering";
 
 type IdentityTransitionContextValue = {
   beginTransition: (transition: IdentityTransition) => void;
@@ -30,12 +35,14 @@ type IdentityTransitionProviderProps = {
 };
 
 function IdentityTransitionProvider({ children }: IdentityTransitionProviderProps) {
+  const locale = useLocale();
   const loginT = useTranslations("Login");
   const onboardingT = useTranslations("Onboarding");
   const signupT = useTranslations("Signup");
   const pathname = usePathname();
   const startPathnameRef = useRef<string | null>(null);
   const [transition, setTransition] = useState<IdentityTransition | null>(null);
+  const protectCopy = getProtectAccountCopy(locale);
 
   const beginTransition = useCallback(
     (nextTransition: IdentityTransition) => {
@@ -73,7 +80,9 @@ function IdentityTransitionProvider({ children }: IdentityTransitionProviderProp
         ? signupT("submitting")
         : transition === "onboarding"
           ? onboardingT("submitting")
-          : null;
+          : transition === "protecting"
+            ? protectCopy.submitting
+            : null;
 
   return (
     <IdentityTransitionContext.Provider value={value}>

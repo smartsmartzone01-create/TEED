@@ -101,7 +101,9 @@ function EmailVerificationForm({
         accessToken: data.tokens.access,
         user: {
           email: data.email,
+          isEmailVerified: true,
           isOnboardingComplete: false,
+          isPhoneVerified: false,
           userId: data.user_id,
           username: null,
         },

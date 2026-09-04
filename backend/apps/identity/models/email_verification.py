@@ -20,6 +20,10 @@ class EmailVerificationChallenge(BaseModel):
             "password_reset",
             "Password reset",
         )
+        ACCOUNT_PROTECTION = (
+            "account_protection",
+            "Account protection",
+        )
 
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,

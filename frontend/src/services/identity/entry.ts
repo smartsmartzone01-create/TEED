@@ -1,4 +1,5 @@
 import {
+  accountProtectionResponseSchema,
   loginResponseSchema,
   onboardingResponseSchema,
   phoneRegistrationResponseSchema,
@@ -134,6 +135,64 @@ async function completeOnboarding(
   });
 }
 
+async function getAccountProtection(accessToken: string) {
+  return requestApi({
+    accessToken,
+    method: "GET",
+    path: "/api/v1/identity/account-protection/",
+    schema: accountProtectionResponseSchema,
+  });
+}
+
+async function requestAccountProtectionPhone(accessToken: string) {
+  return requestApi({
+    accessToken,
+    body: {},
+    method: "POST",
+    path: "/api/v1/identity/account-protection/phone/request/",
+    schema: accountProtectionResponseSchema,
+  });
+}
+
+async function verifyAccountProtectionPhone(
+  code: string,
+  accessToken: string,
+) {
+  return requestApi({
+    accessToken,
+    body: { code },
+    method: "POST",
+    path: "/api/v1/identity/account-protection/phone/verify/",
+    schema: accountProtectionResponseSchema,
+  });
+}
+
+async function requestAccountProtectionEmail(
+  email: string | null,
+  accessToken: string,
+) {
+  return requestApi({
+    accessToken,
+    body: email ? { email } : {},
+    method: "POST",
+    path: "/api/v1/identity/account-protection/email/request/",
+    schema: accountProtectionResponseSchema,
+  });
+}
+
+async function verifyAccountProtectionEmail(
+  code: string,
+  accessToken: string,
+) {
+  return requestApi({
+    accessToken,
+    body: { code },
+    method: "POST",
+    path: "/api/v1/identity/account-protection/email/verify/",
+    schema: accountProtectionResponseSchema,
+  });
+}
+
 async function performSessionRestore() {
   const request = () =>
     withCsrfRetry((token) =>
@@ -173,15 +232,20 @@ async function logoutCurrentSession() {
 export {
   authenticateWithGoogle,
   completeOnboarding,
+  getAccountProtection,
   initializeCsrf,
   loginWithEmail,
   loginWithPhone,
   logoutCurrentSession,
   registerWithEmail,
   registerWithPhone,
+  requestAccountProtectionEmail,
+  requestAccountProtectionPhone,
   resendEmailVerification,
   resendPhoneVerification,
   restoreSession,
+  verifyAccountProtectionEmail,
+  verifyAccountProtectionPhone,
   verifyEmail,
   verifyPhone,
 };
