@@ -4,14 +4,11 @@ from django.views.decorators.csrf import csrf_protect
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 
-from apps.commerce.services import commerce_membership
 from apps.profiles.permissions import IsOnboardingComplete
 
-from .context import build_intelligence_context
-from .prompts import build_partner_system_prompt
+from .branding import KUZA_AI_ID, KUZA_AI_NAME
 from .serializers import PartnerRequestSerializer
-from .services import build_agent
-from .tools import build_commerce_tool_registry
+from .services import run_kuza_ai
 
 
 class IntelligencePartnerAPIView(APIView):
@@ -22,36 +19,22 @@ class IntelligencePartnerAPIView(APIView):
         serializer = PartnerRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        membership = commerce_membership(
+        result = run_kuza_ai(
             user=request.user,
             business_id=business_id,
-        )
-        context = build_intelligence_context(
-            membership=membership,
+            message=serializer.validated_data["message"],
             requested_locale=serializer.validated_data.get("locale"),
-        )
-        tools = build_commerce_tool_registry(
-            membership=membership,
-            context=context,
-        )
-        result = build_agent(tools=tools).run(
-            messages=[
-                {
-                    "role": "system",
-                    "content": build_partner_system_prompt(context),
-                },
-                {
-                    "role": "user",
-                    "content": serializer.validated_data["message"],
-                },
-            ]
         )
 
         return SuccessResponse(
-            message="Tunakuza Partner response generated successfully.",
+            message=f"{KUZA_AI_NAME} response generated successfully.",
             data={
-                "reply": result.content,
-                "locale": context.locale,
+                "assistant": {
+                    "id": KUZA_AI_ID,
+                    "name": KUZA_AI_NAME,
+                },
+                "reply": result.reply,
+                "locale": result.locale,
                 "usage": result.usage,
             },
         )

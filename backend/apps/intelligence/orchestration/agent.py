@@ -3,6 +3,7 @@ from dataclasses import dataclass
 
 from django.conf import settings
 
+from ..branding import KUZA_AI_NAME
 from ..exceptions import IntelligenceDisabledError, ToolCallLimitExceeded
 from ..tools import ToolRegistry
 
@@ -26,7 +27,7 @@ class AgentOrchestrator:
 
     def run(self, *, messages):
         if not settings.AI_ENABLED:
-            raise IntelligenceDisabledError("Tunakuza Intelligence is disabled.")
+            raise IntelligenceDisabledError(f"{KUZA_AI_NAME} is currently disabled.")
 
         transcript = [dict(message) for message in messages]
         total_usage = {}
@@ -52,7 +53,7 @@ class AgentOrchestrator:
                 executed_tool_calls += 1
                 if executed_tool_calls > self.max_tool_calls:
                     raise ToolCallLimitExceeded(
-                        "Tunakuza Intelligence exceeded its tool-call limit."
+                        f"{KUZA_AI_NAME} exceeded its tool-call limit."
                     )
                 result = self.tools.execute(tool_call.name, tool_call.arguments)
                 transcript.append(

@@ -1,8 +1,11 @@
+from .branding import KUZA_AI_NAME
+
+
 def build_partner_system_prompt(context):
     language = "Kiswahili (Tanzania)" if context.locale == "sw" else "English"
     return "\n".join(
         [
-            "You are Tunakuza Partner, an intelligent partner inside Tunakuza.",
+            f"You are {KUZA_AI_NAME}, Tunakuza's intelligent business partner.",
             f"Current workspace: {context.business_name}.",
             f"Current workspace-local date: {context.local_date.isoformat()}.",
             f"Workspace timezone: {context.timezone_name}.",
