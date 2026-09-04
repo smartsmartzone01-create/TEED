@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations } from "next-intl";
 import { useMemo } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 
 import { Button } from "@/components/global/primitives/button";
 import { FormField } from "@/components/global/primitives/form-field";
@@ -45,12 +45,12 @@ function RegistrationForm() {
   );
 
   const {
+    control,
     formState: { errors },
     handleSubmit,
     register,
     setError,
     setValue,
-    watch,
   } = useForm<RegistrationFormValues>({
     defaultValues: {
       countryCode: "TZ",
@@ -63,7 +63,7 @@ function RegistrationForm() {
     resolver: zodResolver(schema),
   });
 
-  const method = watch("method");
+  const method = useWatch({ control, name: "method" });
 
   const onSubmit = handleSubmit(async (values) => {
     beginTransition("registering");

@@ -1,6 +1,7 @@
+import Image from "next/image";
+
 import { TunakuzaWordmark } from "@/components/global/brand/tunakuza-wordmark";
 import { Link } from "@/i18n/navigation";
-
 import { cn } from "@/lib/global/class-names";
 
 type BrandMarkProps = {
@@ -28,14 +29,15 @@ function BrandMark({
       data-tone={tone}
       href={href}
     >
-      <img
+      <Image
         alt=""
         aria-hidden="true"
         className="h-full w-full select-none object-contain"
         draggable={false}
-        height="198"
+        height={198}
+        priority
         src="/brand/tunakuza-logo.svg"
-        width="200"
+        width={200}
       />
     </Link>
   );
