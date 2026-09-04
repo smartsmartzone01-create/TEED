@@ -122,25 +122,25 @@ function StandaloneWorkspaceTile({
   return (
     <Link
       aria-label={t("open", { name: business.name })}
-      className="group flex aspect-square min-w-0 flex-col rounded-3xl border border-slate-200 bg-white p-5 transition duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-navy/30 dark:border-slate-800 dark:bg-slate-950 dark:hover:border-slate-700 sm:p-6"
+      className="group flex aspect-square min-w-0 flex-col rounded-xl border border-slate-200 bg-white p-4 transition duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-navy/30 dark:border-slate-800 dark:bg-slate-950 dark:hover:border-slate-700"
       href={href}
     >
       <BusinessIcon
-        className="size-14 shrink-0 rounded-2xl sm:size-16"
+        className="size-12 shrink-0 rounded-xl sm:size-14"
         logoUrl={business.logo_url}
         name={business.name}
         primaryColor={business.primary_brand_color}
         secondaryColor={business.secondary_brand_color}
       />
 
-      <div className="mt-auto min-w-0 pt-5">
-        <h3 className="truncate text-base font-semibold tracking-tight sm:text-lg">
+      <div className="mt-auto min-w-0 pt-4">
+        <h3 className="truncate text-sm font-semibold tracking-tight sm:text-base">
           {business.name}
         </h3>
-        <p className="mt-1 truncate text-sm text-slate-500 dark:text-slate-400">
+        <p className="mt-1 truncate text-xs text-slate-500 dark:text-slate-400 sm:text-sm">
           @{business.public_handle}
         </p>
-        <p className="mt-3 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
+        <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
           {t(`roles.${business.membership.role}`)}
         </p>
       </div>
@@ -245,7 +245,7 @@ function WorkspaceDirectory({ surface = "standalone" }: WorkspaceDirectoryProps)
           </div>
           {businessWorkspaces.length ? (
             surface === "standalone" ? (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-[repeat(auto-fill,minmax(10.5rem,12rem))] sm:gap-5">
                 {businessWorkspaces.map((business) => (
                   <StandaloneWorkspaceTile business={business} key={business.id} />
                 ))}
@@ -352,7 +352,7 @@ function WorkspaceDirectory({ surface = "standalone" }: WorkspaceDirectoryProps)
             </h1>
           </div>
           <Link
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950/20 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300 dark:hover:bg-slate-900 dark:hover:text-white"
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
             href="/dashboard"
           >
             <LayoutDashboard className="size-4" />
