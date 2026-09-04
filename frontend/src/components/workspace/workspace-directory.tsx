@@ -4,13 +4,13 @@ import {
   ArrowRight,
   BriefcaseBusiness,
   Check,
-  LayoutDashboard,
   Mail,
   RefreshCw,
   UserRound,
   X,
 } from "lucide-react";
-import { useTranslations } from "next-intl";
+import Image from "next/image";
+import { useLocale, useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 
 import { Button } from "@/components/global/primitives/button";
@@ -29,6 +29,19 @@ const primaryActionClassName =
   "inline-flex h-10 items-center justify-center rounded-xl bg-slate-950 px-4 text-sm font-medium text-white transition hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950/30 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200";
 const secondaryActionClassName =
   "inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950/20 dark:border-slate-800 dark:bg-slate-950 dark:hover:bg-slate-900";
+
+const pickerCopy = {
+  en: {
+    personalDashboard: "Skip to personal dashboard",
+    selectWorkspace: "Select your workspace",
+    welcome: "Welcome",
+  },
+  sw: {
+    personalDashboard: "Ruka kwenda kwenye dashibodi binafsi",
+    selectWorkspace: "Chagua workspace yako",
+    welcome: "Karibu",
+  },
+} as const;
 
 function WorkspaceCard({
   business,
@@ -108,7 +121,7 @@ function WorkspaceCard({
   );
 }
 
-function StandaloneWorkspaceTile({
+function StandaloneWorkspaceRow({
   business,
 }: {
   business: WorkspaceBusinessListItem;
@@ -122,33 +135,37 @@ function StandaloneWorkspaceTile({
   return (
     <Link
       aria-label={t("open", { name: business.name })}
-      className="group flex aspect-square min-w-0 flex-col rounded-xl border border-slate-200 bg-white p-4 transition duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-navy/30 dark:border-slate-800 dark:bg-slate-950 dark:hover:border-slate-700"
+      className="group flex min-h-14 items-center gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2.5 transition hover:border-primary/60 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 dark:border-slate-800 dark:bg-slate-950 dark:hover:border-primary/60 dark:hover:bg-slate-900"
       href={href}
     >
       <BusinessIcon
-        className="size-12 shrink-0 rounded-xl sm:size-14"
+        className="size-10 shrink-0 rounded-md"
         logoUrl={business.logo_url}
         name={business.name}
         primaryColor={business.primary_brand_color}
         secondaryColor={business.secondary_brand_color}
       />
 
-      <div className="mt-auto min-w-0 pt-4">
-        <h3 className="truncate text-sm font-semibold tracking-tight sm:text-base">
+      <span className="min-w-0 flex-1">
+        <strong className="block truncate text-sm font-medium text-slate-950 dark:text-slate-50">
           {business.name}
-        </h3>
-        <p className="mt-1 truncate text-xs text-slate-500 dark:text-slate-400 sm:text-sm">
+        </strong>
+        <span className="mt-0.5 block truncate text-xs text-slate-500 dark:text-slate-400">
           @{business.public_handle}
-        </p>
-        <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
-          {t(`roles.${business.membership.role}`)}
-        </p>
-      </div>
+        </span>
+      </span>
+
+      <span
+        aria-hidden="true"
+        className="flex size-4 shrink-0 items-center justify-center rounded-full border border-slate-300 transition group-hover:border-primary dark:border-slate-700"
+      >
+        <span className="size-2 rounded-full bg-primary opacity-0 transition group-hover:opacity-100" />
+      </span>
     </Link>
   );
 }
 
-function DirectoryActions({ standalone }: { standalone: boolean }) {
+function DirectoryActions() {
   const t = useTranslations("WorkspaceRefinement.directory");
 
   return (
@@ -159,25 +176,18 @@ function DirectoryActions({ standalone }: { standalone: boolean }) {
       <Link className={secondaryActionClassName} href="/dashboard/workspaces/access">
         {t("request")}
       </Link>
-      {standalone ? (
-        <Link
-          className="inline-flex h-10 items-center justify-center gap-2 rounded-xl px-4 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950/20 dark:text-slate-300 dark:hover:bg-slate-900 dark:hover:text-white sm:col-span-2 lg:col-span-1 xl:col-span-2"
-          href="/dashboard"
-        >
-          <LayoutDashboard className="size-4" />
-          {t("personalDashboard")}
-        </Link>
-      ) : null}
     </div>
   );
 }
 
 function WorkspaceDirectory({ surface = "standalone" }: WorkspaceDirectoryProps) {
+  const locale = useLocale();
   const t = useTranslations("WorkspaceRefinement.directory");
   const { notify } = useNotification();
   const { businesses, decideInvitation, error, invitations, refresh, status } =
     useWorkspace();
   const [decidingId, setDecidingId] = useState<string | null>(null);
+  const copy = locale.startsWith("sw") ? pickerCopy.sw : pickerCopy.en;
 
   const { businessWorkspaces, personalWorkspaces } = useMemo(() => {
     const businessItems: WorkspaceBusinessListItem[] = [];
@@ -207,6 +217,71 @@ function WorkspaceDirectory({ surface = "standalone" }: WorkspaceDirectoryProps)
     }
   }
 
+  if (surface === "standalone") {
+    const standaloneState =
+      status === "loading" ? (
+        <p className="py-5 text-center text-sm text-slate-500 dark:text-slate-400">
+          {t("loading")}
+        </p>
+      ) : error ? (
+        <section className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-800 dark:border-red-900 dark:bg-red-950/30 dark:text-red-200">
+          <p className="text-sm font-medium">{t("loadError")}</p>
+          <Button
+            className="mt-3"
+            onClick={() => void refresh()}
+            size="small"
+            variant="outline"
+          >
+            <RefreshCw className="size-4" />
+            {t("retry")}
+          </Button>
+        </section>
+      ) : businessWorkspaces.length ? (
+        <div className="space-y-2">
+          {businessWorkspaces.map((business) => (
+            <StandaloneWorkspaceRow business={business} key={business.id} />
+          ))}
+        </div>
+      ) : (
+        <p className="py-5 text-center text-sm text-slate-500 dark:text-slate-400">
+          {t("businessEmpty")}
+        </p>
+      );
+
+    return (
+      <div className="mx-auto flex w-full max-w-md flex-col py-8 sm:py-12">
+        <div className="text-center">
+          <Image
+            alt=""
+            aria-hidden="true"
+            className="mx-auto h-16 w-16 object-contain"
+            height={198}
+            priority
+            src="/brand/tunakuza-logo.svg"
+            width={200}
+          />
+          <h1 className="mt-5 text-3xl font-semibold tracking-tight">
+            {copy.welcome}
+          </h1>
+          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+            {copy.selectWorkspace}
+          </p>
+        </div>
+
+        <div className="mt-8">{standaloneState}</div>
+
+        <div className="mt-8 flex justify-start border-t border-slate-200 pt-4 dark:border-slate-800">
+          <Link
+            className="inline-flex h-9 items-center justify-center rounded-md border border-primary/30 px-3 text-sm font-medium text-primary transition hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+            href="/dashboard"
+          >
+            {copy.personalDashboard}
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   const workspaceState =
     status === "loading" ? (
       <p className="rounded-2xl border border-slate-200 bg-white p-5 text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-950">
@@ -228,35 +303,18 @@ function WorkspaceDirectory({ surface = "standalone" }: WorkspaceDirectoryProps)
     ) : (
       <>
         <section className="space-y-3" aria-labelledby="business-workspaces-title">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <BriefcaseBusiness className="size-5 text-brand-navy dark:text-brand-orange" />
-              <h2 className="text-lg font-semibold" id="business-workspaces-title">
-                {surface === "standalone"
-                  ? t("currentBusinessTitle")
-                  : t("businessTitle")}
-              </h2>
-            </div>
-            {surface === "standalone" ? (
-              <span className="text-sm text-slate-500 dark:text-slate-400">
-                {businessWorkspaces.length}
-              </span>
-            ) : null}
+          <div className="flex items-center gap-2">
+            <BriefcaseBusiness className="size-5 text-brand-navy dark:text-brand-orange" />
+            <h2 className="text-lg font-semibold" id="business-workspaces-title">
+              {t("businessTitle")}
+            </h2>
           </div>
           {businessWorkspaces.length ? (
-            surface === "standalone" ? (
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-[repeat(auto-fill,minmax(10.5rem,12rem))] sm:gap-5">
-                {businessWorkspaces.map((business) => (
-                  <StandaloneWorkspaceTile business={business} key={business.id} />
-                ))}
-              </div>
-            ) : (
-              <div className="grid gap-3 xl:grid-cols-2">
-                {businessWorkspaces.map((business) => (
-                  <WorkspaceCard business={business} key={business.id} personal={false} />
-                ))}
-              </div>
-            )
+            <div className="grid gap-3 xl:grid-cols-2">
+              {businessWorkspaces.map((business) => (
+                <WorkspaceCard business={business} key={business.id} personal={false} />
+              ))}
+            </div>
           ) : (
             <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-6 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-950">
               {t("businessEmpty")}
@@ -264,27 +322,25 @@ function WorkspaceDirectory({ surface = "standalone" }: WorkspaceDirectoryProps)
           )}
         </section>
 
-        {surface === "standalone" ? null : (
-          <section className="space-y-3" aria-labelledby="personal-workspaces-title">
-            <div className="flex items-center gap-2">
-              <UserRound className="size-5 text-slate-500" />
-              <h2 className="text-lg font-semibold" id="personal-workspaces-title">
-                {t("personalTitle")}
-              </h2>
+        <section className="space-y-3" aria-labelledby="personal-workspaces-title">
+          <div className="flex items-center gap-2">
+            <UserRound className="size-5 text-slate-500" />
+            <h2 className="text-lg font-semibold" id="personal-workspaces-title">
+              {t("personalTitle")}
+            </h2>
+          </div>
+          {personalWorkspaces.length ? (
+            <div className="grid gap-3 xl:grid-cols-2">
+              {personalWorkspaces.map((business) => (
+                <WorkspaceCard business={business} key={business.id} personal />
+              ))}
             </div>
-            {personalWorkspaces.length ? (
-              <div className="grid gap-3 xl:grid-cols-2">
-                {personalWorkspaces.map((business) => (
-                  <WorkspaceCard business={business} key={business.id} personal />
-                ))}
-              </div>
-            ) : (
-              <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-6 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-950">
-                {t("personalEmpty")}
-              </div>
-            )}
-          </section>
-        )}
+          ) : (
+            <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-6 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-950">
+              {t("personalEmpty")}
+            </div>
+          )}
+        </section>
       </>
     );
 
@@ -342,30 +398,6 @@ function WorkspaceDirectory({ surface = "standalone" }: WorkspaceDirectoryProps)
     </section>
   );
 
-  if (surface === "standalone") {
-    return (
-      <div className="space-y-8">
-        <header className="flex flex-col gap-4 border-b border-slate-200 pb-5 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">
-              {t("currentBusinessTitle")}
-            </h1>
-          </div>
-          <Link
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
-            href="/dashboard"
-          >
-            <LayoutDashboard className="size-4" />
-            {t("personalDashboard")}
-          </Link>
-        </header>
-
-        {workspaceState}
-        {invitationSection}
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
       <section className="flex flex-col gap-5 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950 sm:flex-row sm:items-center sm:justify-between sm:p-6">
@@ -378,7 +410,7 @@ function WorkspaceDirectory({ surface = "standalone" }: WorkspaceDirectoryProps)
           </p>
         </div>
         <div className="shrink-0">
-          <DirectoryActions standalone={false} />
+          <DirectoryActions />
         </div>
       </section>
 
