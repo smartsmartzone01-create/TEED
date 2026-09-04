@@ -29,14 +29,6 @@ function useKuzaAIConversation({
   const [sending, setSending] = useState(false);
   const requestController = useRef<AbortController | null>(null);
 
-  useEffect(() => {
-    requestController.current?.abort();
-    requestController.current = null;
-    setMessages([]);
-    setError(null);
-    setSending(false);
-  }, [businessId]);
-
   useEffect(
     () => () => {
       requestController.current?.abort();

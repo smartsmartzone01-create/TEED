@@ -40,10 +40,6 @@ function KuzaAICompanion({
     useKuzaAIConversation({ businessId, locale });
 
   useEffect(() => {
-    setDraft("");
-  }, [businessId]);
-
-  useEffect(() => {
     if (mode === "closed") return;
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [messages, mode, sending]);

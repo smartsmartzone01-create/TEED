@@ -17,12 +17,47 @@ type WorkspaceShellProps = {
   children: ReactNode;
 };
 
+type WorkspaceContentProps = {
+  businessId: string | null;
+  children: ReactNode;
+  kuzaAIAvailable: boolean;
+};
+
+function WorkspaceContent({
+  businessId,
+  children,
+  kuzaAIAvailable,
+}: WorkspaceContentProps) {
+  const [kuzaAIMode, setKuzaAIMode] = useState<KuzaAIMode>("closed");
+
+  return (
+    <div className="flex min-h-[calc(100svh-3.5rem)] min-w-0">
+      <main
+        className={cn(
+          "min-w-0 flex-1",
+          kuzaAIAvailable && kuzaAIMode === "expanded" ? "lg:hidden" : "block",
+        )}
+      >
+        <div className="mx-auto w-full max-w-384 p-4 sm:p-6 lg:p-8">
+          {children}
+        </div>
+      </main>
+      {kuzaAIAvailable && businessId ? (
+        <KuzaAICompanion
+          businessId={businessId}
+          mode={kuzaAIMode}
+          onModeChange={setKuzaAIMode}
+        />
+      ) : null}
+    </div>
+  );
+}
+
 function WorkspaceShell({ children }: WorkspaceShellProps) {
   const t = useTranslations("WorkspaceShell");
   const { notify } = useNotification();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [kuzaAIMode, setKuzaAIMode] = useState<KuzaAIMode>("closed");
   const [colors, setColors] = useState<{ primary: string; secondary: string } | null>(null);
   const pathname = usePathname();
   const router = useRouter();
@@ -32,10 +67,6 @@ function WorkspaceShell({ children }: WorkspaceShellProps) {
   const currentBusiness = businessId
     ? businesses.find((business) => business.id === businessId)
     : undefined;
-
-  useEffect(() => {
-    setKuzaAIMode("closed");
-  }, [businessId]);
 
   useEffect(() => {
     if (!businessId || status !== "ready") return;
@@ -92,25 +123,13 @@ function WorkspaceShell({ children }: WorkspaceShellProps) {
       >
         <WorkspaceHeader businessId={businessId} onOpenNavigation={() => setMobileOpen(true)} />
         <div className="min-h-[calc(100svh-3.5rem)] bg-[#F4F7FA] dark:bg-slate-950">
-          <div className="flex min-h-[calc(100svh-3.5rem)] min-w-0">
-            <main
-              className={cn(
-                "min-w-0 flex-1",
-                kuzaAIAvailable && kuzaAIMode === "expanded" ? "lg:hidden" : "block",
-              )}
-            >
-              <div className="mx-auto w-full max-w-384 p-4 sm:p-6 lg:p-8">
-                {children}
-              </div>
-            </main>
-            {kuzaAIAvailable && businessId ? (
-              <KuzaAICompanion
-                businessId={businessId}
-                mode={kuzaAIMode}
-                onModeChange={setKuzaAIMode}
-              />
-            ) : null}
-          </div>
+          <WorkspaceContent
+            businessId={businessId}
+            key={businessId ?? "workspace-without-business"}
+            kuzaAIAvailable={kuzaAIAvailable}
+          >
+            {children}
+          </WorkspaceContent>
         </div>
       </div>
     </div>
