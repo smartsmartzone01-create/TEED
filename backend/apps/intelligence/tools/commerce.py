@@ -187,9 +187,14 @@ def build_commerce_tool_registry(*, membership, context):
                 description=(
                     "Return the current verified loans and installment portfolio summary "
                     "for the authorized workspace, including open balances, due and "
-                    "overdue exposure, agreement mix, and installment release state. "
-                    "The summary excludes customer identity, documents, notes, and "
-                    "internal acquisition-cost or profit details."
+                    "overdue exposure, overdue share of outstanding balance, agreement "
+                    "mix, and installment product-release state. In this tool, open means "
+                    "not paid or cancelled and may include active, due, or overdue "
+                    "agreements; do not describe every open agreement as active. An "
+                    "installment awaiting release means its product has not yet been "
+                    "released to the customer; it does not mean the agreement is unfunded "
+                    "or inactive. The summary excludes customer identity, documents, "
+                    "notes, and internal acquisition-cost or profit details."
                 ),
                 input_schema={
                     "type": "object",

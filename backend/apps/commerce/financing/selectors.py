@@ -7,6 +7,7 @@ from .models import FinancingAgreement
 
 
 _MONEY_FIELD = DecimalField(max_digits=14, decimal_places=2)
+_PERCENT_QUANTUM = Decimal("0.01")
 _OPEN_STATUSES = {
     FinancingAgreement.Status.ACTIVE,
     FinancingAgreement.Status.DUE,
@@ -136,6 +137,16 @@ def financing_portfolio_summary(*, business, as_of_date):
         ):
             installments_awaiting_release_count += 1
 
+    overdue_outstanding_percent = (
+        (
+            overdue_outstanding_balance
+            * Decimal("100")
+            / open_outstanding_balance
+        ).quantize(_PERCENT_QUANTUM)
+        if open_outstanding_balance > 0
+        else Decimal("0.00")
+    )
+
     return {
         "as_of_date": as_of_date.isoformat(),
         "agreement_count": len(agreements),
@@ -153,6 +164,7 @@ def financing_portfolio_summary(*, business, as_of_date):
             "due_today_amount": due_today_amount,
             "overdue_count": overdue_count,
             "overdue_outstanding_balance": overdue_outstanding_balance,
+            "overdue_outstanding_percent": overdue_outstanding_percent,
             "installments_awaiting_release_count": installments_awaiting_release_count,
             "next_upcoming_due_date": (
                 next_upcoming_due_date.isoformat() if next_upcoming_due_date else None

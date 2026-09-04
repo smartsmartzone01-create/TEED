@@ -91,6 +91,9 @@ class FinancingPortfolioSelectorTests(SimpleTestCase):
             result["open_portfolio"]["overdue_outstanding_balance"], Decimal("400.00")
         )
         self.assertEqual(
+            result["open_portfolio"]["overdue_outstanding_percent"], Decimal("38.10")
+        )
+        self.assertEqual(
             result["open_portfolio"]["installments_awaiting_release_count"], 1
         )
         self.assertEqual(
@@ -130,12 +133,19 @@ class FinancingIntelligenceToolTests(SimpleTestCase):
                 membership=self.membership,
                 context=self.context,
             )
-            names = {
-                definition["function"]["name"] for definition in registry.definitions()
-            }
+            definitions = registry.definitions()
+            names = {definition["function"]["name"] for definition in definitions}
+            financing_definition = next(
+                definition
+                for definition in definitions
+                if definition["function"]["name"] == "commerce_financing_summary"
+            )
             result = registry.execute("commerce_financing_summary", {})
 
         self.assertIn("commerce_financing_summary", names)
+        description = financing_definition["function"]["description"]
+        self.assertIn("do not describe every open agreement as active", description)
+        self.assertIn("product has not yet been released to the customer", description)
         selector.assert_called_once_with(
             business=self.business,
             as_of_date=date(2026, 9, 5),
