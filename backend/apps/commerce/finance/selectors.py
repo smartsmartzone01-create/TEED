@@ -24,6 +24,31 @@ def operating_expenses(*, business, month="", category=""):
     return expenses
 
 
+def operating_expense_summary(*, business, start_date, end_date):
+    """Return deterministic operating-expense totals for an inclusive date range."""
+    expenses = Expense.objects.filter(
+        business=business,
+        stock_receipt__isnull=True,
+        incurred_at__date__gte=start_date,
+        incurred_at__date__lte=end_date,
+    )
+    total = expenses.aggregate(total=Sum("amount"))["total"] or Decimal("0")
+    category_totals = list(
+        expenses.values("category")
+        .annotate(total=Sum("amount"))
+        .order_by("-total", "category")
+    )
+    return {
+        "period": {
+            "start_date": start_date.isoformat(),
+            "end_date": end_date.isoformat(),
+        },
+        "expense_count": expenses.count(),
+        "total": total,
+        "category_totals": category_totals,
+    }
+
+
 def normalize_budget_period_start(*, period_type, period_start):
     if period_type == Budget.PeriodType.WEEKLY:
         return period_start - timedelta(days=period_start.weekday())
@@ -146,4 +171,52 @@ def budget_financial_state(*, budget):
         "remaining_amount": remaining,
         "utilization_percent": utilization.quantize(Decimal("0.1")),
         "status": status,
+    }
+
+
+def current_budget_health(*, business, as_of_date):
+    """Return budgets whose normalized periods contain the requested local date."""
+    daily_start = as_of_date
+    weekly_start = normalize_budget_period_start(
+        period_type=Budget.PeriodType.WEEKLY,
+        period_start=as_of_date,
+    )
+    monthly_start = normalize_budget_period_start(
+        period_type=Budget.PeriodType.MONTHLY,
+        period_start=as_of_date,
+    )
+    budgets = Budget.objects.filter(
+        business=business,
+        period_start__isnull=False,
+    ).filter(
+        Q(period_type=Budget.PeriodType.DAILY, period_start=daily_start)
+        | Q(period_type=Budget.PeriodType.WEEKLY, period_start=weekly_start)
+        | Q(period_type=Budget.PeriodType.MONTHLY, period_start=monthly_start)
+    )
+
+    payloads = []
+    for budget in budgets:
+        start, end = budget_period_bounds(
+            period_type=budget.period_type,
+            period_start=budget.period_start,
+        )
+        payloads.append(
+            {
+                "period_type": budget.period_type,
+                "period_start": start.isoformat(),
+                "period_end": (end - timedelta(days=1)).isoformat(),
+                "planned_amount": budget.planned_amount,
+                **budget_financial_state(budget=budget),
+            }
+        )
+
+    period_order = {
+        Budget.PeriodType.DAILY: 0,
+        Budget.PeriodType.WEEKLY: 1,
+        Budget.PeriodType.MONTHLY: 2,
+    }
+    payloads.sort(key=lambda item: period_order.get(item["period_type"], 99))
+    return {
+        "as_of_date": as_of_date.isoformat(),
+        "budgets": payloads,
     }
