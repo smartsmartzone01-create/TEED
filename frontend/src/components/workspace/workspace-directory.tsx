@@ -249,7 +249,7 @@ function WorkspaceDirectory({ surface = "standalone" }: WorkspaceDirectoryProps)
       );
 
     return (
-      <div className="mx-auto flex w-full max-w-md flex-col py-8 sm:py-12">
+      <div className="mx-auto flex w-full max-w-md flex-col py-1 sm:py-2">
         <div className="text-center">
           <Image
             alt=""
