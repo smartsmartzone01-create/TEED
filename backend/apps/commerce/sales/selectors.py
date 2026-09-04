@@ -5,7 +5,6 @@ from django.db.models import Sum
 from ..returns.models import ReturnItem
 from .models import Sale
 
-
 _ZERO = Decimal("0")
 
 

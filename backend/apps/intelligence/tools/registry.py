@@ -4,7 +4,6 @@ from typing import Any, Callable
 
 from ..exceptions import UnknownToolError
 
-
 _TOOL_NAME_PATTERN = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
 
 

@@ -7,7 +7,6 @@ from django.utils import timezone
 
 from apps.workspaces.business.models import BusinessSettings
 
-
 SUPPORTED_INTELLIGENCE_LOCALES = {"en", "sw"}
 
 

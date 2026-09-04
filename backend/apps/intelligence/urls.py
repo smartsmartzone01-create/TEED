@@ -2,7 +2,6 @@ from django.urls import path
 
 from .api import IntelligencePartnerAPIView
 
-
 app_name = "intelligence"
 urlpatterns = [
     path(
