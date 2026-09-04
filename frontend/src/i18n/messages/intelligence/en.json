@@ -1,0 +1,22 @@
+{
+  "KuzaAI": {
+    "subtitle": "Tunakuza's intelligent business partner",
+    "open": "Open Kuza AI",
+    "close": "Close Kuza AI",
+    "expand": "Expand Kuza AI",
+    "restore": "Restore side panel",
+    "welcomeTitle": "Ask Kuza AI about your business",
+    "welcomeBody": "Kuza AI works with the verified Tunakuza capabilities available in this workspace to help you understand what is happening and what may need attention.",
+    "thinking": "Kuza AI is working on that...",
+    "error": "Kuza AI could not respond right now. Please try again.",
+    "composerLabel": "Message Kuza AI",
+    "placeholder": "Ask about your business...",
+    "send": "Send message",
+    "disclaimer": "Kuza AI can make mistakes. Business facts are verified through Tunakuza tools when available.",
+    "prompts": {
+      "businessToday": "How is my business doing today?",
+      "attention": "What needs my attention right now?",
+      "financing": "Summarize my loans and installment agreements."
+    }
+  }
+}

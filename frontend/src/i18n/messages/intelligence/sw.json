@@ -1,0 +1,22 @@
+{
+  "KuzaAI": {
+    "subtitle": "Mshirika mahiri wa biashara wa Tunakuza",
+    "open": "Fungua Kuza AI",
+    "close": "Funga Kuza AI",
+    "expand": "Panua Kuza AI",
+    "restore": "Rudisha paneli ya pembeni",
+    "welcomeTitle": "Uliza Kuza AI kuhusu biashara yako",
+    "welcomeBody": "Kuza AI hutumia uwezo wa Tunakuza uliothibitishwa na unaopatikana katika workspace hii kukusaidia kuelewa kinachoendelea na mambo yanayoweza kuhitaji umakini.",
+    "thinking": "Kuza AI inachambua...",
+    "error": "Kuza AI haikuweza kujibu sasa. Tafadhali jaribu tena.",
+    "composerLabel": "Ujumbe kwa Kuza AI",
+    "placeholder": "Uliza kuhusu biashara yako...",
+    "send": "Tuma ujumbe",
+    "disclaimer": "Kuza AI inaweza kukosea. Taarifa za biashara huthibitishwa kupitia zana za Tunakuza zinapopatikana.",
+    "prompts": {
+      "businessToday": "Biashara yangu inaendeleaje leo?",
+      "attention": "Ni mambo gani yanahitaji umakini wangu sasa?",
+      "financing": "Nipe muhtasari wa mikopo na malipo ya awamu."
+    }
+  }
+}

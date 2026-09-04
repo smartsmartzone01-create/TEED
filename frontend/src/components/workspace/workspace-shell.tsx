@@ -4,12 +4,14 @@ import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 
+import { KuzaAICompanion } from "@/components/intelligence/kuza-ai-companion";
 import { WorkspaceHeader } from "@/components/workspace/workspace-header";
 import { WorkspaceSidebar } from "@/components/workspace/workspace-sidebar";
 import { cn } from "@/lib/global/class-names";
 import { useRouter } from "@/i18n/navigation";
 import { useWorkspace } from "@/providers/workspace/workspace-provider";
 import { useNotification } from "@/providers/global/notification-provider";
+import type { KuzaAIMode } from "@/types/intelligence/kuza-ai";
 
 type WorkspaceShellProps = {
   children: ReactNode;
@@ -20,6 +22,7 @@ function WorkspaceShell({ children }: WorkspaceShellProps) {
   const { notify } = useNotification();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [kuzaAIMode, setKuzaAIMode] = useState<KuzaAIMode>("closed");
   const [colors, setColors] = useState<{ primary: string; secondary: string } | null>(null);
   const pathname = usePathname();
   const router = useRouter();
@@ -29,6 +32,10 @@ function WorkspaceShell({ children }: WorkspaceShellProps) {
   const currentBusiness = businessId
     ? businesses.find((business) => business.id === businessId)
     : undefined;
+
+  useEffect(() => {
+    setKuzaAIMode("closed");
+  }, [businessId]);
 
   useEffect(() => {
     if (!businessId || status !== "ready") return;
@@ -65,6 +72,9 @@ function WorkspaceShell({ children }: WorkspaceShellProps) {
   }, [businessId, pathname]);
 
   const brandStyle = businessId && colors ? ({ "--workspace-primary": colors.primary, "--workspace-secondary": colors.secondary } as CSSProperties) : undefined;
+  const kuzaAIAvailable = Boolean(
+    businessId && currentBusiness?.status === "active",
+  );
 
   return (
     <div className="min-h-svh bg-white text-slate-950 dark:bg-slate-950 dark:text-slate-50" style={brandStyle}>
@@ -82,7 +92,25 @@ function WorkspaceShell({ children }: WorkspaceShellProps) {
       >
         <WorkspaceHeader businessId={businessId} onOpenNavigation={() => setMobileOpen(true)} />
         <div className="min-h-[calc(100svh-3.5rem)] bg-[#F4F7FA] dark:bg-slate-950">
-          <main className="mx-auto w-full max-w-384 p-4 sm:p-6 lg:p-8">{children}</main>
+          <div className="flex min-h-[calc(100svh-3.5rem)] min-w-0">
+            <main
+              className={cn(
+                "min-w-0 flex-1",
+                kuzaAIAvailable && kuzaAIMode === "expanded" ? "lg:hidden" : "block",
+              )}
+            >
+              <div className="mx-auto w-full max-w-384 p-4 sm:p-6 lg:p-8">
+                {children}
+              </div>
+            </main>
+            {kuzaAIAvailable && businessId ? (
+              <KuzaAICompanion
+                businessId={businessId}
+                mode={kuzaAIMode}
+                onModeChange={setKuzaAIMode}
+              />
+            ) : null}
+          </div>
         </div>
       </div>
     </div>
