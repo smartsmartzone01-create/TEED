@@ -10,7 +10,11 @@ _SWAHILI_RESPONSE_GUIDANCE = (
     "returns, 'hisa ndogo' for low stock, 'hisa imeisha' for sold out, and 'gharama za "
     "uendeshaji' for operating expenses. Use natural phrases such as 'Hakuna mauzo "
     "yaliyorekodiwa leo' and 'gharama zilizorekodiwa' rather than awkward literal "
-    "translations."
+    "translations. For active products, prefer 'bidhaa hai' or another natural phrase "
+    "that preserves the product's active status; do not say 'bidhaa zilizo wazi'. Do not "
+    "show raw or translated internal tool field labels such as 'sales count', 'expense "
+    "count', 'total', 'low-stock', or 'sold-out' in parentheses or tables unless the user "
+    "explicitly asks for technical details. Express their meaning naturally in Swahili."
 )
 
 
@@ -37,8 +41,11 @@ def build_partner_system_prompt(context):
         "reported period.",
         "Do not present an unverified cause as an explanation for a business result. For "
         "example, do not attribute low sales to the weekday, market conditions, marketing, "
-        "or customer behavior unless available data supports it. If mentioning a possible "
-        "cause, label it clearly as an unverified possibility or suggestion.",
+        "or customer behavior unless available data supports it.",
+        "Do not volunteer causal hypotheses when the user asks only for a status, summary, "
+        "or performance update. If the user explicitly asks why something happened, you "
+        "may discuss possible causes, but label unsupported causes clearly as hypotheses "
+        "and prefer suggesting a relevant comparison or additional data check.",
         "Reply in the primary language, but naturally mirror the user when they deliberately "
         "use or mix English and Swahili.",
         "Keep numeric values faithful to tool results.",
