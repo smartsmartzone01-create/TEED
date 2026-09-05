@@ -1,5 +1,11 @@
+import Link from "next/link";
+
 import { localized } from "@/lib/localized";
 import type { StorefrontSiteConfig } from "@/types/storefront";
+
+function isInternalHref(href: string): boolean {
+  return href.startsWith("/") || href.startsWith("#");
+}
 
 export function SiteHeader({ site }: { site: StorefrontSiteConfig }) {
   const locale = site.defaultLocale;
@@ -25,19 +31,25 @@ export function SiteHeader({ site }: { site: StorefrontSiteConfig }) {
       </div>
 
       <div className="page-shell main-header">
-        <a href="/" className="brand" aria-label={site.displayName}>
+        <Link href="/" className="brand" aria-label={site.displayName}>
           <span className="brand-mark" aria-hidden="true">
             {site.displayName.slice(0, 1).toUpperCase()}
           </span>
           <span>{site.displayName}</span>
-        </a>
+        </Link>
 
         <nav className="primary-nav" aria-label="Primary navigation">
-          {site.navigation.map((item) => (
-            <a key={item.id} href={item.href}>
-              {localized(item.label, locale)}
-            </a>
-          ))}
+          {site.navigation.map((item) =>
+            isInternalHref(item.href) ? (
+              <Link key={item.id} href={item.href}>
+                {localized(item.label, locale)}
+              </Link>
+            ) : (
+              <a key={item.id} href={item.href}>
+                {localized(item.label, locale)}
+              </a>
+            ),
+          )}
         </nav>
 
         <div className="header-actions" aria-label="Store actions">

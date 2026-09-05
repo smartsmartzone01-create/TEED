@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 import { localized } from "@/lib/localized";
 import type { StorefrontSiteConfig } from "@/types/storefront";
 
@@ -15,7 +17,7 @@ export function ServicesSection({ site }: { site: StorefrontSiteConfig }) {
           </div>
           {service.imageUrl ? (
             <div className="service-media">
-              <img src={service.imageUrl} alt="" />
+              <Image src={service.imageUrl} alt="" width={1200} height={800} />
             </div>
           ) : null}
         </article>

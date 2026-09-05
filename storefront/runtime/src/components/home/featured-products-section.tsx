@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { ProductCard } from "@/components/catalog/product-card";
 import type { StorefrontProductListing, StorefrontSiteConfig } from "@/types/storefront";
 
@@ -21,9 +23,9 @@ export function FeaturedProductsSection({
           <p className="eyebrow">{locale === "sw" ? "Bidhaa zilizochaguliwa" : "Featured products"}</p>
           <h2>{locale === "sw" ? "Chagua kinachokufaa" : "Find your next pick"}</h2>
         </div>
-        <a href="/products" className="text-link">
+        <Link href="/products" className="text-link">
           {locale === "sw" ? "Tazama bidhaa zote" : "View all products"} →
-        </a>
+        </Link>
       </div>
       <div className="catalog-grid">
         {products.slice(0, 4).map((product) => (

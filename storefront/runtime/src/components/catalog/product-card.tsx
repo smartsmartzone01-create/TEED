@@ -1,3 +1,6 @@
+import Image from "next/image";
+import Link from "next/link";
+
 import { formatMoney } from "@/lib/money";
 import { localized } from "@/lib/localized";
 import type { StorefrontLocale, StorefrontProductListing } from "@/types/storefront";
@@ -22,10 +25,15 @@ export function ProductCard({
 
   return (
     <article className="product-card">
-      <a href={`/products/${product.slug}`} className="product-card-link">
+      <Link href={`/products/${product.slug}`} className="product-card-link">
         <div className="product-card-media">
           {product.badge ? <span className="product-badge">{localized(product.badge, locale)}</span> : null}
-          <img src={product.primaryImageUrl} alt={localized(product.title, locale)} />
+          <Image
+            src={product.primaryImageUrl}
+            alt={localized(product.title, locale)}
+            width={640}
+            height={640}
+          />
         </div>
         <div className="product-card-copy">
           {product.brand ? <p className="product-brand">{product.brand}</p> : null}
@@ -40,7 +48,7 @@ export function ProductCard({
             </span>
           </div>
         </div>
-      </a>
+      </Link>
     </article>
   );
 }

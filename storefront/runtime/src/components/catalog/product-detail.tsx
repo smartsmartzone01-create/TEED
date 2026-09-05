@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useMemo, useState } from "react";
 
 import { localized } from "@/lib/localized";
@@ -76,7 +77,13 @@ export function ProductDetail({
   return (
     <div className="product-detail">
       <div className="product-detail-media">
-        <img src={selectedImage} alt={localized(product.title, locale)} className="product-detail-image" />
+        <Image
+          src={selectedImage}
+          alt={localized(product.title, locale)}
+          width={960}
+          height={960}
+          className="product-detail-image"
+        />
       </div>
 
       <div className="product-detail-copy">

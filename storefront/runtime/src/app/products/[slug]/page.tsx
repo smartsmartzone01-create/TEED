@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { ProductDetail } from "@/components/catalog/product-detail";
@@ -21,9 +22,9 @@ export default async function ProductDetailPage({
   return (
     <StorefrontShell site={site}>
       <main className="product-page page-shell">
-        <a href="/products" className="back-link">
+        <Link href="/products" className="back-link">
           ← {locale === "sw" ? "Rudi kwenye bidhaa" : "Back to products"}
-        </a>
+        </Link>
         <ProductDetail product={product} locale={locale} />
       </main>
     </StorefrontShell>
