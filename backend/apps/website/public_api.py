@@ -1,4 +1,4 @@
-from apps.commerce.models import TrackedUnit
+from apps.commerce.models import StockBatch, TrackedUnit
 from common.responses import SuccessResponse
 from django.db.models import Prefetch
 from django.shortcuts import get_object_or_404
@@ -22,6 +22,7 @@ def public_site(site_key):
 def public_variants():
     public_units = TrackedUnit.objects.only(
         "id",
+        "stock_line_id",
         "product_id",
         "model_name",
         "brand",
@@ -30,13 +31,28 @@ def public_variants():
         "condition",
         "status",
     ).order_by("id")
+    public_stock_lines = (
+        StockBatch.objects.only(
+            "id",
+            "product_id",
+            "tracking_mode",
+            "quantity_remaining",
+        )
+        .prefetch_related(
+            Prefetch(
+                "tracked_units",
+                queryset=public_units,
+            )
+        )
+        .order_by("id")
+    )
     return (
         WebsiteVariant.objects.filter(is_published=True)
         .select_related("commerce_product")
         .prefetch_related(
             Prefetch(
-                "commerce_product__tracked_units",
-                queryset=public_units,
+                "commerce_product__stock_batches",
+                queryset=public_stock_lines,
             )
         )
     )
