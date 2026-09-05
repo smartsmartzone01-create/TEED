@@ -15,6 +15,48 @@ export type StorefrontServiceHighlight = {
   imageUrl?: string;
 };
 
+export type StorefrontMoney = {
+  amount: string;
+  currency: string;
+};
+
+export type StorefrontSkuAvailability = "in_stock" | "low_stock" | "out_of_stock";
+
+export type StorefrontProductOptionValue = {
+  value: string;
+  label: LocalizedText;
+  colorHex?: string;
+};
+
+export type StorefrontProductOption = {
+  id: string;
+  name: LocalizedText;
+  values: StorefrontProductOptionValue[];
+};
+
+export type StorefrontSku = {
+  id: string;
+  commerceProductId: string;
+  sku: string;
+  options: Record<string, string>;
+  price: StorefrontMoney;
+  availability: StorefrontSkuAvailability;
+  imageUrl?: string;
+};
+
+export type StorefrontProductListing = {
+  id: string;
+  slug: string;
+  title: LocalizedText;
+  shortDescription: LocalizedText;
+  description: LocalizedText;
+  brand?: string;
+  badge?: LocalizedText;
+  primaryImageUrl: string;
+  options: StorefrontProductOption[];
+  skus: StorefrontSku[];
+};
+
 export type StorefrontSiteConfig = {
   id: string;
   businessId: string;

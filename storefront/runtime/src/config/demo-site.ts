@@ -17,8 +17,9 @@ export const demoStorefrontSite: StorefrontSiteConfig = {
   },
   navigation: [
     { id: "home", label: { en: "Home", sw: "Nyumbani" }, href: "/" },
-    { id: "services", label: { en: "Services", sw: "Huduma" }, href: "#services" },
-    { id: "about", label: { en: "About", sw: "Kuhusu" }, href: "#about" },
+    { id: "products", label: { en: "Shop", sw: "Duka" }, href: "/products" },
+    { id: "services", label: { en: "Services", sw: "Huduma" }, href: "/#services" },
+    { id: "about", label: { en: "About", sw: "Kuhusu" }, href: "/#about" },
   ],
   hero: {
     eyebrow: { en: "Built for your business", sw: "Imeundwa kwa biashara yako" },
@@ -28,9 +29,9 @@ export const demoStorefrontSite: StorefrontSiteConfig = {
       sw: "Duka la mtandaoni lenye kasi linalotumia taarifa za biashara yako ya Tunakuza.",
     },
     primaryAction: { en: "Explore the store", sw: "Tembelea duka" },
-    primaryHref: "#services",
+    primaryHref: "/products",
     secondaryAction: { en: "Learn more", sw: "Jifunze zaidi" },
-    secondaryHref: "#about",
+    secondaryHref: "/#about",
     imageUrl: "/images/hello1.webp",
   },
   services: [

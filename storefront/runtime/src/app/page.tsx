@@ -1,27 +1,19 @@
-import type { CSSProperties } from "react";
-
+import { FeaturedProductsSection } from "@/components/home/featured-products-section";
 import { HeroSection } from "@/components/home/hero-section";
 import { ServicesSection } from "@/components/home/services-section";
-import { SiteFooter } from "@/components/site-footer";
-import { SiteHeader } from "@/components/site-header";
-import { getStorefrontSite } from "@/services/storefront-api";
+import { StorefrontShell } from "@/components/storefront-shell";
+import { getStorefrontProducts, getStorefrontSite } from "@/services/storefront-api";
 
 export default async function HomePage() {
-  const site = await getStorefrontSite();
-  const themeStyle = {
-    "--storefront-accent": site.theme.primaryColor,
-    "--storefront-surface": site.theme.surfaceColor,
-    "--storefront-text": site.theme.textColor,
-  } as CSSProperties;
+  const [site, products] = await Promise.all([getStorefrontSite(), getStorefrontProducts()]);
 
   return (
-    <div style={themeStyle}>
-      <SiteHeader site={site} />
+    <StorefrontShell site={site}>
       <main>
         <HeroSection site={site} />
+        <FeaturedProductsSection site={site} products={products} />
         <ServicesSection site={site} />
       </main>
-      <SiteFooter site={site} />
-    </div>
+    </StorefrontShell>
   );
 }
