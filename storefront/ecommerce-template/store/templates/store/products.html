@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ subcategory.name }} - All Products{% endblock %}
+
+{% block content %}
+
+<!-- ✅ Top Header with Results Count and Sorting -->
+<div class="product-header-bar">
+  <div class="results-count">
+    {{ products|length }} results
+  </div>
+  <div class="sorting-options">
+    <div class="sort-toggle" onclick="toggleSortDropdown()">Newest ▼</div>
+    <div id="sort-dropdown" class="sort-dropdown hidden">
+      <a href="{% url 'store:products_by_category' category.slug %}?sort=new">Newest</a>
+      <a href="{% url 'store:products_by_category' category.slug %}?sort=all">All Products</a>
+    </div>
+    <a href="https://wa.me/2556XXXXXXX" class="chat-link">Chat with Us</a>
+  </div>
+</div>
+
+<!-- ✅ Wrapper for Filter + Products Grid -->
+<div class="product-page-wrapper">
+  <!-- ✅ LEFT: Sticky Filters (scroll only after product list ends) -->
+  <aside class="filter-sidebar" id="stickyFilter">
+  <h3>Filter by</h3>
+
+  <form method="get" id="filterForm">
+
+    <!-- In Stock -->
+    <div class="filter-group">
+      <label for="in_stock-select">In Stock</label>
+      <select name="in_stock" id="in_stock-select" onchange="filterForm.submit()">
+        <option value="" {% if not selected_in_stock %}selected{% endif %}>All</option>
+        <option value="true" {% if selected_in_stock == 'true' %}selected{% endif %}>Yes</option>
+        <option value="false" {% if selected_in_stock == 'false' %}selected{% endif %}>No</option>
+      </select>
+    </div>
+
+    <!-- Hot -->
+    <div class="filter-group">
+      <label for="is_hot-select">Hot</label>
+      <select name="is_hot" id="is_hot-select" onchange="filterForm.submit()">
+        <option value="" {% if not selected_is_hot %}selected{% endif %}>All</option>
+        <option value="true" {% if selected_is_hot == 'true' %}selected{% endif %}>Yes</option>
+        <option value="false" {% if selected_is_hot == 'false' %}selected{% endif %}>No</option>
+      </select>
+    </div>
+
+    <!-- New -->
+    <div class="filter-group">
+      <label for="is_new-select">New</label>
+      <select name="is_new" id="is_new-select" onchange="filterForm.submit()">
+        <option value="" {% if not selected_is_new %}selected{% endif %}>All</option>
+        <option value="true" {% if selected_is_new == 'true' %}selected{% endif %}>Yes</option>
+        <option value="false" {% if selected_is_new == 'false' %}selected{% endif %}>No</option>
+      </select>
+    </div>
+
+    <!-- Brand (merged from your static snippet but dynamic) -->
+    <div class="filter-group">
+      <label for="brand-select">Brand</label>
+      <select name="brand" id="brand-select" onchange="filterForm.submit()">
+        <option value="" {% if not selected_brand %}selected{% endif %}>All</option>
+        {% for b in brands %}
+          <option value="{{ b }}" {% if b == selected_brand %}selected{% endif %}>{{ b }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- Storage (merged) -->
+    <div class="filter-group">
+      <label for="storage-select">Storage</label>
+      <select name="storage" id="storage-select" onchange="filterForm.submit()">
+        <option value="" {% if not selected_storage %}selected{% endif %}>All</option>
+        {% for s in storages %}
+          <option value="{{ s }}" {% if s|stringformat:"s" == selected_storage %}selected{% endif %}>{{ s }} GB</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- Price (merged) -->
+    <div class="filter-group">
+      <label for="price_range-select">Price</label>
+      <select name="price_range" id="price_range-select" onchange="filterForm.submit()">
+        <option value="" {% if not selected_price_range %}selected{% endif %}>All</option>
+        <option value="below-1000000" {% if selected_price_range == 'below-1000000' %}selected{% endif %}>Below 1M</option>
+        <option value="1000000-2000000" {% if selected_price_range == '1000000-2000000' %}selected{% endif %}>1M - 2M</option>
+        <option value="above-2000000" {% if selected_price_range == 'above-2000000' %}selected{% endif %}>Above 2M</option>
+      </select>
+    </div>
+
+    <!-- Category -->
+    <div class="filter-group">
+      <label for="category-select">Category</label>
+      <select name="category" id="category-select" onchange="filterForm.submit()">
+        <option value="" {% if not selected_category %}selected{% endif %}>All</option>
+        {% for c in categories %}
+          <option value="{{ c }}" {% if c == selected_category %}selected{% endif %}>{{ c }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- Subcategory -->
+    <div class="filter-group">
+      <label for="subcategory-select">Subcategory</label>
+      <select name="subcategory" id="subcategory-select" onchange="filterForm.submit()">
+        <option value="" {% if not selected_subcategory %}selected{% endif %}>All</option>
+        {% for sub in subcategories %}
+          <option value="{{ sub.slug }}" {% if sub.slug == selected_subcategory %}selected{% endif %}>{{ sub.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+  </form>
+</aside>
+
+  <!-- ✅ RIGHT: Product Grid -->
+  <main class="product-list-section" id="productList">
+    
+
+    <div class="samsung-product-grid">
+      {% for product in products %}
+        <div class="samsung-product-card">
+          <a href="{% url 'store:product_detail' product.slug %}">
+            <div class="product-image-wrapper">
+              <img src="{{ product.main_image.url }}" alt="{{ product.name }}">
+              {% if product.is_hot %}<span class="badge hot"> Hot</span>{% endif %}
+              {% if product.is_new %}<span class="badge new"> New</span>{% endif %}
+            </div>
+            <div class="product-info">
+              <h3 class="product-title">{{ product.name }}</h3>
+              <p class="product-price">
+                {% if product.discount_price %}
+                  <span class="old-price">TZS {{ product.price|floatformat:0 }}</span>
+                  <span class="new-price">TZS {{ product.discount_price|floatformat:0 }}</span>
+                  <span class="save-note">Save up to TZS 100,000</span>
+                {% else %}
+                  <span class="new-price">TZS {{ product.price|floatformat:0 }}</span>
+                {% endif %}
+              </p>
+              <form method="post" action="{% url 'store:toggle_saved_item' product.id %}" class="mt-1">
+                {% csrf_token %}
+                <button class="save-toggle" data-product-id="{{ product.id }}" aria-label="Save">
+                  {% if product.id in saved_products %}❤️{% else %}🤍{% endif %}
+                </button>
+              </form>
+              <p class="trade-in-note">Get trade-in at discount</p>
+              <span class="buy-btn">Buy Now</span>
+            </div>
+          </a>
+        </div>
+      {% empty %}
+        <p>No products found in this subcategory.</p>
+      {% endfor %}
+    </div>
+  </main>
+</div> <!-- ✅ End of product-page-wrapper -->
+
+{% if recommended_products %}
+<section class="recommended-section">
+  <h2 class="section-title"> Popular Picks</h2>
+  <div class="recommended-slider">
+    {% for product in recommended_products %}
+      <div class="recommended-card">
+        <a href="{% url 'store:product_detail' product.slug %}">
+          <div class="recommended-image">
+            <img src="{{ product.main_image.url }}" alt="{{ product.name }}">
+            {% if product.is_hot %}<span class="badge hot">Hot</span>{% endif %}
+            {% if product.is_new %}<span class="badge new">new</span>{% endif %}
+          </div>
+          <div class="recommended-info">
+            <h4>{{ product.name }}</h4>
+            {% if product.discount_price %}
+              <p class="price">
+                <span class="old-price">TZS {{ product.price|floatformat:0 }}</span>
+                <span class="new-price">TZS {{ product.discount_price|floatformat:0 }}</span>
+              </p>
+              <span class="save-note">Save up to TZS 100,000</span>
+            {% else %}
+              <p class="price">TZS {{ product.price|floatformat:0 }}</p>
+            {% endif %}
+          </div>
+        </a>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+
+
+<!-- ✅ TRADE-IN SECTION -->
+<section class="services-section">
+  <!-- ✅ Trade-In Program -->
+  <div class="service-card">
+    <div class="service-text">
+      <h3>Trade-In Program</h3>
+      <p>
+        Swap your old phone for something new — instantly! Our Trade-In Program makes upgrading easy and cost-effective.
+        Just bring in your device, get an immediate quote, and apply the value to your next purchase. It's fast, fair, and simple.
+      </p>
+       <a href="{% url 'store:learn_more' %}" class="learn-more-btn">Learn More</a>
+    </div>
+    <div class="service-image">
+      <img src="{% static 'images/services1.webp' %}" alt="Trade-in">
+    </div>
+  </div>
+
+  <!-- ✅ Fast Delivery -->
+  <div class="service-card reverse">
+    <div class="service-text">
+      <h3>Fast Delivery</h3>
+      <p>
+        Whether you're in a rush or just can't wait — we’ve got you covered. Enjoy same-day or next-day delivery options 
+        for all local orders. Your favorite gadgets delivered to your door, fast and secure.
+      </p>
+      <a href="{% url 'store:learn_more' %}" class="learn-more-btn">Learn More</a>
+    </div>
+    <div class="service-image">
+      <img src="{% static 'images/services2.webp' %}" alt="Delivery">
+    </div>
+  </div>
+</div>
+
+
+
+{% endblock %}
+

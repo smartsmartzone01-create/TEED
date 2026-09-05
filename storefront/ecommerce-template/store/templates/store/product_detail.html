@@ -1,0 +1,350 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ product.name }} - Product Page{% endblock %}
+
+{% block content %}
+<div class="pd-container">
+  <div class="pd-main">
+
+    {% if product.variants.exists %}
+    <div class="pd-thumbnails">
+      {% for variant in product.variants.all %}
+        <img src="{{ variant.image.url }}" 
+             alt="{{ variant.color }}" 
+             onclick="changeImage('{{ variant.image.url }}', this)" 
+             class="pd-thumbnail {% if forloop.first %}active{% endif %}">
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="pd-image">
+      <img id="main-image" src="{{ product.main_image.url }}" alt="{{ product.name }}">
+    </div>
+
+    <div class="pd-info-details">
+      <div class="pd-info">
+        <div class="pd-pricing">
+          <h2 class="pd-title">{{ product.name }}</h2>
+          <p class="pd-price-line">
+            {% if product.discount_price %}
+              <span class="pd-main-price">TZS {{ product.price|floatformat:0 }}</span>
+              <span class="pd-discounted-price">TZS {{ product.discount_price|floatformat:0 }}</span>
+            {% else %}
+              <span class="pd-discounted-price">TZS {{ product.price|floatformat:0 }}</span>
+            {% endif %}
+          </p>
+
+          {% if product.discount_price %}
+            {% with saved=product.price|floatformat:0|add:"-"|add:product.discount_price|floatformat:0 %}
+              <p class="pd-save-amount">Save up to TZS {{ saved }}</p>
+            {% endwith %}
+          {% endif %}
+        </div>
+
+
+        {% if product.storage_options.all %}
+  <div class="pd-storage-options">
+    <h4>STORAGE</h4>
+    <div class="pd-storage-values">
+      {% for storage in product.storage_options.all %}
+        <div class="pd-storage-box">{{ storage }}</div>
+      {% endfor %}
+    </div>
+  </div>
+{% endif %}
+
+    <div class="pd-color-options">
+  <span class="pd-color-label">COLOR:</span>
+  <div class="pd-color-values">
+    {% for variant in product.variants.all %}
+      <div class="pd-color-box {% if forloop.first %}active{% endif %}"
+           title="{{ variant.color }}"
+           data-color="{{ variant.color|lower }}"
+           data-image="{{ variant.image.url }}"
+           data-color-code="{{ variant.color_code|default_if_none:'#ccc' }}">
+      </div>
+    {% endfor %}
+  </div>
+</div>
+
+
+
+        {% if user.is_authenticated %}
+          <form method="post" action="{% url 'store:toggle_saved_item' product.id %}" class="pd-save-form">
+            {% csrf_token %}
+            <button class="pd-save-toggle" data-product-id="{{ product.id }}" aria-label="Save">
+              {% if product.id in saved_products %}❤️{% else %}🤍{% endif %}
+            </button>
+          </form>
+        {% else %}
+          <a href="{% url 'login' %}" class="pd-signin-link">Sign in to save</a>
+        {% endif %}
+
+        <div class="pd-buttons">
+          <button class="pd-buy-now">Buy Now</button>
+          <a href="{% url 'store:add_to_cart' product.slug %}" class="pd-add-to-cart">Add to Cart</a>
+        </div>
+
+        <div class="pd-availability">
+          <span>Status: <strong>{{ product.in_stock|yesno:"In Stock,Out of Stock" }}</strong></span>
+        </div>
+      </div>
+
+      <div class="pd-details">
+        <h4>Product Details</h4>
+        <ul>
+          {% for line in product.description.splitlines %}
+            {% if line %}
+              <li>{{ line }}</li>
+            {% endif %}
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if recommended_products %}
+<section class="recommended-section">
+  <h2 class="section-title"> Popular Picks</h2>
+  <div class="recommended-slider">
+    {% for product in recommended_products %}
+      <div class="recommended-card">
+        <a href="{% url 'store:product_detail' product.slug %}">
+          <div class="recommended-image">
+            <img src="{{ product.main_image.url }}" alt="{{ product.name }}">
+            {% if product.is_hot %}<span class="badge hot">Hot</span>{% endif %}
+            {% if product.is_new %}<span class="badge new">new</span>{% endif %}
+          </div>
+          <div class="recommended-info">
+            <h4>{{ product.name }}</h4>
+            {% if product.discount_price %}
+              <p class="price">
+                <span class="old-price">TZS {{ product.price|floatformat:0 }}</span>
+                <span class="new-price">TZS {{ product.discount_price|floatformat:0 }}</span>
+              </p>
+              <span class="save-note">Save up to TZS 100,000</span>
+            {% else %}
+              <p class="price">TZS {{ product.price|floatformat:0 }}</p>
+            {% endif %}
+          </div>
+        </a>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+
+
+{% if similar_products %}
+<section class="compare-container">
+  <h2 class="compare-title">Compare Products</h2>
+  
+  <div class="compare-cards">
+    
+    <!-- Main product -->
+    <article class="compare-card main-product">
+      <header class="product-header">
+        <img src="{{ product.main_image.url }}" alt="{{ product.name }}" class="product-image" />
+        <h3 class="product-name">{{ product.name }}</h3>
+        <p class="product-price">TZS {{ product.price|floatformat:0 }}</p>
+        {% if product.discount_price %}
+          <p class="product-discount">Discount: TZS {{ product.discount_price|floatformat:0 }}</p>
+        {% endif %}
+      </header>
+
+      <section class="product-info">
+        <h4>Storage Options</h4>
+        <ul class="storage-list">
+          {% for s in product.storage_options.all %}
+            <li>{{ s.size }} GB</li>
+          {% empty %}
+            <li>No storage options listed</li>
+          {% endfor %}
+        </ul>
+
+        <h4>Available Colors</h4>
+        <ul class="color-list">
+          {% for v in product.variants.all %}
+            <li>
+          
+              {{ v.color_name }}
+            </li>
+          {% empty %}
+            <li>No color variants</li>
+          {% endfor %}
+        </ul>
+
+        <h4>Availability</h4>
+        <p class="availability {{ product.in_stock|yesno:'in-stock,out-of-stock' }}">
+          {{ product.in_stock|yesno:"In Stock,Out of Stock" }}
+        </p>
+      </section>
+    </article>
+
+    <!-- Similar products -->
+    {% for p in similar_products %}
+    <article class="compare-card">
+      <header class="product-header">
+        <img src="{{ p.main_image.url }}" alt="{{ p.name }}" class="product-image" />
+        <h3 class="product-name">{{ p.name }}</h3>
+        <p class="product-price">TZS {{ p.price|floatformat:0 }}</p>
+        {% if p.discount_price %}
+          <p class="product-discount">Discount: TZS {{ p.discount_price|floatformat:0 }}</p>
+        {% endif %}
+      </header>
+
+      <section class="product-info">
+        <h4>Storage Options</h4>
+        <ul class="storage-list">
+          {% for s in p.storage_options.all %}
+            <li>{{ s.size }} GB</li>
+          {% empty %}
+            <li>No storage options listed</li>
+          {% endfor %}
+        </ul>
+
+        <h4>Available Colors</h4>
+        <ul class="color-list">
+          {% for v in p.variants.all %}
+            <li>
+      
+
+              {{ v.color_name }}
+            </li>
+          {% empty %}
+            <li>No color variants</li>
+          {% endfor %}
+        </ul>
+
+        <h4>Availability</h4>
+        <p class="availability {{ p.in_stock|yesno:'in-stock,out-of-stock' }}">
+          {{ p.in_stock|yesno:"In Stock,Out of Stock" }}
+        </p>
+      </section>
+
+      <a href="{% url 'store:product_detail' p.slug %}" class="btn view-product-btn">View Product</a>
+    </article>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+
+
+
+{% if product.faqs.all %}
+  <div class="pd-faq-section">
+    <h4>Frequently Asked Questions</h4>
+    {% for faq in product.faqs.all %}
+      <div class="faq-item">
+        <strong>Q: {{ faq.question }}</strong>
+        <p>A: {{ faq.answer }}</p>
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
+
+
+
+<style>
+.pd-color-values {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.pd-color-box {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid #ccc;
+  display: inline-block;
+  box-sizing: border-box;
+  cursor: pointer;
+  transition: border 0.3s ease;
+}
+
+.pd-color-box.active,
+.pd-color-box:hover {
+  border-color: #c56926;
+}
+
+.pd-faq-section {
+  margin-top: 40px;
+  padding: 20px;
+  background-color: #f9f9f9;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.pd-faq-section h4 {
+  font-size: 20px;
+  margin-bottom: 15px;
+  color: #c56926;
+  font-weight: 600;
+}
+
+.faq-item {
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.faq-item:last-child {
+  border-bottom: none;
+}
+
+.faq-item strong {
+  display: block;
+  font-size: 16px;
+  color: #333;
+  margin-bottom: 6px;
+}
+
+.faq-item p {
+  font-size: 15px;
+  color: #555;
+  line-height: 1.6;
+}
+
+/* Container and Title */
+
+</style>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.pd-color-box').forEach(box => {
+      const hex = box.dataset.colorCode || '#ccc';
+      box.style.backgroundColor = hex;
+    });
+  });
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const mainImage = document.getElementById('main-image');
+    const colorBoxes = document.querySelectorAll('.pd-color-box');
+
+    colorBoxes.forEach(box => {
+      // Set initial color background
+      const hex = box.dataset.colorCode || '#ccc';
+      box.style.backgroundColor = hex;
+
+      // Handle click
+      box.addEventListener('click', () => {
+        // Change main image
+        const newImage = box.dataset.image;
+        if (newImage && mainImage) {
+          mainImage.src = newImage;
+        }
+
+        // Toggle active class
+        colorBoxes.forEach(b => b.classList.remove('active'));
+        box.classList.add('active');
+      });
+    });
+  });
+</script>
+
+{% endblock %}

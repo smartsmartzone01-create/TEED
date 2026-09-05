@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% load static %}
+{% load math_filters %}
+
+{% block title %}My Orders{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto mt-12 bg-white shadow-lg rounded-2xl p-6 sm:p-10">
+  <h2 class="text-2xl font-semibold text-gray-800 mb-6">My Orders</h2>
+
+  {% if orders %}
+  <div class="overflow-x-auto">
+    <table class="min-w-full text-sm text-left text-gray-700 border border-gray-200 rounded-lg">
+      <thead class="bg-gray-100 text-xs uppercase text-gray-500">
+        <tr>
+          <th class="px-4 py-3">Order ID</th>
+          <th class="px-4 py-3">Date</th>
+          <th class="px-4 py-3">Status</th>
+          <th class="px-4 py-3">Total</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-200">
+        {% for order in orders %}
+        <tr class="hover:bg-gray-50">
+          <td class="px-4 py-3">#{{ order.id }}</td>
+          <td class="px-4 py-3">{{ order.created_at|date:"M d, Y" }}</td>
+          <td class="px-4 py-3 capitalize">{{ order.status }}</td>
+          <td class="px-4 py-3 font-semibold">TZS {{ order.total_price|floatformat:0 }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="text-gray-600">You haven’t placed any orders yet.</p>
+  {% endif %}
+</div>
+{% endblock %}
