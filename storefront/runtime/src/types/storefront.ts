@@ -41,6 +41,8 @@ export type StorefrontSku = {
   options: Record<string, string>;
   price: StorefrontMoney;
   availability: StorefrontSkuAvailability;
+  trackingMode?: "quantity" | "individual";
+  availableQuantity?: string;
   imageUrl?: string;
 };
 

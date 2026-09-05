@@ -1,6 +1,5 @@
-from decimal import Decimal
-
-from .models import WebsiteListing, WebsiteSite, WebsiteVariant
+from .catalog_resolver import resolve_storefront_variant
+from .models import WebsiteListing, WebsiteSite
 
 
 SUPPORTED_LOCALES = ("en", "sw")
@@ -135,32 +134,30 @@ def _serialize_option(option, index):
     }
 
 
-def _money(amount: Decimal, currency: str):
-    return {"amount": format(amount, "f"), "currency": currency.upper()}
+def _merge_option(options, incoming):
+    existing = next(
+        (option for option in options if option["id"] == incoming["id"]),
+        None,
+    )
+    if existing is None:
+        options.append(incoming)
+        return
 
-
-def serialize_variant(variant: WebsiteVariant):
-    price = variant.resolved_price()
-    if price is None:
-        return None
-    product = variant.valid_commerce_product()
-    payload = {
-        "id": str(variant.id),
-        "sku": variant.resolved_sku(),
-        "options": variant.options if isinstance(variant.options, dict) else {},
-        "price": _money(price, variant.currency),
-        "availability": variant.resolved_availability(),
+    existing_values = {
+        value["value"]
+        for value in existing["values"]
     }
-    if product is not None:
-        payload["commerceProductId"] = str(product.id)
-    if variant.image_url:
-        payload["imageUrl"] = variant.image_url
-    return payload
+    for value in incoming["values"]:
+        if value["value"] not in existing_values:
+            existing["values"].append(value)
+            existing_values.add(value["value"])
 
 
 def serialize_listing(listing: WebsiteListing):
     options = []
-    for index, option in enumerate(listing.options if isinstance(listing.options, list) else []):
+    for index, option in enumerate(
+        listing.options if isinstance(listing.options, list) else []
+    ):
         serialized = _serialize_option(option, index)
         if serialized is not None:
             options.append(serialized)
@@ -169,9 +166,10 @@ def serialize_listing(listing: WebsiteListing):
     for variant in listing.variants.all():
         if not variant.is_published:
             continue
-        serialized = serialize_variant(variant)
-        if serialized is not None:
-            variants.append(serialized)
+        derived_options, resolved_variants = resolve_storefront_variant(variant)
+        for derived_option in derived_options:
+            _merge_option(options, derived_option)
+        variants.extend(resolved_variants)
 
     payload = {
         "id": str(listing.id),

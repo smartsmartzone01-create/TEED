@@ -1,3 +1,4 @@
+from apps.commerce.models import TrackedUnit
 from common.responses import SuccessResponse
 from django.db.models import Prefetch
 from django.shortcuts import get_object_or_404
@@ -15,6 +16,29 @@ def public_site(site_key):
         public_key=site_key,
         is_published=True,
         business__status="active",
+    )
+
+
+def public_variants():
+    public_units = TrackedUnit.objects.only(
+        "id",
+        "product_id",
+        "model_name",
+        "brand",
+        "color",
+        "capacity",
+        "condition",
+        "status",
+    ).order_by("id")
+    return (
+        WebsiteVariant.objects.filter(is_published=True)
+        .select_related("commerce_product")
+        .prefetch_related(
+            Prefetch(
+                "commerce_product__tracked_units",
+                queryset=public_units,
+            )
+        )
     )
 
 
@@ -37,12 +61,9 @@ class PublicStorefrontSiteAPIView(PublicStorefrontBaseAPIView):
 class PublicStorefrontProductsAPIView(PublicStorefrontBaseAPIView):
     def get(self, request, site_key):
         site = public_site(site_key)
-        variants = WebsiteVariant.objects.filter(is_published=True).select_related(
-            "commerce_product"
-        )
         listings = (
             WebsiteListing.objects.filter(site=site, is_published=True)
-            .prefetch_related(Prefetch("variants", queryset=variants))
+            .prefetch_related(Prefetch("variants", queryset=public_variants()))
             .order_by("sort_order", "created_at", "id")
         )
         return SuccessResponse(
@@ -54,12 +75,9 @@ class PublicStorefrontProductsAPIView(PublicStorefrontBaseAPIView):
 class PublicStorefrontProductDetailAPIView(PublicStorefrontBaseAPIView):
     def get(self, request, site_key, slug):
         site = public_site(site_key)
-        variants = WebsiteVariant.objects.filter(is_published=True).select_related(
-            "commerce_product"
-        )
         listing = get_object_or_404(
             WebsiteListing.objects.filter(site=site, is_published=True).prefetch_related(
-                Prefetch("variants", queryset=variants)
+                Prefetch("variants", queryset=public_variants())
             ),
             slug=slug,
         )
