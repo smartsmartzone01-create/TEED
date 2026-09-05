@@ -493,35 +493,80 @@ class CommerceServiceTests(TestCase):
                 receipt_id=receipt.id,
             )
 
-    def test_existing_product_can_use_different_tracking_per_stock_line(self):
-        receipt = create_stock_receipt(
+    def test_quantity_sku_rejects_individual_stock_recording(self):
+        with self.assertRaises(ValidationError):
+            create_stock_receipt(
+                actor=self.owner,
+                business_id=self.business.id,
+                status="received",
+                received_at=timezone.now(),
+                batches=[
+                    {
+                        "name": "Shoe batch",
+                        "groups": [
+                            {
+                                "name": "Shoes",
+                                "quantity": Decimal("1"),
+                                "unit": "pair",
+                                "types": [
+                                    {
+                                        "product_id": self.product.id,
+                                        "tracking_mode": "individual",
+                                        "quantity_received": Decimal("1"),
+                                        "tracked_units": [{}],
+                                    }
+                                ],
+                            }
+                        ],
+                    }
+                ],
+            )
+
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.tracking_mode, Product.TrackingMode.QUANTITY)
+        self.assertEqual(self.product.stock_batches.count(), 0)
+
+    def test_individual_sku_rejects_quantity_stock_recording(self):
+        product = create_product(
             actor=self.owner,
             business_id=self.business.id,
-            status="received",
-            received_at=timezone.now(),
-            batches=[
-                {
-                    "name": "Shoe batch",
-                    "groups": [
-                        {
-                            "name": "Shoes",
-                            "quantity": Decimal("1"),
-                            "unit": "pair",
-                            "types": [
-                                {
-                                    "product_id": self.product.id,
-                                    "tracking_mode": "individual",
-                                    "quantity_received": Decimal("1"),
-                                    "tracked_units": [{}],
-                                }
-                            ],
-                        }
-                    ],
-                }
-            ],
+            name="iPhone 17 Pro Max",
+            sku="IPHONE-17-PRO-MAX",
+            unit="piece",
+            tracking_mode=Product.TrackingMode.INDIVIDUAL,
+            is_active=True,
         )
-        self.assertEqual(receipt.lines.get().tracking_mode, "individual")
-        self.assertEqual(self.product.tracking_mode, "quantity")
+
+        with self.assertRaises(ValidationError):
+            create_stock_receipt(
+                actor=self.owner,
+                business_id=self.business.id,
+                status="received",
+                received_at=timezone.now(),
+                batches=[
+                    {
+                        "name": "Phone batch",
+                        "groups": [
+                            {
+                                "name": "Phones",
+                                "quantity": Decimal("1"),
+                                "unit": "piece",
+                                "types": [
+                                    {
+                                        "product_id": product.id,
+                                        "tracking_mode": "quantity",
+                                        "quantity_received": Decimal("1"),
+                                    }
+                                ],
+                            }
+                        ],
+                    }
+                ],
+            )
+
+        product.refresh_from_db()
+        self.assertEqual(product.tracking_mode, Product.TrackingMode.INDIVIDUAL)
+        self.assertEqual(product.stock_batches.count(), 0)
 
     def test_batch_catalog_allocates_one_identity_to_direct_and_grouped_stock(self):
         receipt = create_stock_receipt(
