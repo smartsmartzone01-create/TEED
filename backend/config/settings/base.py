@@ -61,6 +61,7 @@ LOCAL_APPS = [
     "apps.notifications.apps.NotificationsConfig",
     "apps.workspaces.apps.WorkspacesConfig",
     "apps.commerce.apps.CommerceConfig",
+    "apps.website.apps.WebsiteConfig",
     "apps.intelligence.apps.IntelligenceConfig",
 ]
 
@@ -261,6 +262,10 @@ REST_FRAMEWORK = {
         "workspace_discovery": config(
             "WORKSPACE_DISCOVERY_THROTTLE_RATE",
             default="30/minute",
+        ),
+        "storefront_public": config(
+            "STOREFRONT_PUBLIC_THROTTLE_RATE",
+            default="120/minute",
         ),
     },
 }

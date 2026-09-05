@@ -36,7 +36,7 @@ export type StorefrontProductOption = {
 
 export type StorefrontSku = {
   id: string;
-  commerceProductId: string;
+  commerceProductId?: string;
   sku: string;
   options: Record<string, string>;
   price: StorefrontMoney;
