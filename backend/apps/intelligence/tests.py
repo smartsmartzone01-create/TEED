@@ -268,6 +268,8 @@ class CommerceToolRegistryTests(SimpleTestCase):
                 "commerce_business_pulse",
                 "commerce_sales_summary",
                 "commerce_inventory_health",
+                "commerce_inventory_search",
+                "commerce_stock_receipt_detail",
             },
         )
         for definition in registry.definitions():
@@ -295,11 +297,79 @@ class CommerceToolRegistryTests(SimpleTestCase):
                 "commerce_business_pulse",
                 "commerce_sales_summary",
                 "commerce_inventory_health",
+                "commerce_inventory_search",
+                "commerce_stock_receipt_detail",
                 "commerce_financing_summary",
+                "commerce_financing_search",
+                "commerce_financing_agreement_detail",
                 "commerce_expense_summary",
                 "commerce_budget_status",
             },
         )
+
+    def test_inventory_search_tool_uses_server_scoped_selector(self):
+        result_payload = {"query": "123456789", "tracked_units": []}
+        with patch(
+            "apps.intelligence.tools.commerce.role_has_permission",
+            return_value=False,
+        ), patch(
+            "apps.intelligence.tools.commerce.inventory_search",
+            return_value=result_payload,
+        ) as selector:
+            registry = build_commerce_tool_registry(
+                membership=self.membership,
+                context=self.context,
+            )
+            result = registry.execute(
+                "commerce_inventory_search",
+                {"query": "123456789", "limit": 4},
+            )
+
+        selector.assert_called_once_with(
+            business=self.business,
+            query="123456789",
+            limit=4,
+        )
+        self.assertEqual(result, result_payload)
+
+    def test_financing_detail_tool_uses_view_financing_permission(self):
+        detail = {"reference": "SMARTSMA-LN-000009", "found": True}
+
+        def permission_check(_role, permission):
+            return permission == "commerce.financing.view"
+
+        with patch(
+            "apps.intelligence.tools.commerce.role_has_permission",
+            side_effect=permission_check,
+        ), patch(
+            "apps.intelligence.tools.commerce.financing_agreement_detail",
+            return_value=detail,
+        ) as selector:
+            registry = build_commerce_tool_registry(
+                membership=self.membership,
+                context=self.context,
+            )
+            definitions = registry.definitions()
+            detail_definition = next(
+                definition
+                for definition in definitions
+                if definition["function"]["name"]
+                == "commerce_financing_agreement_detail"
+            )
+            result = registry.execute(
+                "commerce_financing_agreement_detail",
+                {"reference": "SMARTSMA-LN-000009"},
+            )
+
+        selector.assert_called_once_with(
+            business=self.business,
+            as_of_date=date(2026, 9, 4),
+            reference="SMARTSMA-LN-000009",
+        )
+        description = detail_definition["function"]["description"]
+        self.assertIn("customer name/phone/region", description)
+        self.assertIn("excludes documents, notes, acquisition costs", description)
+        self.assertEqual(result, detail)
 
     def test_sales_tool_redacts_finance_fields_without_permission(self):
         summary = {

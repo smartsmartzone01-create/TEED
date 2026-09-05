@@ -4,8 +4,16 @@ from apps.commerce.finance.selectors import (
     current_budget_health,
     operating_expense_summary,
 )
-from apps.commerce.financing.selectors import financing_portfolio_summary
-from apps.commerce.inventory.selectors import inventory_health
+from apps.commerce.financing.selectors import (
+    financing_agreement_detail,
+    financing_agreement_search,
+    financing_portfolio_summary,
+)
+from apps.commerce.inventory.selectors import (
+    inventory_health,
+    inventory_search,
+    stock_receipt_detail,
+)
 from apps.commerce.sales.selectors import sales_summary
 from apps.workspaces.policy import WorkspacePermission, role_has_permission
 
@@ -30,6 +38,18 @@ def _parse_period(*, start_date, end_date):
     if end - start > timedelta(days=366):
         raise InvalidToolArgumentsError("Date ranges cannot exceed 366 days.")
     return start, end
+
+
+def _bounded_limit(value, *, default=8, maximum=12):
+    if value is None:
+        return default
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError) as exc:
+        raise InvalidToolArgumentsError("limit must be an integer.") from exc
+    if parsed < 1 or parsed > maximum:
+        raise InvalidToolArgumentsError(f"limit must be between 1 and {maximum}.")
+    return parsed
 
 
 def _sales_payload(summary, *, can_manage_finance):
@@ -99,10 +119,41 @@ def build_commerce_tool_registry(*, membership, context):
     def current_inventory_health():
         return inventory_health(business=business)
 
+    def search_inventory(*, query, limit=None):
+        return inventory_search(
+            business=business,
+            query=query,
+            limit=_bounded_limit(limit),
+        )
+
+    def receipt_detail(*, reference):
+        return stock_receipt_detail(
+            business=business,
+            reference=reference,
+        )
+
     def current_financing_summary():
         return financing_portfolio_summary(
             business=business,
             as_of_date=context.local_date,
+        )
+
+    def search_financing(*, query="", limit=None, sort="newest"):
+        if sort not in {"newest", "oldest"}:
+            raise InvalidToolArgumentsError("sort must be newest or oldest.")
+        return financing_agreement_search(
+            business=business,
+            as_of_date=context.local_date,
+            query=query,
+            limit=_bounded_limit(limit),
+            sort=sort,
+        )
+
+    def agreement_detail(*, reference):
+        return financing_agreement_detail(
+            business=business,
+            as_of_date=context.local_date,
+            reference=reference,
         )
 
     def expense_period_summary(*, start_date, end_date):
@@ -178,31 +229,142 @@ def build_commerce_tool_registry(*, membership, context):
             },
             handler=current_inventory_health,
         ),
+        AgentTool(
+            name="commerce_inventory_search",
+            description=(
+                "Search verified Stock data in the current workspace by product name, "
+                "SKU, barcode, stock receipt/reference, batch/group name or code, tracked "
+                "unit serial, IMEI, or other tracked identifier. Use this before a detail "
+                "tool when the user provides a product, stock reference, or device identifier."
+            ),
+            input_schema={
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Product, SKU, stock reference, batch, serial, IMEI, or identifier to search.",
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 12,
+                        "description": "Maximum matches per result category. Defaults to 8.",
+                    },
+                },
+                "required": ["query"],
+                "additionalProperties": False,
+            },
+            handler=search_inventory,
+        ),
+        AgentTool(
+            name="commerce_stock_receipt_detail",
+            description=(
+                "Return the verified product, batch, group, quantity, and tracking structure "
+                "inside one exact Stock receipt/reference in the current workspace. This "
+                "read-only tool excludes supplier details, notes, acquisition costs, and "
+                "other internal finance fields."
+            ),
+            input_schema={
+                "type": "object",
+                "properties": {
+                    "reference": {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Exact Stock receipt/reference, for example MZIGO-000015.",
+                    }
+                },
+                "required": ["reference"],
+                "additionalProperties": False,
+            },
+            handler=receipt_detail,
+        ),
     ]
 
     if can_view_financing:
-        tools.append(
-            AgentTool(
-                name="commerce_financing_summary",
-                description=(
-                    "Return the current verified loans and installment portfolio summary "
-                    "for the authorized workspace, including open balances, due and "
-                    "overdue exposure, overdue share of outstanding balance, agreement "
-                    "mix, and installment product-release state. In this tool, open means "
-                    "not paid or cancelled and may include active, due, or overdue "
-                    "agreements; do not describe every open agreement as active. An "
-                    "installment awaiting release means its product has not yet been "
-                    "released to the customer; it does not mean the agreement is unfunded "
-                    "or inactive. The summary excludes customer identity, documents, "
-                    "notes, and internal acquisition-cost or profit details."
+        tools.extend(
+            [
+                AgentTool(
+                    name="commerce_financing_summary",
+                    description=(
+                        "Return the current verified loans and installment portfolio summary "
+                        "for the authorized workspace, including open balances, due and "
+                        "overdue exposure, overdue share of outstanding balance, agreement "
+                        "mix, and installment product-release state. In this tool, open means "
+                        "not paid or cancelled and may include active, due, or overdue "
+                        "agreements; do not describe every open agreement as active. An "
+                        "installment awaiting release means its product has not yet been "
+                        "released to the customer; it does not mean the agreement is unfunded "
+                        "or inactive. The summary excludes customer identity, documents, "
+                        "notes, and internal acquisition-cost or profit details."
+                    ),
+                    input_schema={
+                        "type": "object",
+                        "properties": {},
+                        "additionalProperties": False,
+                    },
+                    handler=current_financing_summary,
                 ),
-                input_schema={
-                    "type": "object",
-                    "properties": {},
-                    "additionalProperties": False,
-                },
-                handler=current_financing_summary,
-            )
+                AgentTool(
+                    name="commerce_financing_search",
+                    description=(
+                        "Search financing agreements the current user is authorized to view by "
+                        "agreement reference, customer, product/SKU, tracked unit serial, IMEI, "
+                        "or other tracked identifier. An empty query is allowed when the user "
+                        "asks for the newest or oldest agreements. Results are concise; use the "
+                        "agreement detail tool for one selected reference."
+                    ),
+                    input_schema={
+                        "type": "object",
+                        "properties": {
+                            "query": {
+                                "type": "string",
+                                "description": "Search text. Omit or pass an empty string for newest/oldest agreement requests.",
+                            },
+                            "sort": {
+                                "type": "string",
+                                "enum": ["newest", "oldest"],
+                                "description": "Result ordering. Defaults to newest.",
+                            },
+                            "limit": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 12,
+                                "description": "Maximum matches. Defaults to 8.",
+                            },
+                        },
+                        "additionalProperties": False,
+                    },
+                    handler=search_financing,
+                ),
+                AgentTool(
+                    name="commerce_financing_agreement_detail",
+                    description=(
+                        "Return verified operational detail for one exact financing agreement "
+                        "reference the current user is authorized to view, including customer "
+                        "name/phone/region, financed items and tracked identifiers, payment "
+                        "history, balances, due date, effective status, and product release "
+                        "state. Customer contact is available here because the same existing "
+                        "VIEW_FINANCING permission already exposes it in Tunakuza's financing "
+                        "UI. Do not refuse authorized customer contact merely because it is "
+                        "personal data. This tool excludes documents, notes, acquisition costs, "
+                        "partner settlement internals, and profit calculations."
+                    ),
+                    input_schema={
+                        "type": "object",
+                        "properties": {
+                            "reference": {
+                                "type": "string",
+                                "minLength": 1,
+                                "description": "Exact financing agreement reference, for example SMARTSMA-LN-000009.",
+                            }
+                        },
+                        "required": ["reference"],
+                        "additionalProperties": False,
+                    },
+                    handler=agreement_detail,
+                ),
+            ]
         )
 
     if can_manage_finance:
