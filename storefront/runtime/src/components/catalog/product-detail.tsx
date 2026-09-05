@@ -26,16 +26,6 @@ function availabilityLabel(status: StorefrontSkuAvailability, locale: Storefront
   return locale === "sw" ? "Imeisha" : "Out of stock";
 }
 
-function availabilitySummary(sku: StorefrontSku, locale: StorefrontLocale): string {
-  const label = availabilityLabel(sku.availability, locale);
-  if (sku.availableQuantity === undefined) {
-    return label;
-  }
-  return locale === "sw"
-    ? `${label} · ${sku.availableQuantity} zinapatikana`
-    : `${label} · ${sku.availableQuantity} available`;
-}
-
 export function ProductDetail({
   product,
   locale,
@@ -150,7 +140,7 @@ export function ProductDetail({
               <strong className="selected-price">{formatMoney(selectedSku.price, locale)}</strong>
             </div>
             <span className={`availability-pill availability-${selectedSku.availability}`}>
-              {availabilitySummary(selectedSku, locale)}
+              {availabilityLabel(selectedSku.availability, locale)}
             </span>
           </div>
         ) : (

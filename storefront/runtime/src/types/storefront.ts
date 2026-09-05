@@ -42,7 +42,6 @@ export type StorefrontSku = {
   price: StorefrontMoney;
   availability: StorefrontSkuAvailability;
   trackingMode?: "quantity" | "individual";
-  availableQuantity?: string;
   imageUrl?: string;
 };
 
