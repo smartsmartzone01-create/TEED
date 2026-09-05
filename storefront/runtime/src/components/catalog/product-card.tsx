@@ -22,22 +22,30 @@ export function ProductCard({
   const priceSku = lowestVisibleSku(product);
   const prices = new Set(product.skus.map((sku) => `${sku.price.currency}:${sku.price.amount}`));
   const isAvailable = product.skus.some((sku) => sku.availability !== "out_of_stock");
+  const imageUrl = product.primaryImageUrl?.trim() ?? "";
+  const productTitle = localized(product.title, locale);
 
   return (
     <article className="product-card">
       <Link href={`/products/${product.slug}`} className="product-card-link">
         <div className="product-card-media">
           {product.badge ? <span className="product-badge">{localized(product.badge, locale)}</span> : null}
-          <Image
-            src={product.primaryImageUrl}
-            alt={localized(product.title, locale)}
-            width={640}
-            height={640}
-          />
+          {imageUrl ? (
+            <Image
+              src={imageUrl}
+              alt={productTitle}
+              width={640}
+              height={640}
+            />
+          ) : (
+            <div className="product-image-placeholder" role="img" aria-label={productTitle}>
+              <span>{locale === "sw" ? "Picha inakuja hivi karibuni" : "Image coming soon"}</span>
+            </div>
+          )}
         </div>
         <div className="product-card-copy">
           {product.brand ? <p className="product-brand">{product.brand}</p> : null}
-          <h3>{localized(product.title, locale)}</h3>
+          <h3>{productTitle}</h3>
           <p className="product-card-description">{localized(product.shortDescription, locale)}</p>
           <div className="product-card-meta">
             <strong>

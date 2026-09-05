@@ -44,7 +44,8 @@ export function ProductDetail({
     );
   }, [product.options, product.skus, selectedOptions]);
 
-  const selectedImage = selectedSku?.imageUrl ?? product.primaryImageUrl;
+  const selectedImage = selectedSku?.imageUrl?.trim() || product.primaryImageUrl?.trim() || "";
+  const productTitle = localized(product.title, locale);
 
   function optionValueHasStock(optionId: string, value: string): boolean {
     return product.skus.some(
@@ -77,18 +78,28 @@ export function ProductDetail({
   return (
     <div className="product-detail">
       <div className="product-detail-media">
-        <Image
-          src={selectedImage}
-          alt={localized(product.title, locale)}
-          width={960}
-          height={960}
-          className="product-detail-image"
-        />
+        {selectedImage ? (
+          <Image
+            src={selectedImage}
+            alt={productTitle}
+            width={960}
+            height={960}
+            className="product-detail-image"
+          />
+        ) : (
+          <div
+            className="product-image-placeholder product-detail-image-placeholder"
+            role="img"
+            aria-label={productTitle}
+          >
+            <span>{locale === "sw" ? "Picha inakuja hivi karibuni" : "Image coming soon"}</span>
+          </div>
+        )}
       </div>
 
       <div className="product-detail-copy">
         {product.brand ? <p className="product-brand">{product.brand}</p> : null}
-        <h1>{localized(product.title, locale)}</h1>
+        <h1>{productTitle}</h1>
         <p className="product-detail-description">{localized(product.description, locale)}</p>
 
         {product.options.map((option) => (
