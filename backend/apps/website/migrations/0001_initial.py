@@ -1,7 +1,8 @@
-import apps.website.models
 import common.database.uuid
 import django.db.models.deletion
 from django.db import migrations, models
+
+import apps.website.models
 
 
 class Migration(migrations.Migration):

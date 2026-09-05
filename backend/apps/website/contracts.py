@@ -1,7 +1,6 @@
 from .catalog_resolver import resolve_storefront_variant
 from .models import WebsiteListing, WebsiteSite
 
-
 SUPPORTED_LOCALES = ("en", "sw")
 
 

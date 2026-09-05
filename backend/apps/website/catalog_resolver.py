@@ -7,7 +7,6 @@ from apps.commerce.models import Product, TrackedUnit
 
 from .models import WebsiteVariant
 
-
 UNSPECIFIED_VALUE = "__unspecified__"
 PUBLIC_UNIT_OPTION_FIELDS = (
     ("model", "model_name", {"en": "Model", "sw": "Modeli"}),

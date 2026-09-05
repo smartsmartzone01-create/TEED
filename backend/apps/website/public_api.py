@@ -1,10 +1,11 @@
-from apps.commerce.models import StockBatch, TrackedUnit
 from common.responses import SuccessResponse
 from django.db.models import Prefetch
 from django.shortcuts import get_object_or_404
 from rest_framework.permissions import AllowAny
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
+
+from apps.commerce.models import StockBatch, TrackedUnit
 
 from .contracts import serialize_listing, serialize_site
 from .models import WebsiteListing, WebsiteSite, WebsiteVariant

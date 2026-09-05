@@ -6,7 +6,6 @@ from django.db.models import Q
 from ..inventory.models import TrackedUnit
 from .models import Product
 
-
 COMMERCE_SEARCHABLE_PRODUCT_FIELDS = (
     "name",
     "sku",
