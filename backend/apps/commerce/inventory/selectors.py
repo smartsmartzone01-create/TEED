@@ -1,22 +1,12 @@
 from django.db.models import F, Q
 
+from ..catalog.exposure import project_product_for_agent, search_catalog_products
 from ..catalog.models import Product
 from .models import (
     InventoryMovement,
     StockReceipt,
     TrackedUnit,
 )
-
-
-def _item_payload(product):
-    return {
-        "product_id": str(product.id),
-        "name": product.name,
-        "sku": product.sku,
-        "unit": product.unit,
-        "current_quantity": product.current_quantity,
-        "low_stock_threshold": product.low_stock_threshold,
-    }
 
 
 def _tracked_unit_payload(unit):
@@ -79,30 +69,26 @@ def inventory_health(*, business, item_limit=8):
         "low_stock_count": low_stock_products.count(),
         "sold_out_count": sold_out_products.count(),
         "low_stock_items": [
-            _item_payload(product) for product in low_stock_products[:item_limit]
+            project_product_for_agent(product)
+            for product in low_stock_products[:item_limit]
         ],
         "sold_out_items": [
-            _item_payload(product) for product in sold_out_products[:item_limit]
+            project_product_for_agent(product)
+            for product in sold_out_products[:item_limit]
         ],
     }
 
 
 def inventory_search(*, business, query, limit=8):
-    """Search current workspace Stock by product, receipt, batch, or tracked identifier."""
+    """Search current workspace Stock by canonical Commerce search rules."""
     cleaned = str(query or "").strip()
     if not cleaned:
         return {"query": cleaned, "products": [], "receipts": [], "tracked_units": []}
 
-    products = (
-        Product.objects.filter(business=business, is_active=True)
-        .filter(
-            Q(name__icontains=cleaned)
-            | Q(sku__icontains=cleaned)
-            | Q(barcode__icontains=cleaned)
-            | Q(brand__icontains=cleaned)
-            | Q(variant__icontains=cleaned)
-        )
-        .order_by("name", "sku", "id")[:limit]
+    products = search_catalog_products(
+        business=business,
+        query=cleaned,
+        limit=limit,
     )
 
     receipts = (
@@ -149,7 +135,7 @@ def inventory_search(*, business, query, limit=8):
 
     return {
         "query": cleaned,
-        "products": [_item_payload(product) for product in products],
+        "products": products,
         "receipts": [
             {
                 "receipt_id": str(receipt.id),
@@ -195,7 +181,7 @@ def stock_receipt_detail(*, business, reference):
                         "name": line.product.name,
                         "sku": line.product.sku,
                         "unit": line.product.unit,
-                        "tracking_mode": line.tracking_mode,
+                        "tracking_mode": line.product.tracking_mode,
                         "quantity_received": line.quantity_received,
                         "quantity_remaining": line.quantity_remaining,
                     }
@@ -227,7 +213,7 @@ def stock_receipt_detail(*, business, reference):
             "name": line.product.name,
             "sku": line.product.sku,
             "unit": line.product.unit,
-            "tracking_mode": line.tracking_mode,
+            "tracking_mode": line.product.tracking_mode,
             "quantity_received": line.quantity_received,
             "quantity_remaining": line.quantity_remaining,
         }

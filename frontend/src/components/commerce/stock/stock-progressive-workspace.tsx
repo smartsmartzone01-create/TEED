@@ -85,6 +85,7 @@ type ProductChoice = {
   variant: string;
   unit: string;
   existingId: string | null;
+  trackingMode: StockTrackingMode | null;
 };
 
 type ItemDetails = {
@@ -330,6 +331,7 @@ function ProgressiveStockWorkspace({ businessId }: { businessId: string }) {
           variant: product.variant,
           unit: product.unit,
           existingId: product.id,
+          trackingMode: product.tracking_mode,
         })),
       ...preparedProducts.map((product) => ({
         key: product.key,
@@ -339,6 +341,7 @@ function ProgressiveStockWorkspace({ businessId }: { businessId: string }) {
         variant: product.variant,
         unit: product.unit,
         existingId: null,
+        trackingMode: null,
       })),
     ],
     [preparedProducts, products, t],
@@ -446,6 +449,17 @@ function ProgressiveStockWorkspace({ businessId }: { businessId: string }) {
   const validateLine = (line: RecordedLine, group?: RecordedGroup | null) => {
     const selected = choiceFor(line.productKey);
     if (!selected) return t("validation.productRequired");
+    const previouslyRecorded = [
+      ...directLines,
+      ...groups.flatMap((recordedGroup) => recordedGroup.lines),
+      ...(activeGroup?.lines ?? []),
+    ].find((recordedLine) => recordedLine.productKey === line.productKey);
+    const lockedTrackingMode = selected.trackingMode ?? previouslyRecorded?.trackingMode ?? null;
+    if (lockedTrackingMode && lockedTrackingMode !== line.trackingMode) {
+      return lockedTrackingMode === "individual"
+        ? t("validation.skuRequiresIndividual")
+        : t("validation.skuRequiresQuantity");
+    }
     const quantity = Number(line.quantity);
     if (!Number.isFinite(quantity) || quantity <= 0) return t("validation.quantityPositive");
     if (countableUnits.has(selected.unit as (typeof units)[number]) && !Number.isInteger(quantity)) {
@@ -543,6 +557,8 @@ function ProgressiveStockWorkspace({ businessId }: { businessId: string }) {
       .filter((choice) => usedKeys.has(choice.key))
       .map((choice) => {
         if (choice.existingId) return { key: choice.key, product_id: choice.existingId };
+        const assignedTrackingMode =
+          usedLines.find((line) => line.productKey === choice.key)?.trackingMode ?? "quantity";
         return {
           key: choice.key,
           item: {
@@ -550,6 +566,7 @@ function ProgressiveStockWorkspace({ businessId }: { businessId: string }) {
             brand: choice.brand,
             variant: choice.variant,
             unit: choice.unit,
+            tracking_mode: assignedTrackingMode,
           },
         };
       });
@@ -896,7 +913,20 @@ function ProgressiveStockWorkspace({ businessId }: { businessId: string }) {
         <div><h2 className="text-lg font-bold">{t("recordMethod.individual")}</h2><p className="mt-1 text-sm text-slate-500">{t("help.individual")}</p></div>
         {directLines.length ? <p className="text-xs text-slate-500">{t("savedCount", { count: directLines.length })}</p> : null}
         <form className="grid gap-3" onSubmit={addLine}>
-          <label className={field}>{t("fields.productSku")}<Select autoFocus data-stock-active-step tabIndex={-1} value={lineDraft.productKey} onChange={(event) => setLineDraft({ ...lineDraft, productKey: event.target.value })}><option value="">{t("values.chooseProduct")}</option>{choices.map((choice) => <option key={choice.key} value={choice.key}>{choice.name} · {choice.sku} · {choice.unit}</option>)}</Select></label>
+          <label className={field}>
+            {t("fields.productSku")}
+            <Select autoFocus data-stock-active-step tabIndex={-1} value={lineDraft.productKey} onChange={(event) => setLineDraft({ ...lineDraft, productKey: event.target.value })}>
+              <option value="">{t("values.chooseProduct")}</option>
+              {choices.map((choice) => {
+                const incompatible = choice.trackingMode !== null && choice.trackingMode !== "individual";
+                return (
+                  <option disabled={incompatible} key={choice.key} value={choice.key}>
+                    {choice.name} · {choice.sku} · {choice.unit}{incompatible ? ` · ${t("values.quantityTrackedSku")}` : ""}
+                  </option>
+                );
+              })}
+            </Select>
+          </label>
           <CostEditor mode={lineDraft.costMode} quantity="1" value={lineDraft.costValue} onMode={(mode) => setLineDraft({ ...lineDraft, costMode: mode })} onValue={(value) => setLineDraft({ ...lineDraft, costValue: value })} />
           <div className="grid gap-3 sm:grid-cols-2">
             <label className={field}>{commerceT("fields.modelName")}<Input value={lineDraft.details?.modelName ?? ""} onChange={(event) => setLineDraft({ ...lineDraft, details: { ...(lineDraft.details ?? emptyDetails()), modelName: event.target.value } })} /></label>
@@ -1114,7 +1144,20 @@ function GroupRecorder({
       <div><h2 className="text-lg font-bold">{activeGroup.name}</h2><p className="mt-1 text-sm text-slate-500">{t(`groupMethod.${activeGroup.method}`)}</p></div>
       {activeGroup.lines.length ? <div className={`${inset} divide-y divide-slate-200 px-3 dark:divide-slate-800`}>{activeGroup.lines.map((line) => { const product = choices.find((choice) => choice.key === line.productKey); return <div className="flex justify-between gap-3 py-2 text-sm" key={line.id}><span>{product?.name}</span><span>{line.quantity} {product?.unit}</span></div>; })}</div> : null}
       <form className="grid gap-3" onSubmit={onSubmitLine}>
-        <label className={field}>{t("fields.productSku")}<Select autoFocus data-stock-active-step tabIndex={-1} value={lineDraft.productKey} onChange={(event) => onLineDraft({ ...lineDraft, productKey: event.target.value })}><option value="">{t("values.chooseProduct")}</option>{choices.map((choice) => <option key={choice.key} value={choice.key}>{choice.name} · {choice.sku} · {choice.unit}</option>)}</Select></label>
+        <label className={field}>
+          {t("fields.productSku")}
+          <Select autoFocus data-stock-active-step tabIndex={-1} value={lineDraft.productKey} onChange={(event) => onLineDraft({ ...lineDraft, productKey: event.target.value })}>
+            <option value="">{t("values.chooseProduct")}</option>
+            {choices.map((choice) => {
+              const incompatible = choice.trackingMode !== null && choice.trackingMode !== activeGroup.method;
+              return (
+                <option disabled={incompatible} key={choice.key} value={choice.key}>
+                  {choice.name} · {choice.sku} · {choice.unit}{incompatible ? ` · ${t(choice.trackingMode === "individual" ? "values.individualTrackedSku" : "values.quantityTrackedSku")}` : ""}
+                </option>
+              );
+            })}
+          </Select>
+        </label>
         {!individual ? <label className={field}>{t("fields.productQuantity")}<Input min="0.001" step="0.001" type="number" value={lineDraft.quantity} onChange={(event) => onLineDraft({ ...lineDraft, quantity: event.target.value })} /></label> : null}
         <CostEditor mode={lineDraft.costMode} quantity={lineDraft.quantity} value={lineDraft.costValue} onMode={(mode) => onLineDraft({ ...lineDraft, costMode: mode })} onValue={(value) => onLineDraft({ ...lineDraft, costValue: value })} />
         {individual && lineDraft.details ? <div className="grid gap-3 sm:grid-cols-2"><label className={field}>{commerceT("fields.modelName")}<Input value={lineDraft.details.modelName} onChange={(event) => onLineDraft({ ...lineDraft, details: { ...lineDraft.details!, modelName: event.target.value } })} /></label><label className={field}>{commerceT("fields.brand")}<Input value={lineDraft.details.brand} onChange={(event) => onLineDraft({ ...lineDraft, details: { ...lineDraft.details!, brand: event.target.value } })} /></label><label className={field}>{commerceT("fields.color")}<Input value={lineDraft.details.color} onChange={(event) => onLineDraft({ ...lineDraft, details: { ...lineDraft.details!, color: event.target.value } })} /></label><label className={field}>{commerceT("fields.capacity")}<Input value={lineDraft.details.capacity} onChange={(event) => onLineDraft({ ...lineDraft, details: { ...lineDraft.details!, capacity: event.target.value } })} /></label><label className={field}>{t("fields.identifierType")}<Select value={lineDraft.details.identifierKind} onChange={(event) => onLineDraft({ ...lineDraft, details: { ...lineDraft.details!, identifierKind: event.target.value as ItemDetails["identifierKind"] } })}>{identifierKinds.map((kind) => <option key={kind} value={kind}>{commerceT(`identifierTypes.${kind}`)}</option>)}</Select></label><label className={field}>{t("fields.identifierValue")}<Input value={lineDraft.details.identifierValue} onChange={(event) => onLineDraft({ ...lineDraft, details: { ...lineDraft.details!, identifierValue: event.target.value } })} /></label></div> : null}

@@ -117,7 +117,9 @@
       "notEntered": "Not entered yet",
       "noNewProducts": "No new products added",
       "chooseProduct": "Choose a product / SKU",
-      "entries": "entries"
+      "entries": "entries",
+      "quantityTrackedSku": "quantity SKU",
+      "individualTrackedSku": "individual SKU"
     },
     "actions": {
       "copy": "Copy receipt",
@@ -174,7 +176,9 @@
       "wholeQuantity": "{unit} is a countable unit. Enter a whole quantity.",
       "individualOneAtATime": "Individual recording saves one physical item at a time.",
       "groupUnitMismatch": "Products in this group must use the same unit: {unit}.",
-      "groupNeedsProduct": "Enter at least one product before finishing this group."
+      "groupNeedsProduct": "Enter at least one product before finishing this group.",
+      "skuRequiresIndividual": "This SKU is tracked individually. Record it as an individual item or choose another SKU.",
+      "skuRequiresQuantity": "This SKU is tracked by quantity. Record it by quantity or choose another SKU."
     },
     "success": {
       "copied": "Stock receipt copied.",
