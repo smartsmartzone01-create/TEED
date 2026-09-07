@@ -10,9 +10,9 @@ from ..services import (
     _sync_stock_expense,
     commerce_membership,
     create_product,
-    create_stock_receipt as create_legacy_stock_receipt,
     refresh_decisions,
 )
+from ..services import create_stock_receipt as create_legacy_stock_receipt
 from .models import StockReceipt, StockReceiptAudit
 
 
