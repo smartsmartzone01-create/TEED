@@ -33,11 +33,18 @@ class StockCatalogItemInputSerializer(serializers.Serializer):
     key = serializers.CharField(max_length=80)
     product_id = serializers.UUIDField(required=False)
     item = ProductSerializer(required=False)
+    family_name = serializers.CharField(
+        max_length=120, required=False, allow_blank=True, default=""
+    )
 
     def validate(self, attrs):
         if bool(attrs.get("product_id")) == bool(attrs.get("item")):
             raise serializers.ValidationError(
                 "Choose an existing product or enter a new product identification."
+            )
+        if attrs.get("product_id") and attrs.get("family_name"):
+            raise serializers.ValidationError(
+                "Product family is changed from the catalog, not from a stock receipt."
             )
         return attrs
 
@@ -56,7 +63,7 @@ class CanonicalStockLineInputSerializer(serializers.Serializer):
         allow_null=True,
     )
     tracking_mode = serializers.ChoiceField(
-        choices=Product.TrackingMode.choices, default=Product.TrackingMode.QUANTITY
+        choices=Product.TrackingMode.choices, required=False
     )
     tracked_units = StockTrackedUnitInputSerializer(
         many=True, required=False, default=list
@@ -64,6 +71,8 @@ class CanonicalStockLineInputSerializer(serializers.Serializer):
 
 
 class CanonicalStockGroupInputSerializer(serializers.Serializer):
+    """Legacy grouped stock input retained for backward-compatible receipts."""
+
     name = serializers.CharField(max_length=120)
     quantity = serializers.DecimalField(
         max_digits=14, decimal_places=3, min_value=Decimal("0.001")
@@ -91,6 +100,8 @@ class CanonicalStockGroupInputSerializer(serializers.Serializer):
 
 
 class CanonicalStockBatchInputSerializer(serializers.Serializer):
+    """Legacy batch input retained so existing clients and saved drafts remain valid."""
+
     name = serializers.CharField(max_length=120)
     groups = CanonicalStockGroupInputSerializer(many=True, min_length=1)
 
@@ -101,6 +112,9 @@ class CanonicalStockReceiptCreateSerializer(serializers.Serializer):
         choices=[StockReceipt.Status.DRAFT, StockReceipt.Status.RECEIVED],
         default=StockReceipt.Status.RECEIVED,
     )
+    name = serializers.CharField(
+        max_length=120, required=False, allow_blank=True, default=""
+    )
     supplier_name = serializers.CharField(
         max_length=120, required=False, allow_blank=True
     )
@@ -109,7 +123,10 @@ class CanonicalStockReceiptCreateSerializer(serializers.Serializer):
     )
     received_at = serializers.DateTimeField(required=False, allow_null=True)
     catalog_items = StockCatalogItemInputSerializer(many=True, min_length=1)
-    batches = CanonicalStockBatchInputSerializer(many=True, min_length=1)
+    lines = CanonicalStockLineInputSerializer(many=True, required=False, default=list)
+    batches = CanonicalStockBatchInputSerializer(
+        many=True, required=False, default=list
+    )
 
     def validate(self, attrs):
         keys = [item["key"] for item in attrs["catalog_items"]]
@@ -117,16 +134,32 @@ class CanonicalStockReceiptCreateSerializer(serializers.Serializer):
             raise serializers.ValidationError(
                 {"catalog_items": "Product identification keys must be unique."}
             )
+
+        direct_lines = attrs.get("lines", [])
+        batches = attrs.get("batches", [])
+        if bool(direct_lines) == bool(batches):
+            raise serializers.ValidationError(
+                {
+                    "stock": (
+                        "Record product lines directly. Legacy batches remain supported, "
+                        "but a receipt cannot use both structures."
+                    )
+                }
+            )
+
         known = set(keys)
-        for batch in attrs["batches"]:
+        lines = list(direct_lines)
+        for batch in batches:
             for group in batch["groups"]:
-                for line in group["types"]:
-                    if line["catalog_key"] not in known:
-                        raise serializers.ValidationError(
-                            {
-                                "catalog_items": "A stock product uses an unknown identification."
-                            }
-                        )
+                lines.extend(group["types"])
+        for line in lines:
+            if line["catalog_key"] not in known:
+                raise serializers.ValidationError(
+                    {
+                        "catalog_items": "A stock product uses an unknown identification."
+                    }
+                )
+
         if attrs["status"] == StockReceipt.Status.RECEIVED and not attrs.get(
             "received_at"
         ):
@@ -168,6 +201,8 @@ class CanonicalStockLineSerializer(serializers.ModelSerializer):
     product_brand = serializers.CharField(source="product.brand", read_only=True)
     product_variant = serializers.CharField(source="product.variant", read_only=True)
     product_barcode = serializers.CharField(source="product.barcode", read_only=True)
+    product_family = serializers.SerializerMethodField()
+    product_family_name = serializers.SerializerMethodField()
     received_unit_cost = serializers.SerializerMethodField()
     total_buying_cost = serializers.SerializerMethodField()
     tracked_units = StockTrackedUnitSerializer(many=True, read_only=True)
@@ -182,6 +217,8 @@ class CanonicalStockLineSerializer(serializers.ModelSerializer):
             "product_brand",
             "product_variant",
             "product_barcode",
+            "product_family",
+            "product_family_name",
             "tracking_mode",
             "quantity_received",
             "quantity_remaining",
@@ -192,6 +229,12 @@ class CanonicalStockLineSerializer(serializers.ModelSerializer):
             "total_buying_cost",
             "tracked_units",
         ]
+
+    def get_product_family(self, obj):
+        return str(obj.product.family_id) if obj.product.family_id else None
+
+    def get_product_family_name(self, obj):
+        return obj.product.family.name if obj.product.family_id else ""
 
     def get_received_unit_cost(self, obj):
         if obj.unit_cost is None:
@@ -224,6 +267,7 @@ class CanonicalStockBatchSerializer(serializers.ModelSerializer):
 
 
 class CanonicalStockReceiptSerializer(serializers.ModelSerializer):
+    lines = CanonicalStockLineSerializer(many=True, read_only=True)
     batches = CanonicalStockBatchSerializer(many=True, read_only=True)
     late_deliveries = serializers.SerializerMethodField()
     product_type_count = serializers.SerializerMethodField()
@@ -238,11 +282,13 @@ class CanonicalStockReceiptSerializer(serializers.ModelSerializer):
             "id",
             "parent_receipt",
             "reference",
+            "name",
             "status",
             "supplier_name",
             "additional_cost",
             "received_at",
             "created_at",
+            "lines",
             "batches",
             "late_deliveries",
             "product_type_count",
@@ -342,6 +388,9 @@ class CanonicalStockLineCorrectionSerializer(serializers.Serializer):
 
 
 class CanonicalStockReceiptCorrectionSerializer(serializers.Serializer):
+    name = serializers.CharField(
+        max_length=120, required=False, allow_blank=True
+    )
     supplier_name = serializers.CharField(
         max_length=120, required=False, allow_blank=True
     )
