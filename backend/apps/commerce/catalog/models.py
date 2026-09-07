@@ -2,6 +2,29 @@ from common.database.base_model import BaseModel
 from django.db import models
 
 
+class ProductFamily(BaseModel):
+    """A reusable commercial family that groups related sellable SKUs/variants."""
+
+    business = models.ForeignKey(
+        "workspaces.Business",
+        on_delete=models.CASCADE,
+        related_name="product_families",
+    )
+    name = models.CharField(max_length=120)
+    brand = models.CharField(max_length=80, blank=True, default="")
+    is_active = models.BooleanField(default=True, db_index=True)
+
+    class Meta:
+        db_table = "commerce_product_families"
+        ordering = ["name", "brand", "id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["business", "name", "brand"],
+                name="commerce_business_product_family_unique",
+            )
+        ]
+
+
 class Product(BaseModel):
     class TrackingMode(models.TextChoices):
         QUANTITY = "quantity", "Quantity"
@@ -9,6 +32,13 @@ class Product(BaseModel):
 
     business = models.ForeignKey(
         "workspaces.Business", on_delete=models.CASCADE, related_name="products"
+    )
+    family = models.ForeignKey(
+        ProductFamily,
+        on_delete=models.PROTECT,
+        related_name="products",
+        null=True,
+        blank=True,
     )
     name = models.CharField(max_length=120)
     sku = models.CharField(max_length=64, blank=True, default="", editable=False)
