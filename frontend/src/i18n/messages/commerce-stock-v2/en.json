@@ -1,0 +1,50 @@
+{
+  "CommerceStockV2": {
+    "steps": {
+      "stock": "Stock information",
+      "catalog": "Product catalog",
+      "record": "Recording",
+      "review": "Review"
+    },
+    "help": {
+      "stock": "Name this stock and enter its supplier, received date, and stock expenses.",
+      "catalog": "Choose reusable products already in your catalog or add a new SKU. Tracking belongs to the catalog product, not to this receipt.",
+      "record": "Enter the quantity, received unit, conversion, and buying cost for each SKU. Individually tracked products also require their physical-unit records.",
+      "review": "Check the stock information and product lines, then save a draft or receive the stock."
+    },
+    "fields": {
+      "stockName": "Stock name",
+      "productFamily": "Product family (optional)",
+      "trackingMode": "Tracking",
+      "receivedUnit": "Received unit",
+      "baseUnit": "Inventory unit",
+      "conversion": "Inventory units per received unit"
+    },
+    "tracking": {
+      "quantity": "Quantity",
+      "individual": "Individual"
+    },
+    "actions": {
+      "addExisting": "Add product",
+      "remove": "Remove product",
+      "back": "Back",
+      "saveCorrection": "Save correction",
+      "archiveDraft": "Archive draft"
+    },
+    "validation": {
+      "stockName": "Enter a stock name.",
+      "catalogRequired": "Choose at least one product / SKU for this stock.",
+      "conversionPositive": "Enter a conversion greater than zero."
+    },
+    "individualProgress": "Physical items to record: {count}",
+    "individualItem": "Item {number}",
+    "history": {
+      "title": "Recorded stock",
+      "description": "Current receipts remain available while the new recording flow uses direct product lines.",
+      "empty": "No stock has been recorded yet."
+    },
+    "correction": {
+      "title": "Correct stock"
+    }
+  }
+}
