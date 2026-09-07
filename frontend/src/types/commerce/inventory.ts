@@ -19,6 +19,8 @@ type StockReceiptLine = {
   product_brand: string;
   product_variant: string;
   product_barcode: string;
+  product_family: string | null;
+  product_family_name: string;
   tracking_mode: StockTrackingMode;
   quantity_received: string;
   quantity_remaining: string;
@@ -50,11 +52,13 @@ type StockReceipt = {
   id: string;
   parent_receipt: string | null;
   reference: string;
+  name: string;
   status: "draft" | "received" | "archived";
   supplier_name: string;
   additional_cost: string;
   received_at: string | null;
   created_at: string;
+  lines: StockReceiptLine[];
   batches: StockReceiptBatch[];
   late_deliveries: StockReceipt[];
   product_type_count: number;
