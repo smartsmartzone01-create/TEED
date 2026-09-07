@@ -1,0 +1,90 @@
+{% load static %}
+
+<footer class="footer">
+
+<div class="footer-social">
+  <a href="https://instagram.com/your_account" target="_blank">
+    <img src="{% static 'icons/instagram.svg' %}" alt="Instagram" class="social-icon" />
+  </a>
+  <a href="https://wa.me/255123456789" target="_blank">
+    <img src="{% static 'icons/WhatsApp.svg.webp' %}" alt="WhatsApp" class="social-icon" />
+  </a>
+</div>
+
+
+  <div class="footer-grid">
+
+    <!-- SHOP Section -->
+    <div class="footer-column">
+      <h3>Shop</h3>
+      <ul class="footer-shop-list">
+        {% if footer_categories %}
+          {% for category in footer_categories %}
+            <li class="footer-dropdown">
+              <button class="footer-toggle-btn" type="button">
+                {{ category.name }} 
+              </button>
+              {% if category.subcategories.all %}
+                <ul class="footer-submenu">
+                  {% for sub in category.subcategories.all %}
+                    <li>
+                      <a href="{% url 'store:products_by_category' category.slug %}">{{ sub.name }}</a>
+                    </li>
+                  {% endfor %}
+                </ul>
+              {% endif %}
+            </li>
+          {% endfor %}
+        {% else %}
+          <p style="color:red;">No categories found.</p>
+        {% endif %}
+      </ul>
+    </div>
+
+    <!-- SUPPORT -->
+    <div class="footer-column">
+      <h3>Support</h3>
+      <ul>
+        <li><a href="https://wa.me/255784861276">Chat with Us</a></li>
+        <li><a href="https://wa.me/255784861276">Order Help</a></li>
+        <li><a href="https://wa.me/255784861276">Product Help</a></li>
+        <li><a href="https://wa.me/255784861276">Returns</a></li>
+        <li><a href="https://wa.me/255784861276">Contact Us</a></li>
+      </ul>
+    </div>
+
+    <!-- ABOUT US -->
+    <div class="footer-column">
+      <h3>About Us</h3>
+      <ul>
+        <li><a href="{% url 'store:about' %}#leadership">Leadership</a></li>
+        <li><a href="{% url 'store:about' %}#business">Our Business</a></li>
+        <li><a href="{% url 'store:about' %}#brand">Brand Identity</a></li>
+        <li><a href="{% url 'store:about' %}#ethics">Ethics</a></li>
+      </ul>
+    </div>
+
+  <!-- Contact us-->
+  <div class="footer-column">
+    <h3>Contact US</h3>
+    <ul>
+      <li><a href="tel:+255784861276">📞 +255 784 861 276</a></li>
+      <li><a href="mailto:info@iphonebestpoint.com">info@iphonebestpoint.com</a></li>
+      <li><a href="https://wa.me/255784861276" target="_blank" rel="noopener noreferrer">💬 WhatsApp Chat</a></li>
+    </ul>
+  </div>
+
+  </div> <!-- end footer-grid -->
+
+ <div class="footer-bottom">
+  <p>&copy; 2025 iPhone Bestpoint. All rights reserved.</p>
+  <p>Designed by Kajotz</p>
+  <nav class="footer-legal-links">
+    <a href="{% url 'store:terms' %}">Terms of Service</a> |
+    <a href="{% url 'store:privacy' %}">Privacy Policy</a> |
+    <a href="{% url 'store:cookies' %}">Cookie Policy</a> |
+    <a href="{% url 'store:disclaimer' %}">Disclaimer</a>
+  </nav>
+</div>
+
+</footer>

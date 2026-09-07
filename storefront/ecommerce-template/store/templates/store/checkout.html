@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% load static %}
+{% load math_filters %}
+
+{% block title %}Checkout{% endblock %}
+
+
+
+
+{% block content %}
+<div class="max-w-4xl mx-auto mt-12 bg-white rounded-2xl shadow-lg p-6 sm:p-10">
+  <h2 class="text-2xl font-semibold text-gray-800 mb-6">Checkout</h2>
+
+  <!-- Cart Table -->
+  <div class="overflow-x-auto mb-8">
+    <table class="min-w-full text-sm text-left text-gray-700 border border-gray-200 rounded-lg">
+      <thead class="bg-gray-100 text-xs uppercase text-gray-500">
+        <tr>
+          <th class="px-4 py-3">Product</th>
+          <th class="px-4 py-3">Qty</th>
+          <th class="px-4 py-3">Price</th>
+          <th class="px-4 py-3">Total</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-200">
+        {% for item in cart_items %}
+        <tr class="hover:bg-gray-50">
+          <td class="px-4 py-3 font-medium">{{ item.product.name }}</td>
+          <td class="px-4 py-3">{{ item.quantity }}</td>
+          <td class="px-4 py-3">
+            {% if item.product.discount_price %}
+              TZS {{ item.product.discount_price|floatformat:0 }}
+            {% else %}
+              TZS {{ item.product.price|floatformat:0 }}
+            {% endif %}
+          </td>
+          <td class="px-4 py-3 font-semibold">
+            {% with price=item.product.discount_price|default:item.product.price %}
+              TZS {{ price|multiply:item.quantity|floatformat:0 }}
+            {% endwith %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Shipping Info Form -->
+  <form method="POST" action="{% url 'store:checkout' %}" class="space-y-6">
+    {% csrf_token %}
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div>
+        <label for="full_name" class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+        <input type="text" name="full_name" id="full_name" required class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#c56926]">
+      </div>
+
+      <div>
+        <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+        <input type="email" name="email" id="email" required class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#c56926]">
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div>
+        <label for="phone" class="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+        <input type="text" name="phone" id="phone" required class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#c56926]">
+      </div>
+
+      <div>
+        <label for="address" class="block text-sm font-medium text-gray-700 mb-1">Shipping Address</label>
+        <textarea name="address" id="address" required class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#c56926]" rows="3"></textarea>
+      </div>
+    </div>
+
+    <div>
+      <label for="notes" class="block text-sm font-medium text-gray-700 mb-1">Order Notes (optional)</label>
+      <textarea name="notes" id="notes" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#c56926]" rows="3"></textarea>
+    </div>
+
+    <div class="flex justify-between items-center pt-4 border-t mt-6">
+      <p class="text-lg font-semibold text-gray-700">
+        Total: <span class="text-black">TZS {{ total|floatformat:0 }}</span>
+      </p>
+      <button type="submit" class="bg-black text-white py-3 px-6 rounded-xl hover:bg-gray-800 transition duration-300 text-sm sm:text-base">
+        Place Order
+      </button>
+    </div>
+  </form>
+</div>
+
+
+{% endblock %}

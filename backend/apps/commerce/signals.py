@@ -1,21 +1,80 @@
 from decimal import Decimal
 
 from django.db import transaction
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
+from rest_framework.exceptions import ValidationError
 
 from apps.notifications.models import UserNotification
 from apps.notifications.services import notify_user
 from apps.workspaces.models import BusinessMembership
 from apps.workspaces.policy import WorkspacePermission, role_has_permission
 
-from .models import InventoryMovement, Product
+from .models import InventoryMovement, Product, StockBatch
 
 
 def _quantity_text(value):
     if value == value.to_integral_value():
         return format(value.quantize(Decimal("1")), "f")
     return format(value.normalize(), "f")
+
+
+def _tracking_mode_name(mode):
+    return "individually" if mode == Product.TrackingMode.INDIVIDUAL else "by quantity"
+
+
+@receiver(pre_save, sender=StockBatch)
+def enforce_sku_tracking_mode(sender, instance, **kwargs):
+    """Keep every stock allocation aligned with its SKU tracking identity.
+
+    Product.tracking_mode is authoritative. Existing historical rows are left untouched
+    unless they are explicitly saved again; every new or edited StockBatch must match.
+    """
+
+    if not instance.product_id:
+        return
+    product = Product.objects.filter(pk=instance.product_id).first()
+    if product is None:
+        return
+
+    requested_mode = instance.tracking_mode or product.tracking_mode
+    if requested_mode != product.tracking_mode:
+        raise ValidationError(
+            {
+                "tracking_mode": [
+                    f"SKU {product.sku or product.name} is tracked "
+                    f"{_tracking_mode_name(product.tracking_mode)} and cannot be recorded "
+                    f"{_tracking_mode_name(requested_mode)}. Choose a compatible SKU or "
+                    "use the SKU's existing recording method."
+                ]
+            }
+        )
+    instance.tracking_mode = product.tracking_mode
+
+
+@receiver(pre_save, sender=Product)
+def prevent_allocated_sku_tracking_rewrite(sender, instance, **kwargs):
+    """Prevent ordinary edits from changing tracking identity after stock exists."""
+
+    if not instance.pk:
+        return
+    previous_mode = (
+        Product.objects.filter(pk=instance.pk)
+        .values_list("tracking_mode", flat=True)
+        .first()
+    )
+    if previous_mode is None or previous_mode == instance.tracking_mode:
+        return
+    if StockBatch.objects.filter(product_id=instance.pk).exists():
+        raise ValidationError(
+            {
+                "tracking_mode": [
+                    f"SKU {instance.sku or instance.name} already has stock recorded "
+                    f"{_tracking_mode_name(previous_mode)}. Its tracking mode cannot be "
+                    "changed while that SKU has stock history."
+                ]
+            }
+        )
 
 
 def notify_stock_attention(*, product_id):

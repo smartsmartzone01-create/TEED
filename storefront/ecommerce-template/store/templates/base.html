@@ -1,0 +1,105 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Kajotz{% endblock %}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+
+    <!-- Tailwind -->
+    
+
+    <!--static tailwind-->
+    {% load static %}
+
+    <link href="{% static 'css/main.css' %}" rel="stylesheet">
+
+
+    <!-- Main CSS -->
+    <link href="{% static 'css/styles.css' %}" rel="stylesheet">
+
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+    <!-- ✅ Header (global) -->
+    {% include "partials/header.html" %}
+
+
+  
+
+{% if global_offer_banner %}
+  
+    <div class="offer-banner">
+  <!-- Confetti Rain Layer -->
+  <div class="rain-container">
+    <img src="{% static 'images/confetti1.png' %}" class="rain-image" alt="confetti1" />
+    <img src="{% static 'images/confetti2.png' %}" class="rain-image" alt="confetti2" />
+    <img src="{% static 'images/confetti3.png' %}" class="rain-image" alt="confetti3" />
+    <img src="{% static 'images/confetti1.png' %}" class="rain-image" alt="confetti1" />
+    <img src="{% static 'images/confetti2.png' %}" class="rain-image" alt="confetti2" />
+    <img src="{% static 'images/confetti3.png' %}" class="rain-image" alt="confetti3" />
+  </div>
+
+  <div class="offer-content">
+    <img src="{{ global_offer_banner.image.url }}" alt="{{ global_offer_banner.title }}" class="offer-image" />
+    
+    <div class="offer-text">
+      <h1>{{ global_offer_banner.title }}</h1>
+      <p>{{ global_offer_banner.subtitle }}</p>
+      <a href="{% url 'store:product_detail' global_offer_banner.product.slug %}" 
+   class="shop-now-btn glow">
+  Shop Now
+</a>
+    </div>
+  </div>
+</div>
+
+<!-- Django Messages -->
+{% if messages %}
+  <div class="django-messages">
+    {% for message in messages %}
+      <div class="django-message {{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+  </div>
+{% endif %}
+{% endif %}
+    <main>
+        {% block content %}
+        
+        {% endblock %}
+
+    </main>
+<section class="newsletter-section">
+  <div class="newsletter-content">
+    <h2 class="newsletter-heading">Stay Updated</h2>
+    <p class="newsletter-subheading">
+      Get exclusive deals, product drops, and insider updates. No spam, ever.
+    </p>
+
+    <form method="post" action="{% url 'store:subscribe_newsletter' %}">
+      {% csrf_token %}
+      <div class="newsletter-form">
+        <input type="email" name="email" placeholder="Enter your email..." required class="newsletter-input">
+        <button type="submit" class="newsletter-btn">Subscribe</button>
+      </div>
+    </form>
+  </div>
+</section>
+
+    <!-- ✅ Footer (global) -->
+    {% include "partials/footer.html" %}
+
+    <!-- ✅ Main JS -->
+    <script src="{% static 'js/main.js' %}" defer></script>
+
+    {% block extra_js %}
+     <script src="{% static 'js/messages.js' %}"></script>
+    <script src="{% static 'js/saved_items.js' %}"></script>
+     {% endblock %}
+
+    
+</body>
+</html>
