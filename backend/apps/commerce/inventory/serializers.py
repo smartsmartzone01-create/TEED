@@ -268,7 +268,7 @@ class CanonicalStockBatchSerializer(serializers.ModelSerializer):
 
 class CanonicalStockReceiptSerializer(serializers.ModelSerializer):
     lines = CanonicalStockLineSerializer(many=True, read_only=True)
-    batches = CanonicalStockBatchSerializer(many=True, read_only=True)
+    batches = serializers.SerializerMethodField()
     late_deliveries = serializers.SerializerMethodField()
     product_type_count = serializers.SerializerMethodField()
     quantities_by_unit = serializers.SerializerMethodField()
@@ -296,6 +296,40 @@ class CanonicalStockReceiptSerializer(serializers.ModelSerializer):
             "total_buying_value",
             "correction_open",
             "correction_deadline",
+        ]
+
+    def get_batches(self, obj):
+        legacy_batches = list(obj.batches.all())
+        if legacy_batches:
+            return CanonicalStockBatchSerializer(legacy_batches, many=True).data
+
+        lines = list(obj.lines.all())
+        if not lines:
+            return []
+
+        return [
+            {
+                "id": str(obj.id),
+                "code": "",
+                "name": obj.name or obj.reference,
+                "groups": [
+                    {
+                        "id": str(line.id),
+                        "code": "",
+                        "name": line.product.name,
+                        "quantity": format(
+                            (
+                                line.quantity_received
+                                / (line.conversion_to_base or Decimal("1"))
+                            ).normalize(),
+                            "f",
+                        ),
+                        "unit": line.received_unit or line.product.unit,
+                        "types": CanonicalStockLineSerializer(line).data,
+                    }
+                    for line in lines
+                ],
+            }
         ]
 
     def get_late_deliveries(self, obj):
