@@ -6,6 +6,8 @@ type Product = {
   group: string;
   brand: string;
   variant: string;
+  family: string | null;
+  family_name: string;
   unit: string;
   selling_price: string | null;
   tracking_mode: "quantity" | "individual";
