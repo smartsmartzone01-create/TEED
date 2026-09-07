@@ -14,6 +14,7 @@ const eslintConfig = defineConfig([
       "src/components/commerce/financing/financing-workspace.tsx",
       "src/components/commerce/sales/sales-workspace.tsx",
       "src/components/commerce/stock/stock-progressive-workspace.tsx",
+      "src/components/commerce/stock/stock-progressive-workspace-v2.tsx",
     ],
     rules: {
       "react-hooks/set-state-in-effect": "off",
