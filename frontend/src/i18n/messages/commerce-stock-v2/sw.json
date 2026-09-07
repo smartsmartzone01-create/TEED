@@ -1,0 +1,50 @@
+{
+  "CommerceStockV2": {
+    "steps": {
+      "stock": "Taarifa za stoo",
+      "catalog": "Katalogi ya bidhaa",
+      "record": "Kurekodi",
+      "review": "Kukagua"
+    },
+    "help": {
+      "stock": "Ipe stoo hii jina kisha weka msambazaji, tarehe ya kupokea, na gharama za stoo.",
+      "catalog": "Chagua bidhaa zinazotumika tena kutoka katalogi au ongeza SKU mpya. Mfumo wa ufuatiliaji ni wa bidhaa ya katalogi, si wa risiti hii.",
+      "record": "Weka kiasi, uniti iliyopokelewa, ubadilishaji, na gharama ya kununua kwa kila SKU. Bidhaa zinazofuatiliwa moja moja pia zinahitaji rekodi za kila kitu halisi.",
+      "review": "Kagua taarifa za stoo na mistari ya bidhaa, kisha hifadhi rasimu au kamilisha upokeaji wa stoo."
+    },
+    "fields": {
+      "stockName": "Jina la stoo",
+      "productFamily": "Familia ya bidhaa (si lazima)",
+      "trackingMode": "Ufuatiliaji",
+      "receivedUnit": "Uniti iliyopokelewa",
+      "baseUnit": "Uniti ya hesabu ya stoo",
+      "conversion": "Uniti za hesabu kwa kila uniti iliyopokelewa"
+    },
+    "tracking": {
+      "quantity": "Kwa kiasi",
+      "individual": "Moja moja"
+    },
+    "actions": {
+      "addExisting": "Ongeza bidhaa",
+      "remove": "Ondoa bidhaa",
+      "back": "Rudi",
+      "saveCorrection": "Hifadhi marekebisho",
+      "archiveDraft": "Hifadhi rasimu kwenye kumbukumbu"
+    },
+    "validation": {
+      "stockName": "Weka jina la stoo.",
+      "catalogRequired": "Chagua angalau bidhaa / SKU moja kwa stoo hii.",
+      "conversionPositive": "Weka ubadilishaji mkubwa kuliko sifuri."
+    },
+    "individualProgress": "Vitu halisi vya kurekodi: {count}",
+    "individualItem": "Kitu {number}",
+    "history": {
+      "title": "Stoo iliyorekodiwa",
+      "description": "Risiti zilizopo zinaendelea kupatikana huku mfumo mpya wa kurekodi ukitumia mistari ya bidhaa moja kwa moja.",
+      "empty": "Bado hakuna stoo iliyorekodiwa."
+    },
+    "correction": {
+      "title": "Rekebisha stoo"
+    }
+  }
+}
