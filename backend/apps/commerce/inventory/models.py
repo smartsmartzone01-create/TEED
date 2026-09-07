@@ -22,6 +22,7 @@ class StockReceipt(BaseModel):
         blank=True,
     )
     reference = models.CharField(max_length=40)
+    name = models.CharField(max_length=120, blank=True, default="")
     sequence = models.PositiveBigIntegerField()
     status = models.CharField(
         max_length=12, choices=Status.choices, default=Status.DRAFT, db_index=True
