@@ -37,20 +37,30 @@ def _require_whole(value, unit, message):
 
 
 def _validate_line(line, *, status, location):
+    quantity = line["quantity_received"]
+    conversion = line.get("conversion_to_base", Decimal("1"))
+    base_quantity = quantity * conversion
     _require_whole(
-        line["quantity_received"],
+        quantity,
         line["received_unit"],
         {location: [f"{line['received_unit']} requires a whole quantity."]},
     )
     if line.get("tracking_mode") == "individual":
-        quantity = line["quantity_received"]
-        if quantity != quantity.to_integral_value():
+        if base_quantity != base_quantity.to_integral_value():
             raise ValidationError(
-                {location: ["Individually tracked products require a whole quantity."]}
+                {
+                    location: [
+                        "Individually tracked products must convert to a whole inventory quantity."
+                    ]
+                }
             )
-        if status == "received" and len(line["tracked_units"]) != int(quantity):
+        if status == "received" and len(line["tracked_units"]) != int(base_quantity):
             raise ValidationError(
-                {location: ["Record every individual item before receiving the stock."]}
+                {
+                    location: [
+                        f"Record all {int(base_quantity)} individual items before receiving the stock."
+                    ]
+                }
             )
 
 
