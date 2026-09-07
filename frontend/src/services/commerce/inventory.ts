@@ -3,6 +3,14 @@ import { requestApi } from "@/services/global/api-client";
 import { withCsrfRetry } from "@/services/identity/csrf";
 import { commerceBase } from "@/services/commerce/shared";
 
+const STOCK_RECEIPTS_CHANGED_EVENT = "tunakuza:stock-receipts-changed";
+
+function announceStockReceiptsChanged() {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event(STOCK_RECEIPTS_CHANGED_EVENT));
+  }
+}
+
 function getStockReceipts(
   businessId: string,
   accessToken: string,
@@ -16,12 +24,12 @@ function getStockReceipts(
   });
 }
 
-function createStockReceipt(
+async function createStockReceipt(
   businessId: string,
   accessToken: string,
   body: unknown,
 ) {
-  return withCsrfRetry((csrfToken) =>
+  const response = await withCsrfRetry((csrfToken) =>
     requestApi({
       accessToken,
       body,
@@ -31,15 +39,17 @@ function createStockReceipt(
       schema: genericResponseSchema,
     }),
   );
+  announceStockReceiptsChanged();
+  return response;
 }
 
-function correctStockReceipt(
+async function correctStockReceipt(
   businessId: string,
   receiptId: string,
   accessToken: string,
   body: unknown,
 ) {
-  return withCsrfRetry((csrfToken) =>
+  const response = await withCsrfRetry((csrfToken) =>
     requestApi({
       accessToken,
       body,
@@ -49,14 +59,16 @@ function correctStockReceipt(
       schema: genericResponseSchema,
     }),
   );
+  announceStockReceiptsChanged();
+  return response;
 }
 
-function archiveDraftStockReceipt(
+async function archiveDraftStockReceipt(
   businessId: string,
   receiptId: string,
   accessToken: string,
 ) {
-  return withCsrfRetry((csrfToken) =>
+  const response = await withCsrfRetry((csrfToken) =>
     requestApi({
       accessToken,
       body: {},
@@ -66,9 +78,12 @@ function archiveDraftStockReceipt(
       schema: genericResponseSchema,
     }),
   );
+  announceStockReceiptsChanged();
+  return response;
 }
 
 export {
+  STOCK_RECEIPTS_CHANGED_EVENT,
   archiveDraftStockReceipt,
   correctStockReceipt,
   createStockReceipt,

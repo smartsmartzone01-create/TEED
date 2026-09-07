@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 
 import { StockProgressiveWorkspaceV2 } from "@/components/commerce/stock/stock-progressive-workspace-v2";
+import { StockReceiptList } from "@/components/commerce/stock/stock-receipt-list";
 import { Button } from "@/components/global/primitives/button";
 import { Tooltip } from "@/components/global/primitives/tooltip";
 
@@ -53,10 +54,19 @@ function StockRecorderV2({ businessId }: { businessId: string }) {
         <StockProgressiveWorkspaceV2 businessId={businessId} onStageChange={setActiveStage} />
       </div>
 
+      <StockReceiptList businessId={businessId} />
+
       <style jsx global>{`
         .stock-progressive-v2-host[data-recording-open="false"]
           > div
           > section:first-child {
+          display: none;
+        }
+
+        .stock-progressive-v2-host
+          > div
+          > section:nth-of-type(2)
+          > div:last-child {
           display: none;
         }
       `}</style>

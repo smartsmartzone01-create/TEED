@@ -41,7 +41,10 @@
     "history": {
       "title": "Recorded stock",
       "description": "Current receipts remain available while the new recording flow uses direct product lines.",
-      "empty": "No stock has been recorded yet."
+      "empty": "No stock has been recorded yet.",
+      "moreProducts": "+{count} more products",
+      "viewDetails": "View stock details",
+      "hideDetails": "Hide stock details"
     },
     "correction": {
       "title": "Correct stock"

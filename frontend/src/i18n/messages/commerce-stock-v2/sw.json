@@ -41,7 +41,10 @@
     "history": {
       "title": "Stoo iliyorekodiwa",
       "description": "Risiti zilizopo zinaendelea kupatikana huku mfumo mpya wa kurekodi ukitumia mistari ya bidhaa moja kwa moja.",
-      "empty": "Bado hakuna stoo iliyorekodiwa."
+      "empty": "Bado hakuna stoo iliyorekodiwa.",
+      "moreProducts": "+bidhaa nyingine {count}",
+      "viewDetails": "Angalia maelezo ya stoo",
+      "hideDetails": "Ficha maelezo ya stoo"
     },
     "correction": {
       "title": "Rekebisha stoo"
