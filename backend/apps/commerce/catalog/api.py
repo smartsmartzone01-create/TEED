@@ -1,6 +1,7 @@
 from common.responses import SuccessResponse
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_protect
+from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from apps.workspaces.policy import WorkspacePermission
@@ -17,6 +18,20 @@ from .models import Product, UnitDefinition
 from .services import active_catalog_products, set_catalog_product_active
 
 
+class CatalogProductSerializer(AvailabilityProductSerializer):
+    family = serializers.SerializerMethodField()
+    family_name = serializers.SerializerMethodField()
+
+    class Meta(AvailabilityProductSerializer.Meta):
+        fields = [*AvailabilityProductSerializer.Meta.fields, "family", "family_name"]
+
+    def get_family(self, obj):
+        return str(obj.family_id) if obj.family_id else None
+
+    def get_family_name(self, obj):
+        return obj.family.name if obj.family_id else ""
+
+
 class ActiveProductListCreatePolishAPIView(ProductListCreatePolishAPIView):
     """Expose active catalog identities, including sold-out items for restocking."""
 
@@ -25,7 +40,7 @@ class ActiveProductListCreatePolishAPIView(ProductListCreatePolishAPIView):
         products = active_catalog_products(business=membership.business)
         return SuccessResponse(
             message="Products retrieved successfully.",
-            data={"products": AvailabilityProductSerializer(products, many=True).data},
+            data={"products": CatalogProductSerializer(products, many=True).data},
         )
 
 
@@ -46,7 +61,7 @@ class ProductDetailOperationsPolishAPIView(CommerceBaseAPIView):
             )
             return SuccessResponse(
                 message="Catalog item status updated successfully.",
-                data=AvailabilityProductSerializer(product).data,
+                data=CatalogProductSerializer(product).data,
             )
 
         membership = commerce_membership(
@@ -54,7 +69,7 @@ class ProductDetailOperationsPolishAPIView(CommerceBaseAPIView):
             business_id=business_id,
             permission=WorkspacePermission.MANAGE_CATALOG,
         )
-        product = Product.objects.filter(
+        product = Product.objects.select_related("family").filter(
             id=product_id, business=membership.business
         ).first()
         if product is None:
@@ -88,12 +103,13 @@ class ProductDetailOperationsPolishAPIView(CommerceBaseAPIView):
         product = serializer.save()
         return SuccessResponse(
             message="Available item corrected successfully.",
-            data=AvailabilityProductSerializer(product).data,
+            data=CatalogProductSerializer(product).data,
         )
 
 
 __all__ = [
     "ActiveProductListCreatePolishAPIView",
+    "CatalogProductSerializer",
     "ProductDetailOperationsPolishAPIView",
     "UnitDefinition",
     "UnitDefinitionSerializer",
