@@ -10,29 +10,33 @@ from ..api import (
     StockReceiptReceiveAPIView,
 )
 from ..catalog.models import UnitDefinition
-from ..services import commerce_membership, create_stock_receipt
+from ..services import commerce_membership
 from .contract import CanonicalStockReceiptCreateContractSerializer
 from .detail import GuardedStockReceiptDetailAPIView
 from .serializers import (
     CanonicalStockReceiptSerializer,
     CanonicalUnitDefinitionSerializer,
 )
-from .services import archive_draft_stock_receipt, current_stock_receipts
+from .services import (
+    archive_draft_stock_receipt,
+    create_stock_receipt_v2,
+    current_stock_receipts,
+)
 
 PREFETCH_STOCK = (
-    "lines__product",
+    "lines__product__family",
     "lines__tracked_units__identifiers",
-    "batches__groups__type_lines__product",
+    "batches__groups__type_lines__product__family",
     "batches__groups__type_lines__tracked_units__identifiers",
-    "late_deliveries__lines__product",
+    "late_deliveries__lines__product__family",
     "late_deliveries__lines__tracked_units__identifiers",
-    "late_deliveries__batches__groups__type_lines__product",
+    "late_deliveries__batches__groups__type_lines__product__family",
     "late_deliveries__batches__groups__type_lines__tracked_units__identifiers",
 )
 
 
 class ActiveStockReceiptListCreatePolishAPIView(CommerceBaseAPIView):
-    """Canonical Mzigo -> Batch -> Group -> Product stock endpoint."""
+    """Canonical Stock receipt -> reusable product line endpoint."""
 
     def get(self, request, business_id):
         membership = commerce_membership(user=request.user, business_id=business_id)
@@ -54,7 +58,7 @@ class ActiveStockReceiptListCreatePolishAPIView(CommerceBaseAPIView):
     def post(self, request, business_id):
         serializer = CanonicalStockReceiptCreateContractSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        receipt = create_stock_receipt(
+        receipt = create_stock_receipt_v2(
             actor=request.user,
             business_id=business_id,
             **serializer.validated_data,
