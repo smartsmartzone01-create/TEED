@@ -1,6 +1,5 @@
 from .branding import KUZA_AI_NAME
 
-
 _SWAHILI_RESPONSE_GUIDANCE = (
     "When the primary language is Kiswahili, use natural Tanzanian business Swahili, "
     "not literal word-for-word translation. Prefer familiar Swahili business terms and "
