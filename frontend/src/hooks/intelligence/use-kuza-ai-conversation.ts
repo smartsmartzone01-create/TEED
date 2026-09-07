@@ -41,6 +41,10 @@ function useKuzaAIConversation({
       const message = rawMessage.trim();
       if (!message || sending) return false;
 
+      const history = messages.slice(-12).map(({ role, content }) => ({
+        role,
+        content,
+      }));
       const userMessage: KuzaAIMessage = {
         content: message,
         id: createMessageId("user"),
@@ -55,7 +59,14 @@ function useKuzaAIConversation({
       requestController.current = controller;
 
       const runRequest = (token: string) =>
-        askKuzaAI(businessId, token, message, locale, controller.signal);
+        askKuzaAI(
+          businessId,
+          token,
+          message,
+          locale,
+          history,
+          controller.signal,
+        );
 
       try {
         if (!accessToken) {
@@ -120,6 +131,7 @@ function useKuzaAIConversation({
       businessId,
       clearSession,
       locale,
+      messages,
       refreshAccessToken,
       sending,
     ],

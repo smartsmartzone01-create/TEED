@@ -6,6 +6,7 @@ from django.conf import settings
 from django.utils import timezone
 
 from apps.workspaces.business.models import BusinessSettings
+from apps.workspaces.policy import permissions_for_role
 
 SUPPORTED_INTELLIGENCE_LOCALES = {"en", "sw"}
 
@@ -17,6 +18,8 @@ class IntelligenceContext:
     locale: str
     timezone_name: str
     local_date: date
+    role: str = ""
+    permissions: tuple[str, ...] = ()
 
 
 def build_intelligence_context(*, membership, requested_locale=None):
@@ -39,10 +42,16 @@ def build_intelligence_context(*, membership, requested_locale=None):
         timezone_name = settings.TIME_ZONE
         business_timezone = ZoneInfo(timezone_name)
 
+    permissions = tuple(
+        sorted(permission.value for permission in permissions_for_role(membership.role))
+    )
+
     return IntelligenceContext(
         business_id=str(business.id),
         business_name=business.name,
         locale=locale,
         timezone_name=timezone_name,
         local_date=timezone.localdate(timezone=business_timezone),
+        role=str(membership.role),
+        permissions=permissions,
     )

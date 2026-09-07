@@ -23,6 +23,7 @@ class IntelligencePartnerAPIView(APIView):
             user=request.user,
             business_id=business_id,
             message=serializer.validated_data["message"],
+            history=serializer.validated_data.get("history", []),
             requested_locale=serializer.validated_data.get("locale"),
         )
 

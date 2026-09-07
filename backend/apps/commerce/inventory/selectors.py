@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.db.models import F, Q
 
 from ..catalog.models import Product
@@ -58,7 +60,9 @@ def _tracked_unit_payload(unit):
 
 def inventory_health(*, business, item_limit=8):
     """Return deterministic inventory availability and attention signals."""
-    products = Product.objects.filter(business=business, is_active=True).select_related("family")
+    products = Product.objects.filter(business=business, is_active=True).select_related(
+        "family"
+    )
     stocked_products = products.filter(
         movements__kind=InventoryMovement.Kind.RECEIPT,
     ).distinct()
@@ -216,7 +220,9 @@ def stock_receipt_detail(*, business, reference):
                         "product_id": str(line.product_id),
                         "name": line.product.name,
                         "sku": line.product.sku,
-                        "family_name": line.product.family.name if line.product.family_id else "",
+                        "family_name": line.product.family.name
+                        if line.product.family_id
+                        else "",
                         "unit": line.product.unit,
                         "tracking_mode": line.tracking_mode,
                         "quantity_received": line.quantity_received,
@@ -251,4 +257,67 @@ def stock_receipt_detail(*, business, reference):
         "received_at": receipt.received_at.isoformat() if receipt.received_at else None,
         "products": products,
         "batches": batches,
+    }
+
+
+def stock_receipt_cost_detail(*, business, reference):
+    """Return verified acquisition totals for one exact Stock receipt."""
+    cleaned = str(reference or "").strip()
+    receipt = (
+        StockReceipt.objects.filter(business=business, reference__iexact=cleaned)
+        .prefetch_related(
+            "lines__product__family",
+            "batches__groups__type_lines__product__family",
+        )
+        .first()
+    )
+    if receipt is None:
+        return {"reference": cleaned, "found": False}
+
+    lines = list(receipt.lines.all())
+    for batch in receipt.batches.all():
+        for group in batch.groups.all():
+            lines.extend(group.type_lines.all())
+
+    seen_line_ids = set()
+    line_payloads = []
+    merchandise_cost = Decimal("0.00")
+    for line in lines:
+        if line.id in seen_line_ids:
+            continue
+        seen_line_ids.add(line.id)
+        unit_buying_cost = line.unit_cost or Decimal("0.00")
+        line_buying_cost = line.quantity_received * unit_buying_cost
+        merchandise_cost += line_buying_cost
+        line_payloads.append(
+            {
+                "stock_line_id": str(line.id),
+                "stock_line_reference": line.reference,
+                "product_id": str(line.product_id),
+                "name": line.product.name,
+                "sku": line.product.sku,
+                "family_name": line.product.family.name
+                if line.product.family_id
+                else "",
+                "tracking_mode": line.tracking_mode,
+                "quantity_received": line.quantity_received,
+                "unit": line.product.unit,
+                "unit_buying_cost": unit_buying_cost,
+                "line_buying_cost": line_buying_cost,
+            }
+        )
+
+    stock_expenses = receipt.additional_cost or Decimal("0.00")
+    return {
+        "found": True,
+        "receipt_id": str(receipt.id),
+        "reference": receipt.reference,
+        "name": receipt.name,
+        "supplier_name": receipt.supplier_name,
+        "status": receipt.status,
+        "received_at": receipt.received_at.isoformat() if receipt.received_at else None,
+        "merchandise_cost": merchandise_cost,
+        "stock_expenses": stock_expenses,
+        "landed_total": merchandise_cost + stock_expenses,
+        "lines": line_payloads,
     }

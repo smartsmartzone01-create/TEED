@@ -31,6 +31,7 @@ def run_kuza_ai(
     user,
     business_id,
     message,
+    history=None,
     requested_locale=None,
     provider_name=None,
 ):
@@ -46,6 +47,11 @@ def run_kuza_ai(
         membership=membership,
         context=context,
     )
+    recent_history = [
+        {"role": item["role"], "content": item["content"]}
+        for item in (history or [])[-12:]
+        if item.get("role") in {"user", "assistant"} and item.get("content")
+    ]
     result = build_agent(
         tools=tools,
         provider_name=provider_name,
@@ -55,6 +61,7 @@ def run_kuza_ai(
                 "role": "system",
                 "content": build_partner_system_prompt(context),
             },
+            *recent_history,
             {
                 "role": "user",
                 "content": message,

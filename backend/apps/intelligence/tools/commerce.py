@@ -12,6 +12,7 @@ from apps.commerce.financing.selectors import (
 from apps.commerce.inventory.selectors import (
     inventory_health,
     inventory_search,
+    stock_receipt_cost_detail,
     stock_receipt_detail,
 )
 from apps.commerce.sales.selectors import sales_summary
@@ -127,10 +128,26 @@ def build_commerce_tool_registry(*, membership, context):
         )
 
     def receipt_detail(*, reference):
-        return stock_receipt_detail(
+        detail = stock_receipt_detail(
             business=business,
             reference=reference,
         )
+        if not detail.get("found"):
+            return detail
+
+        detail["finance_detail_available"] = can_manage_finance
+        if can_manage_finance:
+            detail["finance"] = stock_receipt_cost_detail(
+                business=business,
+                reference=reference,
+            )
+        else:
+            detail["finance_detail_reason"] = {
+                "code": "permission_denied",
+                "current_role": str(membership.role),
+                "required_permission": WorkspacePermission.MANAGE_FINANCE.value,
+            }
+        return detail
 
     def current_financing_summary():
         return financing_portfolio_summary(
@@ -260,10 +277,12 @@ def build_commerce_tool_registry(*, membership, context):
         AgentTool(
             name="commerce_stock_receipt_detail",
             description=(
-                "Return the verified product, batch, group, quantity, and tracking structure "
-                "inside one exact Stock receipt/reference in the current workspace. This "
-                "read-only tool excludes supplier details, notes, acquisition costs, and "
-                "other internal finance fields."
+                "Return verified product, batch, group, quantity, and tracking structure "
+                "inside one exact Stock receipt/reference in the current workspace. When "
+                "the current membership has commerce.finance.manage, the result also "
+                "includes supplier, per-line buying costs, merchandise cost, Stock expenses, "
+                "and total landed cost. Otherwise finance_detail_available is false and the "
+                "result identifies the workspace permission required to view those fields."
             ),
             input_schema={
                 "type": "object",
