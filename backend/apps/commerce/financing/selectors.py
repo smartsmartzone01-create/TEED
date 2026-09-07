@@ -5,7 +5,6 @@ from django.db.models.functions import Coalesce
 
 from .models import FinancingAgreement
 
-
 _MONEY_FIELD = DecimalField(max_digits=14, decimal_places=2)
 _PERCENT_QUANTUM = Decimal("0.01")
 _OPEN_STATUSES = {
