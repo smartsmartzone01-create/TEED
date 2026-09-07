@@ -4,6 +4,7 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from .serializers import (
+    CanonicalStockLineInputSerializer,
     CanonicalStockReceiptCorrectionSerializer,
     CanonicalStockReceiptCreateSerializer,
 )
@@ -53,9 +54,23 @@ def _validate_line(line, *, status, location):
             )
 
 
+class CanonicalStockLineContractSerializer(CanonicalStockLineInputSerializer):
+    conversion_to_base = serializers.DecimalField(
+        max_digits=14,
+        decimal_places=6,
+        min_value=Decimal("0.000001"),
+        required=False,
+        default=Decimal("1"),
+    )
+
+
 class CanonicalStockReceiptCreateContractSerializer(
     CanonicalStockReceiptCreateSerializer
 ):
+    lines = CanonicalStockLineContractSerializer(
+        many=True, required=False, default=list
+    )
+
     def validate(self, attrs):
         attrs = super().validate(attrs)
 
