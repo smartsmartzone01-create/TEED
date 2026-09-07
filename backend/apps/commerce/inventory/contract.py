@@ -35,12 +35,34 @@ def _require_whole(value, unit, message):
         raise ValidationError(message)
 
 
+def _validate_line(line, *, status, location):
+    _require_whole(
+        line["quantity_received"],
+        line["received_unit"],
+        {location: [f"{line['received_unit']} requires a whole quantity."]},
+    )
+    if line.get("tracking_mode") == "individual":
+        quantity = line["quantity_received"]
+        if quantity != quantity.to_integral_value():
+            raise ValidationError(
+                {location: ["Individually tracked products require a whole quantity."]}
+            )
+        if status == "received" and len(line["tracked_units"]) != int(quantity):
+            raise ValidationError(
+                {location: ["Record every individual item before receiving the stock."]}
+            )
+
+
 class CanonicalStockReceiptCreateContractSerializer(
     CanonicalStockReceiptCreateSerializer
 ):
     def validate(self, attrs):
         attrs = super().validate(attrs)
-        for batch_index, batch in enumerate(attrs["batches"], start=1):
+
+        for line in attrs.get("lines", []):
+            _validate_line(line, status=attrs["status"], location="lines")
+
+        for batch_index, batch in enumerate(attrs.get("batches", []), start=1):
             for group_index, group in enumerate(batch["groups"], start=1):
                 _require_whole(
                     group["quantity"],
@@ -63,7 +85,7 @@ class CanonicalStockReceiptCreateContractSerializer(
                             ]
                         },
                     )
-                    if product["tracking_mode"] == "individual":
+                    if product.get("tracking_mode") == "individual":
                         quantity = product["quantity_received"]
                         if quantity != quantity.to_integral_value():
                             raise ValidationError(
