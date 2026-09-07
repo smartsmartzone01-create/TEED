@@ -108,6 +108,71 @@ class StockV2ContractTests(TestCase):
         self.assertEqual(receipt.lines.get(product=self.phone).tracking_mode, "individual")
         self.assertEqual(receipt.lines.get(product=self.phone).tracked_units.count(), 2)
 
+    def test_converted_individual_receipt_requires_every_base_unit(self):
+        payload = {
+            "status": "received",
+            "received_at": timezone.now(),
+            "catalog_items": [{"key": "phone", "product_id": str(self.phone.id)}],
+            "lines": [
+                {
+                    "catalog_key": "phone",
+                    "quantity_received": "2",
+                    "received_unit": "box",
+                    "conversion_to_base": "3",
+                    "unit_cost": "7500000",
+                    "tracked_units": [
+                        {
+                            "identifiers": [
+                                {"kind": "imei", "value": f"BOX-IMEI-{index:03d}"}
+                            ]
+                        }
+                        for index in range(1, 7)
+                    ],
+                }
+            ],
+        }
+        serializer = CanonicalStockReceiptCreateContractSerializer(data=payload)
+        serializer.is_valid(raise_exception=True)
+        receipt = create_stock_receipt_v2(
+            actor=self.owner,
+            business_id=self.business.id,
+            **serializer.validated_data,
+        )
+
+        line = receipt.lines.get()
+        self.assertEqual(line.quantity_received, Decimal("6"))
+        self.assertEqual(line.conversion_to_base, Decimal("3"))
+        self.assertEqual(line.received_unit, "box")
+        self.assertEqual(line.tracked_units.count(), 6)
+        self.phone.refresh_from_db()
+        self.assertEqual(self.phone.current_quantity, Decimal("6"))
+
+    def test_converted_individual_receipt_rejects_missing_base_units(self):
+        payload = {
+            "status": "received",
+            "received_at": timezone.now(),
+            "catalog_items": [{"key": "phone", "product_id": str(self.phone.id)}],
+            "lines": [
+                {
+                    "catalog_key": "phone",
+                    "quantity_received": "2",
+                    "received_unit": "box",
+                    "conversion_to_base": "3",
+                    "tracked_units": [
+                        {
+                            "identifiers": [
+                                {"kind": "imei", "value": f"SHORT-IMEI-{index:03d}"}
+                            ]
+                        }
+                        for index in range(1, 6)
+                    ],
+                }
+            ],
+        }
+        serializer = CanonicalStockReceiptCreateContractSerializer(data=payload)
+        self.assertFalse(serializer.is_valid())
+        self.assertIn("record all 6", str(serializer.errors).lower())
+
     def test_receipt_cannot_override_catalog_tracking_policy(self):
         payload = {
             "status": "received",
