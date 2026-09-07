@@ -1,6 +1,6 @@
 """Django model discovery and stable public Commerce model imports."""
 
-from .catalog.models import Product, UnitDefinition
+from .catalog.models import Product, ProductFamily, UnitDefinition
 from .finance.models import Budget, Expense
 from .financing.models import (
     FinancingAgreement,
@@ -39,6 +39,7 @@ __all__ = [
     "FinancingPayment",
     "InventoryMovement",
     "Product",
+    "ProductFamily",
     "ReturnItem",
     "ReturnReplacement",
     "ReturnReplacementAllocation",
