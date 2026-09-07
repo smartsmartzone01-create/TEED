@@ -90,10 +90,30 @@ def inventory_health(*, business, item_limit=8):
 
 
 def inventory_search(*, business, query, limit=8):
-    """Search current workspace Stock by SKU/family, receipt, supplier, or tracked identifier."""
+    """Search Stock, or return the newest receipts when query is empty."""
     cleaned = str(query or "").strip()
     if not cleaned:
-        return {"query": cleaned, "products": [], "receipts": [], "tracked_units": []}
+        receipts = StockReceipt.objects.filter(business=business).order_by(
+            "-created_at", "-id"
+        )[:limit]
+        return {
+            "query": cleaned,
+            "products": [],
+            "receipts": [
+                {
+                    "receipt_id": str(receipt.id),
+                    "reference": receipt.reference,
+                    "name": receipt.name,
+                    "supplier_name": receipt.supplier_name,
+                    "status": receipt.status,
+                    "received_at": receipt.received_at.isoformat()
+                    if receipt.received_at
+                    else None,
+                }
+                for receipt in receipts
+            ],
+            "tracked_units": [],
+        }
 
     products = (
         Product.objects.filter(business=business, is_active=True)

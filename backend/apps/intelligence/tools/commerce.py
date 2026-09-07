@@ -120,7 +120,7 @@ def build_commerce_tool_registry(*, membership, context):
     def current_inventory_health():
         return inventory_health(business=business)
 
-    def search_inventory(*, query, limit=None):
+    def search_inventory(*, query="", limit=None):
         return inventory_search(
             business=business,
             query=query,
@@ -251,16 +251,21 @@ def build_commerce_tool_registry(*, membership, context):
             description=(
                 "Search verified Stock data in the current workspace by product name, "
                 "SKU, barcode, stock receipt/reference, batch/group name or code, tracked "
-                "unit serial, IMEI, or other tracked identifier. Use this before a detail "
-                "tool when the user provides a product, stock reference, or device identifier."
+                "unit serial, IMEI, or other tracked identifier. When the user asks for "
+                "recent, latest, newest, or current Stock receipts without a specific search "
+                "term, call this tool with no query; the receipts result is returned newest "
+                "first. This capability is appropriate for normal commerce-view roles and "
+                "does not require finance permission."
             ),
             input_schema={
                 "type": "object",
                 "properties": {
                     "query": {
                         "type": "string",
-                        "minLength": 1,
-                        "description": "Product, SKU, stock reference, batch, serial, IMEI, or identifier to search.",
+                        "description": (
+                            "Product, SKU, stock reference, batch, serial, IMEI, or identifier "
+                            "to search. Omit or pass an empty string to list recent Stock receipts."
+                        ),
                     },
                     "limit": {
                         "type": "integer",
@@ -269,7 +274,6 @@ def build_commerce_tool_registry(*, membership, context):
                         "description": "Maximum matches per result category. Defaults to 8.",
                     },
                 },
-                "required": ["query"],
                 "additionalProperties": False,
             },
             handler=search_inventory,
