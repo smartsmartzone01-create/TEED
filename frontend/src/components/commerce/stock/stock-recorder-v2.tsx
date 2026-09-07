@@ -16,7 +16,7 @@ function StockRecorderV2({ businessId }: { businessId: string }) {
   const help = [t("help.stock"), t("help.catalog"), t("help.record"), t("help.review")][activeStage];
 
   return (
-    <div className="stock-recorder-shell grid min-w-0 gap-4">
+    <div className="stock-recorder-v2-shell grid min-w-0 gap-4">
       <section className="rounded-lg border border-slate-200 bg-white px-2 py-2 dark:border-slate-800 dark:bg-slate-950">
         <div className="flex items-center justify-between gap-2">
           <div className="flex min-w-0 items-center gap-1">
@@ -46,11 +46,20 @@ function StockRecorderV2({ businessId }: { businessId: string }) {
         </div>
       </section>
 
-      <div className="stock-progressive-host min-w-0 max-w-full">
-        <div className={recordingOpen ? "block" : "hidden"}>
-          <StockProgressiveWorkspaceV2 businessId={businessId} onStageChange={setActiveStage} />
-        </div>
+      <div
+        className="stock-progressive-v2-host min-w-0 max-w-full"
+        data-recording-open={recordingOpen ? "true" : "false"}
+      >
+        <StockProgressiveWorkspaceV2 businessId={businessId} onStageChange={setActiveStage} />
       </div>
+
+      <style jsx global>{`
+        .stock-progressive-v2-host[data-recording-open="false"]
+          > div
+          > section:first-child {
+          display: none;
+        }
+      `}</style>
     </div>
   );
 }
