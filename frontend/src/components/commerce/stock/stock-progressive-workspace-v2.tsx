@@ -150,6 +150,16 @@ const lineCount = (line: LineDraft) => {
   return Number.isFinite(count) && count > 0 && Number.isInteger(count) ? count : 0;
 };
 
+const newLineForChoice = (choice: Pick<ProductChoice, "key" | "unit" | "trackingMode">): LineDraft => ({
+  productKey: choice.key,
+  quantity: "1",
+  receivedUnit: choice.unit || "piece",
+  conversionToBase: "1",
+  costMode: "per_unit",
+  costValue: "",
+  trackedUnits: choice.trackingMode === "individual" ? [emptyUnit()] : [],
+});
+
 function StockProgressiveWorkspaceV2({
   businessId,
   onStageChange,
@@ -241,7 +251,7 @@ function StockProgressiveWorkspaceV2({
           key: `existing:${product.id}`,
           existingId: product.id,
           name: product.name,
-          familyName: "",
+          familyName: product.family_name ?? "",
           sku: product.sku,
           brand: product.brand,
           variant: product.variant,
@@ -276,15 +286,17 @@ function StockProgressiveWorkspaceV2({
         const existing = current.find((line) => line.productKey === key);
         if (existing) return existing;
         const choice = choiceFor(key);
-        return {
-          productKey: key,
-          quantity: "1",
-          receivedUnit: choice?.unit ?? "piece",
-          conversionToBase: "1",
-          costMode: "per_unit",
-          costValue: "",
-          trackedUnits: choice?.trackingMode === "individual" ? [emptyUnit()] : [],
-        };
+        return choice
+          ? newLineForChoice(choice)
+          : {
+              productKey: key,
+              quantity: "1",
+              receivedUnit: "piece",
+              conversionToBase: "1",
+              costMode: "per_unit",
+              costValue: "",
+              trackedUnits: [],
+            };
       }),
     );
   };
@@ -334,6 +346,18 @@ function StockProgressiveWorkspaceV2({
     setPreparedProducts((current) => [...current.filter((item) => item.key !== key), product]);
     const keys = selectedKeys.includes(key) ? selectedKeys : [...selectedKeys, key];
     setSelectedKeys(keys);
+    setLines((current) => {
+      const existing = current.find((line) => line.productKey === key);
+      if (existing) return current;
+      return [
+        ...current,
+        newLineForChoice({
+          key,
+          unit: product.unit,
+          trackingMode: product.trackingMode,
+        }),
+      ];
+    });
     setPreparedDraft({
       key: "",
       name: "",
@@ -344,7 +368,6 @@ function StockProgressiveWorkspaceV2({
       trackingMode: "quantity",
     });
     setNewProductOpen(false);
-    requestAnimationFrame(() => ensureLines(keys));
   };
 
   const removeSelected = (key: string) => {
@@ -620,7 +643,7 @@ function StockProgressiveWorkspaceV2({
                 <div className="min-w-0">
                   <strong className="block truncate text-sm">{choice.name}</strong>
                   <p className="truncate text-xs text-slate-500">
-                    {[choice.sku, choice.brand, choice.variant, choice.unit, t(`tracking.${choice.trackingMode}`)].filter(Boolean).join(" · ")}
+                    {[choice.sku, choice.familyName, choice.brand, choice.variant, choice.unit, t(`tracking.${choice.trackingMode}`)].filter(Boolean).join(" · ")}
                   </p>
                 </div>
                 <Button aria-label={t("actions.remove")} size="small" type="button" variant="ghost" onClick={() => removeSelected(choice.key)}>

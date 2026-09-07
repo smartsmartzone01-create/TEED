@@ -10,6 +10,8 @@ const productSchema = z
     sku: z.string(),
     barcode: z.string(),
     group: z.string(),
+    family: z.string().nullable(),
+    family_name: z.string(),
     brand: z.string(),
     variant: z.string(),
     unit: z.string(),

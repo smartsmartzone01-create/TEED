@@ -7,6 +7,7 @@ from django.utils import timezone
 from apps.workspaces.policy import WorkspacePermission, role_has_permission
 
 from ..api import CommerceBaseAPIView
+from ..inventory.models import StockBatch
 from ..inventory.serializers import CanonicalStockReceiptSerializer
 from ..models import (
     Expense,
@@ -20,6 +21,28 @@ from ..models import (
 from ..sales.serializers import SaleSerializer
 from ..serializers import ProductSerializer, ReturnSerializer
 from ..services import commerce_membership
+
+
+def _remaining_stock_value(*, business):
+    value = Decimal("0")
+    lines = StockBatch.objects.filter(
+        product__business=business,
+        quantity_remaining__gt=0,
+    ).only(
+        "quantity_remaining",
+        "quantity_received",
+        "unit_cost",
+        "additional_cost",
+    )
+    for line in lines:
+        unit_cost = line.unit_cost or Decimal("0")
+        allocated_cost = (
+            line.additional_cost / line.quantity_received
+            if line.quantity_received
+            else Decimal("0")
+        )
+        value += line.quantity_remaining * (unit_cost + allocated_cost)
+    return value
 
 
 class CommerceOverviewPolishAPIView(CommerceBaseAPIView):
@@ -68,18 +91,7 @@ class CommerceOverviewPolishAPIView(CommerceBaseAPIView):
         def financial_value(value):
             return value if can_manage_finance else None
 
-        stock_value = sum(
-            (
-                product.current_quantity
-                * (
-                    product.stock_batches.order_by("-received_at")
-                    .values_list("unit_cost", flat=True)
-                    .first()
-                    or Decimal("0")
-                )
-            )
-            for product in products
-        )
+        stock_value = _remaining_stock_value(business=business)
         recent_sales = Sale.objects.prefetch_related(
             "items__product", "items__tracked_unit__identifiers"
         ).filter(
@@ -135,4 +147,4 @@ class CommerceOverviewPolishAPIView(CommerceBaseAPIView):
         )
 
 
-__all__ = ["CommerceOverviewPolishAPIView"]
+__all__ = ["CommerceOverviewPolishAPIView", "_remaining_stock_value"]

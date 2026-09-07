@@ -1,11 +1,7 @@
 from django.db.models import F, Q
 
 from ..catalog.models import Product
-from .models import (
-    InventoryMovement,
-    StockReceipt,
-    TrackedUnit,
-)
+from .models import InventoryMovement, StockReceipt, TrackedUnit
 
 
 def _item_payload(product):
@@ -13,6 +9,7 @@ def _item_payload(product):
         "product_id": str(product.id),
         "name": product.name,
         "sku": product.sku,
+        "family_name": product.family.name if product.family_id else "",
         "unit": product.unit,
         "current_quantity": product.current_quantity,
         "low_stock_threshold": product.low_stock_threshold,
@@ -42,6 +39,7 @@ def _tracked_unit_payload(unit):
             "product_id": str(unit.product_id),
             "name": unit.product.name,
             "sku": unit.product.sku,
+            "family_name": unit.product.family.name if unit.product.family_id else "",
             "unit": unit.product.unit,
         },
         "model_name": unit.model_name,
@@ -60,7 +58,7 @@ def _tracked_unit_payload(unit):
 
 def inventory_health(*, business, item_limit=8):
     """Return deterministic inventory availability and attention signals."""
-    products = Product.objects.filter(business=business, is_active=True)
+    products = Product.objects.filter(business=business, is_active=True).select_related("family")
     stocked_products = products.filter(
         movements__kind=InventoryMovement.Kind.RECEIPT,
     ).distinct()
@@ -88,7 +86,7 @@ def inventory_health(*, business, item_limit=8):
 
 
 def inventory_search(*, business, query, limit=8):
-    """Search current workspace Stock by product, receipt, batch, or tracked identifier."""
+    """Search current workspace Stock by SKU/family, receipt, supplier, or tracked identifier."""
     cleaned = str(query or "").strip()
     if not cleaned:
         return {"query": cleaned, "products": [], "receipts": [], "tracked_units": []}
@@ -101,7 +99,9 @@ def inventory_search(*, business, query, limit=8):
             | Q(barcode__icontains=cleaned)
             | Q(brand__icontains=cleaned)
             | Q(variant__icontains=cleaned)
+            | Q(family__name__icontains=cleaned)
         )
+        .select_related("family")
         .order_by("name", "sku", "id")[:limit]
     )
 
@@ -109,14 +109,18 @@ def inventory_search(*, business, query, limit=8):
         StockReceipt.objects.filter(business=business)
         .filter(
             Q(reference__icontains=cleaned)
+            | Q(name__icontains=cleaned)
+            | Q(supplier_name__icontains=cleaned)
+            | Q(lines__product__name__icontains=cleaned)
+            | Q(lines__product__sku__icontains=cleaned)
+            | Q(lines__product__family__name__icontains=cleaned)
             | Q(batches__name__icontains=cleaned)
             | Q(batches__code__icontains=cleaned)
             | Q(batches__groups__name__icontains=cleaned)
             | Q(batches__groups__code__icontains=cleaned)
-            | Q(lines__product__name__icontains=cleaned)
-            | Q(lines__product__sku__icontains=cleaned)
             | Q(batches__groups__type_lines__product__name__icontains=cleaned)
             | Q(batches__groups__type_lines__product__sku__icontains=cleaned)
+            | Q(batches__groups__type_lines__product__family__name__icontains=cleaned)
         )
         .distinct()
         .order_by("-created_at")[:limit]
@@ -133,9 +137,11 @@ def inventory_search(*, business, query, limit=8):
             | Q(brand__icontains=cleaned)
             | Q(product__name__icontains=cleaned)
             | Q(product__sku__icontains=cleaned)
+            | Q(product__family__name__icontains=cleaned)
         )
         .select_related(
             "product",
+            "product__family",
             "stock_line",
             "stock_line__receipt",
             "stock_line__stock_group",
@@ -154,6 +160,8 @@ def inventory_search(*, business, query, limit=8):
             {
                 "receipt_id": str(receipt.id),
                 "reference": receipt.reference,
+                "name": receipt.name,
+                "supplier_name": receipt.supplier_name,
                 "status": receipt.status,
                 "received_at": receipt.received_at.isoformat()
                 if receipt.received_at
@@ -166,34 +174,49 @@ def inventory_search(*, business, query, limit=8):
 
 
 def stock_receipt_detail(*, business, reference):
-    """Return product/batch structure for one stock receipt without internal costs."""
+    """Return canonical product lines plus legacy grouping for one receipt without costs."""
     cleaned = str(reference or "").strip()
     receipt = (
         StockReceipt.objects.filter(business=business, reference__iexact=cleaned)
         .prefetch_related(
-            "lines__product",
-            "batches__groups__type_lines__product",
+            "lines__product__family",
+            "batches__groups__type_lines__product__family",
         )
         .first()
     )
     if receipt is None:
         return {"reference": cleaned, "found": False}
 
-    grouped_line_ids = set()
+    products = [
+        {
+            "stock_line_id": str(line.id),
+            "stock_line_reference": line.reference,
+            "product_id": str(line.product_id),
+            "name": line.product.name,
+            "sku": line.product.sku,
+            "family_name": line.product.family.name if line.product.family_id else "",
+            "unit": line.product.unit,
+            "tracking_mode": line.tracking_mode,
+            "quantity_received": line.quantity_received,
+            "quantity_remaining": line.quantity_remaining,
+        }
+        for line in receipt.lines.all()
+    ]
+
     batches = []
     for batch in receipt.batches.all():
         groups = []
         for group in batch.groups.all():
-            products = []
+            grouped_products = []
             for line in group.type_lines.all():
-                grouped_line_ids.add(line.id)
-                products.append(
+                grouped_products.append(
                     {
                         "stock_line_id": str(line.id),
                         "stock_line_reference": line.reference,
                         "product_id": str(line.product_id),
                         "name": line.product.name,
                         "sku": line.product.sku,
+                        "family_name": line.product.family.name if line.product.family_id else "",
                         "unit": line.product.unit,
                         "tracking_mode": line.tracking_mode,
                         "quantity_received": line.quantity_received,
@@ -207,7 +230,7 @@ def stock_receipt_detail(*, business, reference):
                     "name": group.name,
                     "declared_quantity": group.quantity,
                     "unit": group.unit,
-                    "products": products,
+                    "products": grouped_products,
                 }
             )
         batches.append(
@@ -219,28 +242,13 @@ def stock_receipt_detail(*, business, reference):
             }
         )
 
-    ungrouped_products = [
-        {
-            "stock_line_id": str(line.id),
-            "stock_line_reference": line.reference,
-            "product_id": str(line.product_id),
-            "name": line.product.name,
-            "sku": line.product.sku,
-            "unit": line.product.unit,
-            "tracking_mode": line.tracking_mode,
-            "quantity_received": line.quantity_received,
-            "quantity_remaining": line.quantity_remaining,
-        }
-        for line in receipt.lines.all()
-        if line.id not in grouped_line_ids
-    ]
-
     return {
         "found": True,
         "receipt_id": str(receipt.id),
         "reference": receipt.reference,
+        "name": receipt.name,
         "status": receipt.status,
         "received_at": receipt.received_at.isoformat() if receipt.received_at else None,
+        "products": products,
         "batches": batches,
-        "ungrouped_products": ungrouped_products,
     }

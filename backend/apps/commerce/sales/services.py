@@ -46,7 +46,7 @@ def _allocate_fifo(*, product, sale_item, quantity, actor, sale):
             tracking_mode=Product.TrackingMode.QUANTITY,
             quantity_remaining__gt=0,
         )
-        .order_by("received_at", "created_at")
+        .order_by("received_at", "created_at", "id")
     )
     for batch in batches:
         allocated = min(remaining, batch.quantity_remaining)

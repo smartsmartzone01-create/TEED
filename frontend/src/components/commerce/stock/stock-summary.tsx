@@ -31,8 +31,19 @@ type LedgerLine = {
   line: StockReceiptLine;
 };
 
-const ledgerLinesForReceipt = (receipt: StockReceipt): LedgerLine[] =>
-  receipt.batches.flatMap((batch) =>
+const ledgerLinesForReceipt = (receipt: StockReceipt): LedgerLine[] => {
+  if (receipt.lines.length) {
+    return receipt.lines.map((line) => ({
+      batchName: "",
+      groupName: "",
+      groupQuantity: line.quantity_received,
+      groupUnit: line.received_unit,
+      direct: true,
+      line,
+    }));
+  }
+
+  return receipt.batches.flatMap((batch) =>
     batch.groups.flatMap((group) => {
       const direct =
         group.types.length === 1 && group.name === group.types[0].product_name;
@@ -46,6 +57,7 @@ const ledgerLinesForReceipt = (receipt: StockReceipt): LedgerLine[] =>
       }));
     }),
   );
+};
 
 function StockLedgerScroller({
   children,
