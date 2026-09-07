@@ -325,7 +325,7 @@ class CanonicalStockReceiptSerializer(serializers.ModelSerializer):
                             "f",
                         ),
                         "unit": line.received_unit or line.product.unit,
-                        "types": CanonicalStockLineSerializer(line).data,
+                        "types": [CanonicalStockLineSerializer(line).data],
                     }
                     for line in lines
                 ],
