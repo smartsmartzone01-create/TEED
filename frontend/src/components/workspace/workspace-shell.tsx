@@ -4,13 +4,14 @@ import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 
+import { WorkspaceSearchBar } from "@/components/global/search/workspace-search-bar";
 import { KuzaAICompanion } from "@/components/intelligence/kuza-ai-companion";
 import { WorkspaceHeader } from "@/components/workspace/workspace-header";
 import { WorkspaceSidebar } from "@/components/workspace/workspace-sidebar";
-import { cn } from "@/lib/global/class-names";
 import { useRouter } from "@/i18n/navigation";
-import { useWorkspace } from "@/providers/workspace/workspace-provider";
+import { cn } from "@/lib/global/class-names";
 import { useNotification } from "@/providers/global/notification-provider";
+import { useWorkspace } from "@/providers/workspace/workspace-provider";
 import type { KuzaAIMode } from "@/types/intelligence/kuza-ai";
 
 type WorkspaceShellProps = {
@@ -20,18 +21,27 @@ type WorkspaceShellProps = {
 type WorkspaceContentProps = {
   businessId: string | null;
   children: ReactNode;
+  hasSearchBar: boolean;
   kuzaAIAvailable: boolean;
 };
 
 function WorkspaceContent({
   businessId,
   children,
+  hasSearchBar,
   kuzaAIAvailable,
 }: WorkspaceContentProps) {
   const [kuzaAIMode, setKuzaAIMode] = useState<KuzaAIMode>("closed");
 
   return (
-    <div className="flex min-h-[calc(100svh-3.5rem)] min-w-0">
+    <div
+      className={cn(
+        "flex min-w-0",
+        hasSearchBar
+          ? "min-h-[calc(100svh-6.5rem)]"
+          : "min-h-[calc(100svh-3.5rem)]",
+      )}
+    >
       <main
         className={cn(
           "min-w-0 flex-1",
@@ -106,6 +116,12 @@ function WorkspaceShell({ children }: WorkspaceShellProps) {
   const kuzaAIAvailable = Boolean(
     businessId && currentBusiness?.status === "active",
   );
+  const searchAvailable = Boolean(
+    businessId &&
+      currentBusiness?.status === "active" &&
+      currentBusiness.capabilities.includes("business_operations") &&
+      currentBusiness.membership.permissions.includes("commerce.view"),
+  );
 
   return (
     <div className="min-h-svh bg-white text-slate-950 dark:bg-slate-950 dark:text-slate-50" style={brandStyle}>
@@ -122,9 +138,20 @@ function WorkspaceShell({ children }: WorkspaceShellProps) {
         )}
       >
         <WorkspaceHeader businessId={businessId} onOpenNavigation={() => setMobileOpen(true)} />
-        <div className="min-h-[calc(100svh-3.5rem)] bg-[#F4F7FA] dark:bg-slate-950">
+        {searchAvailable && businessId ? (
+          <WorkspaceSearchBar businessId={businessId} />
+        ) : null}
+        <div
+          className={cn(
+            "bg-[#F4F7FA] dark:bg-slate-950",
+            searchAvailable
+              ? "min-h-[calc(100svh-6.5rem)]"
+              : "min-h-[calc(100svh-3.5rem)]",
+          )}
+        >
           <WorkspaceContent
             businessId={businessId}
+            hasSearchBar={searchAvailable}
             key={businessId ?? "workspace-without-business"}
             kuzaAIAvailable={kuzaAIAvailable}
           >
