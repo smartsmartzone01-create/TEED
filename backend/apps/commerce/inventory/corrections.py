@@ -141,6 +141,7 @@ def correct_stock_structure(
     _assert_receipt_editable(receipt)
 
     before = {
+        "name": receipt.name,
         "supplier_name": receipt.supplier_name,
         "additional_cost": str(receipt.additional_cost),
         "batches": [],
@@ -151,8 +152,10 @@ def correct_stock_structure(
     allowed_receipt_values = {
         key: value
         for key, value in values.items()
-        if key in {"supplier_name", "additional_cost"}
+        if key in {"name", "supplier_name", "additional_cost"}
     }
+    if "name" in allowed_receipt_values:
+        allowed_receipt_values["name"] = allowed_receipt_values["name"].strip()
     for field, value in allowed_receipt_values.items():
         setattr(receipt, field, value)
     if allowed_receipt_values:
@@ -356,6 +359,7 @@ def correct_stock_structure(
         _sync_stock_expense(receipt=receipt, actor=actor)
 
     after = {
+        "name": receipt.name,
         "supplier_name": receipt.supplier_name,
         "additional_cost": str(receipt.additional_cost),
         "batches": [
