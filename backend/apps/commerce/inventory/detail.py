@@ -4,7 +4,7 @@ from django.views.decorators.csrf import csrf_protect
 from rest_framework.exceptions import ValidationError
 
 from ..api import CommerceBaseAPIView
-from ..models import StockReceipt
+from ..models import StockReceipt, StockReceiptAudit
 from .contract import CanonicalStockReceiptCorrectionContractSerializer
 from .corrections import correct_stock_structure
 from .serializers import CanonicalStockReceiptSerializer
@@ -25,20 +25,33 @@ class GuardedStockReceiptDetailAPIView(CommerceBaseAPIView):
             data=request.data, partial=True
         )
         serializer.is_valid(raise_exception=True)
+        previous_name = receipt.name
         receipt = correct_stock_structure(
             actor=request.user,
             business_id=business_id,
             receipt_id=receipt_id,
             **serializer.validated_data,
         )
+        if "name" in serializer.validated_data:
+            next_name = serializer.validated_data["name"].strip()
+            if next_name != previous_name:
+                receipt.name = next_name
+                receipt.save(update_fields=["name", "updated_at"])
+                StockReceiptAudit.objects.create(
+                    receipt=receipt,
+                    actor=request.user,
+                    action="edit_details",
+                    before={"name": previous_name},
+                    after={"name": next_name},
+                )
         receipt = StockReceipt.objects.prefetch_related(
-            "lines__product",
+            "lines__product__family",
             "lines__tracked_units__identifiers",
-            "batches__groups__type_lines__product",
+            "batches__groups__type_lines__product__family",
             "batches__groups__type_lines__tracked_units__identifiers",
-            "late_deliveries__lines__product",
+            "late_deliveries__lines__product__family",
             "late_deliveries__lines__tracked_units__identifiers",
-            "late_deliveries__batches__groups__type_lines__product",
+            "late_deliveries__batches__groups__type_lines__product__family",
             "late_deliveries__batches__groups__type_lines__tracked_units__identifiers",
         ).get(pk=receipt.pk)
         return SuccessResponse(
