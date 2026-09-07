@@ -104,6 +104,7 @@
       "savedTitle": "Stock received",
       "savedHint": "Your receipt is ready to share, copy, or print.",
       "stockId": "Stock ID",
+      "receivedFrom": "Received from",
       "product": "Product",
       "buyingAmount": "Buying amount",
       "totalBuyingPrice": "Total buying price",

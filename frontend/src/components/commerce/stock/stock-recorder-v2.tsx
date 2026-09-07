@@ -65,6 +65,12 @@ function StockRecorderV2({ businessId }: { businessId: string }) {
 
         .stock-progressive-v2-host
           > div
+          > section:nth-of-type(2) {
+          border-radius: 0.5rem;
+        }
+
+        .stock-progressive-v2-host
+          > div
           > section:nth-of-type(2)
           > div:last-child {
           display: none;

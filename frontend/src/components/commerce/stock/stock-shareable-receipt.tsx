@@ -9,23 +9,29 @@ import { useNotification } from "@/providers/global/notification-provider";
 import type { StockReceipt, StockReceiptLine } from "@/types/commerce/inventory";
 import { formatQuantityWithUnit } from "@/utils/commerce/quantity";
 
-type CustomerReceiptLine = {
+type ShareableReceiptLine = {
   id: string;
   name: string;
   quantity: number;
   unit: string;
+  totalBuyingCost: number;
 };
 
-type CustomerStockReceipt = {
+type ShareableStockReceipt = {
   status: string;
   receivedAt: string;
-  lines: CustomerReceiptLine[];
+  supplier: string;
+  totalBuyingValue: number;
+  lines: ShareableReceiptLine[];
 };
 
 const finiteNumber = (value: string | number | null | undefined) => {
   const parsed = Number(value ?? 0);
   return Number.isFinite(parsed) ? parsed : 0;
 };
+
+const moneyText = (value: number, locale: string) =>
+  new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(value);
 
 const lineQuantity = (line: StockReceiptLine) => {
   const conversion = finiteNumber(line.conversion_to_base || "1") || 1;
@@ -41,11 +47,14 @@ function useShareableStockReceipt(receipt: StockReceipt) {
     title: t("receipt.title"),
     status: t("fields.status"),
     date: t("fields.dateReceived"),
+    receivedFrom: t("receipt.receivedFrom"),
     product: t("receipt.product"),
     quantity: t("fields.quantity"),
+    lineTotal: t("receipt.totalBuyingPrice"),
+    total: t("summary.totalStockCost"),
   };
 
-  const receiptView: CustomerStockReceipt = {
+  const receiptView: ShareableStockReceipt = {
     status: t(`ledger.status.${receipt.status}`),
     receivedAt: receipt.received_at
       ? new Date(receipt.received_at).toLocaleString(locale, {
@@ -56,11 +65,14 @@ function useShareableStockReceipt(receipt: StockReceipt) {
           minute: "2-digit",
         })
       : "—",
+    supplier: receipt.supplier_name || t("values.noSupplier"),
+    totalBuyingValue: finiteNumber(receipt.total_buying_value),
     lines: receipt.lines.map((line) => ({
       id: line.id,
       name: line.product_name,
       quantity: lineQuantity(line),
       unit: line.received_unit,
+      totalBuyingCost: finiteNumber(line.total_buying_cost),
     })),
   };
 
@@ -68,14 +80,18 @@ function useShareableStockReceipt(receipt: StockReceipt) {
     labels.title,
     `${labels.status}: ${receiptView.status}`,
     `${labels.date}: ${receiptView.receivedAt}`,
+    `${labels.receivedFrom}: ${receiptView.supplier}`,
   ];
 
   for (const line of receiptView.lines) {
     rows.push("", `${labels.product}: ${line.name}`);
     rows.push(
       `${labels.quantity}: ${formatQuantityWithUnit(line.quantity, line.unit, locale)}`,
+      `${labels.lineTotal}: ${moneyText(line.totalBuyingCost, locale)}`,
     );
   }
+
+  rows.push("", `${labels.total}: ${moneyText(receiptView.totalBuyingValue, locale)}`);
 
   const text = rows.join("\n");
 
@@ -145,6 +161,10 @@ function StockReceiptPreview({ receipt }: { receipt: StockReceipt }) {
           <span className="block text-slate-500">{labels.date}</span>
           <strong>{receiptView.receivedAt}</strong>
         </div>
+        <div className="col-span-2 border-t border-slate-200 pt-2 dark:border-slate-800">
+          <span className="block text-slate-500">{labels.receivedFrom}</span>
+          <strong>{receiptView.supplier}</strong>
+        </div>
       </div>
 
       <section className="overflow-hidden rounded-lg border border-slate-200 dark:border-slate-800">
@@ -157,11 +177,22 @@ function StockReceiptPreview({ receipt }: { receipt: StockReceipt }) {
                 </span>
                 <strong className="block truncate">{line.name}</strong>
               </div>
-              <strong className="shrink-0 text-right text-xs">
-                {formatQuantityWithUnit(line.quantity, line.unit, locale)}
-              </strong>
+              <div className="shrink-0 text-right">
+                <strong className="block text-xs">
+                  {formatQuantityWithUnit(line.quantity, line.unit, locale)}
+                </strong>
+                <span className="mt-0.5 block text-[0.68rem] text-slate-500">
+                  {labels.lineTotal}: {moneyText(line.totalBuyingCost, locale)}
+                </span>
+              </div>
             </div>
           ))}
+        </div>
+        <div className="flex items-center justify-between gap-3 border-t border-slate-200 bg-slate-50/70 px-3 py-2.5 dark:border-slate-800 dark:bg-slate-900/50">
+          <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+            {labels.total}
+          </span>
+          <strong>{moneyText(receiptView.totalBuyingValue, locale)}</strong>
         </div>
       </section>
     </div>
