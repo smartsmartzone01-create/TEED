@@ -2,15 +2,15 @@
   "CommerceStockV2": {
     "steps": {
       "stock": "Taarifa za stoo",
-      "catalog": "Katalogi ya bidhaa",
+      "products": "Bidhaa",
       "record": "Kurekodi",
       "review": "Kukagua"
     },
     "help": {
       "stock": "Ipe stoo hii jina kisha weka msambazaji, tarehe ya kupokea, na gharama za stoo.",
-      "catalog": "Chagua bidhaa zinazotumika tena kutoka katalogi au ongeza SKU mpya. Mfumo wa ufuatiliaji ni wa bidhaa ya katalogi, si wa risiti hii.",
-      "record": "Weka kiasi, uniti iliyopokelewa, ubadilishaji, na gharama ya kununua kwa kila SKU. Bidhaa zinazofuatiliwa moja moja pia zinahitaji rekodi za kila kitu halisi.",
-      "review": "Kagua taarifa za stoo na mistari ya bidhaa, kisha hifadhi rasimu au kamilisha upokeaji wa stoo."
+      "products": "Chagua bidhaa / SKU iliyopo au unda mpya, kisha rekodi mzigo uliopokelewa kwa SKU hiyo. Unaweza kurudia kwa bidhaa nyingi kadri unavyohitaji.",
+      "record": "Rekodi SKU moja kwa wakati. Bidhaa za kiasi huingizwa kwa kiasi, na bidhaa zinazofuatiliwa moja moja huingizwa kitu kimoja cha kimwili kwa wakati.",
+      "review": "Kagua taarifa za stoo na mistari yote ya bidhaa iliyorekodiwa, kisha hifadhi rasimu au kamilisha upokeaji wa stoo."
     },
     "fields": {
       "stockName": "Jina la stoo",
@@ -26,6 +26,14 @@
     },
     "actions": {
       "addExisting": "Ongeza bidhaa",
+      "addProduct": "Ongeza bidhaa",
+      "createAndAdd": "Unda na ongeza bidhaa",
+      "recordProduct": "Rekodi bidhaa",
+      "addIndividual": "Ongeza kitu",
+      "updateIndividual": "Sasisha kitu",
+      "chooseAnother": "Chagua bidhaa nyingine",
+      "backToProducts": "Rudi kwenye bidhaa",
+      "reviewStock": "Kagua stoo",
       "remove": "Ondoa bidhaa",
       "back": "Rudi",
       "saveCorrection": "Hifadhi marekebisho",
@@ -36,8 +44,10 @@
       "catalogRequired": "Chagua angalau bidhaa / SKU moja kwa stoo hii.",
       "conversionPositive": "Weka ubadilishaji mkubwa kuliko sifuri."
     },
-    "individualProgress": "Vitu halisi vya kurekodi: {count}",
-    "individualItem": "Kitu {number}",
+    "recordedProducts": "Bidhaa kwenye stoo hii",
+    "individualProgress": "Zimerekodiwa {recorded} kati ya {count}",
+    "individualItem": "Kitu {number} kati ya {count}",
+    "individualComplete": "Vitu vyote vimerekodiwa",
     "history": {
       "title": "Stoo iliyorekodiwa",
       "description": "Risiti zilizopo zinaendelea kupatikana huku mfumo mpya wa kurekodi ukitumia mistari ya bidhaa moja kwa moja.",

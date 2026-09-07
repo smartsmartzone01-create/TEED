@@ -2,15 +2,15 @@
   "CommerceStockV2": {
     "steps": {
       "stock": "Stock information",
-      "catalog": "Product catalog",
+      "products": "Products",
       "record": "Recording",
       "review": "Review"
     },
     "help": {
       "stock": "Name this stock and enter its supplier, received date, and stock expenses.",
-      "catalog": "Choose reusable products already in your catalog or add a new SKU. Tracking belongs to the catalog product, not to this receipt.",
-      "record": "Enter the quantity, received unit, conversion, and buying cost for each SKU. Individually tracked products also require their physical-unit records.",
-      "review": "Check the stock information and product lines, then save a draft or receive the stock."
+      "products": "Choose an existing product / SKU or create a new one, then record the stock received for that SKU. You can repeat this for as many products as needed.",
+      "record": "Record one SKU at a time. Quantity-tracked products use a simple quantity entry; individually tracked products are entered one physical item at a time.",
+      "review": "Check the stock information and all recorded product lines, then save a draft or receive the stock."
     },
     "fields": {
       "stockName": "Stock name",
@@ -26,6 +26,14 @@
     },
     "actions": {
       "addExisting": "Add product",
+      "addProduct": "Add product",
+      "createAndAdd": "Create & add product",
+      "recordProduct": "Record product",
+      "addIndividual": "Add item",
+      "updateIndividual": "Update item",
+      "chooseAnother": "Choose another product",
+      "backToProducts": "Back to products",
+      "reviewStock": "Review stock",
       "remove": "Remove product",
       "back": "Back",
       "saveCorrection": "Save correction",
@@ -36,8 +44,10 @@
       "catalogRequired": "Choose at least one product / SKU for this stock.",
       "conversionPositive": "Enter a conversion greater than zero."
     },
-    "individualProgress": "Physical items to record: {count}",
-    "individualItem": "Item {number}",
+    "recordedProducts": "Products in this stock",
+    "individualProgress": "Recorded {recorded} of {count}",
+    "individualItem": "Item {number} of {count}",
+    "individualComplete": "All items recorded",
     "history": {
       "title": "Recorded stock",
       "description": "Current receipts remain available while the new recording flow uses direct product lines.",
