@@ -8,7 +8,9 @@ from .models import Product
 
 
 def active_catalog_products(*, business):
-    return Product.objects.filter(business=business, is_active=True)
+    return Product.objects.select_related("family").filter(
+        business=business, is_active=True
+    )
 
 
 @transaction.atomic
@@ -20,6 +22,7 @@ def set_catalog_product_active(*, actor, business_id, product_id, is_active):
     )
     product = (
         Product.objects.select_for_update()
+        .select_related("family")
         .filter(id=product_id, business=membership.business)
         .first()
     )
