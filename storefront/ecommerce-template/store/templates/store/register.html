@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/auth.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+  <h2>Create Account</h2>
+
+  {% if error %}
+    <p class="error">{{ error }}</p>
+  {% endif %}
+
+  <form method="post">
+    {% csrf_token %}
+    <input type="text" name="username" placeholder="Username" value="{{ username|default:'' }}" required>
+    <input type="email" name="email" placeholder="Email" value="{{ email|default:'' }}" required>
+    <input type="password" name="password" placeholder="Password" required>
+    <input type="password" name="confirm" placeholder="Confirm Password" required>
+    <button type="submit">Register</button>
+  </form>
+
+  <div class="auth-footer">
+  <p>Already have an account? <a href="{% url 'login' %}">Log in</a></p>
+
+  <p>
+    <!-- WhatsApp SVG icon -->
+    <svg xmlns="http://www.w3.org/2000/svg" fill="#c56926" viewBox="0 0 32 32" width="18" style="vertical-align: middle; margin-right: 5px;">
+      <path d="M19.11 17.54c-.29-.15-1.7-.84-1.96-.94s-.46-.15-.65.15c-.2.29-.75.94-.92 1.13s-.34.22-.63.07a8.36 8.36 0 0 1-2.47-1.52 9.23 9.23 0 0 1-1.7-2.1c-.17-.29 0-.45.13-.6.14-.14.29-.34.43-.5s.19-.29.29-.48a.56.56 0 0 0 0-.51c-.14-.14-.65-1.56-.89-2.14s-.47-.5-.65-.51h-.55a1 1 0 0 0-.73.34c-.26.29-1 1-1 2.43s1 2.82 1.13 3c.15.19 2.11 3.22 5.1 4.52a17.62 17.62 0 0 0 1.71.63 4.13 4.13 0 0 0 1.9.12c.58-.09 1.7-.7 1.94-1.39s.24-1.26.17-1.38-.26-.2-.54-.35zm-2.12 7.65a9.66 9.66 0 0 1-4.66-1.2l-.34-.18-3.46.91.92-3.37-.22-.35a9.62 9.62 0 1 1 17.93-5.19 9.58 9.58 0 0 1-10.17 9.38zm8.88-18.17a15.74 15.74 0 1 0-23.08 21.27l-.79 2.88a1.24 1.24 0 0 0 1.51 1.53l2.91-.78a15.74 15.74 0 0 0 19.45-24.9z"/>
+    </svg>
+
+    Need help? <a href="https://wa.me/+255784861276?text=Hi%2C%20I%20need%20help%20registering%20on%20your%20site" target="_blank">Contact Support on WhatsApp</a>
+  </p>
+</div>
+
+</div>
+{% endblock %}

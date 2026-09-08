@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="checkout-container" style="max-width: 800px; margin: 2rem auto; padding: 2rem; background: #fff; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
+  <h2 style="margin-bottom: 1rem;">Checkout</h2>
+
+  <form method="POST" action="{% url 'store:checkout' %}">
+    {% csrf_token %}
+
+    <!-- Customer Info -->
+    <div style="display: grid; gap: 1rem; margin-bottom: 2rem;">
+      <input type="text" name="full_name" placeholder="Full Name" required class="form-control">
+      <input type="email" name="email" placeholder="Email Address" required class="form-control">
+      <input type="text" name="phone" placeholder="Phone Number" required class="form-control">
+      <textarea name="address" placeholder="Delivery Address" required class="form-control" rows="3"></textarea>
+      <textarea name="notes" placeholder="Additional Notes (optional)" class="form-control" rows="2"></textarea>
+    </div>
+
+    <!-- Cart Summary -->
+    <div class="cart-summary" style="margin-bottom: 2rem;">
+      <h4>Your Order:</h4>
+      <ul style="list-style: none; padding-left: 0;">
+        {% for item in cart_items %}
+          <li style="margin-bottom: 0.5rem;">
+            {{ item.product.name }} (x{{ item.quantity }}) - {{ item.total_price }} TZS
+          </li>
+        {% endfor %}
+      </ul>
+      <p><strong>Total:</strong> {{ total }} TZS</p>
+    </div>
+
+    <!-- Submit -->
+    <button type="submit" class="btn" style="background: #c56926; color: white; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer;">
+      Place Order
+    </button>
+  </form>
+</div>
+{% endblock %}

@@ -118,7 +118,9 @@
       "notEntered": "Bado haijawekwa",
       "noNewProducts": "Hakuna bidhaa mpya iliyoongezwa",
       "chooseProduct": "Chagua bidhaa / SKU",
-      "entries": "rekodi"
+      "entries": "rekodi",
+      "quantityTrackedSku": "SKU ya idadi",
+      "individualTrackedSku": "SKU ya moja moja"
     },
     "actions": {
       "copy": "Nakili risiti",
@@ -175,7 +177,9 @@
       "wholeQuantity": "{unit} ni kipimo kinachohesabika. Weka idadi kamili.",
       "individualOneAtATime": "Urekodi wa moja moja huhifadhi bidhaa moja ya kimwili kwa wakati.",
       "groupUnitMismatch": "Bidhaa ndani ya kundi hili lazima zitumie kipimo kimoja: {unit}.",
-      "groupNeedsProduct": "Weka angalau bidhaa moja kabla ya kumaliza kundi hili."
+      "groupNeedsProduct": "Weka angalau bidhaa moja kabla ya kumaliza kundi hili.",
+      "skuRequiresIndividual": "SKU hii inafuatiliwa bidhaa moja moja. Irekodi moja moja au chagua SKU nyingine.",
+      "skuRequiresQuantity": "SKU hii inafuatiliwa kwa idadi. Irekodi kwa idadi au chagua SKU nyingine."
     },
     "success": {
       "copied": "Risiti ya mzigo imenakiliwa.",
