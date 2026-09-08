@@ -224,14 +224,10 @@ class WebsiteVariant(BaseModel):
         product = self.valid_commerce_product()
         if self.availability_source != self.Source.COMMERCE or product is None:
             return self.website_availability
-        if not product.is_active or product.current_quantity <= 0:
-            return self.Availability.OUT_OF_STOCK
-        if (
-            product.low_stock_threshold > 0
-            and product.current_quantity <= product.low_stock_threshold
-        ):
-            return self.Availability.LOW_STOCK
-        return self.Availability.IN_STOCK
+
+        from apps.commerce.catalog.exposure import sku_inventory_state
+
+        return sku_inventory_state(product)["availability"]
 
     def resolved_sku(self):
         product = self.valid_commerce_product()
