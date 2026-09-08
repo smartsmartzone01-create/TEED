@@ -2,10 +2,26 @@ import { demoStorefrontProducts } from "@/config/demo-catalog";
 import { demoStorefrontSite } from "@/config/demo-site";
 import type { StorefrontProductListing, StorefrontSiteConfig } from "@/types/storefront";
 
-function storefrontRuntimeConfig() {
-  const apiUrl = process.env.STOREFRONT_API_URL?.replace(/\/$/, "");
-  const siteKey = process.env.STOREFRONT_SITE_KEY;
-  return { apiUrl, siteKey };
+type StorefrontRuntimeConfig =
+  | { demoMode: true; apiUrl: null; siteKey: null }
+  | { demoMode: false; apiUrl: string; siteKey: string };
+
+function storefrontRuntimeConfig(): StorefrontRuntimeConfig {
+  const apiUrl = process.env.STOREFRONT_API_URL?.replace(/\/$/, "") || null;
+  const siteKey = process.env.STOREFRONT_SITE_KEY?.trim() || null;
+  const demoMode = process.env.STOREFRONT_DEMO_MODE?.trim().toLowerCase() === "true";
+
+  if (demoMode) {
+    return { demoMode: true, apiUrl: null, siteKey: null };
+  }
+
+  if (!apiUrl || !siteKey) {
+    throw new Error(
+      "Storefront runtime is not configured. Set STOREFRONT_API_URL and STOREFRONT_SITE_KEY, or explicitly enable STOREFRONT_DEMO_MODE=true for demo data.",
+    );
+  }
+
+  return { demoMode: false, apiUrl, siteKey };
 }
 
 function publicSiteBase(apiUrl: string, siteKey: string): string {
@@ -19,13 +35,13 @@ function unwrapData<T>(payload: T | { data: T }): T {
 }
 
 export async function getStorefrontSite(): Promise<StorefrontSiteConfig> {
-  const { apiUrl, siteKey } = storefrontRuntimeConfig();
+  const config = storefrontRuntimeConfig();
 
-  if (!apiUrl || !siteKey) {
+  if (config.demoMode) {
     return demoStorefrontSite;
   }
 
-  const response = await fetch(`${publicSiteBase(apiUrl, siteKey)}/`, {
+  const response = await fetch(`${publicSiteBase(config.apiUrl, config.siteKey)}/`, {
     next: { revalidate: 60 },
   });
 
@@ -38,13 +54,13 @@ export async function getStorefrontSite(): Promise<StorefrontSiteConfig> {
 }
 
 export async function getStorefrontProducts(): Promise<StorefrontProductListing[]> {
-  const { apiUrl, siteKey } = storefrontRuntimeConfig();
+  const config = storefrontRuntimeConfig();
 
-  if (!apiUrl || !siteKey) {
+  if (config.demoMode) {
     return demoStorefrontProducts;
   }
 
-  const response = await fetch(`${publicSiteBase(apiUrl, siteKey)}/products/`, {
+  const response = await fetch(`${publicSiteBase(config.apiUrl, config.siteKey)}/products/`, {
     next: { revalidate: 30 },
   });
 
@@ -71,14 +87,14 @@ export async function getStorefrontProducts(): Promise<StorefrontProductListing[
 }
 
 export async function getStorefrontProduct(slug: string): Promise<StorefrontProductListing | null> {
-  const { apiUrl, siteKey } = storefrontRuntimeConfig();
+  const config = storefrontRuntimeConfig();
 
-  if (!apiUrl || !siteKey) {
+  if (config.demoMode) {
     return demoStorefrontProducts.find((product) => product.slug === slug) ?? null;
   }
 
   const response = await fetch(
-    `${publicSiteBase(apiUrl, siteKey)}/products/${encodeURIComponent(slug)}/`,
+    `${publicSiteBase(config.apiUrl, config.siteKey)}/products/${encodeURIComponent(slug)}/`,
     { next: { revalidate: 30 } },
   );
 
