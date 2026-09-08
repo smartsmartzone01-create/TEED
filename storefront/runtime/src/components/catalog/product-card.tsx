@@ -1,8 +1,8 @@
-import Image from "next/image";
 import Link from "next/link";
 
-import { formatMoney } from "@/lib/money";
+import { StorefrontImage } from "@/components/storefront-image";
 import { localized } from "@/lib/localized";
+import { formatMoney } from "@/lib/money";
 import type { StorefrontLocale, StorefrontProductListing } from "@/types/storefront";
 
 function lowestVisibleSku(product: StorefrontProductListing) {
@@ -31,7 +31,7 @@ export function ProductCard({
         <div className="product-card-media">
           {product.badge ? <span className="product-badge">{localized(product.badge, locale)}</span> : null}
           {imageUrl ? (
-            <Image
+            <StorefrontImage
               src={imageUrl}
               alt={productTitle}
               width={640}
