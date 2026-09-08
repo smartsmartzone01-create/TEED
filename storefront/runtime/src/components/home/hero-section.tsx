@@ -1,6 +1,6 @@
-import Image from "next/image";
 import Link from "next/link";
 
+import { StorefrontImage } from "@/components/storefront-image";
 import { localized } from "@/lib/localized";
 import type { StorefrontSiteConfig } from "@/types/storefront";
 
@@ -30,7 +30,7 @@ export function HeroSection({ site }: { site: StorefrontSiteConfig }) {
 
         {site.hero.imageUrl ? (
           <div className="hero-media">
-            <Image src={site.hero.imageUrl} alt="" width={1200} height={800} />
+            <StorefrontImage src={site.hero.imageUrl} alt="" width={1200} height={800} />
           </div>
         ) : null}
       </div>
