@@ -1,8 +1,8 @@
 "use client";
 
-import Image from "next/image";
 import { useMemo, useState } from "react";
 
+import { StorefrontImage } from "@/components/storefront-image";
 import { localized } from "@/lib/localized";
 import { formatMoney } from "@/lib/money";
 import type {
@@ -79,7 +79,7 @@ export function ProductDetail({
     <div className="product-detail">
       <div className="product-detail-media">
         {selectedImage ? (
-          <Image
+          <StorefrontImage
             src={selectedImage}
             alt={productTitle}
             width={960}
