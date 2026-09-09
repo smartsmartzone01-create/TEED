@@ -9,11 +9,13 @@
     },
     "help": {
       "stock": "Ipe stoo hii jina kisha weka msambazaji, tarehe ya kupokea, na gharama za stoo.",
-      "products": "Chagua bidhaa / SKU iliyopo au unda mpya, kisha rekodi mzigo uliopokelewa kwa SKU hiyo. Unaweza kurudia kwa bidhaa nyingi kadri unavyohitaji.",
-      "catalog": "Chagua bidhaa / SKU iliyopo au unda mpya, kisha unganisha SKU mpya na familia ya bidhaa iliyopo ikiwa zinapaswa kuonekana kama bidhaa moja kwenye tovuti.",
-      "record": "Rekodi SKU moja kwa wakati. Bidhaa za kiasi huingizwa kwa kiasi, na bidhaa zinazofuatiliwa moja moja huingizwa kitu kimoja cha kimwili kwa wakati.",
+      "products": "Rekodi bidhaa uliyopokea. Huhitaji kuunda au kuchagua SKU kwanza; Tunakuza itatumia SKU inayolingana au kuunda SKU inayohitajika moja kwa moja unapohifadhi stoo.",
+      "catalog": "Rekodi bidhaa kwanza. Familia ya bidhaa hukusanya mipangilio inayohusiana huku Tunakuza ikisimamia utambulisho wa SKU moja kwa moja.",
+      "record": "Rekodi stoo iliyopokelewa. Kwa bidhaa zinazofuatiliwa moja moja, rangi na uwezo vinaweza kutenganishwa kuwa SKU tofauti moja kwa moja vinapowakilisha mipangilio tofauti ya kuuzwa.",
       "review": "Kagua taarifa za stoo na mistari yote ya bidhaa iliyorekodiwa, kisha hifadhi rasimu au kamilisha upokeaji wa stoo.",
-      "familyAssignment": "Familia ya bidhaa ndiyo utambulisho wa kuzikusanya pamoja. SKU za familia moja zinaweza kuwa na aina na bei tofauti za tovuti lakini zitaonekana kama bidhaa moja kwenye duka la mtandaoni."
+      "familyAssignment": "Familia ya bidhaa ndiyo utambulisho wa kuzikusanya pamoja. SKU zinazohusiana kwenye familia moja zinaweza kuwa na mipangilio na bei tofauti za tovuti huku zikionekana kama bidhaa moja dukani mtandaoni.",
+      "autoSku": "Huhitaji SKU hapa. Endelea na taarifa za bidhaa na vitu vya stoo; Tunakuza itatumia au kuunda SKU sahihi moja kwa moja unapohifadhi risiti.",
+      "existingSku": "Tumia sehemu hii tu ikiwa unataka kuongeza stoo kwenye SKU moja maalum ambayo tayari ipo."
     },
     "fields": {
       "stockName": "Jina la stoo",
@@ -26,16 +28,19 @@
     },
     "values": {
       "noFamily": "Hakuna familia ya bidhaa",
-      "createFamily": "+ Unda familia mpya"
+      "createFamily": "+ Unda familia mpya",
+      "autoSku": "SKU itawekwa moja kwa moja"
     },
     "tracking": {
       "quantity": "Kwa kiasi",
       "individual": "Moja moja"
     },
     "actions": {
-      "addExisting": "Ongeza bidhaa",
+      "addExisting": "Tumia SKU iliyopo",
       "addProduct": "Ongeza bidhaa",
       "createAndAdd": "Unda na ongeza bidhaa",
+      "recordNewProduct": "Rekodi bidhaa mpya",
+      "continueToRecord": "Endelea kurekodi",
       "recordProduct": "Rekodi bidhaa",
       "addIndividual": "Ongeza kitu",
       "updateIndividual": "Sasisha kitu",
@@ -49,9 +54,15 @@
     },
     "validation": {
       "stockName": "Weka jina la stoo.",
-      "catalogRequired": "Chagua angalau bidhaa / SKU moja kwa stoo hii.",
+      "catalogRequired": "Ongeza angalau bidhaa moja kwenye stoo hii.",
       "conversionPositive": "Weka ubadilishaji mkubwa kuliko sifuri.",
       "familyName": "Weka jina la familia mpya ya bidhaa."
+    },
+    "newProduct": {
+      "title": "Rekodi bidhaa bila kuchagua SKU"
+    },
+    "existingSku": {
+      "title": "Ongeza stoo kwenye SKU iliyopo (si lazima)"
     },
     "recordedProducts": "Bidhaa kwenye stoo hii",
     "individualProgress": "Zimerekodiwa {recorded} kati ya {count}",

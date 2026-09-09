@@ -198,7 +198,7 @@ function StockRecordingWorkspaceV2({
   const [preparedProducts, setPreparedProducts] = useState<PreparedProduct[]>([]);
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
   const [existingSelection, setExistingSelection] = useState("");
-  const [newProductOpen, setNewProductOpen] = useState(false);
+  const [newProductOpen, setNewProductOpen] = useState(true);
   const [familySelection, setFamilySelection] = useState("");
   const [preparedDraft, setPreparedDraft] = useState<PreparedProduct>(emptyPreparedProduct());
   const [lines, setLines] = useState<LineDraft[]>([]);
@@ -268,10 +268,10 @@ function StockRecordingWorkspaceV2({
       ...preparedProducts.map((product) => ({
         ...product,
         existingId: null,
-        sku: stockT("values.pendingSku"),
+        sku: t("values.autoSku"),
       })),
     ],
-    [preparedProducts, products, stockT],
+    [preparedProducts, products, t],
   );
 
   const choiceFor = (key: string) => choices.find((choice) => choice.key === key);
@@ -562,6 +562,7 @@ function StockRecordingWorkspaceV2({
     setExistingSelection("");
     setFamilySelection("");
     setPreparedDraft(emptyPreparedProduct());
+    setNewProductOpen(true);
     setLines([]);
     setActiveProductKey(null);
     setActiveUnitDraft(emptyUnit());
@@ -683,22 +684,12 @@ function StockRecordingWorkspaceV2({
           <p className="mt-1 text-sm text-slate-500">{t("help.products")}</p>
         </div>
 
-        <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
-          <Select value={existingSelection} onChange={(event) => setExistingSelection(event.target.value)}>
-            <option value="">{stockT("values.chooseProduct")}</option>
-            {choices.filter((choice) => choice.existingId).map((choice) => (
-              <option key={choice.key} value={choice.key}>
-                {choice.name} · {choice.sku} · {choice.unit} · {t(`tracking.${choice.trackingMode}`)}
-              </option>
-            ))}
-          </Select>
-          <Button disabled={!existingSelection} type="button" variant="outline" onClick={openExistingProduct}>
-            <Plus className="size-4" /> {t("actions.addProduct")}
-          </Button>
-        </div>
-
         {newProductOpen ? (
           <form className={`${inset} grid gap-3 p-3`} onSubmit={savePreparedProduct}>
+            <div>
+              <strong className="text-sm">{t("newProduct.title")}</strong>
+              <p className="mt-1 text-xs text-slate-500">{t("help.autoSku")}</p>
+            </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <label className={field}>{stockT("fields.productName")}<Input value={preparedDraft.name} onChange={(event) => setPreparedDraft({ ...preparedDraft, name: event.target.value })} /></label>
               <label className={field}>
@@ -728,15 +719,35 @@ function StockRecordingWorkspaceV2({
               <label className={field}>{t("fields.trackingMode")}<Select value={preparedDraft.trackingMode} onChange={(event) => setPreparedDraft({ ...preparedDraft, trackingMode: event.target.value as StockTrackingMode })}><option value="quantity">{t("tracking.quantity")}</option><option value="individual">{t("tracking.individual")}</option></Select></label>
             </div>
             <div className="flex flex-wrap gap-2">
-              <Button type="submit">{t("actions.createAndAdd")}</Button>
+              <Button type="submit">{t("actions.continueToRecord")}</Button>
               <Button type="button" variant="ghost" onClick={() => { setNewProductOpen(false); setFamilySelection(""); setPreparedDraft(emptyPreparedProduct()); }}>{commerceT("actions.cancel")}</Button>
             </div>
           </form>
         ) : (
-          <Button className="w-fit" type="button" variant="outline" onClick={() => setNewProductOpen(true)}>
-            <Plus className="size-4" /> {stockT("values.newProduct")}
+          <Button className="w-fit" type="button" onClick={() => setNewProductOpen(true)}>
+            <Plus className="size-4" /> {t("actions.recordNewProduct")}
           </Button>
         )}
+
+        <div className={`${inset} grid gap-3 p-3`}>
+          <div>
+            <strong className="text-sm">{t("existingSku.title")}</strong>
+            <p className="mt-1 text-xs text-slate-500">{t("help.existingSku")}</p>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
+            <Select value={existingSelection} onChange={(event) => setExistingSelection(event.target.value)}>
+              <option value="">{stockT("values.chooseProduct")}</option>
+              {choices.filter((choice) => choice.existingId).map((choice) => (
+                <option key={choice.key} value={choice.key}>
+                  {choice.name} · {choice.sku} · {choice.unit} · {t(`tracking.${choice.trackingMode}`)}
+                </option>
+              ))}
+            </Select>
+            <Button disabled={!existingSelection} type="button" variant="outline" onClick={openExistingProduct}>
+              <Plus className="size-4" /> {t("actions.addExisting")}
+            </Button>
+          </div>
+        </div>
 
         {selectedChoices.length ? (
           <div className={`${inset} divide-y divide-slate-200 px-3 dark:divide-slate-800`}>

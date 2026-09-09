@@ -9,11 +9,13 @@
     },
     "help": {
       "stock": "Name this stock and enter its supplier, received date, and stock expenses.",
-      "products": "Choose an existing product / SKU or create a new one, then record the stock received for that SKU. You can repeat this for as many products as needed.",
-      "catalog": "Choose an existing product / SKU or create a new one, then assign new SKUs to an existing product family when they belong on the same storefront product.",
-      "record": "Record one SKU at a time. Quantity-tracked products use a simple quantity entry; individually tracked products are entered one physical item at a time.",
+      "products": "Record the product you received. You do not need to create or choose a SKU first; Tunakuza will reuse a matching SKU or create the needed SKU automatically when the stock is saved.",
+      "catalog": "Record products first. Product families group related sellable configurations while Tunakuza manages SKU identity automatically.",
+      "record": "Record the stock received. For individually tracked products, color and capacity can resolve into separate SKUs automatically when they represent different sellable configurations.",
       "review": "Check the stock information and all recorded product lines, then save a draft or receive the stock.",
-      "familyAssignment": "Product family is the grouping identity. SKUs in the same family can have different variants and Website prices but will normalize into one storefront product."
+      "familyAssignment": "Product family is the grouping identity. Related SKUs in the same family can have different configurations and Website prices while appearing as one storefront product.",
+      "autoSku": "No SKU is required here. Continue with the product details and stock units; Tunakuza will reuse or create the correct SKU automatically when you save the receipt.",
+      "existingSku": "Use this only when you intentionally want to add stock to one exact SKU that already exists."
     },
     "fields": {
       "stockName": "Stock name",
@@ -26,16 +28,19 @@
     },
     "values": {
       "noFamily": "No product family",
-      "createFamily": "+ Create new family"
+      "createFamily": "+ Create new family",
+      "autoSku": "SKU assigned automatically"
     },
     "tracking": {
       "quantity": "Quantity",
       "individual": "Individual"
     },
     "actions": {
-      "addExisting": "Add product",
+      "addExisting": "Use existing SKU",
       "addProduct": "Add product",
       "createAndAdd": "Create & add product",
+      "recordNewProduct": "Record new product",
+      "continueToRecord": "Continue to recording",
       "recordProduct": "Record product",
       "addIndividual": "Add item",
       "updateIndividual": "Update item",
@@ -49,9 +54,15 @@
     },
     "validation": {
       "stockName": "Enter a stock name.",
-      "catalogRequired": "Choose at least one product / SKU for this stock.",
+      "catalogRequired": "Add at least one product to this stock.",
       "conversionPositive": "Enter a conversion greater than zero.",
       "familyName": "Enter the new product family name."
+    },
+    "newProduct": {
+      "title": "Record a product without choosing a SKU"
+    },
+    "existingSku": {
+      "title": "Add stock to an existing SKU (optional)"
     },
     "recordedProducts": "Products in this stock",
     "individualProgress": "Recorded {recorded} of {count}",
