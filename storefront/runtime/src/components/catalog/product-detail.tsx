@@ -137,7 +137,13 @@ export function ProductDetail({
             </div>
             <div>
               <span className="sku-label">{locale === "sw" ? "Bei" : "Price"}</span>
-              <strong className="selected-price">{formatMoney(selectedSku.price, locale)}</strong>
+              <strong className="selected-price">
+                {selectedSku.price
+                  ? formatMoney(selectedSku.price, locale)
+                  : locale === "sw"
+                    ? "Wasiliana kwa bei"
+                    : "Price on request"}
+              </strong>
             </div>
             <span className={`availability-pill availability-${selectedSku.availability}`}>
               {availabilityLabel(selectedSku.availability, locale)}

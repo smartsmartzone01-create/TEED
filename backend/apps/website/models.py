@@ -185,10 +185,6 @@ class WebsiteVariant(BaseModel):
                     )
                 }
             )
-        if self.price_source == self.Source.COMMERCE and product is None:
-            raise ValidationError(
-                {"price_source": "Commerce price requires a linked Commerce product."}
-            )
         if self.availability_source == self.Source.COMMERCE and product is None:
             raise ValidationError(
                 {
@@ -196,10 +192,6 @@ class WebsiteVariant(BaseModel):
                         "Commerce availability requires a linked Commerce product."
                     )
                 }
-            )
-        if self.price_source == self.Source.WEBSITE and self.website_price is None:
-            raise ValidationError(
-                {"website_price": "Website-priced variants require a website price."}
             )
 
     def valid_commerce_product(self):
@@ -211,13 +203,8 @@ class WebsiteVariant(BaseModel):
         return product
 
     def resolved_price(self):
-        product = self.valid_commerce_product()
-        if (
-            self.price_source == self.Source.COMMERCE
-            and product is not None
-            and product.selling_price is not None
-        ):
-            return product.selling_price
+        # Public storefront price is Website-owned. Commerce/Stock selling_price is
+        # operational and optional, so it must never be published implicitly.
         return self.website_price
 
     def resolved_availability(self):

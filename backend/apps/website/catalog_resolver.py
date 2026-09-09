@@ -100,8 +100,6 @@ def _offer_payload(
     commerce_availability=None,
 ):
     price = variant.resolved_price()
-    if price is None:
-        return None
 
     if (
         commerce is not None
@@ -122,10 +120,14 @@ def _offer_payload(
         "id": _offer_id(variant, options, tracking_mode),
         "sku": sku,
         "options": options,
-        "price": {
-            "amount": format(price, "f"),
-            "currency": variant.currency.upper(),
-        },
+        "price": (
+            {
+                "amount": format(price, "f"),
+                "currency": variant.currency.upper(),
+            }
+            if price is not None
+            else None
+        ),
         "availability": availability,
     }
 
@@ -168,7 +170,7 @@ def resolve_storefront_variant(variant: WebsiteVariant):
             commerce=None,
             options=base_options,
         )
-        return [], [offer] if offer is not None else []
+        return [], [offer]
 
     commerce = project_product_for_website(product)
     commerce_offers = commerce.get("offers") or []
@@ -180,7 +182,7 @@ def resolve_storefront_variant(variant: WebsiteVariant):
             options=base_options,
             commerce_availability=commerce["availability"],
         )
-        return [], [offer] if offer is not None else []
+        return [], [offer]
 
     active_fields = _active_unit_fields(variant, commerce_offers)
     derived_options = [
@@ -208,7 +210,6 @@ def resolve_storefront_variant(variant: WebsiteVariant):
             options=options,
             commerce_availability=commerce_offer["availability"],
         )
-        if offer is not None:
-            offers.append(offer)
+        offers.append(offer)
 
     return derived_options, _deduplicate_offers(offers)
