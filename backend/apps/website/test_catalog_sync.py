@@ -1,9 +1,11 @@
 from decimal import Decimal
 
 from django.test import TestCase
+from django.utils import timezone
 from rest_framework.test import APIClient
 
 from apps.commerce.catalog.models import Product, ProductFamily
+from apps.commerce.inventory.models import StockBatch, StockReceipt, TrackedUnit
 from apps.identity.models import User
 from apps.workspaces.models import Business
 
@@ -185,6 +187,77 @@ class WebsiteCatalogSyncTests(TestCase):
         )
         self.assertFalse(
             WebsiteListing.objects.get(pk=orange_listing.pk).is_published
+        )
+
+    def test_single_tracked_color_is_still_exposed_with_multiple_capacities(self):
+        product = Product.objects.create(
+            business=self.business,
+            name="iPhone 17 Pro Max Cosmic Orange",
+            sku="ITM-000401",
+            brand="Apple",
+            tracking_mode=Product.TrackingMode.INDIVIDUAL,
+            current_quantity=Decimal("3"),
+            is_active=True,
+        )
+        receipt = StockReceipt.objects.create(
+            business=self.business,
+            reference="MZIGO-TEST-0401",
+            sequence=401,
+            status=StockReceipt.Status.RECEIVED,
+            received_at=timezone.now(),
+            recorded_by=self.owner,
+        )
+        stock_line = StockBatch.objects.create(
+            receipt=receipt,
+            product=product,
+            tracking_mode=Product.TrackingMode.INDIVIDUAL,
+            quantity_received=Decimal("3"),
+            quantity_remaining=Decimal("3"),
+            received_unit="piece",
+            received_at=timezone.now(),
+            recorded_by=self.owner,
+        )
+        for index, capacity in enumerate(("256 GB", "512 GB", "1 TB"), start=1):
+            TrackedUnit.objects.create(
+                stock_line=stock_line,
+                product=product,
+                internal_serial=f"UNIT-COSMIC-{index}",
+                model_name="iPhone 17 Pro Max",
+                brand="Apple",
+                color="Cosmic Orange",
+                capacity=capacity,
+                status=TrackedUnit.Status.AVAILABLE,
+            )
+        listing = WebsiteListing.objects.create(
+            site=self.site,
+            slug="iphone-17-pro-max-cosmic-orange",
+            title={"en": "iPhone 17 Pro Max", "sw": "iPhone 17 Pro Max"},
+            is_published=True,
+        )
+        WebsiteVariant.objects.create(
+            listing=listing,
+            sku=product.sku,
+            commerce_product=product,
+            website_price=Decimal("4500000"),
+            availability_source=WebsiteVariant.Source.COMMERCE,
+            is_published=True,
+        )
+
+        response = self.client.get(self.products_url())
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.data["data"]["products"][0]
+        options = {option["id"]: option for option in payload["options"]}
+        self.assertEqual(
+            [value["value"] for value in options["color"]["values"]],
+            ["Cosmic Orange"],
+        )
+        self.assertEqual(
+            {value["value"] for value in options["capacity"]["values"]},
+            {"256 GB", "512 GB", "1 TB"},
+        )
+        self.assertTrue(
+            all(sku["options"]["color"] == "Cosmic Orange" for sku in payload["skus"])
         )
 
     def test_website_price_is_public_even_when_legacy_source_says_commerce(self):

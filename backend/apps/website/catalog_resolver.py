@@ -29,29 +29,23 @@ def _normalized_options(value):
     }
 
 
-def _declared_option_ids(variant):
-    listing_options = (
-        variant.listing.options if isinstance(variant.listing.options, list) else []
-    )
-    return {
-        str(option.get("id") or "").strip()
-        for option in listing_options
-        if isinstance(option, dict) and str(option.get("id") or "").strip()
-    }
-
-
 def _active_unit_fields(variant, commerce_offers):
-    declared = _declared_option_ids(variant)
+    """Expose every consistently populated customer-facing tracked attribute.
+
+    A single value is still useful storefront information. For example, a SKU whose
+    available units are all Cosmic Orange should still expose Color=Cosmic Orange,
+    while Capacity may expose several values. Fields are omitted only when at least one
+    projected offer is missing the attribute, because that would create incomplete
+    option combinations.
+    """
+
     active = []
     for option_id, attribute, labels in PUBLIC_UNIT_OPTION_FIELDS:
         values = [
             str((offer.get("attributes") or {}).get(attribute) or "").strip()
             for offer in commerce_offers
         ]
-        nonempty_values = {value for value in values if value}
-        if values and all(values) and (
-            option_id in declared or len(nonempty_values) > 1
-        ):
+        if values and all(values):
             active.append((option_id, attribute, labels))
     return active
 
