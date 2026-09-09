@@ -42,10 +42,25 @@ def _resolve_catalog_products(*, actor, membership, catalog_items):
         else:
             product_values = dict(catalog_item["item"])
             family_name = catalog_item.get("family_name", "").strip()
+            family = None
+            if family_name:
+                family = ProductFamily.objects.filter(
+                    business=membership.business,
+                    name__iexact=family_name,
+                    brand__iexact=product_values.get("brand", ""),
+                    is_active=True,
+                ).first()
+                if family is None:
+                    family = ProductFamily.objects.create(
+                        business=membership.business,
+                        name=family_name,
+                        brand=product_values.get("brand", ""),
+                    )
+
             tracking_mode = product_values.get(
                 "tracking_mode", Product.TrackingMode.QUANTITY
             )
-            product = Product.objects.filter(
+            products = Product.objects.filter(
                 business=membership.business,
                 name__iexact=product_values["name"],
                 brand__iexact=product_values.get("brand", ""),
@@ -53,21 +68,12 @@ def _resolve_catalog_products(*, actor, membership, catalog_items):
                 unit=product_values["unit"],
                 tracking_mode=tracking_mode,
                 is_active=True,
-            ).first()
+            )
+            if family is not None:
+                products = products.filter(family=family)
+            product = products.first()
             if product is None:
-                if family_name:
-                    family = ProductFamily.objects.filter(
-                        business=membership.business,
-                        name__iexact=family_name,
-                        brand__iexact=product_values.get("brand", ""),
-                        is_active=True,
-                    ).first()
-                    if family is None:
-                        family = ProductFamily.objects.create(
-                            business=membership.business,
-                            name=family_name,
-                            brand=product_values.get("brand", ""),
-                        )
+                if family is not None:
                     product_values["family"] = family
                 product = create_product(
                     actor=actor,

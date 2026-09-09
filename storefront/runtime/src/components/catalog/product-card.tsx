@@ -54,7 +54,6 @@ export function ProductCard({
           )}
         </div>
         <div className="product-card-copy">
-          {product.brand ? <p className="product-brand">{product.brand}</p> : null}
           <h3>{productTitle}</h3>
           <p className="product-card-description">{localized(product.shortDescription, locale)}</p>
           <div className="product-card-meta">

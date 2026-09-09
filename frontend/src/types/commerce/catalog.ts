@@ -1,3 +1,9 @@
+type ProductFamily = {
+  id: string;
+  name: string;
+  brand: string;
+};
+
 type Product = {
   id: string;
   name: string;
@@ -16,4 +22,4 @@ type Product = {
   is_active: boolean;
 };
 
-export type { Product };
+export type { Product, ProductFamily };

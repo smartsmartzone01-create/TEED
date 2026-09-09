@@ -3,6 +3,12 @@ import { z } from "zod";
 import { createApiEnvelopeSchema } from "@/schemas/global/api";
 import { decimal } from "@/schemas/commerce/shared";
 
+const productFamilySchema = z.object({
+  id: z.string().uuid(),
+  name: z.string(),
+  brand: z.string(),
+});
+
 const productSchema = z
   .object({
     id: z.string(),
@@ -24,8 +30,16 @@ const productSchema = z
   .passthrough();
 
 const productsResponseSchema = createApiEnvelopeSchema(
-  z.object({ products: z.array(productSchema) }),
+  z.object({
+    products: z.array(productSchema),
+    families: z.array(productFamilySchema).default([]),
+  }),
 );
 const productResponseSchema = createApiEnvelopeSchema(productSchema);
 
-export { productResponseSchema, productSchema, productsResponseSchema };
+export {
+  productFamilySchema,
+  productResponseSchema,
+  productSchema,
+  productsResponseSchema,
+};

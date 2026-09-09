@@ -12,6 +12,8 @@ import type {
   StorefrontSkuAvailability,
 } from "@/types/storefront";
 
+const hiddenOptionIds = new Set(["model", "brand"]);
+
 function isPurchasable(sku: StorefrontSku): boolean {
   return sku.availability !== "out_of_stock";
 }
@@ -37,12 +39,16 @@ export function ProductDetail({
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>(
     initialSku?.options ?? {},
   );
+  const visibleOptions = useMemo(
+    () => product.options.filter((option) => !hiddenOptionIds.has(option.id)),
+    [product.options],
+  );
 
   const selectedSku = useMemo(() => {
     return product.skus.find((sku) =>
-      product.options.every((option) => sku.options[option.id] === selectedOptions[option.id]),
+      visibleOptions.every((option) => sku.options[option.id] === selectedOptions[option.id]),
     );
-  }, [product.options, product.skus, selectedOptions]);
+  }, [product.skus, selectedOptions, visibleOptions]);
 
   const selectedImage = selectedSku?.imageUrl?.trim() || product.primaryImageUrl?.trim() || "";
   const productTitle = localized(product.title, locale);
@@ -58,11 +64,11 @@ export function ProductDetail({
     const exactMatch = product.skus.find(
       (sku) =>
         isPurchasable(sku) &&
-        product.options.every((option) => sku.options[option.id] === proposed[option.id]),
+        visibleOptions.every((option) => sku.options[option.id] === proposed[option.id]),
     );
 
     if (exactMatch) {
-      setSelectedOptions(proposed);
+      setSelectedOptions(exactMatch.options);
       return;
     }
 
@@ -98,11 +104,10 @@ export function ProductDetail({
       </div>
 
       <div className="product-detail-copy">
-        {product.brand ? <p className="product-brand">{product.brand}</p> : null}
         <h1>{productTitle}</h1>
         <p className="product-detail-description">{localized(product.description, locale)}</p>
 
-        {product.options.map((option) => (
+        {visibleOptions.map((option) => (
           <fieldset className="option-group" key={option.id}>
             <legend>{localized(option.name, locale)}</legend>
             <div className="option-values">
