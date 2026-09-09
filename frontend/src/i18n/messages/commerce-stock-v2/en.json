@@ -3,22 +3,30 @@
     "steps": {
       "stock": "Stock information",
       "products": "Products",
+      "catalog": "Products",
       "record": "Recording",
       "review": "Review"
     },
     "help": {
       "stock": "Name this stock and enter its supplier, received date, and stock expenses.",
       "products": "Choose an existing product / SKU or create a new one, then record the stock received for that SKU. You can repeat this for as many products as needed.",
+      "catalog": "Choose an existing product / SKU or create a new one, then assign new SKUs to an existing product family when they belong on the same storefront product.",
       "record": "Record one SKU at a time. Quantity-tracked products use a simple quantity entry; individually tracked products are entered one physical item at a time.",
-      "review": "Check the stock information and all recorded product lines, then save a draft or receive the stock."
+      "review": "Check the stock information and all recorded product lines, then save a draft or receive the stock.",
+      "familyAssignment": "Product family is the grouping identity. SKUs in the same family can have different variants and Website prices but will normalize into one storefront product."
     },
     "fields": {
       "stockName": "Stock name",
       "productFamily": "Product family (optional)",
+      "newFamilyName": "New product family",
       "trackingMode": "Tracking",
       "receivedUnit": "Received unit",
       "baseUnit": "Inventory unit",
       "conversion": "Inventory units per received unit"
+    },
+    "values": {
+      "noFamily": "No product family",
+      "createFamily": "+ Create new family"
     },
     "tracking": {
       "quantity": "Quantity",
@@ -42,7 +50,8 @@
     "validation": {
       "stockName": "Enter a stock name.",
       "catalogRequired": "Choose at least one product / SKU for this stock.",
-      "conversionPositive": "Enter a conversion greater than zero."
+      "conversionPositive": "Enter a conversion greater than zero.",
+      "familyName": "Enter the new product family name."
     },
     "recordedProducts": "Products in this stock",
     "individualProgress": "Recorded {recorded} of {count}",

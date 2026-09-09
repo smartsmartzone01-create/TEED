@@ -107,6 +107,86 @@ class WebsiteCatalogSyncTests(TestCase):
         self.assertEqual(second["created_variants"], 0)
         self.assertEqual(second["existing_variants"], 2)
 
+    def test_family_sync_rehomes_duplicate_sku_listings_and_preserves_website_prices(self):
+        family = ProductFamily.objects.create(
+            business=self.business,
+            name="iPhone 17 Pro Max",
+            brand="Apple",
+        )
+        silver = Product.objects.create(
+            business=self.business,
+            family=family,
+            name="iPhone 17 Pro Max",
+            sku="ITM-000301",
+            brand="Apple",
+            variant="Silver",
+            current_quantity=Decimal("1"),
+            is_active=True,
+        )
+        orange = Product.objects.create(
+            business=self.business,
+            family=family,
+            name="iPhone 17 Pro Max",
+            sku="ITM-000302",
+            brand="Apple",
+            variant="Cosmic Orange",
+            current_quantity=Decimal("1"),
+            is_active=True,
+        )
+        silver_listing = WebsiteListing.objects.create(
+            site=self.site,
+            slug="iphone-17-pro-max-silver",
+            title={"en": "iPhone 17 Pro Max Silver", "sw": "iPhone 17 Pro Max Silver"},
+            is_published=True,
+        )
+        orange_listing = WebsiteListing.objects.create(
+            site=self.site,
+            slug="iphone-17-pro-max-cosmic-orange",
+            title={
+                "en": "iPhone 17 Pro Max Cosmic Orange",
+                "sw": "iPhone 17 Pro Max Cosmic Orange",
+            },
+            is_published=True,
+        )
+        WebsiteVariant.objects.create(
+            listing=silver_listing,
+            sku=silver.sku,
+            commerce_product=silver,
+            website_price=Decimal("4200000"),
+            availability_source=WebsiteVariant.Source.COMMERCE,
+            is_published=True,
+        )
+        WebsiteVariant.objects.create(
+            listing=orange_listing,
+            sku=orange.sku,
+            commerce_product=orange,
+            website_price=Decimal("4400000"),
+            availability_source=WebsiteVariant.Source.COMMERCE,
+            is_published=True,
+        )
+
+        result = sync_site_catalog(site=self.site, publish_new=True)
+
+        self.assertEqual(result["created_listings"], 1)
+        self.assertEqual(result["moved_variants"], 2)
+        self.assertEqual(result["unpublished_duplicates"], 2)
+        canonical = WebsiteListing.objects.get(
+            site=self.site,
+            title__en="iPhone 17 Pro Max",
+        )
+        self.assertTrue(canonical.is_published)
+        self.assertEqual(canonical.variants.count(), 2)
+        self.assertEqual(
+            set(canonical.variants.values_list("website_price", flat=True)),
+            {Decimal("4200000"), Decimal("4400000")},
+        )
+        self.assertFalse(
+            WebsiteListing.objects.get(pk=silver_listing.pk).is_published
+        )
+        self.assertFalse(
+            WebsiteListing.objects.get(pk=orange_listing.pk).is_published
+        )
+
     def test_website_price_is_public_even_when_legacy_source_says_commerce(self):
         product = Product.objects.create(
             business=self.business,

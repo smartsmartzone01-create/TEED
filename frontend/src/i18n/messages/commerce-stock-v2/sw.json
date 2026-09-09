@@ -3,22 +3,30 @@
     "steps": {
       "stock": "Taarifa za stoo",
       "products": "Bidhaa",
+      "catalog": "Bidhaa",
       "record": "Kurekodi",
       "review": "Kukagua"
     },
     "help": {
       "stock": "Ipe stoo hii jina kisha weka msambazaji, tarehe ya kupokea, na gharama za stoo.",
       "products": "Chagua bidhaa / SKU iliyopo au unda mpya, kisha rekodi mzigo uliopokelewa kwa SKU hiyo. Unaweza kurudia kwa bidhaa nyingi kadri unavyohitaji.",
+      "catalog": "Chagua bidhaa / SKU iliyopo au unda mpya, kisha unganisha SKU mpya na familia ya bidhaa iliyopo ikiwa zinapaswa kuonekana kama bidhaa moja kwenye tovuti.",
       "record": "Rekodi SKU moja kwa wakati. Bidhaa za kiasi huingizwa kwa kiasi, na bidhaa zinazofuatiliwa moja moja huingizwa kitu kimoja cha kimwili kwa wakati.",
-      "review": "Kagua taarifa za stoo na mistari yote ya bidhaa iliyorekodiwa, kisha hifadhi rasimu au kamilisha upokeaji wa stoo."
+      "review": "Kagua taarifa za stoo na mistari yote ya bidhaa iliyorekodiwa, kisha hifadhi rasimu au kamilisha upokeaji wa stoo.",
+      "familyAssignment": "Familia ya bidhaa ndiyo utambulisho wa kuzikusanya pamoja. SKU za familia moja zinaweza kuwa na aina na bei tofauti za tovuti lakini zitaonekana kama bidhaa moja kwenye duka la mtandaoni."
     },
     "fields": {
       "stockName": "Jina la stoo",
       "productFamily": "Familia ya bidhaa (si lazima)",
+      "newFamilyName": "Familia mpya ya bidhaa",
       "trackingMode": "Ufuatiliaji",
       "receivedUnit": "Uniti iliyopokelewa",
       "baseUnit": "Uniti ya hesabu ya stoo",
       "conversion": "Uniti za hesabu kwa kila uniti iliyopokelewa"
+    },
+    "values": {
+      "noFamily": "Hakuna familia ya bidhaa",
+      "createFamily": "+ Unda familia mpya"
     },
     "tracking": {
       "quantity": "Kwa kiasi",
@@ -42,7 +50,8 @@
     "validation": {
       "stockName": "Weka jina la stoo.",
       "catalogRequired": "Chagua angalau bidhaa / SKU moja kwa stoo hii.",
-      "conversionPositive": "Weka ubadilishaji mkubwa kuliko sifuri."
+      "conversionPositive": "Weka ubadilishaji mkubwa kuliko sifuri.",
+      "familyName": "Weka jina la familia mpya ya bidhaa."
     },
     "recordedProducts": "Bidhaa kwenye stoo hii",
     "individualProgress": "Zimerekodiwa {recorded} kati ya {count}",

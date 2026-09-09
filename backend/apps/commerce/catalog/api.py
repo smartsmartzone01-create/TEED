@@ -14,7 +14,7 @@ from ..inventory.stock import (
 )
 from ..serializers import UnitDefinitionSerializer
 from ..services import commerce_membership
-from .models import Product, UnitDefinition
+from .models import Product, ProductFamily, UnitDefinition
 from .services import active_catalog_products, set_catalog_product_active
 
 
@@ -33,14 +33,28 @@ class CatalogProductSerializer(AvailabilityProductSerializer):
 
 
 class ActiveProductListCreatePolishAPIView(ProductListCreatePolishAPIView):
-    """Expose active catalog identities, including sold-out items for restocking."""
+    """Expose active catalog identities and product families for stock recording."""
 
     def get(self, request, business_id):
         membership = commerce_membership(user=request.user, business_id=business_id)
         products = active_catalog_products(business=membership.business)
+        families = ProductFamily.objects.filter(
+            business=membership.business,
+            is_active=True,
+        ).order_by("name", "brand", "id")
         return SuccessResponse(
             message="Products retrieved successfully.",
-            data={"products": CatalogProductSerializer(products, many=True).data},
+            data={
+                "products": CatalogProductSerializer(products, many=True).data,
+                "families": [
+                    {
+                        "id": str(family.id),
+                        "name": family.name,
+                        "brand": family.brand,
+                    }
+                    for family in families
+                ],
+            },
         )
 
 

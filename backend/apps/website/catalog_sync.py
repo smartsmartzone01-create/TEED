@@ -44,26 +44,48 @@ def _family_options(products):
     ]
 
 
-def _listing_for_products(*, site, products):
+def _listing_title(listing):
+    title = listing.title if isinstance(listing.title, dict) else {}
+    return str(title.get("en") or title.get("sw") or "").strip()
+
+
+def _linked_listings(*, site, products):
     product_ids = [product.id for product in products]
-    return (
+    return list(
         WebsiteListing.objects.filter(
             site=site,
             variants__commerce_product_id__in=product_ids,
         )
         .distinct()
         .order_by("created_at", "id")
-        .first()
     )
+
+
+def _canonical_listing(*, site, products, display_name):
+    linked = _linked_listings(site=site, products=products)
+    matching = next(
+        (
+            listing
+            for listing in linked
+            if _listing_title(listing).casefold() == display_name.casefold()
+        ),
+        None,
+    )
+    if matching is not None:
+        return matching, linked
+    if len(products) == 1 and linked:
+        return linked[0], linked
+    return None, linked
 
 
 @transaction.atomic
 def sync_site_catalog(*, site: WebsiteSite, publish_new=False):
-    """Import active Commerce SKUs into Website without importing operational prices.
+    """Normalize active Commerce SKUs into Website family listings.
 
-    Commerce owns SKU identity, family membership and live availability. Website owns
-    public presentation, including the retail price and images. Existing Website copy,
-    prices, images and publication choices are preserved.
+    Product.family_id is the grouping truth. Commerce owns SKU identity and live
+    availability. Website owns public presentation, including retail prices and images.
+    Existing Website copy, prices and images are preserved when a variant is re-homed
+    into its canonical family listing.
     """
 
     products = list(
@@ -80,6 +102,8 @@ def sync_site_catalog(*, site: WebsiteSite, publish_new=False):
     created_listings = 0
     created_variants = 0
     linked_existing_variants = 0
+    moved_variants = 0
+    unpublished_duplicates = 0
 
     for group_products in grouped.values():
         first = group_products[0]
@@ -87,7 +111,11 @@ def sync_site_catalog(*, site: WebsiteSite, publish_new=False):
         display_name = family.name if family is not None else first.name
         brand = (family.brand if family is not None else first.brand) or ""
 
-        listing = _listing_for_products(site=site, products=group_products)
+        listing, linked_listings = _canonical_listing(
+            site=site,
+            products=group_products,
+            display_name=display_name,
+        )
         if listing is None:
             listing = WebsiteListing.objects.create(
                 site=site,
@@ -104,6 +132,10 @@ def sync_site_catalog(*, site: WebsiteSite, publish_new=False):
                 listing.options = options
                 listing.save(update_fields=["options", "updated_at"])
 
+        duplicate_listing_ids = {
+            candidate.id for candidate in linked_listings if candidate.id != listing.id
+        }
+
         for product in group_products:
             existing = (
                 WebsiteVariant.objects.filter(
@@ -113,14 +145,26 @@ def sync_site_catalog(*, site: WebsiteSite, publish_new=False):
                 .select_related("listing")
                 .first()
             )
+            product_options = {"variant": product.variant} if product.variant else {}
             if existing is not None:
                 linked_existing_variants += 1
+                changed = []
+                if existing.listing_id != listing.id:
+                    duplicate_listing_ids.add(existing.listing_id)
+                    existing.listing = listing
+                    changed.append("listing")
+                    moved_variants += 1
+                if product.variant and not existing.options.get("variant"):
+                    existing.options = {**existing.options, **product_options}
+                    changed.append("options")
+                if changed:
+                    existing.save(update_fields=[*changed, "updated_at"])
                 continue
 
             WebsiteVariant.objects.create(
                 listing=listing,
                 sku=product.sku,
-                options={"variant": product.variant} if product.variant else {},
+                options=product_options,
                 website_price=None,
                 price_source=WebsiteVariant.Source.WEBSITE,
                 availability_source=WebsiteVariant.Source.COMMERCE,
@@ -129,9 +173,21 @@ def sync_site_catalog(*, site: WebsiteSite, publish_new=False):
             )
             created_variants += 1
 
+        for duplicate in WebsiteListing.objects.filter(
+            id__in=duplicate_listing_ids,
+            site=site,
+            is_published=True,
+        ):
+            if not duplicate.variants.exists():
+                duplicate.is_published = False
+                duplicate.save(update_fields=["is_published", "updated_at"])
+                unpublished_duplicates += 1
+
     return {
         "products": len(products),
         "created_listings": created_listings,
         "created_variants": created_variants,
         "existing_variants": linked_existing_variants,
+        "moved_variants": moved_variants,
+        "unpublished_duplicates": unpublished_duplicates,
     }
