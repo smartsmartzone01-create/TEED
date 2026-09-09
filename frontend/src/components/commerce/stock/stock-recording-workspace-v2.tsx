@@ -73,6 +73,8 @@ type PreparedProduct = {
   familyName: string;
   brand: string;
   variant: string;
+  color: string;
+  capacity: string;
   unit: string;
   trackingMode: StockTrackingMode;
 };
@@ -124,6 +126,8 @@ const emptyPreparedProduct = (): PreparedProduct => ({
   familyName: "",
   brand: "",
   variant: "",
+  color: "",
+  capacity: "",
   unit: "piece",
   trackingMode: "quantity",
 });
@@ -135,6 +139,16 @@ const emptyUnit = (): UnitDraft => ({
   capacity: "",
   identifierKind: "serial",
   identifierValue: "",
+});
+
+const unitForChoice = (
+  choice?: Pick<ProductChoice, "name" | "brand" | "color" | "capacity">,
+): UnitDraft => ({
+  ...emptyUnit(),
+  modelName: choice?.name ?? "",
+  brand: choice?.brand ?? "",
+  color: choice?.color ?? "",
+  capacity: choice?.capacity ?? "",
 });
 
 const normalizedCost = (mode: StockCostMode, value: string, quantity: string) => {
@@ -262,6 +276,8 @@ function StockRecordingWorkspaceV2({
           sku: product.sku,
           brand: product.brand,
           variant: product.variant,
+          color: "",
+          capacity: "",
           unit: product.unit,
           trackingMode: product.tracking_mode,
         })),
@@ -292,8 +308,9 @@ function StockRecordingWorkspaceV2({
   );
 
   const startRecording = (key: string) => {
+    const choice = choiceFor(key);
     setActiveProductKey(key);
-    setActiveUnitDraft(emptyUnit());
+    setActiveUnitDraft(unitForChoice(choice));
     setEditingUnitIndex(null);
     moveTo("record");
   };
@@ -355,6 +372,8 @@ function StockRecordingWorkspaceV2({
       familyName: preparedDraft.familyName.trim(),
       brand: preparedDraft.brand.trim(),
       variant: preparedDraft.variant.trim(),
+      color: preparedDraft.color.trim(),
+      capacity: preparedDraft.capacity.trim(),
       unit: preparedDraft.unit.trim() || "piece",
     };
     setPreparedProducts((current) => [...current.filter((item) => item.key !== key), product]);
@@ -367,7 +386,10 @@ function StockRecordingWorkspaceV2({
     setPreparedDraft(emptyPreparedProduct());
     setFamilySelection("");
     setNewProductOpen(false);
-    startRecording(key);
+    setActiveProductKey(key);
+    setActiveUnitDraft(unitForChoice(product));
+    setEditingUnitIndex(null);
+    moveTo("record");
   };
 
   const removeSelected = (key: string) => {
@@ -415,7 +437,7 @@ function StockRecordingWorkspaceV2({
         };
       }),
     );
-    setActiveUnitDraft(emptyUnit());
+    setActiveUnitDraft(unitForChoice(activeChoice));
     setEditingUnitIndex(null);
   };
 
@@ -438,7 +460,7 @@ function StockRecordingWorkspaceV2({
     );
     if (editingUnitIndex === index) {
       setEditingUnitIndex(null);
-      setActiveUnitDraft(emptyUnit());
+      setActiveUnitDraft(unitForChoice(activeChoice));
     }
   };
 
@@ -691,7 +713,10 @@ function StockRecordingWorkspaceV2({
               <p className="mt-1 text-xs text-slate-500">{t("help.autoSku")}</p>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
-              <label className={field}>{stockT("fields.productName")}<Input value={preparedDraft.name} onChange={(event) => setPreparedDraft({ ...preparedDraft, name: event.target.value })} /></label>
+              <label className={field}>
+                {stockT("fields.productName")}
+                <Input value={preparedDraft.name} onChange={(event) => setPreparedDraft({ ...preparedDraft, name: event.target.value })} />
+              </label>
               <label className={field}>
                 {t("fields.productFamily")}
                 <Select value={familySelection} onChange={(event) => chooseProductFamily(event.target.value)}>
@@ -713,10 +738,40 @@ function StockRecordingWorkspaceV2({
                 ) : null}
                 <span className="font-normal text-slate-500">{t("help.familyAssignment")}</span>
               </label>
-              <label className={field}>{commerceT("fields.brandOptional")}<Input disabled={Boolean(preparedDraft.familyId)} value={preparedDraft.brand} onChange={(event) => setPreparedDraft({ ...preparedDraft, brand: event.target.value })} /></label>
-              <label className={field}>{commerceT("fields.variant")}<Input value={preparedDraft.variant} onChange={(event) => setPreparedDraft({ ...preparedDraft, variant: event.target.value })} /></label>
-              <label className={field}>{stockT("fields.unit")}<Select value={preparedDraft.unit} onChange={(event) => setPreparedDraft({ ...preparedDraft, unit: event.target.value })}>{availableUnits.map((unit) => <option key={unit.key} value={unit.key}>{unit.label}</option>)}</Select></label>
-              <label className={field}>{t("fields.trackingMode")}<Select value={preparedDraft.trackingMode} onChange={(event) => setPreparedDraft({ ...preparedDraft, trackingMode: event.target.value as StockTrackingMode })}><option value="quantity">{t("tracking.quantity")}</option><option value="individual">{t("tracking.individual")}</option></Select></label>
+              <label className={field}>
+                {commerceT("fields.brandOptional")}
+                <Input disabled={Boolean(preparedDraft.familyId)} value={preparedDraft.brand} onChange={(event) => setPreparedDraft({ ...preparedDraft, brand: event.target.value })} />
+              </label>
+              <label className={field}>
+                {t("fields.trackingMode")}
+                <Select value={preparedDraft.trackingMode} onChange={(event) => setPreparedDraft({ ...preparedDraft, trackingMode: event.target.value as StockTrackingMode })}>
+                  <option value="quantity">{t("tracking.quantity")}</option>
+                  <option value="individual">{t("tracking.individual")}</option>
+                </Select>
+              </label>
+              {preparedDraft.trackingMode === "individual" ? (
+                <>
+                  <label className={field}>
+                    {commerceT("fields.color")}
+                    <Input value={preparedDraft.color} onChange={(event) => setPreparedDraft({ ...preparedDraft, color: event.target.value })} />
+                  </label>
+                  <label className={field}>
+                    {commerceT("fields.capacity")}
+                    <Input value={preparedDraft.capacity} onChange={(event) => setPreparedDraft({ ...preparedDraft, capacity: event.target.value })} />
+                  </label>
+                </>
+              ) : (
+                <label className={field}>
+                  {commerceT("fields.variant")}
+                  <Input value={preparedDraft.variant} onChange={(event) => setPreparedDraft({ ...preparedDraft, variant: event.target.value })} />
+                </label>
+              )}
+              <label className={field}>
+                {stockT("fields.unit")}
+                <Select value={preparedDraft.unit} onChange={(event) => setPreparedDraft({ ...preparedDraft, unit: event.target.value })}>
+                  {availableUnits.map((unit) => <option key={unit.key} value={unit.key}>{unit.label}</option>)}
+                </Select>
+              </label>
             </div>
             <div className="flex flex-wrap gap-2">
               <Button type="submit">{t("actions.continueToRecord")}</Button>
@@ -761,7 +816,7 @@ function StockRecordingWorkspaceV2({
                   <div className="min-w-0 flex-1">
                     <strong className="block truncate text-sm">{choice.name}</strong>
                     <p className="truncate text-xs text-slate-500">
-                      {[choice.sku, choice.familyName, choice.unit, t(`tracking.${choice.trackingMode}`)].filter(Boolean).join(" · ")}
+                      {[choice.sku, choice.familyName, choice.color, choice.capacity, choice.unit, t(`tracking.${choice.trackingMode}`)].filter(Boolean).join(" · ")}
                     </p>
                     {line ? (
                       <p className="mt-0.5 text-xs font-semibold text-slate-600 dark:text-slate-300">
@@ -814,7 +869,7 @@ function StockRecordingWorkspaceV2({
             <div>
               <h2 className="text-lg font-bold">{activeChoice.name}</h2>
               <p className="mt-1 text-sm text-slate-500">
-                {activeChoice.sku} · {activeChoice.unit} · {t(`tracking.${activeChoice.trackingMode}`)}
+                {[activeChoice.sku, activeChoice.color, activeChoice.capacity, activeChoice.unit, t(`tracking.${activeChoice.trackingMode}`)].filter(Boolean).join(" · ")}
               </p>
             </div>
             <Button size="small" type="button" variant="ghost" onClick={() => moveTo("products")}>{t("actions.backToProducts")}</Button>
@@ -877,7 +932,7 @@ function StockRecordingWorkspaceV2({
                       {editingUnitIndex == null ? t("actions.addIndividual") : t("actions.updateIndividual")}
                     </Button>
                     {editingUnitIndex != null ? (
-                      <Button type="button" variant="ghost" onClick={() => { setEditingUnitIndex(null); setActiveUnitDraft(emptyUnit()); }}>{commerceT("actions.cancel")}</Button>
+                      <Button type="button" variant="ghost" onClick={() => { setEditingUnitIndex(null); setActiveUnitDraft(unitForChoice(activeChoice)); }}>{commerceT("actions.cancel")}</Button>
                     ) : null}
                   </div>
                 </div>
