@@ -28,6 +28,8 @@ def _family_options(products):
     values = []
     seen = set()
     for product in products:
+        if product.tracking_mode == Product.TrackingMode.INDIVIDUAL:
+            continue
         value = str(product.variant or "").strip()
         if not value or value in seen:
             continue
@@ -86,6 +88,11 @@ def sync_site_catalog(*, site: WebsiteSite, publish_new=False):
     availability. Website owns public presentation, including retail prices and images.
     Existing Website copy, prices and images are preserved when a variant is re-homed
     into its canonical family listing.
+
+    Individually tracked Commerce SKUs may use Product.variant internally as their
+    automatic SKU-configuration key. The storefront does not expose that internal
+    string; customer-facing color/capacity options continue to come from Commerce's
+    safe tracked-unit projection.
     """
 
     products = list(
@@ -145,7 +152,11 @@ def sync_site_catalog(*, site: WebsiteSite, publish_new=False):
                 .select_related("listing")
                 .first()
             )
-            product_options = {"variant": product.variant} if product.variant else {}
+            product_options = (
+                {}
+                if product.tracking_mode == Product.TrackingMode.INDIVIDUAL
+                else ({"variant": product.variant} if product.variant else {})
+            )
             if existing is not None:
                 linked_existing_variants += 1
                 changed = []
@@ -154,9 +165,21 @@ def sync_site_catalog(*, site: WebsiteSite, publish_new=False):
                     existing.listing = listing
                     changed.append("listing")
                     moved_variants += 1
-                if product.variant and not existing.options.get("variant"):
+
+                if (
+                    product.tracking_mode == Product.TrackingMode.INDIVIDUAL
+                    and existing.options == {"variant": product.variant}
+                ):
+                    existing.options = {}
+                    changed.append("options")
+                elif (
+                    product.tracking_mode != Product.TrackingMode.INDIVIDUAL
+                    and product.variant
+                    and not existing.options.get("variant")
+                ):
                     existing.options = {**existing.options, **product_options}
                     changed.append("options")
+
                 if changed:
                     existing.save(update_fields=[*changed, "updated_at"])
                 continue
