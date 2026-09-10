@@ -30,7 +30,7 @@ const panel =
   "rounded-lg border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950";
 const inset =
   "rounded-lg border border-slate-200 bg-slate-50/60 dark:border-slate-800 dark:bg-slate-900/40";
-const field = "grid gap-1 text-xs font-semibold text-slate-600 dark:text-slate-300";
+const field = "grid min-w-0 gap-1 break-words text-xs font-semibold text-slate-600 dark:text-slate-300";
 const createFamilyValue = "__create_family__";
 const units = [
   "piece",
@@ -65,6 +65,7 @@ const identifierKinds = [
 ] as const;
 
 type Step = "stock" | "products" | "record" | "review";
+type ProductEntryMode = "existing-category" | "new-category" | null;
 type IdentifierKind = (typeof identifierKinds)[number];
 type PreparedProduct = {
   key: string;
@@ -211,8 +212,9 @@ function StockRecordingWorkspaceV2({
   const [receipts, setReceipts] = useState<StockReceipt[]>([]);
   const [preparedProducts, setPreparedProducts] = useState<PreparedProduct[]>([]);
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
+  const [productEntryMode, setProductEntryMode] = useState<ProductEntryMode>(null);
   const [existingSelection, setExistingSelection] = useState("");
-  const [newProductOpen, setNewProductOpen] = useState(true);
+  const [newProductOpen, setNewProductOpen] = useState(false);
   const [familySelection, setFamilySelection] = useState("");
   const [preparedDraft, setPreparedDraft] = useState<PreparedProduct>(emptyPreparedProduct());
   const [lines, setLines] = useState<LineDraft[]>([]);
@@ -290,6 +292,17 @@ function StockRecordingWorkspaceV2({
     [preparedProducts, products, t],
   );
 
+  const stagedCategories = useMemo(() => {
+    const seen = new Set<string>();
+    return preparedProducts.filter((product) => {
+      if (product.familyId || !product.familyName.trim()) return false;
+      const identity = `${product.familyName.trim().toLowerCase()}|${product.brand.trim().toLowerCase()}`;
+      if (seen.has(identity)) return false;
+      seen.add(identity);
+      return true;
+    });
+  }, [preparedProducts]);
+
   const choiceFor = (key: string) => choices.find((choice) => choice.key === key);
   const selectedChoices = selectedKeys
     .map((key) => choiceFor(key))
@@ -298,6 +311,13 @@ function StockRecordingWorkspaceV2({
   const activeLine = activeProductKey
     ? lines.find((line) => line.productKey === activeProductKey)
     : undefined;
+  const existingCategoryId =
+    familySelection && !familySelection.startsWith("staged:") && familySelection !== createFamilyValue
+      ? familySelection
+      : "";
+  const existingCategoryChoices = choices.filter(
+    (choice) => choice.existingId && existingCategoryId && choice.familyId === existingCategoryId,
+  );
 
   const availableUnits = useMemo(
     () => [
@@ -315,6 +335,27 @@ function StockRecordingWorkspaceV2({
     moveTo("record");
   };
 
+  const resetProductEntry = () => {
+    setProductEntryMode(null);
+    setExistingSelection("");
+    setFamilySelection("");
+    setPreparedDraft(emptyPreparedProduct());
+    setNewProductOpen(false);
+  };
+
+  const beginProductEntry = (mode: Exclude<ProductEntryMode, null>) => {
+    setProductEntryMode(mode);
+    setExistingSelection("");
+    setPreparedDraft(emptyPreparedProduct());
+    if (mode === "new-category") {
+      setFamilySelection(createFamilyValue);
+      setNewProductOpen(true);
+    } else {
+      setFamilySelection("");
+      setNewProductOpen(false);
+    }
+  };
+
   const openExistingProduct = () => {
     if (!existingSelection) return;
     const choice = choiceFor(existingSelection);
@@ -327,31 +368,54 @@ function StockRecordingWorkspaceV2({
         ? current
         : [...current, newLineForChoice(choice)],
     );
-    setExistingSelection("");
+    resetProductEntry();
     startRecording(choice.key);
   };
 
   const chooseProductFamily = (value: string) => {
     setFamilySelection(value);
-    if (!value || value === createFamilyValue) {
-      setPreparedDraft((current) => ({
-        ...current,
-        familyId: "",
-        familyName: "",
-        brand: current.familyId ? "" : current.brand,
-      }));
+    setExistingSelection("");
+    if (!value) {
+      setPreparedDraft(emptyPreparedProduct());
+      setNewProductOpen(false);
+      return;
+    }
+    if (value === createFamilyValue) {
+      setPreparedDraft(emptyPreparedProduct());
+      setNewProductOpen(true);
+      return;
+    }
+
+    if (value.startsWith("staged:")) {
+      const staged = preparedProducts.find((item) => item.key === value.slice("staged:".length));
+      if (!staged) return;
+      setPreparedDraft({
+        ...emptyPreparedProduct(),
+        familyName: staged.familyName,
+        brand: staged.brand,
+        name: staged.familyName,
+        unit: staged.unit,
+        trackingMode: staged.trackingMode,
+      });
+      setNewProductOpen(true);
       return;
     }
 
     const family = families.find((item) => item.id === value);
     if (!family) return;
-    setPreparedDraft((current) => ({
-      ...current,
+    const familyProduct = products.find(
+      (product) => product.is_active && product.family === family.id,
+    );
+    setPreparedDraft({
+      ...emptyPreparedProduct(),
       familyId: family.id,
       familyName: family.name,
       brand: family.brand,
-      name: current.name.trim() ? current.name : family.name,
-    }));
+      name: family.name,
+      unit: familyProduct?.unit ?? "piece",
+      trackingMode: familyProduct?.tracking_mode ?? "quantity",
+    });
+    setNewProductOpen(true);
   };
 
   const savePreparedProduct = (event: FormEvent) => {
@@ -383,9 +447,7 @@ function StockRecordingWorkspaceV2({
         ? current
         : [...current, newLineForChoice({ key, unit: product.unit })],
     );
-    setPreparedDraft(emptyPreparedProduct());
-    setFamilySelection("");
-    setNewProductOpen(false);
+    resetProductEntry();
     setActiveProductKey(key);
     setActiveUnitDraft(unitForChoice(product));
     setEditingUnitIndex(null);
@@ -581,10 +643,11 @@ function StockRecordingWorkspaceV2({
     setStockExpenses("0");
     setPreparedProducts([]);
     setSelectedKeys([]);
+    setProductEntryMode(null);
     setExistingSelection("");
     setFamilySelection("");
     setPreparedDraft(emptyPreparedProduct());
-    setNewProductOpen(true);
+    setNewProductOpen(false);
     setLines([]);
     setActiveProductKey(null);
     setActiveUnitDraft(emptyUnit());
@@ -670,12 +733,12 @@ function StockRecordingWorkspaceV2({
 
   if (step === "stock") {
     editor = (
-      <form className="grid gap-4" onSubmit={commitStock}>
-        <div>
-          <h2 className="text-lg font-bold">
+      <form className="grid min-w-0 gap-4" onSubmit={commitStock}>
+        <div className="min-w-0">
+          <h2 className="break-words text-lg font-bold">
             {lateDeliveryParent ? stockT("steps.lateDelivery") : t("steps.stock")}
           </h2>
-          <p className="mt-1 text-sm text-slate-500">{t("help.stock")}</p>
+          <p className="mt-1 break-words text-sm text-slate-500">{t("help.stock")}</p>
         </div>
         <label className={field}>
           {t("fields.stockName")}
@@ -685,7 +748,7 @@ function StockRecordingWorkspaceV2({
           {stockT("fields.supplier")}
           <Input value={supplier} onChange={(event) => setSupplier(event.target.value)} />
         </label>
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid min-w-0 gap-3 sm:grid-cols-2">
           <label className={field}>
             {stockT("fields.dateReceived")}
             <Input required type="datetime-local" value={receivedAt} onChange={(event) => setReceivedAt(event.target.value)} />
@@ -700,23 +763,59 @@ function StockRecordingWorkspaceV2({
     );
   } else if (step === "products") {
     editor = (
-      <div className="grid gap-4">
-        <div>
-          <h2 className="text-lg font-bold">{t("steps.products")}</h2>
-          <p className="mt-1 text-sm text-slate-500">{t("help.products")}</p>
+      <div className="grid min-w-0 gap-4">
+        <div className="min-w-0">
+          <h2 className="break-words text-lg font-bold">{t("steps.products")}</h2>
+          <p className="mt-1 break-words text-sm text-slate-500">{t("help.products")}</p>
         </div>
 
-        {newProductOpen ? (
-          <form className={`${inset} grid gap-3 p-3`} onSubmit={savePreparedProduct}>
-            <div>
-              <strong className="text-sm">{t("newProduct.title")}</strong>
-              <p className="mt-1 text-xs text-slate-500">{t("help.autoSku")}</p>
+        {productEntryMode == null ? (
+          <div className="grid min-w-0 gap-3">
+            <strong className="text-sm">{t("categoryChoice.title")}</strong>
+            <div className="grid min-w-0 gap-3 sm:grid-cols-2">
+              <button
+                className={`${inset} min-w-0 p-4 text-left transition hover:border-slate-300 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 dark:hover:border-slate-700 dark:hover:bg-slate-950`}
+                onClick={() => beginProductEntry("existing-category")}
+                type="button"
+              >
+                <strong className="block break-words text-sm">{t("categoryChoice.existingTitle")}</strong>
+                <span className="mt-1 block break-words text-xs font-normal text-slate-500">
+                  {t("categoryChoice.existingDescription")}
+                </span>
+              </button>
+              <button
+                className={`${inset} min-w-0 p-4 text-left transition hover:border-slate-300 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 dark:hover:border-slate-700 dark:hover:bg-slate-950`}
+                onClick={() => beginProductEntry("new-category")}
+                type="button"
+              >
+                <strong className="block break-words text-sm">{t("categoryChoice.newTitle")}</strong>
+                <span className="mt-1 block break-words text-xs font-normal text-slate-500">
+                  {t("categoryChoice.newDescription")}
+                </span>
+              </button>
             </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <label className={field}>
-                {stockT("fields.productName")}
-                <Input value={preparedDraft.name} onChange={(event) => setPreparedDraft({ ...preparedDraft, name: event.target.value })} />
-              </label>
+          </div>
+        ) : (
+          <div className={`${inset} grid min-w-0 gap-4 p-3`}>
+            <div className="flex min-w-0 flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <strong className="block break-words text-sm">
+                  {productEntryMode === "existing-category"
+                    ? t("existingCategory.title")
+                    : t("newCategory.title")}
+                </strong>
+                <p className="mt-1 break-words text-xs text-slate-500">
+                  {productEntryMode === "existing-category"
+                    ? t("help.existingCategory")
+                    : t("help.newCategory")}
+                </p>
+              </div>
+              <Button size="small" type="button" variant="ghost" onClick={resetProductEntry}>
+                {t("actions.changeCategoryChoice")}
+              </Button>
+            </div>
+
+            {productEntryMode === "existing-category" ? (
               <label className={field}>
                 {t("fields.productFamily")}
                 <Select value={familySelection} onChange={(event) => chooseProductFamily(event.target.value)}>
@@ -726,107 +825,136 @@ function StockRecordingWorkspaceV2({
                       {family.name}{family.brand ? ` · ${family.brand}` : ""}
                     </option>
                   ))}
-                  <option value={createFamilyValue}>{t("values.createFamily")}</option>
-                </Select>
-                {familySelection === createFamilyValue ? (
-                  <Input
-                    aria-label={t("fields.newFamilyName")}
-                    placeholder={t("fields.newFamilyName")}
-                    value={preparedDraft.familyName}
-                    onChange={(event) => setPreparedDraft({ ...preparedDraft, familyName: event.target.value })}
-                  />
-                ) : null}
-                <span className="font-normal text-slate-500">{t("help.familyAssignment")}</span>
-              </label>
-              <label className={field}>
-                {commerceT("fields.brandOptional")}
-                <Input disabled={Boolean(preparedDraft.familyId)} value={preparedDraft.brand} onChange={(event) => setPreparedDraft({ ...preparedDraft, brand: event.target.value })} />
-              </label>
-              <label className={field}>
-                {t("fields.trackingMode")}
-                <Select value={preparedDraft.trackingMode} onChange={(event) => setPreparedDraft({ ...preparedDraft, trackingMode: event.target.value as StockTrackingMode })}>
-                  <option value="quantity">{t("tracking.quantity")}</option>
-                  <option value="individual">{t("tracking.individual")}</option>
+                  {stagedCategories.map((product) => (
+                    <option key={`staged:${product.key}`} value={`staged:${product.key}`}>
+                      {product.familyName}{product.brand ? ` · ${product.brand}` : ""}
+                    </option>
+                  ))}
                 </Select>
               </label>
-              {preparedDraft.trackingMode === "individual" ? (
-                <>
+            ) : null}
+
+            {productEntryMode === "existing-category" && existingCategoryChoices.length ? (
+              <div className="grid min-w-0 gap-2 rounded-md border border-slate-200 bg-white/70 p-3 dark:border-slate-800 dark:bg-slate-950/50">
+                <div className="min-w-0">
+                  <strong className="block break-words text-sm">{t("existingSku.title")}</strong>
+                  <p className="mt-1 break-words text-xs text-slate-500">{t("help.existingSku")}</p>
+                </div>
+                <div className="grid min-w-0 gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
+                  <Select value={existingSelection} onChange={(event) => setExistingSelection(event.target.value)}>
+                    <option value="">{stockT("values.chooseProduct")}</option>
+                    {existingCategoryChoices.map((choice) => (
+                      <option key={choice.key} value={choice.key}>
+                        {[choice.name, choice.variant, choice.unit, t(`tracking.${choice.trackingMode}`)]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </option>
+                    ))}
+                  </Select>
+                  <Button disabled={!existingSelection} type="button" variant="outline" onClick={openExistingProduct}>
+                    <Plus className="size-4" /> {t("actions.addExisting")}
+                  </Button>
+                </div>
+              </div>
+            ) : null}
+
+            {(productEntryMode === "new-category" || (familySelection && newProductOpen)) ? (
+              <form className="grid min-w-0 gap-3 border-t border-slate-200 pt-3 dark:border-slate-800" onSubmit={savePreparedProduct}>
+                <div className="min-w-0">
+                  <strong className="block break-words text-sm">{t("newProduct.title")}</strong>
+                  <p className="mt-1 break-words text-xs text-slate-500">{t("help.autoSku")}</p>
+                </div>
+                <div className="grid min-w-0 gap-3 sm:grid-cols-2">
+                  {productEntryMode === "new-category" ? (
+                    <label className={field}>
+                      {t("fields.newFamilyName")}
+                      <Input
+                        value={preparedDraft.familyName}
+                        onChange={(event) => {
+                          const familyName = event.target.value;
+                          setPreparedDraft((current) => ({
+                            ...current,
+                            familyName,
+                            name:
+                              !current.name.trim() || current.name === current.familyName
+                                ? familyName
+                                : current.name,
+                          }));
+                        }}
+                      />
+                    </label>
+                  ) : null}
                   <label className={field}>
-                    {commerceT("fields.color")}
-                    <Input value={preparedDraft.color} onChange={(event) => setPreparedDraft({ ...preparedDraft, color: event.target.value })} />
+                    {stockT("fields.productName")}
+                    <Input value={preparedDraft.name} onChange={(event) => setPreparedDraft({ ...preparedDraft, name: event.target.value })} />
                   </label>
                   <label className={field}>
-                    {commerceT("fields.capacity")}
-                    <Input value={preparedDraft.capacity} onChange={(event) => setPreparedDraft({ ...preparedDraft, capacity: event.target.value })} />
+                    {commerceT("fields.brandOptional")}
+                    <Input disabled={Boolean(preparedDraft.familyId)} value={preparedDraft.brand} onChange={(event) => setPreparedDraft({ ...preparedDraft, brand: event.target.value })} />
                   </label>
-                </>
-              ) : (
-                <label className={field}>
-                  {commerceT("fields.variant")}
-                  <Input value={preparedDraft.variant} onChange={(event) => setPreparedDraft({ ...preparedDraft, variant: event.target.value })} />
-                </label>
-              )}
-              <label className={field}>
-                {stockT("fields.unit")}
-                <Select value={preparedDraft.unit} onChange={(event) => setPreparedDraft({ ...preparedDraft, unit: event.target.value })}>
-                  {availableUnits.map((unit) => <option key={unit.key} value={unit.key}>{unit.label}</option>)}
-                </Select>
-              </label>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Button type="submit">{t("actions.continueToRecord")}</Button>
-              <Button type="button" variant="ghost" onClick={() => { setNewProductOpen(false); setFamilySelection(""); setPreparedDraft(emptyPreparedProduct()); }}>{commerceT("actions.cancel")}</Button>
-            </div>
-          </form>
-        ) : (
-          <Button className="w-fit" type="button" onClick={() => setNewProductOpen(true)}>
-            <Plus className="size-4" /> {t("actions.recordNewProduct")}
-          </Button>
+                  <label className={field}>
+                    {t("fields.trackingMode")}
+                    <Select value={preparedDraft.trackingMode} onChange={(event) => setPreparedDraft({ ...preparedDraft, trackingMode: event.target.value as StockTrackingMode })}>
+                      <option value="quantity">{t("tracking.quantity")}</option>
+                      <option value="individual">{t("tracking.individual")}</option>
+                    </Select>
+                  </label>
+                  {preparedDraft.trackingMode === "individual" ? (
+                    <>
+                      <label className={field}>
+                        {commerceT("fields.color")}
+                        <Input value={preparedDraft.color} onChange={(event) => setPreparedDraft({ ...preparedDraft, color: event.target.value })} />
+                      </label>
+                      <label className={field}>
+                        {commerceT("fields.capacity")}
+                        <Input value={preparedDraft.capacity} onChange={(event) => setPreparedDraft({ ...preparedDraft, capacity: event.target.value })} />
+                      </label>
+                    </>
+                  ) : (
+                    <label className={field}>
+                      {commerceT("fields.variant")}
+                      <Input value={preparedDraft.variant} onChange={(event) => setPreparedDraft({ ...preparedDraft, variant: event.target.value })} />
+                    </label>
+                  )}
+                  <label className={field}>
+                    {stockT("fields.unit")}
+                    <Select value={preparedDraft.unit} onChange={(event) => setPreparedDraft({ ...preparedDraft, unit: event.target.value })}>
+                      {availableUnits.map((unit) => <option key={unit.key} value={unit.key}>{unit.label}</option>)}
+                    </Select>
+                  </label>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button type="submit">{t("actions.continueToRecord")}</Button>
+                  <Button type="button" variant="ghost" onClick={resetProductEntry}>{commerceT("actions.cancel")}</Button>
+                </div>
+              </form>
+            ) : null}
+          </div>
         )}
 
-        <div className={`${inset} grid gap-3 p-3`}>
-          <div>
-            <strong className="text-sm">{t("existingSku.title")}</strong>
-            <p className="mt-1 text-xs text-slate-500">{t("help.existingSku")}</p>
-          </div>
-          <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
-            <Select value={existingSelection} onChange={(event) => setExistingSelection(event.target.value)}>
-              <option value="">{stockT("values.chooseProduct")}</option>
-              {choices.filter((choice) => choice.existingId).map((choice) => (
-                <option key={choice.key} value={choice.key}>
-                  {choice.name} · {choice.sku} · {choice.unit} · {t(`tracking.${choice.trackingMode}`)}
-                </option>
-              ))}
-            </Select>
-            <Button disabled={!existingSelection} type="button" variant="outline" onClick={openExistingProduct}>
-              <Plus className="size-4" /> {t("actions.addExisting")}
-            </Button>
-          </div>
-        </div>
-
         {selectedChoices.length ? (
-          <div className={`${inset} divide-y divide-slate-200 px-3 dark:divide-slate-800`}>
-            <p className="py-2 text-xs font-semibold text-slate-500">{t("recordedProducts")}</p>
+          <div className={`${inset} min-w-0 divide-y divide-slate-200 px-3 dark:divide-slate-800`}>
+            <p className="break-words py-2 text-xs font-semibold text-slate-500">{t("recordedProducts")}</p>
             {selectedChoices.map((choice) => {
               const line = lines.find((item) => item.productKey === choice.key);
               const total = line ? lineCount(line) : 0;
               const recorded = line?.trackedUnits.length ?? 0;
               return (
-                <div className="flex flex-wrap items-center justify-between gap-3 py-2" key={choice.key}>
+                <div className="flex min-w-0 flex-wrap items-center justify-between gap-3 py-2" key={choice.key}>
                   <div className="min-w-0 flex-1">
                     <strong className="block truncate text-sm">{choice.name}</strong>
                     <p className="truncate text-xs text-slate-500">
                       {[choice.sku, choice.familyName, choice.color, choice.capacity, choice.unit, t(`tracking.${choice.trackingMode}`)].filter(Boolean).join(" · ")}
                     </p>
                     {line ? (
-                      <p className="mt-0.5 text-xs font-semibold text-slate-600 dark:text-slate-300">
+                      <p className="mt-0.5 break-words text-xs font-semibold text-slate-600 dark:text-slate-300">
                         {choice.trackingMode === "individual"
                           ? t("individualProgress", { recorded, count: total })
                           : `${line.quantity} ${line.receivedUnit}`}
                       </p>
                     ) : null}
                   </div>
-                  <div className="flex items-center gap-1">
+                  <div className="flex flex-wrap items-center gap-1">
                     <Button size="small" type="button" variant="outline" onClick={() => startRecording(choice.key)}>
                       {t("actions.recordProduct")}
                     </Button>
@@ -849,8 +977,8 @@ function StockRecordingWorkspaceV2({
   } else if (step === "record") {
     if (!activeChoice || !activeLine) {
       editor = (
-        <div className="grid gap-3">
-          <p className="text-sm text-slate-500">{t("validation.catalogRequired")}</p>
+        <div className="grid min-w-0 gap-3">
+          <p className="break-words text-sm text-slate-500">{t("validation.catalogRequired")}</p>
           <Button className="w-fit" type="button" variant="outline" onClick={() => moveTo("products")}>{t("actions.backToProducts")}</Button>
         </div>
       );
@@ -862,52 +990,53 @@ function StockRecordingWorkspaceV2({
         activeChoice.trackingMode === "individual" &&
         count > 0 &&
         (editingUnitIndex != null || recorded < count);
+      const configurationLabel = [activeChoice.color, activeChoice.capacity].filter(Boolean).join(" · ");
 
       editor = (
-        <div className="grid gap-4">
-          <div className="flex flex-wrap items-start justify-between gap-2">
-            <div>
-              <h2 className="text-lg font-bold">{activeChoice.name}</h2>
-              <p className="mt-1 text-sm text-slate-500">
+        <div className="grid min-w-0 gap-4">
+          <div className="flex min-w-0 flex-wrap items-start justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              <h2 className="break-words text-lg font-bold">{activeChoice.name}</h2>
+              <p className="mt-1 break-words text-sm text-slate-500">
                 {[activeChoice.sku, activeChoice.color, activeChoice.capacity, activeChoice.unit, t(`tracking.${activeChoice.trackingMode}`)].filter(Boolean).join(" · ")}
               </p>
             </div>
             <Button size="small" type="button" variant="ghost" onClick={() => moveTo("products")}>{t("actions.backToProducts")}</Button>
           </div>
 
-          <div className={`${inset} grid gap-3 p-3`}>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className={`${inset} grid min-w-0 gap-3 p-3`}>
+            <div className="grid min-w-0 gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <label className={field}>{stockT("fields.quantity")}<Input min="0.001" step={activeChoice.trackingMode === "individual" ? "1" : "0.001"} type="number" value={activeLine.quantity} onChange={(event) => updateLine(activeLine.productKey, { quantity: event.target.value })} /></label>
               <label className={field}>{t("fields.receivedUnit")}<Select value={activeLine.receivedUnit} onChange={(event) => updateLine(activeLine.productKey, { receivedUnit: event.target.value })}>{availableUnits.map((unit) => <option key={unit.key} value={unit.key}>{unit.label}</option>)}</Select></label>
               <label className={field}>{t("fields.baseUnit")}<Input disabled value={activeChoice.unit} /></label>
               <label className={field}>{t("fields.conversion")}<Input min="0.000001" step="0.000001" type="number" value={activeLine.conversionToBase} onChange={(event) => updateLine(activeLine.productKey, { conversionToBase: event.target.value })} /></label>
             </div>
-            <div className="grid gap-3 sm:grid-cols-[9rem_1fr]">
+            <div className="grid min-w-0 gap-3 sm:grid-cols-[9rem_minmax(0,1fr)]">
               <label className={field}>{stockT("costMode.label")}<Select value={activeLine.costMode} onChange={(event) => updateLine(activeLine.productKey, { costMode: event.target.value as StockCostMode })}><option value="per_unit">{stockT("costMode.perUnit")}</option><option value="total">{stockT("costMode.total")}</option></Select></label>
               <label className={field}>{activeLine.costMode === "total" ? stockT("fields.totalBuyingCost") : stockT("fields.costPerUnit")}<Input min="0" step="0.01" type="number" value={activeLine.costValue} onChange={(event) => updateLine(activeLine.productKey, { costValue: event.target.value })} /></label>
             </div>
           </div>
 
           {activeChoice.trackingMode === "individual" ? (
-            <div className="grid gap-3">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+            <div className="grid min-w-0 gap-3">
+              <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
+                <p className="break-words text-xs font-semibold text-slate-600 dark:text-slate-300">
                   {t("individualProgress", { recorded, count })}
                 </p>
                 {recorded === count && count > 0 ? (
-                  <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">{t("individualComplete")}</span>
+                  <span className="break-words text-xs font-semibold text-emerald-600 dark:text-emerald-400">{t("individualComplete")}</span>
                 ) : null}
               </div>
 
               {recorded ? (
-                <div className={`${inset} divide-y divide-slate-200 px-3 dark:divide-slate-800`}>
+                <div className={`${inset} min-w-0 divide-y divide-slate-200 px-3 dark:divide-slate-800`}>
                   {activeLine.trackedUnits.map((unit, index) => (
-                    <div className="flex items-center justify-between gap-3 py-2" key={`${activeLine.productKey}-${index}`}>
-                      <div className="min-w-0">
+                    <div className="flex min-w-0 items-center justify-between gap-3 py-2" key={`${activeLine.productKey}-${index}`}>
+                      <div className="min-w-0 flex-1">
                         <strong className="block text-xs">{t("individualItem", { number: index + 1, count })}</strong>
                         <p className="truncate text-xs text-slate-500">{itemLabel(unit, index)}</p>
                       </div>
-                      <div className="flex items-center gap-1">
+                      <div className="flex shrink-0 items-center gap-1">
                         <Button aria-label={stockT("actions.edit")} size="small" type="button" variant="ghost" onClick={() => editTrackedUnit(unit, index)}><Pencil className="size-3.5" /></Button>
                         <Button aria-label={t("actions.remove")} size="small" type="button" variant="ghost" onClick={() => removeTrackedUnit(index)}><Trash2 className="size-3.5" /></Button>
                       </div>
@@ -917,13 +1046,16 @@ function StockRecordingWorkspaceV2({
               ) : null}
 
               {showActiveUnitForm ? (
-                <div className={`${inset} grid gap-3 p-3`}>
-                  <strong className="text-sm">{t("individualItem", { number: itemNumber, count })}</strong>
-                  <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                    <label className={field}>{commerceT("fields.modelName")}<Input value={activeUnitDraft.modelName} onChange={(event) => setActiveUnitDraft({ ...activeUnitDraft, modelName: event.target.value })} /></label>
-                    <label className={field}>{commerceT("fields.brand")}<Input value={activeUnitDraft.brand} onChange={(event) => setActiveUnitDraft({ ...activeUnitDraft, brand: event.target.value })} /></label>
-                    <label className={field}>{commerceT("fields.color")}<Input value={activeUnitDraft.color} onChange={(event) => setActiveUnitDraft({ ...activeUnitDraft, color: event.target.value })} /></label>
-                    <label className={field}>{commerceT("fields.capacity")}<Input value={activeUnitDraft.capacity} onChange={(event) => setActiveUnitDraft({ ...activeUnitDraft, capacity: event.target.value })} /></label>
+                <div className={`${inset} grid min-w-0 gap-3 p-3`}>
+                  <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
+                    <strong className="break-words text-sm">{t("individualItem", { number: itemNumber, count })}</strong>
+                    {configurationLabel ? (
+                      <span className="min-w-0 break-words text-xs text-slate-500">
+                        {t("configuration")}: {configurationLabel}
+                      </span>
+                    ) : null}
+                  </div>
+                  <div className="grid min-w-0 gap-2 sm:grid-cols-2">
                     <label className={field}>{stockT("fields.identifierType")}<Select value={activeUnitDraft.identifierKind} onChange={(event) => setActiveUnitDraft({ ...activeUnitDraft, identifierKind: event.target.value as IdentifierKind })}>{identifierKinds.map((kind) => <option key={kind} value={kind}>{commerceT(`identifierTypes.${kind}`)}</option>)}</Select></label>
                     <label className={field}>{stockT("fields.identifierValue")}<Input value={activeUnitDraft.identifierValue} onChange={(event) => setActiveUnitDraft({ ...activeUnitDraft, identifierValue: event.target.value })} /></label>
                   </div>
@@ -949,19 +1081,19 @@ function StockRecordingWorkspaceV2({
     }
   } else {
     editor = (
-      <div className="grid gap-4">
-        <div><h2 className="text-lg font-bold">{t("steps.review")}</h2><p className="mt-1 text-sm text-slate-500">{t("help.review")}</p></div>
-        <div className={`${inset} grid gap-2 p-3 text-sm`}>
-          <div className="flex justify-between gap-3"><span>{t("fields.stockName")}</span><strong>{stockName}</strong></div>
-          <div className="flex justify-between gap-3"><span>{stockT("fields.totalProducts")}</span><strong>{lines.length}</strong></div>
-          <div className="flex justify-between gap-3"><span>{stockT("fields.stockExpenses")}</span><strong>{stockExpenses || "0"}</strong></div>
+      <div className="grid min-w-0 gap-4">
+        <div className="min-w-0"><h2 className="break-words text-lg font-bold">{t("steps.review")}</h2><p className="mt-1 break-words text-sm text-slate-500">{t("help.review")}</p></div>
+        <div className={`${inset} grid min-w-0 gap-2 p-3 text-sm`}>
+          <div className="flex min-w-0 flex-wrap justify-between gap-3"><span className="break-words">{t("fields.stockName")}</span><strong className="min-w-0 break-words text-right">{stockName}</strong></div>
+          <div className="flex min-w-0 flex-wrap justify-between gap-3"><span>{stockT("fields.totalProducts")}</span><strong>{lines.length}</strong></div>
+          <div className="flex min-w-0 flex-wrap justify-between gap-3"><span>{stockT("fields.stockExpenses")}</span><strong>{stockExpenses || "0"}</strong></div>
           {lines.map((line) => {
             const choice = choiceFor(line.productKey)!;
             const total = lineCount(line);
             return (
-              <div className="flex flex-wrap justify-between gap-3 border-t border-slate-200 pt-2 dark:border-slate-800" key={line.productKey}>
-                <span>{choice.name}</span>
-                <strong>
+              <div className="flex min-w-0 flex-wrap justify-between gap-3 border-t border-slate-200 pt-2 dark:border-slate-800" key={line.productKey}>
+                <span className="min-w-0 break-words">{choice.name}</span>
+                <strong className="min-w-0 break-words text-right">
                   {line.quantity} {line.receivedUnit} · {t(`tracking.${choice.trackingMode}`)}
                   {choice.trackingMode === "individual" ? ` · ${t("individualProgress", { recorded: line.trackedUnits.length, count: total })}` : ""}
                 </strong>
@@ -969,7 +1101,7 @@ function StockRecordingWorkspaceV2({
             );
           })}
         </div>
-        <div className="grid gap-2 sm:grid-cols-2">
+        <div className="grid min-w-0 gap-2 sm:grid-cols-2">
           <Button disabled={busy} type="button" variant="outline" onClick={() => void saveStock("draft")}>{stockT("actions.saveDraft")}</Button>
           <Button disabled={busy} type="button" onClick={() => void saveStock("received")}>{busy ? stockT("actions.saving") : stockT("actions.finishSave")}</Button>
         </div>
@@ -985,32 +1117,32 @@ function StockRecordingWorkspaceV2({
   ];
 
   return (
-    <div className="stock-recording-workspace-v2 grid gap-5">
+    <div className="stock-recording-workspace-v2 grid min-w-0 gap-5">
       {recordingOpen ? (
-        <section className={panel}>
+        <section className={`${panel} min-w-0`}>
           {savedReceipt ? (
-            <div className="grid gap-4 p-4">
-              <div><h2 className="text-lg font-bold">{stockT("success.savedTitle")}</h2><p className="text-sm text-slate-500">{savedReceipt.name || savedReceipt.reference} · {savedReceipt.reference}</p></div>
-              <div className="grid gap-2">{savedReceipt.lines.map((line) => <StockProductSummary key={line.id} line={line} />)}</div>
+            <div className="grid min-w-0 gap-4 p-4">
+              <div className="min-w-0"><h2 className="break-words text-lg font-bold">{stockT("success.savedTitle")}</h2><p className="break-words text-sm text-slate-500">{savedReceipt.name || savedReceipt.reference} · {savedReceipt.reference}</p></div>
+              <div className="grid min-w-0 gap-2">{savedReceipt.lines.map((line) => <StockProductSummary key={line.id} line={line} />)}</div>
               <StockSummaryActions receipt={savedReceipt} />
               <Button className="w-fit" type="button" variant="outline" onClick={() => resetRecorder()}>{stockT("actions.recordAnother")}</Button>
             </div>
           ) : (
-            <div className="grid md:grid-cols-[12rem_minmax(0,1fr)]">
-              <aside className="border-b border-slate-200 bg-slate-50/70 p-3 dark:border-slate-800 dark:bg-slate-900/40 md:border-b-0 md:border-r">
-                <div className="grid gap-1">
+            <div className="grid min-w-0 md:grid-cols-[12rem_minmax(0,1fr)]">
+              <aside className="min-w-0 border-b border-slate-200 bg-slate-50/70 p-3 dark:border-slate-800 dark:bg-slate-900/40 md:border-b-0 md:border-r">
+                <div className="grid min-w-0 gap-1">
                   {navItems.map((item, index) => {
                     const active = item.key === "products" ? step === "products" || step === "record" : step === item.key;
                     const disabled = item.key === "review" && !selectedKeys.length;
                     return (
                       <button
-                        className={`rounded-md px-3 py-2 text-left text-xs font-semibold transition ${active ? "bg-white text-slate-950 shadow-sm dark:bg-slate-950 dark:text-white" : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"} disabled:cursor-not-allowed disabled:opacity-50`}
+                        className={`min-w-0 rounded-md px-3 py-2 text-left text-xs font-semibold transition ${active ? "bg-white text-slate-950 shadow-sm dark:bg-slate-950 dark:text-white" : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"} disabled:cursor-not-allowed disabled:opacity-50`}
                         disabled={disabled}
                         key={item.key}
                         onClick={() => item.key === "review" ? reviewStock() : moveTo(item.key)}
                         type="button"
                       >
-                        {index + 1}. {item.label}
+                        <span className="block break-words">{index + 1}. {item.label}</span>
                       </button>
                     );
                   })}
@@ -1022,22 +1154,22 @@ function StockRecordingWorkspaceV2({
         </section>
       ) : null}
 
-      <section className={panel}>
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 p-3 dark:border-slate-800">
-          <div><h2 className="text-sm font-bold">{t("history.title")}</h2><p className="text-xs text-slate-500">{t("history.description")}</p></div>
+      <section className={`${panel} min-w-0`}>
+        <div className="flex min-w-0 flex-wrap items-center justify-between gap-3 border-b border-slate-200 p-3 dark:border-slate-800">
+          <div className="min-w-0"><h2 className="break-words text-sm font-bold">{t("history.title")}</h2><p className="break-words text-xs text-slate-500">{t("history.description")}</p></div>
           <StockEditControl receipts={receipts} onCorrect={beginCorrection} onLateDelivery={(receipt) => resetRecorder(receipt)} />
         </div>
         {correction ? (
-          <div className="grid gap-3 p-3">
-            <div className="flex items-center justify-between gap-2"><strong>{t("correction.title")}</strong><Button type="button" variant="ghost" onClick={() => setCorrection(null)}>{commerceT("actions.cancel")}</Button></div>
-            <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid min-w-0 gap-3 p-3">
+            <div className="flex min-w-0 flex-wrap items-center justify-between gap-2"><strong className="break-words">{t("correction.title")}</strong><Button type="button" variant="ghost" onClick={() => setCorrection(null)}>{commerceT("actions.cancel")}</Button></div>
+            <div className="grid min-w-0 gap-3 sm:grid-cols-3">
               <label className={field}>{t("fields.stockName")}<Input value={correction.name} onChange={(event) => setCorrection({ ...correction, name: event.target.value })} /></label>
               <label className={field}>{stockT("fields.supplier")}<Input value={correction.supplier} onChange={(event) => setCorrection({ ...correction, supplier: event.target.value })} /></label>
               <label className={field}>{stockT("fields.stockExpenses")}<Input min="0" step="0.01" type="number" value={correction.expenses} onChange={(event) => setCorrection({ ...correction, expenses: event.target.value })} /></label>
             </div>
             {correction.lines.map((line, index) => (
-              <div className="grid gap-2 rounded-md border border-slate-200 p-2 dark:border-slate-800 sm:grid-cols-3" key={line.id}>
-                <strong className="text-xs sm:col-span-3">{line.name}</strong>
+              <div className="grid min-w-0 gap-2 rounded-md border border-slate-200 p-2 dark:border-slate-800 sm:grid-cols-3" key={line.id}>
+                <strong className="min-w-0 break-words text-xs sm:col-span-3">{line.name}</strong>
                 <label className={field}>{stockT("fields.quantity")}<Input min="0.001" step="0.001" type="number" value={line.quantity} onChange={(event) => setCorrection({ ...correction, lines: correction.lines.map((item, itemIndex) => itemIndex === index ? { ...item, quantity: event.target.value } : item) })} /></label>
                 <label className={field}>{t("fields.receivedUnit")}<Input value={line.receivedUnit} onChange={(event) => setCorrection({ ...correction, lines: correction.lines.map((item, itemIndex) => itemIndex === index ? { ...item, receivedUnit: event.target.value } : item) })} /></label>
                 <label className={field}>{stockT("fields.costPerUnit")}<Input min="0" step="0.01" type="number" value={line.cost} onChange={(event) => setCorrection({ ...correction, lines: correction.lines.map((item, itemIndex) => itemIndex === index ? { ...item, cost: event.target.value } : item) })} /></label>
