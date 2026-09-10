@@ -7,24 +7,34 @@
       "record": "Recording",
       "review": "Review"
     },
+    "screens": {
+      "chooseGroup": "Choose group",
+      "newGroup": "New product group",
+      "varieties": "Varieties",
+      "newVariety": "New variety",
+      "simpleProduct": "Simple product",
+      "addItem": "Add item",
+      "varietySaved": "Variety saved"
+    },
     "helpLabel": "Help",
     "help": {
-      "stock": "Stock details are optional. Add a stock name, supplier, received date, or stock expenses only when you want more complete purchasing and audit records.",
-      "products": "Think of products as Group → Variety → Item. Example: iPhone 15 Pro Max → Silver 256 GB → each phone's IMEI. Use Quantity when matching stock is counted together.",
+      "stock": "Stock details are optional. Add a stock name, supplier, received date, or stock expenses only when you need a fuller purchasing record.",
+      "products": "Think of products as Group → Variety → Item. Example: iPhone 15 Pro Max → Silver 256 GB → each phone's IMEI. Start with the group, then record the exact variety you received.",
       "catalog": "A product group keeps the same main product together. Each variety is one version inside that group, and individual items can carry their own identifiers.",
-      "record": "Quantity is how much stock you received. Buying cost is what you paid and does not change the product variety. For individually tracked stock, add each item's IMEI, serial number, or other identifier.",
-      "review": "Check the products you recorded, then save a draft or receive the stock. Optional stock details are included only when you entered them.",
-      "familyAssignment": "A product group keeps related versions of the same product together. Example: iPhone 15 Pro Max is the group; Silver 256 GB and Black 512 GB are different varieties inside it.",
-      "autoSku": "A variety is one version inside a product group. Example: Silver · 256 GB. Fill in what makes this version different. Use Quantity for stock counted together, or Individual when each item needs its own IMEI or serial number. Tunakuza handles the SKU automatically.",
-      "existingSku": "A variety is one exact version inside a product group, such as Silver 256 GB. Select it if it already exists; otherwise add a new variety.",
-      "existingCategory": "Choose the product group first. Then use an existing variety or add another variety inside the same group. Example: iPhone 15 Pro Max → Silver 256 GB.",
-      "newCategory": "A product group is the main product people recognize, for example iPhone 15 Pro Max. After creating the group, add its first variety, for example Silver 256 GB.",
-      "uncategorized": "Use this quick path when you only want a simple product record and do not want to set up a product group now. You can still record it by quantity or track each item separately."
+      "record": "Enter how many units you received and the buying price per unit. For individually tracked stock, add each item's IMEI, serial number, or other identifier.",
+      "review": "Check the products you recorded, then save a draft or finish and receive the stock. Optional stock details are included only when you entered them.",
+      "familyAssignment": "A product group keeps related versions of the same product together. Example: iPhone 15 Pro Max is the group; Silver 256 GB and Black 512 GB are varieties inside it.",
+      "autoSku": "A variety is one exact version inside a product group, for example Silver · 256 GB. Tunakuza handles the SKU automatically.",
+      "existingSku": "A variety is one exact version inside a product group. Choose an existing variety if it is already there, or add a new one.",
+      "existingCategory": "Choose a product group, then choose an existing variety or add a new one inside it.",
+      "newCategory": "A product group is the main product people recognize, for example iPhone 15 Pro Max. After creating the group, add its first variety.",
+      "uncategorized": "Use a simple product when you do not need a product group. You can still record it by quantity or track each item separately."
     },
     "fields": {
       "stockName": "Stock name",
       "productFamily": "Product group",
       "newFamilyName": "New product group",
+      "varietyName": "Variety",
       "trackingMode": "Tracking",
       "receivedUnit": "Received unit",
       "baseUnit": "Inventory unit",
@@ -38,7 +48,11 @@
     },
     "tracking": {
       "quantity": "Quantity",
-      "individual": "Individual"
+      "individual": "Individual items"
+    },
+    "trackingHelp": {
+      "quantity": "Count identical items together",
+      "individual": "Each unit has its own identifier"
     },
     "actions": {
       "addExisting": "Add existing variety",
@@ -61,18 +75,46 @@
       "finishCategory": "Finish group",
       "finishProduct": "Finish product",
       "saveCorrection": "Save correction",
-      "archiveDraft": "Archive draft"
+      "archiveDraft": "Archive draft",
+      "addToExistingGroup": "Add to existing group",
+      "createNewGroup": "Create new group",
+      "addSimpleProduct": "Add simple product",
+      "stockDetails": "Stock details",
+      "addNewVariety": "Add new variety"
+    },
+    "products": {
+      "noGroups": "No product groups yet. Create your first group to start recording stock.",
+      "noVarieties": "No varieties yet. Add the first version of this product.",
+      "varietyCount": "{count} varieties",
+      "chooseOrAddVariety": "Choose a variety or add a new one",
+      "addingVariety": "Adding a new variety to this group",
+      "currentStock": "In this stock",
+      "currentCount": "{count} products ready",
+      "simpleProducts": "Simple products"
+    },
+    "afterVariety": {
+      "saved": "{name} saved",
+      "itemsRecorded": "{count} items recorded",
+      "unitsRecorded": "{count} {unit} recorded"
+    },
+    "placeholders": {
+      "group": "iPhone 15 Pro Max",
+      "brand": "Apple",
+      "variety": "Silver · 256 GB",
+      "identifier": "356123456789012"
     },
     "validation": {
       "stockName": "Enter a stock name.",
       "catalogRequired": "Add at least one product to this stock.",
       "conversionPositive": "Enter a conversion greater than zero.",
-      "familyName": "Enter the new product group name."
+      "familyName": "Enter the new product group name.",
+      "varietyName": "Enter a variety name.",
+      "identifier": "Enter the identifier for this item."
     },
     "categoryChoice": {
-      "existingTitle": "Add products to an existing product group",
-      "newTitle": "Create a new product group and add products",
-      "uncategorizedTitle": "Add a simple product"
+      "existingTitle": "Add to existing group",
+      "newTitle": "Create new group",
+      "uncategorizedTitle": "Add simple product"
     },
     "newProduct": {
       "title": "Product details"

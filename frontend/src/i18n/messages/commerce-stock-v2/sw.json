@@ -7,24 +7,34 @@
       "record": "Kurekodi",
       "review": "Kukagua"
     },
+    "screens": {
+      "chooseGroup": "Chagua kundi",
+      "newGroup": "Kundi jipya la bidhaa",
+      "varieties": "Aina",
+      "newVariety": "Aina mpya",
+      "simpleProduct": "Bidhaa rahisi",
+      "addItem": "Ongeza kitu",
+      "varietySaved": "Aina imehifadhiwa"
+    },
     "helpLabel": "Msaada",
     "help": {
-      "stock": "Maelezo ya stoo si lazima. Weka jina la stoo, msambazaji, tarehe ya kupokea, au gharama za stoo pale tu unapohitaji kumbukumbu kamili zaidi za ununuzi na ukaguzi.",
-      "products": "Fikiria bidhaa kwa mfumo huu: Kundi → Aina → Kitu. Mfano: iPhone 15 Pro Max → Silver 256 GB → IMEI ya kila simu. Tumia Kwa kiasi unapohesabu bidhaa zinazofanana pamoja.",
+      "stock": "Maelezo ya stoo si lazima. Weka jina la stoo, msambazaji, tarehe ya kupokea, au gharama za stoo pale tu unapohitaji kumbukumbu kamili zaidi za ununuzi.",
+      "products": "Fikiria bidhaa kwa mfumo huu: Kundi → Aina → Kitu. Mfano: iPhone 15 Pro Max → Silver 256 GB → IMEI ya kila simu. Anza na kundi, kisha rekodi aina kamili uliyopokea.",
       "catalog": "Kundi la bidhaa huweka bidhaa kuu moja pamoja. Kila aina ni toleo moja ndani ya kundi hilo, na vitu vinavyofuatiliwa moja moja vinaweza kuwa na vitambulisho vyake.",
-      "record": "Kiasi ni bidhaa ulizopokea. Gharama ya kununua ni kiasi ulicholipa na haibadilishi aina ya bidhaa. Kwa bidhaa zinazofuatiliwa moja moja, ongeza IMEI, namba ya seriali, au kitambulisho kingine cha kila kitu.",
+      "record": "Weka kiasi ulichopokea na bei ya kununua kwa kila uniti. Kwa bidhaa zinazofuatiliwa moja moja, ongeza IMEI, namba ya seriali, au kitambulisho kingine cha kila kitu.",
       "review": "Kagua bidhaa ulizorekodi, kisha hifadhi rasimu au kamilisha upokeaji wa stoo. Maelezo ya hiari ya stoo yatahusishwa tu kama uliyaweka.",
-      "familyAssignment": "Kundi la bidhaa huweka matoleo yanayohusiana ya bidhaa moja pamoja. Mfano: iPhone 15 Pro Max ni kundi; Silver 256 GB na Black 512 GB ni aina tofauti ndani yake.",
-      "autoSku": "Aina ni toleo moja ndani ya kundi la bidhaa. Mfano: Silver · 256 GB. Weka maelezo yanayotofautisha toleo hili. Tumia Kwa kiasi kwa bidhaa zinazohesabiwa pamoja, au Moja moja ikiwa kila kitu kinahitaji IMEI au namba ya seriali. Tunakuza inasimamia SKU moja kwa moja.",
-      "existingSku": "Aina ni toleo moja maalum ndani ya kundi la bidhaa, kama Silver 256 GB. Ichague ikiwa tayari ipo; vinginevyo ongeza aina mpya.",
-      "existingCategory": "Chagua kwanza kundi la bidhaa. Kisha tumia aina iliyopo au ongeza aina nyingine ndani ya kundi hilo hilo. Mfano: iPhone 15 Pro Max → Silver 256 GB.",
-      "newCategory": "Kundi la bidhaa ni jina kuu la bidhaa ambalo watu hulitambua, kwa mfano iPhone 15 Pro Max. Baada ya kuunda kundi, ongeza aina yake ya kwanza, kwa mfano Silver 256 GB.",
-      "uncategorized": "Tumia njia hii ya haraka unapohitaji tu rekodi rahisi ya bidhaa na hutaki kuunda kundi la bidhaa sasa. Bado unaweza kuirekodi kwa kiasi au kufuatilia kila kitu moja moja."
+      "familyAssignment": "Kundi la bidhaa huweka matoleo yanayohusiana ya bidhaa moja pamoja. Mfano: iPhone 15 Pro Max ni kundi; Silver 256 GB na Black 512 GB ni aina ndani yake.",
+      "autoSku": "Aina ni toleo moja maalum ndani ya kundi la bidhaa, kwa mfano Silver · 256 GB. Tunakuza inasimamia SKU moja kwa moja.",
+      "existingSku": "Aina ni toleo moja maalum ndani ya kundi la bidhaa. Chagua aina iliyopo ikiwa tayari ipo, au ongeza mpya.",
+      "existingCategory": "Chagua kundi la bidhaa, kisha chagua aina iliyopo au ongeza aina mpya ndani yake.",
+      "newCategory": "Kundi la bidhaa ni jina kuu la bidhaa ambalo watu hulitambua, kwa mfano iPhone 15 Pro Max. Baada ya kuunda kundi, ongeza aina yake ya kwanza.",
+      "uncategorized": "Tumia bidhaa rahisi kama huhitaji kundi la bidhaa. Bado unaweza kuirekodi kwa kiasi au kufuatilia kila kitu moja moja."
     },
     "fields": {
       "stockName": "Jina la stoo",
       "productFamily": "Kundi la bidhaa",
       "newFamilyName": "Kundi jipya la bidhaa",
+      "varietyName": "Aina",
       "trackingMode": "Ufuatiliaji",
       "receivedUnit": "Uniti iliyopokelewa",
       "baseUnit": "Uniti ya hesabu ya stoo",
@@ -38,7 +48,11 @@
     },
     "tracking": {
       "quantity": "Kwa kiasi",
-      "individual": "Moja moja"
+      "individual": "Vitu moja moja"
+    },
+    "trackingHelp": {
+      "quantity": "Hesabu bidhaa zinazofanana pamoja",
+      "individual": "Kila kitu kina kitambulisho chake"
     },
     "actions": {
       "addExisting": "Ongeza aina iliyopo",
@@ -61,17 +75,45 @@
       "finishCategory": "Maliza kundi",
       "finishProduct": "Maliza bidhaa",
       "saveCorrection": "Hifadhi marekebisho",
-      "archiveDraft": "Hifadhi rasimu kwenye kumbukumbu"
+      "archiveDraft": "Hifadhi rasimu kwenye kumbukumbu",
+      "addToExistingGroup": "Ongeza kwenye kundi lililopo",
+      "createNewGroup": "Unda kundi jipya",
+      "addSimpleProduct": "Ongeza bidhaa rahisi",
+      "stockDetails": "Maelezo ya stoo",
+      "addNewVariety": "Ongeza aina mpya"
+    },
+    "products": {
+      "noGroups": "Bado hakuna makundi ya bidhaa. Unda kundi lako la kwanza kuanza kurekodi stoo.",
+      "noVarieties": "Bado hakuna aina. Ongeza toleo la kwanza la bidhaa hii.",
+      "varietyCount": "Aina {count}",
+      "chooseOrAddVariety": "Chagua aina au ongeza mpya",
+      "addingVariety": "Unaongeza aina mpya kwenye kundi hili",
+      "currentStock": "Kwenye stoo hii",
+      "currentCount": "Bidhaa {count} ziko tayari",
+      "simpleProducts": "Bidhaa rahisi zilizopo"
+    },
+    "afterVariety": {
+      "saved": "{name} imehifadhiwa",
+      "itemsRecorded": "Vitu {count} vimerekodiwa",
+      "unitsRecorded": "{count} {unit} zimerekodiwa"
+    },
+    "placeholders": {
+      "group": "iPhone 15 Pro Max",
+      "brand": "Apple",
+      "variety": "Silver · 256 GB",
+      "identifier": "356123456789012"
     },
     "validation": {
       "stockName": "Weka jina la stoo.",
       "catalogRequired": "Ongeza angalau bidhaa moja kwenye stoo hii.",
       "conversionPositive": "Weka ubadilishaji mkubwa kuliko sifuri.",
-      "familyName": "Weka jina la kundi jipya la bidhaa."
+      "familyName": "Weka jina la kundi jipya la bidhaa.",
+      "varietyName": "Weka jina la aina.",
+      "identifier": "Weka kitambulisho cha kitu hiki."
     },
     "categoryChoice": {
-      "existingTitle": "Ongeza bidhaa kwenye kundi la bidhaa lililopo",
-      "newTitle": "Unda kundi jipya la bidhaa na uongeze bidhaa",
+      "existingTitle": "Ongeza kwenye kundi lililopo",
+      "newTitle": "Unda kundi jipya",
       "uncategorizedTitle": "Ongeza bidhaa rahisi"
     },
     "newProduct": {
