@@ -1,23 +1,25 @@
 {
   "CommerceStockV2": {
     "steps": {
-      "stock": "Taarifa za stoo",
+      "stock": "Maelezo ya stoo",
       "products": "Bidhaa",
       "catalog": "Bidhaa",
       "record": "Kurekodi",
       "review": "Kukagua"
     },
+    "helpLabel": "Msaada",
     "help": {
-      "stock": "Ipe stoo hii jina kisha weka msambazaji, tarehe ya kupokea, na gharama za stoo.",
-      "products": "Chagua kwanza kategoria ya bidhaa, kisha rekodi bidhaa ulizopokea kwenye kategoria hiyo. Tunakuza inasimamia utambulisho wa SKU moja kwa moja.",
-      "catalog": "Rekodi bidhaa kwa kategoria ya bidhaa huku Tunakuza ikisimamia utambulisho wa SKU moja kwa moja.",
-      "record": "Rekodi stoo iliyopokelewa. Mpangilio wa bidhaa kama rangi na uwezo unabaki pamoja huku kila kitu halisi kikiwa na kitambulisho chake.",
-      "review": "Kagua taarifa za stoo na mistari yote ya bidhaa iliyorekodiwa, kisha hifadhi rasimu au kamilisha upokeaji wa stoo.",
+      "stock": "Maelezo ya stoo si lazima. Weka jina la stoo, msambazaji, tarehe ya kupokea, au gharama za stoo unapohitaji kumbukumbu kamili zaidi za ununuzi na ukaguzi.",
+      "products": "Tumia kategoria ya bidhaa pale matoleo yanayohusiana yanapaswa kuwa pamoja, au rekodi bidhaa bila kategoria. Tunakuza inasimamia utambulisho wa SKU moja kwa moja.",
+      "catalog": "Rekodi bidhaa kwa kategoria au bila kategoria huku Tunakuza ikisimamia utambulisho wa SKU moja kwa moja.",
+      "record": "Rekodi kiasi na gharama ya kununua hapa. Kwa bidhaa zinazofuatiliwa moja moja, ongeza kitambulisho cha kila kitu halisi kama IMEI au namba ya seriali.",
+      "review": "Kagua bidhaa ulizorekodi, kisha hifadhi rasimu au kamilisha upokeaji wa stoo. Maelezo ya hiari ya stoo yatahusishwa tu kama uliyaweka.",
       "familyAssignment": "Kategoria ya bidhaa hukusanya matoleo yanayohusiana ya bidhaa moja. Mipangilio tofauti inaweza kuwa na SKU na bei tofauti za Tovuti huku ikibaki kwenye kategoria moja.",
       "autoSku": "Rekodi kinachotofautisha mpangilio huu wa bidhaa. Tunakuza itatumia SKU inayolingana au kuunda SKU inayohitajika moja kwa moja unapohifadhi stoo.",
-      "existingSku": "Chagua hapa ikiwa mpangilio huu halisi wa bidhaa tayari upo kwenye kategoria hii. Tunakuza itatumia SKU yake iliyopo moja kwa moja.",
-      "existingCategory": "Chagua kategoria ya bidhaa unayotumia tayari, kisha ongeza bidhaa iliyopo au rekodi mpangilio mwingine ndani yake.",
-      "newCategory": "Unda kwanza kategoria ya bidhaa, kisha rekodi mpangilio wa bidhaa uliyopokea."
+      "existingSku": "Ikiwa mpangilio huu halisi wa bidhaa tayari upo kwenye kategoria hii, unaweza kuuchagua hapa. Unaweza pia kuruka hatua hii na kurekodi mpangilio mwingine.",
+      "existingCategory": "Chagua kategoria ya bidhaa unayotumia tayari. Kisha chagua mpangilio wa bidhaa uliopo au rekodi mpangilio mwingine kwenye kategoria hiyo hiyo.",
+      "newCategory": "Unda kategoria ya bidhaa, kisha rekodi mpangilio wa kwanza wa bidhaa ndani yake.",
+      "uncategorized": "Tumia njia hii unapohitaji tu rekodi rahisi ya bidhaa na hutaki kuipanga chini ya kategoria ya bidhaa."
     },
     "fields": {
       "stockName": "Jina la stoo",
@@ -31,7 +33,8 @@
     "values": {
       "noFamily": "Chagua kategoria ya bidhaa",
       "createFamily": "+ Unda kategoria mpya ya bidhaa",
-      "autoSku": "SKU itawekwa moja kwa moja"
+      "autoSku": "SKU itawekwa moja kwa moja",
+      "defaultStockName": "Stoo"
     },
     "tracking": {
       "quantity": "Kwa kiasi",
@@ -52,6 +55,11 @@
       "remove": "Ondoa bidhaa",
       "back": "Rudi",
       "changeCategoryChoice": "Badili chaguo",
+      "doneStockDetails": "Imekamilika",
+      "addAnotherInCategory": "Ongeza bidhaa nyingine kwenye kategoria hii",
+      "addAnotherProduct": "Ongeza bidhaa nyingine",
+      "finishCategory": "Maliza kategoria",
+      "finishProduct": "Maliza bidhaa",
       "saveCorrection": "Hifadhi marekebisho",
       "archiveDraft": "Hifadhi rasimu kwenye kumbukumbu"
     },
@@ -62,11 +70,9 @@
       "familyName": "Weka jina la kategoria mpya ya bidhaa."
     },
     "categoryChoice": {
-      "title": "Unataka kuongeza bidhaa kwa njia gani?",
       "existingTitle": "Ongeza bidhaa kwenye kategoria ya bidhaa iliyopo",
-      "existingDescription": "Chagua kategoria ambayo tayari ipo Tunakuza kisha rekodi bidhaa ulizopokea ndani yake.",
       "newTitle": "Unda kategoria mpya ya bidhaa na uongeze bidhaa",
-      "newDescription": "Unda kwanza kategoria, kisha rekodi mipangilio ya bidhaa uliyopokea."
+      "uncategorizedTitle": "Ongeza bidhaa bila kategoria"
     },
     "newProduct": {
       "title": "Rekodi mpangilio wa bidhaa"
@@ -77,8 +83,11 @@
     "newCategory": {
       "title": "Kategoria mpya ya bidhaa"
     },
+    "uncategorized": {
+      "title": "Bidhaa bila kategoria"
+    },
     "existingSku": {
-      "title": "Ongeza stoo kwenye bidhaa ambayo tayari ipo kwenye kategoria hii"
+      "title": "Mpangilio wa bidhaa uliopo"
     },
     "configuration": "Mpangilio wa bidhaa",
     "recordedProducts": "Bidhaa kwenye stoo hii",
@@ -87,7 +96,7 @@
     "individualComplete": "Vitu vyote vimerekodiwa",
     "history": {
       "title": "Stoo iliyorekodiwa",
-      "description": "Risiti zilizopo zinaendelea kupatikana huku mfumo mpya wa kurekodi ukitumia mistari ya bidhaa moja kwa moja.",
+      "description": "Risiti zilizopo zinaendelea kupatikana hapa, pamoja na rekodi zilizoundwa kupitia mtiririko rahisi unaoanza na bidhaa.",
       "empty": "Bado hakuna stoo iliyorekodiwa.",
       "moreProducts": "+bidhaa nyingine {count}",
       "viewDetails": "Angalia maelezo ya stoo",

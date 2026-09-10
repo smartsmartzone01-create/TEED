@@ -1,6 +1,6 @@
 "use client";
 
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, Pencil, Plus, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 
@@ -9,6 +9,7 @@ import { StockProductSummary, StockSummaryActions } from "@/components/commerce/
 import { Button } from "@/components/global/primitives/button";
 import { Input } from "@/components/global/primitives/input";
 import { Select } from "@/components/global/primitives/select";
+import { Tooltip } from "@/components/global/primitives/tooltip";
 import { useNotification } from "@/providers/global/notification-provider";
 import { useIdentitySession } from "@/providers/identity/identity-session-provider";
 import { getProducts } from "@/services/commerce/catalog";
@@ -65,7 +66,7 @@ const identifierKinds = [
 ] as const;
 
 type Step = "stock" | "products" | "record" | "review";
-type ProductEntryMode = "existing-category" | "new-category" | null;
+type ProductEntryMode = "existing-category" | "new-category" | "uncategorized" | null;
 type IdentifierKind = (typeof identifierKinds)[number];
 type PreparedProduct = {
   key: string;
@@ -113,6 +114,20 @@ type CorrectionDraft = {
     cost: string;
   }>;
 };
+
+function HelpTip({ label, children }: { label: string; children: string }) {
+  return (
+    <Tooltip content={children} side="top">
+      <button
+        aria-label={label}
+        className="inline-flex size-7 shrink-0 items-center justify-center rounded-md text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 dark:text-slate-500 dark:hover:bg-slate-900 dark:hover:text-slate-200"
+        type="button"
+      >
+        <ChevronDown aria-hidden="true" className="size-4" />
+      </button>
+    </Tooltip>
+  );
+}
 
 const localNow = () => {
   const date = new Date();
@@ -201,7 +216,7 @@ function StockRecordingWorkspaceV2({
   const { notify } = useNotification();
   const sequence = useRef(0);
 
-  const [step, setStep] = useState<Step>("stock");
+  const [step, setStep] = useState<Step>("products");
   const [stockName, setStockName] = useState("");
   const [supplier, setSupplier] = useState("");
   const [receivedAt, setReceivedAt] = useState(localNow());
@@ -350,10 +365,10 @@ function StockRecordingWorkspaceV2({
     if (mode === "new-category") {
       setFamilySelection(createFamilyValue);
       setNewProductOpen(true);
-    } else {
-      setFamilySelection("");
-      setNewProductOpen(false);
+      return;
     }
+    setFamilySelection("");
+    setNewProductOpen(mode === "uncategorized");
   };
 
   const openExistingProduct = () => {
@@ -424,7 +439,7 @@ function StockRecordingWorkspaceV2({
       notify({ message: stockT("validation.productName"), tone: "error" });
       return;
     }
-    if (familySelection === createFamilyValue && !preparedDraft.familyName.trim()) {
+    if (productEntryMode === "new-category" && !preparedDraft.familyName.trim()) {
       notify({ message: t("validation.familyName"), tone: "error" });
       return;
     }
@@ -526,6 +541,14 @@ function StockRecordingWorkspaceV2({
     }
   };
 
+  const validateStockDetails = () => {
+    const expenses = Number(stockExpenses || 0);
+    if (!Number.isFinite(expenses) || expenses < 0) {
+      return stockT("validation.stockExpenses");
+    }
+    return "";
+  };
+
   const validateLines = (status: "draft" | "received") => {
     if (!lines.length) return t("validation.catalogRequired");
     for (const line of lines) {
@@ -553,6 +576,11 @@ function StockRecordingWorkspaceV2({
   };
 
   const reviewStock = () => {
+    const stockValidation = validateStockDetails();
+    if (stockValidation) {
+      notify({ message: stockValidation, tone: "error" });
+      return;
+    }
     const validation = validateLines("draft");
     if (validation) {
       notify({ message: validation, tone: "error" });
@@ -562,12 +590,12 @@ function StockRecordingWorkspaceV2({
   };
 
   const buildPayload = (status: "draft" | "received") => ({
-    name: stockName.trim(),
+    name: stockName.trim() || t("values.defaultStockName"),
     status,
     ...(lateDeliveryParent ? { parent_receipt_id: lateDeliveryParent.id } : {}),
     supplier_name: supplier.trim(),
     additional_cost: stockExpenses || "0",
-    ...(status === "received" ? { received_at: new Date(receivedAt).toISOString() } : {}),
+    ...(status === "received" ? { received_at: new Date(receivedAt || Date.now()).toISOString() } : {}),
     catalog_items: selectedChoices.map((choice) =>
       choice.existingId
         ? { key: choice.key, product_id: choice.existingId }
@@ -611,6 +639,11 @@ function StockRecordingWorkspaceV2({
 
   const saveStock = async (status: "draft" | "received") => {
     if (!accessToken) return;
+    const stockValidation = validateStockDetails();
+    if (stockValidation) {
+      notify({ message: stockValidation, tone: "error" });
+      return;
+    }
     const validation = validateLines(status);
     if (validation) {
       notify({ message: validation, tone: "error" });
@@ -655,7 +688,7 @@ function StockRecordingWorkspaceV2({
     setSavedReceipt(null);
     setLateDeliveryParent(parent ?? null);
     onRecordingRequested?.();
-    moveTo("stock");
+    moveTo("products");
   };
 
   const beginCorrection = (receipt: StockReceipt) => {
@@ -704,19 +737,70 @@ function StockRecordingWorkspaceV2({
 
   const commitStock = (event: FormEvent) => {
     event.preventDefault();
-    if (!stockName.trim()) {
-      notify({ message: t("validation.stockName"), tone: "error" });
+    const validation = validateStockDetails();
+    if (validation) {
+      notify({ message: validation, tone: "error" });
       return;
     }
-    if (!receivedAt) {
-      notify({ message: stockT("validation.dateReceived"), tone: "error" });
+    moveTo("products");
+  };
+
+  const addAnotherProduct = () => {
+    if (!activeChoice) return;
+    setExistingSelection("");
+    setEditingUnitIndex(null);
+    setActiveUnitDraft(emptyUnit());
+    setActiveProductKey(null);
+
+    if (activeChoice.familyId) {
+      setProductEntryMode("existing-category");
+      setFamilySelection(activeChoice.familyId);
+      setPreparedDraft({
+        ...emptyPreparedProduct(),
+        familyId: activeChoice.familyId,
+        familyName: activeChoice.familyName,
+        brand: activeChoice.brand,
+        name: activeChoice.familyName || activeChoice.name,
+        unit: activeChoice.unit,
+        trackingMode: activeChoice.trackingMode,
+      });
+      setNewProductOpen(true);
+      moveTo("products");
       return;
     }
-    const expenses = Number(stockExpenses || 0);
-    if (!Number.isFinite(expenses) || expenses < 0) {
-      notify({ message: stockT("validation.stockExpenses"), tone: "error" });
+
+    if (activeChoice.familyName) {
+      setProductEntryMode("existing-category");
+      setFamilySelection(`staged:${activeChoice.key}`);
+      setPreparedDraft({
+        ...emptyPreparedProduct(),
+        familyName: activeChoice.familyName,
+        brand: activeChoice.brand,
+        name: activeChoice.familyName,
+        unit: activeChoice.unit,
+        trackingMode: activeChoice.trackingMode,
+      });
+      setNewProductOpen(true);
+      moveTo("products");
       return;
     }
+
+    setProductEntryMode("uncategorized");
+    setFamilySelection("");
+    setPreparedDraft({
+      ...emptyPreparedProduct(),
+      unit: activeChoice.unit,
+      trackingMode: activeChoice.trackingMode,
+    });
+    setNewProductOpen(true);
+    moveTo("products");
+  };
+
+  const finishCurrentProductGroup = () => {
+    setActiveProductKey(null);
+    setActiveUnitDraft(emptyUnit());
+    setEditingUnitIndex(null);
+    resetProductEntry();
     moveTo("products");
   };
 
@@ -734,11 +818,11 @@ function StockRecordingWorkspaceV2({
   if (step === "stock") {
     editor = (
       <form className="grid min-w-0 gap-4" onSubmit={commitStock}>
-        <div className="min-w-0">
-          <h2 className="break-words text-lg font-bold">
+        <div className="flex min-w-0 items-center gap-2">
+          <h2 className="min-w-0 flex-1 break-words text-lg font-bold">
             {lateDeliveryParent ? stockT("steps.lateDelivery") : t("steps.stock")}
           </h2>
-          <p className="mt-1 break-words text-sm text-slate-500">{t("help.stock")}</p>
+          <HelpTip label={t("helpLabel")}>{t("help.stock")}</HelpTip>
         </div>
         <label className={field}>
           {t("fields.stockName")}
@@ -751,64 +835,68 @@ function StockRecordingWorkspaceV2({
         <div className="grid min-w-0 gap-3 sm:grid-cols-2">
           <label className={field}>
             {stockT("fields.dateReceived")}
-            <Input required type="datetime-local" value={receivedAt} onChange={(event) => setReceivedAt(event.target.value)} />
+            <Input type="datetime-local" value={receivedAt} onChange={(event) => setReceivedAt(event.target.value)} />
           </label>
           <label className={field}>
             {stockT("fields.stockExpenses")}
             <Input min="0" step="0.01" type="number" value={stockExpenses} onChange={(event) => setStockExpenses(event.target.value)} />
           </label>
         </div>
-        <Button className="w-fit" type="submit">{stockT("actions.continue")}</Button>
+        <Button className="w-fit" type="submit">{t("actions.doneStockDetails")}</Button>
       </form>
     );
   } else if (step === "products") {
     editor = (
       <div className="grid min-w-0 gap-4">
-        <div className="min-w-0">
-          <h2 className="break-words text-lg font-bold">{t("steps.products")}</h2>
-          <p className="mt-1 break-words text-sm text-slate-500">{t("help.products")}</p>
+        <div className="flex min-w-0 items-center gap-2">
+          <h2 className="min-w-0 flex-1 break-words text-lg font-bold">{t("steps.products")}</h2>
+          <HelpTip label={t("helpLabel")}>{t("help.products")}</HelpTip>
         </div>
 
         {productEntryMode == null ? (
-          <div className="grid min-w-0 gap-3">
-            <strong className="text-sm">{t("categoryChoice.title")}</strong>
-            <div className="grid min-w-0 gap-3 sm:grid-cols-2">
+          <div className="grid min-w-0 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {families.length || stagedCategories.length ? (
               <button
                 className={`${inset} min-w-0 p-4 text-left transition hover:border-slate-300 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 dark:hover:border-slate-700 dark:hover:bg-slate-950`}
                 onClick={() => beginProductEntry("existing-category")}
                 type="button"
               >
                 <strong className="block break-words text-sm">{t("categoryChoice.existingTitle")}</strong>
-                <span className="mt-1 block break-words text-xs font-normal text-slate-500">
-                  {t("categoryChoice.existingDescription")}
-                </span>
               </button>
-              <button
-                className={`${inset} min-w-0 p-4 text-left transition hover:border-slate-300 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 dark:hover:border-slate-700 dark:hover:bg-slate-950`}
-                onClick={() => beginProductEntry("new-category")}
-                type="button"
-              >
-                <strong className="block break-words text-sm">{t("categoryChoice.newTitle")}</strong>
-                <span className="mt-1 block break-words text-xs font-normal text-slate-500">
-                  {t("categoryChoice.newDescription")}
-                </span>
-              </button>
-            </div>
+            ) : null}
+            <button
+              className={`${inset} min-w-0 p-4 text-left transition hover:border-slate-300 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 dark:hover:border-slate-700 dark:hover:bg-slate-950`}
+              onClick={() => beginProductEntry("new-category")}
+              type="button"
+            >
+              <strong className="block break-words text-sm">{t("categoryChoice.newTitle")}</strong>
+            </button>
+            <button
+              className={`${inset} min-w-0 p-4 text-left transition hover:border-slate-300 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 dark:hover:border-slate-700 dark:hover:bg-slate-950`}
+              onClick={() => beginProductEntry("uncategorized")}
+              type="button"
+            >
+              <strong className="block break-words text-sm">{t("categoryChoice.uncategorizedTitle")}</strong>
+            </button>
           </div>
         ) : (
           <div className={`${inset} grid min-w-0 gap-4 p-3`}>
-            <div className="flex min-w-0 flex-wrap items-start justify-between gap-3">
-              <div className="min-w-0 flex-1">
-                <strong className="block break-words text-sm">
+            <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-2">
+                <strong className="min-w-0 break-words text-sm">
                   {productEntryMode === "existing-category"
                     ? t("existingCategory.title")
-                    : t("newCategory.title")}
+                    : productEntryMode === "new-category"
+                      ? t("newCategory.title")
+                      : t("uncategorized.title")}
                 </strong>
-                <p className="mt-1 break-words text-xs text-slate-500">
+                <HelpTip label={t("helpLabel")}>
                   {productEntryMode === "existing-category"
                     ? t("help.existingCategory")
-                    : t("help.newCategory")}
-                </p>
+                    : productEntryMode === "new-category"
+                      ? t("help.newCategory")
+                      : t("help.uncategorized")}
+                </HelpTip>
               </div>
               <Button size="small" type="button" variant="ghost" onClick={resetProductEntry}>
                 {t("actions.changeCategoryChoice")}
@@ -836,9 +924,9 @@ function StockRecordingWorkspaceV2({
 
             {productEntryMode === "existing-category" && existingCategoryChoices.length ? (
               <div className="grid min-w-0 gap-2 rounded-md border border-slate-200 bg-white/70 p-3 dark:border-slate-800 dark:bg-slate-950/50">
-                <div className="min-w-0">
-                  <strong className="block break-words text-sm">{t("existingSku.title")}</strong>
-                  <p className="mt-1 break-words text-xs text-slate-500">{t("help.existingSku")}</p>
+                <div className="flex min-w-0 items-center gap-2">
+                  <strong className="min-w-0 flex-1 break-words text-sm">{t("existingSku.title")}</strong>
+                  <HelpTip label={t("helpLabel")}>{t("help.existingSku")}</HelpTip>
                 </div>
                 <div className="grid min-w-0 gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
                   <Select value={existingSelection} onChange={(event) => setExistingSelection(event.target.value)}>
@@ -858,11 +946,11 @@ function StockRecordingWorkspaceV2({
               </div>
             ) : null}
 
-            {(productEntryMode === "new-category" || (familySelection && newProductOpen)) ? (
+            {(productEntryMode === "new-category" || productEntryMode === "uncategorized" || (productEntryMode === "existing-category" && familySelection && newProductOpen)) ? (
               <form className="grid min-w-0 gap-3 border-t border-slate-200 pt-3 dark:border-slate-800" onSubmit={savePreparedProduct}>
-                <div className="min-w-0">
-                  <strong className="block break-words text-sm">{t("newProduct.title")}</strong>
-                  <p className="mt-1 break-words text-xs text-slate-500">{t("help.autoSku")}</p>
+                <div className="flex min-w-0 items-center gap-2">
+                  <strong className="min-w-0 flex-1 break-words text-sm">{t("newProduct.title")}</strong>
+                  <HelpTip label={t("helpLabel")}>{t("help.autoSku")}</HelpTip>
                 </div>
                 <div className="grid min-w-0 gap-3 sm:grid-cols-2">
                   {productEntryMode === "new-category" ? (
@@ -969,7 +1057,6 @@ function StockRecordingWorkspaceV2({
         ) : null}
 
         <div className="flex flex-wrap gap-2">
-          <Button type="button" variant="ghost" onClick={() => moveTo("stock")}>{t("actions.back")}</Button>
           <Button disabled={!selectedKeys.length} type="button" onClick={reviewStock}>{t("actions.reviewStock")}</Button>
         </div>
       </div>
@@ -991,6 +1078,7 @@ function StockRecordingWorkspaceV2({
         count > 0 &&
         (editingUnitIndex != null || recorded < count);
       const configurationLabel = [activeChoice.color, activeChoice.capacity].filter(Boolean).join(" · ");
+      const hasCategory = Boolean(activeChoice.familyId || activeChoice.familyName);
 
       editor = (
         <div className="grid min-w-0 gap-4">
@@ -1001,7 +1089,7 @@ function StockRecordingWorkspaceV2({
                 {[activeChoice.sku, activeChoice.color, activeChoice.capacity, activeChoice.unit, t(`tracking.${activeChoice.trackingMode}`)].filter(Boolean).join(" · ")}
               </p>
             </div>
-            <Button size="small" type="button" variant="ghost" onClick={() => moveTo("products")}>{t("actions.backToProducts")}</Button>
+            <HelpTip label={t("helpLabel")}>{t("help.record")}</HelpTip>
           </div>
 
           <div className={`${inset} grid min-w-0 gap-3 p-3`}>
@@ -1073,8 +1161,12 @@ function StockRecordingWorkspaceV2({
           ) : null}
 
           <div className="flex flex-wrap gap-2">
-            <Button type="button" variant="outline" onClick={() => moveTo("products")}>{t("actions.chooseAnother")}</Button>
-            <Button type="button" onClick={reviewStock}>{t("actions.reviewStock")}</Button>
+            <Button type="button" variant="outline" onClick={addAnotherProduct}>
+              {hasCategory ? t("actions.addAnotherInCategory") : t("actions.addAnotherProduct")}
+            </Button>
+            <Button type="button" onClick={finishCurrentProductGroup}>
+              {hasCategory ? t("actions.finishCategory") : t("actions.finishProduct")}
+            </Button>
           </div>
         </div>
       );
@@ -1082,11 +1174,18 @@ function StockRecordingWorkspaceV2({
   } else {
     editor = (
       <div className="grid min-w-0 gap-4">
-        <div className="min-w-0"><h2 className="break-words text-lg font-bold">{t("steps.review")}</h2><p className="mt-1 break-words text-sm text-slate-500">{t("help.review")}</p></div>
+        <div className="flex min-w-0 items-center gap-2">
+          <h2 className="min-w-0 flex-1 break-words text-lg font-bold">{t("steps.review")}</h2>
+          <HelpTip label={t("helpLabel")}>{t("help.review")}</HelpTip>
+        </div>
         <div className={`${inset} grid min-w-0 gap-2 p-3 text-sm`}>
-          <div className="flex min-w-0 flex-wrap justify-between gap-3"><span className="break-words">{t("fields.stockName")}</span><strong className="min-w-0 break-words text-right">{stockName}</strong></div>
+          {stockName.trim() ? (
+            <div className="flex min-w-0 flex-wrap justify-between gap-3"><span className="break-words">{t("fields.stockName")}</span><strong className="min-w-0 break-words text-right">{stockName}</strong></div>
+          ) : null}
           <div className="flex min-w-0 flex-wrap justify-between gap-3"><span>{stockT("fields.totalProducts")}</span><strong>{lines.length}</strong></div>
-          <div className="flex min-w-0 flex-wrap justify-between gap-3"><span>{stockT("fields.stockExpenses")}</span><strong>{stockExpenses || "0"}</strong></div>
+          {Number(stockExpenses || 0) > 0 ? (
+            <div className="flex min-w-0 flex-wrap justify-between gap-3"><span>{stockT("fields.stockExpenses")}</span><strong>{stockExpenses}</strong></div>
+          ) : null}
           {lines.map((line) => {
             const choice = choiceFor(line.productKey)!;
             const total = lineCount(line);
@@ -1110,9 +1209,9 @@ function StockRecordingWorkspaceV2({
     );
   }
 
-  const navItems: Array<{ key: "stock" | "products" | "review"; label: string }> = [
-    { key: "stock", label: t("steps.stock") },
+  const navItems: Array<{ key: "products" | "stock" | "review"; label: string }> = [
     { key: "products", label: t("steps.products") },
+    { key: "stock", label: t("steps.stock") },
     { key: "review", label: t("steps.review") },
   ];
 
@@ -1131,7 +1230,7 @@ function StockRecordingWorkspaceV2({
             <div className="grid min-w-0 md:grid-cols-[12rem_minmax(0,1fr)]">
               <aside className="min-w-0 border-b border-slate-200 bg-slate-50/70 p-3 dark:border-slate-800 dark:bg-slate-900/40 md:border-b-0 md:border-r">
                 <div className="grid min-w-0 gap-1">
-                  {navItems.map((item, index) => {
+                  {navItems.map((item) => {
                     const active = item.key === "products" ? step === "products" || step === "record" : step === item.key;
                     const disabled = item.key === "review" && !selectedKeys.length;
                     return (
@@ -1142,7 +1241,7 @@ function StockRecordingWorkspaceV2({
                         onClick={() => item.key === "review" ? reviewStock() : moveTo(item.key)}
                         type="button"
                       >
-                        <span className="block break-words">{index + 1}. {item.label}</span>
+                        <span className="block break-words">{item.label}</span>
                       </button>
                     );
                   })}
@@ -1156,7 +1255,10 @@ function StockRecordingWorkspaceV2({
 
       <section className={`${panel} min-w-0`}>
         <div className="flex min-w-0 flex-wrap items-center justify-between gap-3 border-b border-slate-200 p-3 dark:border-slate-800">
-          <div className="min-w-0"><h2 className="break-words text-sm font-bold">{t("history.title")}</h2><p className="break-words text-xs text-slate-500">{t("history.description")}</p></div>
+          <div className="flex min-w-0 items-center gap-2">
+            <h2 className="min-w-0 break-words text-sm font-bold">{t("history.title")}</h2>
+            <HelpTip label={t("helpLabel")}>{t("history.description")}</HelpTip>
+          </div>
           <StockEditControl receipts={receipts} onCorrect={beginCorrection} onLateDelivery={(receipt) => resetRecorder(receipt)} />
         </div>
         {correction ? (

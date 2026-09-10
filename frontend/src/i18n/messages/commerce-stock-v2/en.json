@@ -1,23 +1,25 @@
 {
   "CommerceStockV2": {
     "steps": {
-      "stock": "Stock information",
+      "stock": "Stock details",
       "products": "Products",
       "catalog": "Products",
       "record": "Recording",
       "review": "Review"
     },
+    "helpLabel": "Help",
     "help": {
-      "stock": "Name this stock and enter its supplier, received date, and stock expenses.",
-      "products": "Choose a product category first, then record the products received in that category. Tunakuza manages SKU identity automatically.",
-      "catalog": "Record products by product category while Tunakuza manages SKU identity automatically.",
-      "record": "Record the stock received. A product configuration such as color and capacity stays together while each physical item keeps its own identifier.",
-      "review": "Check the stock information and all recorded product lines, then save a draft or receive the stock.",
+      "stock": "Stock details are optional. Add a stock name, supplier, received date, or stock expenses when you want more complete purchasing and audit records.",
+      "products": "Use a product category when related versions belong together, or record a product without a category. Tunakuza manages SKU identity automatically.",
+      "catalog": "Record products by product category or without a category while Tunakuza manages SKU identity automatically.",
+      "record": "Record quantity and buying cost here. For individually tracked products, add each physical identifier such as an IMEI or serial number.",
+      "review": "Check the products you recorded, then save a draft or receive the stock. Optional stock details are included only when you entered them.",
       "familyAssignment": "Product category groups related versions of the same product. Different configurations can have different SKUs and Website prices while remaining in one category.",
       "autoSku": "Record what makes this product configuration different. Tunakuza will reuse a matching SKU or create the needed SKU automatically when the stock is saved.",
-      "existingSku": "Choose this when the exact product configuration already exists in this category. Tunakuza will use its existing SKU automatically.",
-      "existingCategory": "Choose a product category you already use, then add an existing product or record another configuration in it.",
-      "newCategory": "Create the product category first, then record the product configuration you received."
+      "existingSku": "If the exact product configuration already exists in this category, select it here. You can also skip this and record another configuration.",
+      "existingCategory": "Choose a product category you already use. Then select an existing product configuration or record another configuration in the same category.",
+      "newCategory": "Create the product category, then record the first product configuration inside it.",
+      "uncategorized": "Use this when you only need a straightforward product record and do not want to organize it under a product category."
     },
     "fields": {
       "stockName": "Stock name",
@@ -31,7 +33,8 @@
     "values": {
       "noFamily": "Choose product category",
       "createFamily": "+ Create new product category",
-      "autoSku": "SKU assigned automatically"
+      "autoSku": "SKU assigned automatically",
+      "defaultStockName": "Stock"
     },
     "tracking": {
       "quantity": "Quantity",
@@ -52,6 +55,11 @@
       "remove": "Remove product",
       "back": "Back",
       "changeCategoryChoice": "Change option",
+      "doneStockDetails": "Done",
+      "addAnotherInCategory": "Add another product in this category",
+      "addAnotherProduct": "Add another product",
+      "finishCategory": "Finish category",
+      "finishProduct": "Finish product",
       "saveCorrection": "Save correction",
       "archiveDraft": "Archive draft"
     },
@@ -62,11 +70,9 @@
       "familyName": "Enter the new product category name."
     },
     "categoryChoice": {
-      "title": "How do you want to add products?",
       "existingTitle": "Add products to an existing product category",
-      "existingDescription": "Choose a category already in Tunakuza and record the products received in it.",
       "newTitle": "Create a new product category and add products",
-      "newDescription": "Create the category first, then record the product configurations received."
+      "uncategorizedTitle": "Add product without a category"
     },
     "newProduct": {
       "title": "Record a product configuration"
@@ -77,8 +83,11 @@
     "newCategory": {
       "title": "New product category"
     },
+    "uncategorized": {
+      "title": "Product without category"
+    },
     "existingSku": {
-      "title": "Add stock to a product already in this category"
+      "title": "Existing product configuration"
     },
     "configuration": "Product configuration",
     "recordedProducts": "Products in this stock",
@@ -87,7 +96,7 @@
     "individualComplete": "All items recorded",
     "history": {
       "title": "Recorded stock",
-      "description": "Current receipts remain available while the new recording flow uses direct product lines.",
+      "description": "Current receipts remain available here, including records created through the simplified product-first flow.",
       "empty": "No stock has been recorded yet.",
       "moreProducts": "+{count} more products",
       "viewDetails": "View stock details",
