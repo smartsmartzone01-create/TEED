@@ -9,30 +9,30 @@
     },
     "helpLabel": "Msaada",
     "help": {
-      "stock": "Maelezo ya stoo si lazima. Weka jina la stoo, msambazaji, tarehe ya kupokea, au gharama za stoo unapohitaji kumbukumbu kamili zaidi za ununuzi na ukaguzi.",
-      "products": "Tumia kategoria ya bidhaa pale matoleo yanayohusiana yanapaswa kuwa pamoja, au rekodi bidhaa bila kategoria. Tunakuza inasimamia utambulisho wa SKU moja kwa moja.",
-      "catalog": "Rekodi bidhaa kwa kategoria au bila kategoria huku Tunakuza ikisimamia utambulisho wa SKU moja kwa moja.",
-      "record": "Rekodi kiasi na gharama ya kununua hapa. Kwa bidhaa zinazofuatiliwa moja moja, ongeza kitambulisho cha kila kitu halisi kama IMEI au namba ya seriali.",
+      "stock": "Maelezo ya stoo si lazima. Weka jina la stoo, msambazaji, tarehe ya kupokea, au gharama za stoo pale tu unapohitaji kumbukumbu kamili zaidi za ununuzi na ukaguzi.",
+      "products": "Fikiria bidhaa kwa mfumo huu: Kundi → Aina → Kitu. Mfano: iPhone 15 Pro Max → Silver 256 GB → IMEI ya kila simu. Tumia Kwa kiasi unapohesabu bidhaa zinazofanana pamoja.",
+      "catalog": "Kundi la bidhaa huweka bidhaa kuu moja pamoja. Kila aina ni toleo moja ndani ya kundi hilo, na vitu vinavyofuatiliwa moja moja vinaweza kuwa na vitambulisho vyake.",
+      "record": "Kiasi ni bidhaa ulizopokea. Gharama ya kununua ni kiasi ulicholipa na haibadilishi aina ya bidhaa. Kwa bidhaa zinazofuatiliwa moja moja, ongeza IMEI, namba ya seriali, au kitambulisho kingine cha kila kitu.",
       "review": "Kagua bidhaa ulizorekodi, kisha hifadhi rasimu au kamilisha upokeaji wa stoo. Maelezo ya hiari ya stoo yatahusishwa tu kama uliyaweka.",
-      "familyAssignment": "Kategoria ya bidhaa hukusanya matoleo yanayohusiana ya bidhaa moja. Mipangilio tofauti inaweza kuwa na SKU na bei tofauti za Tovuti huku ikibaki kwenye kategoria moja.",
-      "autoSku": "Rekodi kinachotofautisha mpangilio huu wa bidhaa. Tunakuza itatumia SKU inayolingana au kuunda SKU inayohitajika moja kwa moja unapohifadhi stoo.",
-      "existingSku": "Ikiwa mpangilio huu halisi wa bidhaa tayari upo kwenye kategoria hii, unaweza kuuchagua hapa. Unaweza pia kuruka hatua hii na kurekodi mpangilio mwingine.",
-      "existingCategory": "Chagua kategoria ya bidhaa unayotumia tayari. Kisha chagua mpangilio wa bidhaa uliopo au rekodi mpangilio mwingine kwenye kategoria hiyo hiyo.",
-      "newCategory": "Unda kategoria ya bidhaa, kisha rekodi mpangilio wa kwanza wa bidhaa ndani yake.",
-      "uncategorized": "Tumia njia hii unapohitaji tu rekodi rahisi ya bidhaa na hutaki kuipanga chini ya kategoria ya bidhaa."
+      "familyAssignment": "Kundi la bidhaa huweka matoleo yanayohusiana ya bidhaa moja pamoja. Mfano: iPhone 15 Pro Max ni kundi; Silver 256 GB na Black 512 GB ni aina tofauti ndani yake.",
+      "autoSku": "Aina ni toleo moja ndani ya kundi la bidhaa. Mfano: Silver · 256 GB. Weka maelezo yanayotofautisha toleo hili. Tumia Kwa kiasi kwa bidhaa zinazohesabiwa pamoja, au Moja moja ikiwa kila kitu kinahitaji IMEI au namba ya seriali. Tunakuza inasimamia SKU moja kwa moja.",
+      "existingSku": "Aina ni toleo moja maalum ndani ya kundi la bidhaa, kama Silver 256 GB. Ichague ikiwa tayari ipo; vinginevyo ongeza aina mpya.",
+      "existingCategory": "Chagua kwanza kundi la bidhaa. Kisha tumia aina iliyopo au ongeza aina nyingine ndani ya kundi hilo hilo. Mfano: iPhone 15 Pro Max → Silver 256 GB.",
+      "newCategory": "Kundi la bidhaa ni jina kuu la bidhaa ambalo watu hulitambua, kwa mfano iPhone 15 Pro Max. Baada ya kuunda kundi, ongeza aina yake ya kwanza, kwa mfano Silver 256 GB.",
+      "uncategorized": "Tumia njia hii ya haraka unapohitaji tu rekodi rahisi ya bidhaa na hutaki kuunda kundi la bidhaa sasa. Bado unaweza kuirekodi kwa kiasi au kufuatilia kila kitu moja moja."
     },
     "fields": {
       "stockName": "Jina la stoo",
-      "productFamily": "Kategoria ya bidhaa",
-      "newFamilyName": "Kategoria mpya ya bidhaa",
+      "productFamily": "Kundi la bidhaa",
+      "newFamilyName": "Kundi jipya la bidhaa",
       "trackingMode": "Ufuatiliaji",
       "receivedUnit": "Uniti iliyopokelewa",
       "baseUnit": "Uniti ya hesabu ya stoo",
       "conversion": "Uniti za hesabu kwa kila uniti iliyopokelewa"
     },
     "values": {
-      "noFamily": "Chagua kategoria ya bidhaa",
-      "createFamily": "+ Unda kategoria mpya ya bidhaa",
+      "noFamily": "Chagua kundi la bidhaa",
+      "createFamily": "+ Unda kundi jipya la bidhaa",
       "autoSku": "SKU itawekwa moja kwa moja",
       "defaultStockName": "Stoo"
     },
@@ -41,10 +41,10 @@
       "individual": "Moja moja"
     },
     "actions": {
-      "addExisting": "Ongeza bidhaa iliyopo",
+      "addExisting": "Ongeza aina iliyopo",
       "addProduct": "Ongeza bidhaa",
       "createAndAdd": "Unda na ongeza bidhaa",
-      "recordNewProduct": "Rekodi mpangilio mwingine",
+      "recordNewProduct": "Rekodi aina nyingine",
       "continueToRecord": "Endelea kurekodi",
       "recordProduct": "Rekodi bidhaa",
       "addIndividual": "Ongeza kitu",
@@ -56,9 +56,9 @@
       "back": "Rudi",
       "changeCategoryChoice": "Badili chaguo",
       "doneStockDetails": "Imekamilika",
-      "addAnotherInCategory": "Ongeza bidhaa nyingine kwenye kategoria hii",
+      "addAnotherInCategory": "Ongeza aina nyingine",
       "addAnotherProduct": "Ongeza bidhaa nyingine",
-      "finishCategory": "Maliza kategoria",
+      "finishCategory": "Maliza kundi",
       "finishProduct": "Maliza bidhaa",
       "saveCorrection": "Hifadhi marekebisho",
       "archiveDraft": "Hifadhi rasimu kwenye kumbukumbu"
@@ -67,29 +67,29 @@
       "stockName": "Weka jina la stoo.",
       "catalogRequired": "Ongeza angalau bidhaa moja kwenye stoo hii.",
       "conversionPositive": "Weka ubadilishaji mkubwa kuliko sifuri.",
-      "familyName": "Weka jina la kategoria mpya ya bidhaa."
+      "familyName": "Weka jina la kundi jipya la bidhaa."
     },
     "categoryChoice": {
-      "existingTitle": "Ongeza bidhaa kwenye kategoria ya bidhaa iliyopo",
-      "newTitle": "Unda kategoria mpya ya bidhaa na uongeze bidhaa",
-      "uncategorizedTitle": "Ongeza bidhaa bila kategoria"
+      "existingTitle": "Ongeza bidhaa kwenye kundi la bidhaa lililopo",
+      "newTitle": "Unda kundi jipya la bidhaa na uongeze bidhaa",
+      "uncategorizedTitle": "Ongeza bidhaa rahisi"
     },
     "newProduct": {
-      "title": "Rekodi mpangilio wa bidhaa"
+      "title": "Maelezo ya bidhaa"
     },
     "existingCategory": {
-      "title": "Kategoria ya bidhaa iliyopo"
+      "title": "Kundi la bidhaa lililopo"
     },
     "newCategory": {
-      "title": "Kategoria mpya ya bidhaa"
+      "title": "Kundi jipya la bidhaa"
     },
     "uncategorized": {
-      "title": "Bidhaa bila kategoria"
+      "title": "Bidhaa rahisi"
     },
     "existingSku": {
-      "title": "Mpangilio wa bidhaa uliopo"
+      "title": "Aina iliyopo"
     },
-    "configuration": "Mpangilio wa bidhaa",
+    "configuration": "Aina",
     "recordedProducts": "Bidhaa kwenye stoo hii",
     "individualProgress": "Zimerekodiwa {recorded} kati ya {count}",
     "individualItem": "Kitu {number} kati ya {count}",

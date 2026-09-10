@@ -9,30 +9,30 @@
     },
     "helpLabel": "Help",
     "help": {
-      "stock": "Stock details are optional. Add a stock name, supplier, received date, or stock expenses when you want more complete purchasing and audit records.",
-      "products": "Use a product category when related versions belong together, or record a product without a category. Tunakuza manages SKU identity automatically.",
-      "catalog": "Record products by product category or without a category while Tunakuza manages SKU identity automatically.",
-      "record": "Record quantity and buying cost here. For individually tracked products, add each physical identifier such as an IMEI or serial number.",
+      "stock": "Stock details are optional. Add a stock name, supplier, received date, or stock expenses only when you want more complete purchasing and audit records.",
+      "products": "Think of products as Group → Variety → Item. Example: iPhone 15 Pro Max → Silver 256 GB → each phone's IMEI. Use Quantity when matching stock is counted together.",
+      "catalog": "A product group keeps the same main product together. Each variety is one version inside that group, and individual items can carry their own identifiers.",
+      "record": "Quantity is how much stock you received. Buying cost is what you paid and does not change the product variety. For individually tracked stock, add each item's IMEI, serial number, or other identifier.",
       "review": "Check the products you recorded, then save a draft or receive the stock. Optional stock details are included only when you entered them.",
-      "familyAssignment": "Product category groups related versions of the same product. Different configurations can have different SKUs and Website prices while remaining in one category.",
-      "autoSku": "Record what makes this product configuration different. Tunakuza will reuse a matching SKU or create the needed SKU automatically when the stock is saved.",
-      "existingSku": "If the exact product configuration already exists in this category, select it here. You can also skip this and record another configuration.",
-      "existingCategory": "Choose a product category you already use. Then select an existing product configuration or record another configuration in the same category.",
-      "newCategory": "Create the product category, then record the first product configuration inside it.",
-      "uncategorized": "Use this when you only need a straightforward product record and do not want to organize it under a product category."
+      "familyAssignment": "A product group keeps related versions of the same product together. Example: iPhone 15 Pro Max is the group; Silver 256 GB and Black 512 GB are different varieties inside it.",
+      "autoSku": "A variety is one version inside a product group. Example: Silver · 256 GB. Fill in what makes this version different. Use Quantity for stock counted together, or Individual when each item needs its own IMEI or serial number. Tunakuza handles the SKU automatically.",
+      "existingSku": "A variety is one exact version inside a product group, such as Silver 256 GB. Select it if it already exists; otherwise add a new variety.",
+      "existingCategory": "Choose the product group first. Then use an existing variety or add another variety inside the same group. Example: iPhone 15 Pro Max → Silver 256 GB.",
+      "newCategory": "A product group is the main product people recognize, for example iPhone 15 Pro Max. After creating the group, add its first variety, for example Silver 256 GB.",
+      "uncategorized": "Use this quick path when you only want a simple product record and do not want to set up a product group now. You can still record it by quantity or track each item separately."
     },
     "fields": {
       "stockName": "Stock name",
-      "productFamily": "Product category",
-      "newFamilyName": "New product category",
+      "productFamily": "Product group",
+      "newFamilyName": "New product group",
       "trackingMode": "Tracking",
       "receivedUnit": "Received unit",
       "baseUnit": "Inventory unit",
       "conversion": "Inventory units per received unit"
     },
     "values": {
-      "noFamily": "Choose product category",
-      "createFamily": "+ Create new product category",
+      "noFamily": "Choose product group",
+      "createFamily": "+ Create new product group",
       "autoSku": "SKU assigned automatically",
       "defaultStockName": "Stock"
     },
@@ -41,10 +41,10 @@
       "individual": "Individual"
     },
     "actions": {
-      "addExisting": "Add existing product",
+      "addExisting": "Add existing variety",
       "addProduct": "Add product",
       "createAndAdd": "Create & add product",
-      "recordNewProduct": "Record another configuration",
+      "recordNewProduct": "Record another variety",
       "continueToRecord": "Continue to recording",
       "recordProduct": "Record product",
       "addIndividual": "Add item",
@@ -56,9 +56,9 @@
       "back": "Back",
       "changeCategoryChoice": "Change option",
       "doneStockDetails": "Done",
-      "addAnotherInCategory": "Add another product in this category",
+      "addAnotherInCategory": "Add another variety",
       "addAnotherProduct": "Add another product",
-      "finishCategory": "Finish category",
+      "finishCategory": "Finish group",
       "finishProduct": "Finish product",
       "saveCorrection": "Save correction",
       "archiveDraft": "Archive draft"
@@ -67,29 +67,29 @@
       "stockName": "Enter a stock name.",
       "catalogRequired": "Add at least one product to this stock.",
       "conversionPositive": "Enter a conversion greater than zero.",
-      "familyName": "Enter the new product category name."
+      "familyName": "Enter the new product group name."
     },
     "categoryChoice": {
-      "existingTitle": "Add products to an existing product category",
-      "newTitle": "Create a new product category and add products",
-      "uncategorizedTitle": "Add product without a category"
+      "existingTitle": "Add products to an existing product group",
+      "newTitle": "Create a new product group and add products",
+      "uncategorizedTitle": "Add a simple product"
     },
     "newProduct": {
-      "title": "Record a product configuration"
+      "title": "Product details"
     },
     "existingCategory": {
-      "title": "Existing product category"
+      "title": "Existing product group"
     },
     "newCategory": {
-      "title": "New product category"
+      "title": "New product group"
     },
     "uncategorized": {
-      "title": "Product without category"
+      "title": "Simple product"
     },
     "existingSku": {
-      "title": "Existing product configuration"
+      "title": "Existing variety"
     },
-    "configuration": "Product configuration",
+    "configuration": "Variety",
     "recordedProducts": "Products in this stock",
     "individualProgress": "Recorded {recorded} of {count}",
     "individualItem": "Item {number} of {count}",
