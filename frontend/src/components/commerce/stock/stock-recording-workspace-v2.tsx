@@ -381,13 +381,10 @@ function StockRecordingWorkspaceV2({
   };
 
   const goBack = () => {
-    setScreenStack((current) => {
-      const next = [...current];
-      const previous = next.pop() ?? "products";
-      setScreen(previous);
-      onStageChange?.(stageForScreen(previous));
-      return next;
-    });
+    const previous = screenStack.at(-1) ?? "products";
+    setScreenStack((current) => current.slice(0, -1));
+    setScreen(previous);
+    onStageChange?.(stageForScreen(previous));
   };
 
   const goHome = () => {
@@ -1875,8 +1872,7 @@ function StockRecordingWorkspaceV2({
                 <Input
                   value={correction.supplier}
                   onChange={(event) =>
-                    setCorrection({ ...correction, supplier: event.target.value })
-                  }
+                    setCorrection({ ...correction, supplier: event.target.value })}
                 />
               </label>
               <label className={field}>
@@ -1887,8 +1883,7 @@ function StockRecordingWorkspaceV2({
                   type="number"
                   value={correction.expenses}
                   onChange={(event) =>
-                    setCorrection({ ...correction, expenses: event.target.value })
-                  }
+                    setCorrection({ ...correction, expenses: event.target.value })}
                 />
               </label>
             </div>
