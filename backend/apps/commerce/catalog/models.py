@@ -46,6 +46,7 @@ class Product(BaseModel):
     group = models.CharField(max_length=80, blank=True, default="")
     brand = models.CharField(max_length=80, blank=True, default="")
     variant = models.CharField(max_length=120, blank=True, default="")
+    variant_options = models.JSONField(default=list, blank=True)
     unit = models.CharField(max_length=32, default="item")
     selling_price = models.DecimalField(
         max_digits=14, decimal_places=2, null=True, blank=True

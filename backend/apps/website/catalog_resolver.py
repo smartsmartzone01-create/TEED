@@ -152,7 +152,8 @@ def resolve_storefront_variant(variant: WebsiteVariant):
 
     Website does not interpret stock receipts, batches, tracked identifiers, or tracking
     modes itself. Commerce owns those rules and returns only the product state and safe
-    customer-facing individual attributes needed by the storefront.
+    customer-facing individual attributes needed by the storefront. SKU-level Website
+    options stay authoritative when an old tracked-unit field uses the same option id.
     """
 
     product = variant.valid_commerce_product()
@@ -178,7 +179,11 @@ def resolve_storefront_variant(variant: WebsiteVariant):
         )
         return [], [offer]
 
-    active_fields = _active_unit_fields(variant, commerce_offers)
+    active_fields = [
+        field
+        for field in _active_unit_fields(variant, commerce_offers)
+        if field[0] not in base_options
+    ]
     derived_options = [
         _option_payload(
             option_id,

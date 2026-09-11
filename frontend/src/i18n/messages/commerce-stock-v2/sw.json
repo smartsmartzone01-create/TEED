@@ -19,12 +19,12 @@
     "helpLabel": "Msaada",
     "help": {
       "stock": "Maelezo ya stoo si lazima. Weka jina la stoo, msambazaji, tarehe ya kupokea, au gharama za stoo pale tu unapohitaji kumbukumbu kamili zaidi za ununuzi.",
-      "products": "Fikiria bidhaa kwa mfumo huu: Kundi → Aina → Kitu. Mfano: iPhone 15 Pro Max → Silver 256 GB → IMEI ya kila simu. Anza na kundi, kisha rekodi aina kamili uliyopokea.",
-      "catalog": "Kundi la bidhaa huweka bidhaa kuu moja pamoja. Kila aina ni toleo moja ndani ya kundi hilo, na vitu vinavyofuatiliwa moja moja vinaweza kuwa na vitambulisho vyake.",
+      "products": "Fikiria bidhaa kwa mfumo huu: Kundi → Aina → Kitu. Mfano: iPhone 15 Pro Max → Natural Titanium · 256 GB → IMEI ya kila simu. Anza na kundi, kisha rekodi aina kamili uliyopokea.",
+      "catalog": "Kundi la bidhaa huweka bidhaa kuu moja pamoja. Kila aina ni mchanganyiko mmoja kamili unaouzwa ndani ya kundi hilo, na vitu vinavyofuatiliwa moja moja vinaweza kuwa na vitambulisho vyake.",
       "record": "Weka kiasi ulichopokea na bei ya kununua kwa kila uniti. Kwa bidhaa zinazofuatiliwa moja moja, ongeza IMEI, namba ya seriali, au kitambulisho kingine cha kila kitu.",
       "review": "Kagua bidhaa ulizorekodi, kisha hifadhi rasimu au kamilisha upokeaji wa stoo. Maelezo ya hiari ya stoo yatahusishwa tu kama uliyaweka.",
-      "familyAssignment": "Kundi la bidhaa huweka matoleo yanayohusiana ya bidhaa moja pamoja. Mfano: iPhone 15 Pro Max ni kundi; Silver 256 GB na Black 512 GB ni aina ndani yake.",
-      "autoSku": "Aina ni toleo moja maalum ndani ya kundi la bidhaa, kwa mfano Silver · 256 GB. Tunakuza inasimamia SKU moja kwa moja.",
+      "familyAssignment": "Kundi la bidhaa huweka matoleo yanayohusiana ya bidhaa moja pamoja. Mfano: iPhone 15 Pro Max ni kundi; Natural Titanium · 256 GB na Blue Titanium · 512 GB ni aina ndani yake.",
+      "autoSku": "Eleza sifa zinazotambulisha aina hii kamili, kama Rangi + Hifadhi, Ukubwa wa skrini, Ukubwa + Rangi, au RAM + Hifadhi. Tunakuza inasimamia SKU moja kwa moja.",
       "existingSku": "Aina ni toleo moja maalum ndani ya kundi la bidhaa. Chagua aina iliyopo ikiwa tayari ipo, au ongeza mpya.",
       "existingCategory": "Chagua kundi la bidhaa, kisha chagua aina iliyopo au ongeza aina mpya ndani yake.",
       "newCategory": "Kundi la bidhaa ni jina kuu la bidhaa ambalo watu hulitambua, kwa mfano iPhone 15 Pro Max. Baada ya kuunda kundi, ongeza aina yake ya kwanza.",
@@ -32,7 +32,8 @@
     },
     "fieldHelp": {
       "productGroup": "Hii ni bidhaa kuu ambayo aina zake zote zinahusishwa nayo. Mfano: iSense TV.",
-      "variety": "Hii ni aina moja ya bidhaa hiyo. Mfano: inchi 43, inchi 32, Silver 256 GB, au 500 ml.",
+      "variety": "Hii ni aina moja kamili inayouzwa ya bidhaa hiyo.",
+      "varietyDetails": "Ongeza sifa zinazofanya aina hii itofautiane na nyingine kwenye kundi hili. Inapowezekana, tumia aina zilezile za sifa kwa kundi lote. Mfano: Rangi + Hifadhi, Ukubwa wa skrini, Ukubwa + Rangi, RAM + Hifadhi, au Ukubwa wa kifurushi.",
       "tracking": "Chagua Kwa kiasi kama unahitaji kujua idadi tu. Chagua Vitu moja moja kama kila kitu kinahitaji IMEI, namba ya seriali, barcode, au kitambulisho chake.",
       "quantity": "Idadi ya uniti za aina hii ulizopokea kwenye stoo hii.",
       "buyingPrice": "Bei uliyolipa kwa uniti moja. Bei ya kununua haibadilishi aina ambayo bidhaa hii inahusishwa nayo.",
@@ -44,6 +45,10 @@
       "productFamily": "Kundi la bidhaa",
       "newFamilyName": "Kundi jipya la bidhaa",
       "varietyName": "Aina",
+      "varietyDetails": "Sifa za aina",
+      "detailType": "Sifa",
+      "customDetail": "Jina la sifa",
+      "detailValue": "Thamani",
       "trackingMode": "Ufuatiliaji",
       "receivedUnit": "Uniti iliyopokelewa",
       "baseUnit": "Uniti ya hesabu ya stoo",
@@ -53,7 +58,8 @@
       "noFamily": "Chagua kundi la bidhaa",
       "createFamily": "+ Unda kundi jipya la bidhaa",
       "autoSku": "SKU itawekwa moja kwa moja",
-      "defaultStockName": "Stoo"
+      "defaultStockName": "Stoo",
+      "chooseDetail": "Chagua sifa"
     },
     "tracking": {
       "quantity": "Kwa kiasi",
@@ -62,6 +68,24 @@
     "trackingHelp": {
       "quantity": "Hesabu bidhaa zinazofanana pamoja",
       "individual": "Kila kitu kina kitambulisho chake"
+    },
+    "optionTypes": {
+      "color": "Rangi",
+      "storage": "Hifadhi",
+      "capacity": "Uwezo",
+      "size": "Ukubwa",
+      "ram": "RAM",
+      "screen_size": "Ukubwa wa skrini",
+      "pack_size": "Ukubwa wa kifurushi",
+      "material": "Nyenzo",
+      "style": "Mtindo",
+      "model": "Modeli",
+      "weight": "Uzito",
+      "length": "Urefu",
+      "volume": "Ujazo",
+      "voltage": "Volti",
+      "flavor": "Ladha",
+      "custom": "Sifa nyingine"
     },
     "actions": {
       "addExisting": "Ongeza aina iliyopo",
@@ -89,7 +113,9 @@
       "createNewGroup": "Unda kundi jipya",
       "addSimpleProduct": "Ongeza bidhaa rahisi",
       "stockDetails": "Maelezo ya stoo",
-      "addNewVariety": "Ongeza aina mpya"
+      "addNewVariety": "Ongeza aina mpya",
+      "addDetail": "Ongeza sifa nyingine",
+      "removeDetail": "Ondoa sifa"
     },
     "products": {
       "noGroups": "Bado hakuna makundi ya bidhaa. Unda kundi lako la kwanza kuanza kurekodi stoo.",
@@ -111,6 +137,8 @@
       "group": "mf. iSense TV",
       "brand": "mf. Hisense",
       "variety": "mf. inchi 43",
+      "customDetail": "mf. Kimo cha kisigino",
+      "detailValue": "mf. 256 GB, Nyeusi, inchi 43",
       "simpleProduct": "mf. Sukari kilo 1",
       "quantity": "mf. 5",
       "buyingPrice": "mf. 850000",
@@ -126,6 +154,7 @@
       "conversionPositive": "Weka ubadilishaji mkubwa kuliko sifuri.",
       "familyName": "Weka jina la kundi jipya la bidhaa.",
       "varietyName": "Weka jina la aina.",
+      "varietyDetails": "Kamilisha kila sifa ya aina na usirudie aina ileile ya sifa.",
       "identifier": "Weka kitambulisho cha kitu hiki."
     },
     "categoryChoice": {

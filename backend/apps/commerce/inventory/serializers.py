@@ -3,6 +3,7 @@ from decimal import Decimal
 from rest_framework import serializers
 
 from ..catalog.models import Product, UnitDefinition
+from ..catalog.variant_options import normalize_variant_options
 from ..models import (
     StockBatch,
     StockContainer,
@@ -36,6 +37,16 @@ class StockCatalogItemInputSerializer(serializers.Serializer):
     family_name = serializers.CharField(
         max_length=120, required=False, allow_blank=True, default=""
     )
+    variant_options = serializers.JSONField(required=False, default=list)
+
+    def validate_variant_options(self, value):
+        try:
+            return normalize_variant_options(value)
+        except serializers.ValidationError as exc:
+            detail = exc.detail
+            if isinstance(detail, dict) and "variant_options" in detail:
+                raise serializers.ValidationError(detail["variant_options"])
+            raise
 
     def validate(self, attrs):
         if bool(attrs.get("product_id")) == bool(attrs.get("item")):
@@ -45,6 +56,10 @@ class StockCatalogItemInputSerializer(serializers.Serializer):
         if attrs.get("product_id") and attrs.get("family_name"):
             raise serializers.ValidationError(
                 "Product family is changed from the catalog, not from a stock receipt."
+            )
+        if attrs.get("product_id") and attrs.get("variant_options"):
+            raise serializers.ValidationError(
+                "Product details are changed from the catalog, not from a stock receipt."
             )
         return attrs
 
@@ -429,10 +444,7 @@ class CanonicalStockReceiptCorrectionSerializer(serializers.Serializer):
         max_length=120, required=False, allow_blank=True
     )
     additional_cost = serializers.DecimalField(
-        max_digits=14,
-        decimal_places=2,
-        min_value=Decimal("0"),
-        required=False,
+        max_digits=14, decimal_places=2, min_value=Decimal("0"), required=False
     )
     batches = StockBatchNameCorrectionSerializer(many=True, required=False)
     groups = StockGroupNameCorrectionSerializer(many=True, required=False)

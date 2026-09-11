@@ -21,6 +21,12 @@ import {
 
 import { StockEditControl } from "@/components/commerce/stock/stock-edit-control";
 import {
+  StockSkuOptionEditor,
+  emptyStockSkuOptionDraft,
+  stockSkuOptionDraftsFromOptions,
+  stockSkuOptionsFromDrafts,
+} from "@/components/commerce/stock/stock-sku-option-editor";
+import {
   StockProductSummary,
   StockSummaryActions,
 } from "@/components/commerce/stock/stock-summary";
@@ -37,7 +43,7 @@ import {
   getStockReceipts,
 } from "@/services/commerce/inventory";
 import { isRequestCancelled } from "@/services/global/api-client";
-import type { Product, ProductFamily } from "@/types/commerce/catalog";
+import type { Product, ProductFamily, ProductVariantOption } from "@/types/commerce/catalog";
 import type {
   StockReceipt,
   StockTrackingMode,
@@ -117,6 +123,7 @@ type PreparedProduct = {
   name: string;
   brand: string;
   variant: string;
+  variantOptions: ProductVariantOption[];
   unit: string;
   trackingMode: StockTrackingMode;
 };
@@ -164,7 +171,7 @@ const emptyUnit = (): UnitDraft => ({
 });
 
 const emptyVariety = () => ({
-  variant: "",
+  options: [emptyStockSkuOptionDraft()],
   unit: "piece",
   trackingMode: "quantity" as StockTrackingMode,
 });
@@ -175,6 +182,12 @@ const emptySimpleProduct = () => ({
   unit: "piece",
   trackingMode: "quantity" as StockTrackingMode,
 });
+
+const skuOptionSignature = (options: ProductVariantOption[]) =>
+  options
+    .map((option) => `${option.key.trim().toLocaleLowerCase()}=${option.value.trim().toLocaleLowerCase()}`)
+    .sort()
+    .join("|");
 
 function HelpTip({
   label,
@@ -451,6 +464,7 @@ function StockRecordingWorkspaceV2({
           name: product.name,
           brand: product.brand,
           variant: product.variant,
+          variantOptions: product.variant_options ?? [],
           unit: product.unit || "piece",
           trackingMode: product.tracking_mode,
           sku: product.sku,
@@ -502,7 +516,9 @@ function StockRecordingWorkspaceV2({
     choices.filter((choice) => choice.groupKey === groupKey);
 
   const varietyLabel = (choice: ProductChoice) =>
-    choice.variant.trim() || choice.name.trim();
+    choice.variantOptions.length
+      ? choice.variantOptions.map((option) => option.value).join(" · ")
+      : choice.variant.trim() || choice.name.trim();
 
   const groupCount = (groupKey: string) => varietiesForGroup(groupKey).length;
 
@@ -572,9 +588,11 @@ function StockRecordingWorkspaceV2({
 
   const beginNewVariety = () => {
     if (!currentGroup) return;
-    const existing = varietiesForGroup(currentGroup.key)[0];
+    const existing = varietiesForGroup(currentGroup.key).find(
+      (choice) => choice.variantOptions.length,
+    );
     setVarietyDraft({
-      variant: "",
+      options: stockSkuOptionDraftsFromOptions(existing?.variantOptions ?? []),
       unit: existing?.unit || "piece",
       trackingMode: existing?.trackingMode || "quantity",
     });
@@ -584,15 +602,18 @@ function StockRecordingWorkspaceV2({
   const createVariety = (event: FormEvent) => {
     event.preventDefault();
     if (!currentGroup) return;
-    const variant = varietyDraft.variant.trim();
-    if (!variant) {
-      notify({ message: t("validation.varietyName"), tone: "error" });
+    const variantOptions = stockSkuOptionsFromDrafts(varietyDraft.options);
+    if (!variantOptions) {
+      notify({ message: t("validation.varietyDetails"), tone: "error" });
       return;
     }
+    const variant = variantOptions.map((option) => option.value).join(" · ");
+    const signature = skuOptionSignature(variantOptions);
 
     const duplicate = varietiesForGroup(currentGroup.key).find(
       (choice) =>
-        choice.variant.trim().toLocaleLowerCase() === variant.toLocaleLowerCase() &&
+        choice.variantOptions.length > 0 &&
+        skuOptionSignature(choice.variantOptions) === signature &&
         choice.unit === varietyDraft.unit &&
         choice.trackingMode === varietyDraft.trackingMode,
     );
@@ -613,6 +634,7 @@ function StockRecordingWorkspaceV2({
       name: currentGroup.name,
       brand: currentGroup.brand,
       variant,
+      variantOptions,
       unit: varietyDraft.unit || "piece",
       trackingMode: varietyDraft.trackingMode,
     };
@@ -651,6 +673,7 @@ function StockRecordingWorkspaceV2({
       name,
       brand: simpleDraft.brand.trim(),
       variant: "",
+      variantOptions: [],
       unit: simpleDraft.unit || "piece",
       trackingMode: simpleDraft.trackingMode,
     };
@@ -734,14 +757,18 @@ function StockRecordingWorkspaceV2({
 
   const addItem = () => {
     if (!currentChoice || !currentLine) return;
-    const identifierValue = unitDraft.identifierValue.trim();
-    if (!identifierValue) {
-      notify({ message: t("validation.identifier"), tone: "error" });
-      return;
-    }
     const count = lineCount(currentLine);
     if (!count) {
       notify({ message: stockT("validation.quantityPositive"), tone: "error" });
+      return;
+    }
+    if (currentLine.trackedUnits.length >= count) {
+      showScreen("afterVariety");
+      return;
+    }
+    const identifierValue = unitDraft.identifierValue.trim();
+    if (!identifierValue) {
+      notify({ message: t("validation.identifier"), tone: "error" });
       return;
     }
     const nextUnits = [
@@ -769,7 +796,7 @@ function StockRecordingWorkspaceV2({
     setCurrentGroupKey(currentChoice.groupKey);
     setCurrentProductKey("");
     setVarietyDraft({
-      variant: "",
+      options: stockSkuOptionDraftsFromOptions(currentChoice.variantOptions),
       unit: currentChoice.unit,
       trackingMode: currentChoice.trackingMode,
     });
@@ -853,6 +880,7 @@ function StockRecordingWorkspaceV2({
       return {
         key: choice.key,
         ...(choice.familyName ? { family_name: choice.familyName } : {}),
+        variant_options: choice.variantOptions,
         item: {
           name: choice.name,
           brand: choice.brand,
@@ -1305,19 +1333,12 @@ function StockRecordingWorkspaceV2({
           <span className="text-xs text-slate-500">{t("products.addingVariety")}</span>
         </div>
 
-        <label className={field}>
-          <FieldTitle help={t("fieldHelp.variety")} helpLabel={t("helpLabel")}>
-            {t("fields.varietyName")}
-          </FieldTitle>
-          <Input
-            autoFocus
-            placeholder={t("placeholders.variety")}
-            value={varietyDraft.variant}
-            onChange={(event) =>
-              setVarietyDraft((current) => ({ ...current, variant: event.target.value }))
-            }
-          />
-        </label>
+        <StockSkuOptionEditor
+          value={varietyDraft.options}
+          onChange={(options) =>
+            setVarietyDraft((current) => ({ ...current, options }))
+          }
+        />
 
         <label className={field}>
           {stockT("fields.unit")}

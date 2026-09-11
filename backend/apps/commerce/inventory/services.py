@@ -7,6 +7,11 @@ from rest_framework.exceptions import ValidationError
 from apps.workspaces.policy import WorkspacePermission
 
 from ..catalog.models import Product, ProductFamily
+from ..catalog.variant_options import (
+    normalize_variant_options,
+    variant_display_name,
+    variant_option_signature,
+)
 from ..services import (
     _create_stock_type_line,
     _sync_stock_expense,
@@ -104,7 +109,11 @@ def _resolve_catalog_product(
         return product
 
     product_values = dict(catalog_item["item"])
-    if variant_override is not None:
+    variant_options = normalize_variant_options(catalog_item.get("variant_options", []))
+    if variant_options:
+        product_values["variant"] = variant_display_name(variant_options)[:120]
+        product_values["variant_options"] = variant_options
+    elif variant_override is not None:
         product_values["variant"] = variant_override
 
     family_name = catalog_item.get("family_name", "").strip()
@@ -130,7 +139,6 @@ def _resolve_catalog_product(
         business=membership.business,
         name__iexact=product_values["name"],
         brand__iexact=product_values.get("brand", ""),
-        variant__iexact=product_values.get("variant", ""),
         unit=product_values["unit"],
         tracking_mode=tracking_mode,
         is_active=True,
@@ -138,7 +146,21 @@ def _resolve_catalog_product(
     if family is not None:
         products = products.filter(family=family)
 
-    product = products.first()
+    if variant_options:
+        signature = variant_option_signature(variant_options)
+        product = next(
+            (
+                candidate
+                for candidate in products
+                if variant_option_signature(candidate.variant_options) == signature
+            ),
+            None,
+        )
+    else:
+        product = products.filter(
+            variant__iexact=product_values.get("variant", "")
+        ).first()
+
     if product is None:
         if family is not None:
             product_values["family"] = family
@@ -209,9 +231,9 @@ def create_stock_receipt_v2(
 ):
     """Create the flat Stock v2 receipt while preserving legacy nested writes.
 
-    For new individually tracked products, color/capacity are treated as sellable
-    configuration. One receipt line may therefore resolve into multiple Product/SKU
-    identities while keeping each acquisition line and its FIFO cost history intact.
+    New Stock v2 varieties carry structured SKU-level options. Legacy individually
+    tracked clients that still send color/capacity per physical unit keep the previous
+    automatic split behavior so historical and older client flows remain compatible.
     """
 
     if not lines:
@@ -283,6 +305,7 @@ def create_stock_receipt_v2(
         new_item_values = catalog_item.get("item")
         should_resolve_configuration = (
             new_item_values is not None
+            and not catalog_item.get("variant_options")
             and new_item_values.get(
                 "tracking_mode", Product.TrackingMode.QUANTITY
             )

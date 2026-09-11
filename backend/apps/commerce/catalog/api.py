@@ -16,20 +16,30 @@ from ..serializers import UnitDefinitionSerializer
 from ..services import commerce_membership
 from .models import Product, ProductFamily, UnitDefinition
 from .services import active_catalog_products, set_catalog_product_active
+from .variant_options import normalize_variant_options
 
 
 class CatalogProductSerializer(AvailabilityProductSerializer):
     family = serializers.SerializerMethodField()
     family_name = serializers.SerializerMethodField()
+    variant_options = serializers.SerializerMethodField()
 
     class Meta(AvailabilityProductSerializer.Meta):
-        fields = [*AvailabilityProductSerializer.Meta.fields, "family", "family_name"]
+        fields = [
+            *AvailabilityProductSerializer.Meta.fields,
+            "family",
+            "family_name",
+            "variant_options",
+        ]
 
     def get_family(self, obj):
         return str(obj.family_id) if obj.family_id else None
 
     def get_family_name(self, obj):
         return obj.family.name if obj.family_id else ""
+
+    def get_variant_options(self, obj):
+        return normalize_variant_options(obj.variant_options)
 
 
 class ActiveProductListCreatePolishAPIView(ProductListCreatePolishAPIView):

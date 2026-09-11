@@ -19,12 +19,12 @@
     "helpLabel": "Help",
     "help": {
       "stock": "Stock details are optional. Add a stock name, supplier, received date, or stock expenses only when you need a fuller purchasing record.",
-      "products": "Think of products as Group → Variety → Item. Example: iPhone 15 Pro Max → Silver 256 GB → each phone's IMEI. Start with the group, then record the exact variety you received.",
-      "catalog": "A product group keeps the same main product together. Each variety is one version inside that group, and individual items can carry their own identifiers.",
+      "products": "Think of products as Group → Variety → Item. Example: iPhone 15 Pro Max → Natural Titanium · 256 GB → each phone's IMEI. Start with the group, then record the exact variety you received.",
+      "catalog": "A product group keeps the same main product together. Each variety is one exact sellable configuration inside that group, and individual items can carry their own identifiers.",
       "record": "Enter how many units you received and the buying price per unit. For individually tracked stock, add each item's IMEI, serial number, or other identifier.",
       "review": "Check the products you recorded, then save a draft or finish and receive the stock. Optional stock details are included only when you entered them.",
-      "familyAssignment": "A product group keeps related versions of the same product together. Example: iPhone 15 Pro Max is the group; Silver 256 GB and Black 512 GB are varieties inside it.",
-      "autoSku": "A variety is one exact version inside a product group, for example Silver · 256 GB. Tunakuza handles the SKU automatically.",
+      "familyAssignment": "A product group keeps related versions of the same product together. Example: iPhone 15 Pro Max is the group; Natural Titanium · 256 GB and Blue Titanium · 512 GB are varieties inside it.",
+      "autoSku": "Describe the details that define this exact variety, such as Color + Storage, Screen size, Size + Color, or RAM + Storage. Tunakuza handles the SKU automatically.",
       "existingSku": "A variety is one exact version inside a product group. Choose an existing variety if it is already there, or add a new one.",
       "existingCategory": "Choose a product group, then choose an existing variety or add a new one inside it.",
       "newCategory": "A product group is the main product people recognize, for example iPhone 15 Pro Max. After creating the group, add its first variety.",
@@ -32,7 +32,8 @@
     },
     "fieldHelp": {
       "productGroup": "The main product all its varieties belong to. Example: iSense TV.",
-      "variety": "One version of this product. Example: 43 inch, 32 inch, Silver 256 GB, or 500 ml.",
+      "variety": "One exact sellable version of this product.",
+      "varietyDetails": "Add the details that make this variety different from others in the same group. Keep the same detail types across the group when possible. Examples: Color + Storage, Screen size, Size + Color, RAM + Storage, or Pack size.",
       "tracking": "Choose Quantity when you only need to know how many you have. Choose Individual items when each physical unit needs its own IMEI, serial number, barcode, or other identifier.",
       "quantity": "How many units of this variety you received in this stock.",
       "buyingPrice": "What you paid for one unit. Buying price does not change which variety the product belongs to.",
@@ -44,6 +45,10 @@
       "productFamily": "Product group",
       "newFamilyName": "New product group",
       "varietyName": "Variety",
+      "varietyDetails": "Variety details",
+      "detailType": "Detail",
+      "customDetail": "Detail name",
+      "detailValue": "Value",
       "trackingMode": "Tracking",
       "receivedUnit": "Received unit",
       "baseUnit": "Inventory unit",
@@ -53,7 +58,8 @@
       "noFamily": "Choose product group",
       "createFamily": "+ Create new product group",
       "autoSku": "SKU assigned automatically",
-      "defaultStockName": "Stock"
+      "defaultStockName": "Stock",
+      "chooseDetail": "Choose detail"
     },
     "tracking": {
       "quantity": "Quantity",
@@ -62,6 +68,24 @@
     "trackingHelp": {
       "quantity": "Count identical items together",
       "individual": "Each unit has its own identifier"
+    },
+    "optionTypes": {
+      "color": "Color",
+      "storage": "Storage",
+      "capacity": "Capacity",
+      "size": "Size",
+      "ram": "RAM",
+      "screen_size": "Screen size",
+      "pack_size": "Pack size",
+      "material": "Material",
+      "style": "Style",
+      "model": "Model",
+      "weight": "Weight",
+      "length": "Length",
+      "volume": "Volume",
+      "voltage": "Voltage",
+      "flavor": "Flavor",
+      "custom": "Other detail"
     },
     "actions": {
       "addExisting": "Add existing variety",
@@ -89,7 +113,9 @@
       "createNewGroup": "Create new group",
       "addSimpleProduct": "Add simple product",
       "stockDetails": "Stock details",
-      "addNewVariety": "Add new variety"
+      "addNewVariety": "Add new variety",
+      "addDetail": "Add another detail",
+      "removeDetail": "Remove detail"
     },
     "products": {
       "noGroups": "No product groups yet. Create your first group to start recording stock.",
@@ -111,6 +137,8 @@
       "group": "e.g. iSense TV",
       "brand": "e.g. Hisense",
       "variety": "e.g. 43 inch",
+      "customDetail": "e.g. Heel height",
+      "detailValue": "e.g. 256 GB, Black, 43 inch",
       "simpleProduct": "e.g. Sugar 1 kg",
       "quantity": "e.g. 5",
       "buyingPrice": "e.g. 850000",
@@ -126,6 +154,7 @@
       "conversionPositive": "Enter a conversion greater than zero.",
       "familyName": "Enter the new product group name.",
       "varietyName": "Enter a variety name.",
+      "varietyDetails": "Complete each variety detail and do not repeat the same detail type.",
       "identifier": "Enter the identifier for this item."
     },
     "categoryChoice": {
