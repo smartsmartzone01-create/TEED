@@ -1,6 +1,14 @@
 "use client";
 
-import { ArrowLeft, ChevronRight, CircleHelp, Plus, Trash2 } from "lucide-react";
+import {
+  ArrowLeft,
+  ChevronDown,
+  ChevronRight,
+  CircleHelp,
+  Plus,
+  Search,
+  Trash2,
+} from "lucide-react";
 import { useTranslations } from "next-intl";
 import {
   useCallback,
@@ -77,7 +85,6 @@ const countableUnits = new Set(units.slice(0, 14));
 type IdentifierKind = (typeof identifierKinds)[number];
 type Screen =
   | "products"
-  | "existingGroups"
   | "newGroup"
   | "groupVarieties"
   | "newVariety"
@@ -186,6 +193,43 @@ function HelpTip({
         <CircleHelp aria-hidden="true" className="size-4" />
       </button>
     </Tooltip>
+  );
+}
+
+function FieldTip({
+  label,
+  children,
+}: {
+  label: string;
+  children: string;
+}) {
+  return (
+    <Tooltip content={children} side="top">
+      <button
+        aria-label={label}
+        className="inline-flex size-5 shrink-0 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 dark:text-slate-500 dark:hover:bg-slate-900 dark:hover:text-slate-200"
+        type="button"
+      >
+        <CircleHelp aria-hidden="true" className="size-3.5" />
+      </button>
+    </Tooltip>
+  );
+}
+
+function FieldTitle({
+  children,
+  help,
+  helpLabel,
+}: {
+  children: React.ReactNode;
+  help?: string;
+  helpLabel: string;
+}) {
+  return (
+    <span className="flex min-w-0 items-center gap-1">
+      <span className="min-w-0 break-words">{children}</span>
+      {help ? <FieldTip label={helpLabel}>{help}</FieldTip> : null}
+    </span>
   );
 }
 
@@ -298,6 +342,8 @@ function StockRecordingWorkspaceV2({
   const [varietyDraft, setVarietyDraft] = useState(emptyVariety());
   const [simpleDraft, setSimpleDraft] = useState(emptySimpleProduct());
   const [unitDraft, setUnitDraft] = useState<UnitDraft>(emptyUnit());
+  const [existingOpen, setExistingOpen] = useState(false);
+  const [groupSearch, setGroupSearch] = useState("");
 
   const [stockName, setStockName] = useState("");
   const [supplier, setSupplier] = useState("");
@@ -438,6 +484,20 @@ function StockRecordingWorkspaceV2({
     (choice) => !choice.groupKey && Boolean(choice.existingId),
   );
 
+  const normalizedGroupSearch = groupSearch.trim().toLocaleLowerCase();
+  const filteredGroups = normalizedGroupSearch
+    ? groups.filter((group) =>
+        `${group.name} ${group.brand}`.toLocaleLowerCase().includes(normalizedGroupSearch),
+      )
+    : groups;
+  const filteredSimpleChoices = normalizedGroupSearch
+    ? existingSimpleChoices.filter((choice) =>
+        `${choice.name} ${choice.brand} ${choice.variant}`
+          .toLocaleLowerCase()
+          .includes(normalizedGroupSearch),
+      )
+    : existingSimpleChoices;
+
   const varietiesForGroup = (groupKey: string) =>
     choices.filter((choice) => choice.groupKey === groupKey);
 
@@ -480,9 +540,9 @@ function StockRecordingWorkspaceV2({
     showScreen("groupVarieties");
   };
 
-  const openExistingGroupPicker = () => {
-    setCurrentProductKey("");
-    showScreen("existingGroups");
+  const toggleExistingGroups = () => {
+    setExistingOpen((current) => !current);
+    setGroupSearch("");
   };
 
   const beginNewGroup = () => {
@@ -532,8 +592,7 @@ function StockRecordingWorkspaceV2({
 
     const duplicate = varietiesForGroup(currentGroup.key).find(
       (choice) =>
-        choice.variant.trim().toLocaleLowerCase() ===
-          variant.toLocaleLowerCase() &&
+        choice.variant.trim().toLocaleLowerCase() === variant.toLocaleLowerCase() &&
         choice.unit === varietyDraft.unit &&
         choice.trackingMode === varietyDraft.trackingMode,
     );
@@ -561,12 +620,7 @@ function StockRecordingWorkspaceV2({
     setSelectedKeys((current) => [...current, key]);
     setLines((current) => [
       ...current,
-      {
-        productKey: key,
-        quantity: "1",
-        costValue: "",
-        trackedUnits: [],
-      },
+      { productKey: key, quantity: "1", costValue: "", trackedUnits: [] },
     ]);
     setCurrentProductKey(key);
     setUnitDraft(emptyUnit());
@@ -604,12 +658,7 @@ function StockRecordingWorkspaceV2({
     setSelectedKeys((current) => [...current, key]);
     setLines((current) => [
       ...current,
-      {
-        productKey: key,
-        quantity: "1",
-        costValue: "",
-        trackedUnits: [],
-      },
+      { productKey: key, quantity: "1", costValue: "", trackedUnits: [] },
     ]);
     setCurrentProductKey(key);
     setUnitDraft(emptyUnit());
@@ -638,10 +687,7 @@ function StockRecordingWorkspaceV2({
     if (!currentChoice || !currentLine) return;
     const quantity = Number(currentLine.quantity);
     if (!Number.isFinite(quantity) || quantity <= 0) {
-      notify({
-        message: stockT("validation.quantityPositive"),
-        tone: "error",
-      });
+      notify({ message: stockT("validation.quantityPositive"), tone: "error" });
       return;
     }
     if (
@@ -664,10 +710,7 @@ function StockRecordingWorkspaceV2({
 
     if (currentChoice.trackingMode === "individual") {
       if (!Number.isInteger(quantity)) {
-        notify({
-          message: stockT("validation.individualWhole"),
-          tone: "error",
-        });
+        notify({ message: stockT("validation.individualWhole"), tone: "error" });
         return;
       }
       setLines((current) =>
@@ -698,32 +741,22 @@ function StockRecordingWorkspaceV2({
     }
     const count = lineCount(currentLine);
     if (!count) {
-      notify({
-        message: stockT("validation.quantityPositive"),
-        tone: "error",
-      });
+      notify({ message: stockT("validation.quantityPositive"), tone: "error" });
       return;
     }
     const nextUnits = [
       ...currentLine.trackedUnits,
-      {
-        identifierKind: unitDraft.identifierKind,
-        identifierValue,
-      },
+      { identifierKind: unitDraft.identifierKind, identifierValue },
     ];
     updateCurrentLine({ trackedUnits: nextUnits });
     setUnitDraft(emptyUnit());
-    if (nextUnits.length >= count) {
-      showScreen("afterVariety");
-    }
+    if (nextUnits.length >= count) showScreen("afterVariety");
   };
 
   const removeRecordedItem = (index: number) => {
     if (!currentLine) return;
     updateCurrentLine({
-      trackedUnits: currentLine.trackedUnits.filter(
-        (_, itemIndex) => itemIndex !== index,
-      ),
+      trackedUnits: currentLine.trackedUnits.filter((_, itemIndex) => itemIndex !== index),
     });
   };
 
@@ -763,9 +796,7 @@ function StockRecordingWorkspaceV2({
   };
 
   const validateLines = (status: "draft" | "received") => {
-    if (!selectedKeys.length || !lines.length) {
-      return t("validation.catalogRequired");
-    }
+    if (!selectedKeys.length || !lines.length) return t("validation.catalogRequired");
     for (const line of lines) {
       const choice = choices.find((item) => item.key === line.productKey);
       if (!choice) return t("validation.catalogRequired");
@@ -781,14 +812,10 @@ function StockRecordingWorkspaceV2({
       }
       if (line.costValue) {
         const cost = Number(line.costValue);
-        if (!Number.isFinite(cost) || cost < 0) {
-          return stockT("validation.buyingCost");
-        }
+        if (!Number.isFinite(cost) || cost < 0) return stockT("validation.buyingCost");
       }
       if (choice.trackingMode === "individual") {
-        if (!Number.isInteger(quantity)) {
-          return stockT("validation.individualWhole");
-        }
+        if (!Number.isInteger(quantity)) return stockT("validation.individualWhole");
         if (status === "received" && line.trackedUnits.length !== quantity) {
           return stockT("validation.individualCount", { count: quantity });
         }
@@ -814,21 +841,15 @@ function StockRecordingWorkspaceV2({
   const buildPayload = (status: "draft" | "received") => ({
     name: stockName.trim() || t("values.defaultStockName"),
     status,
-    ...(lateDeliveryParent
-      ? { parent_receipt_id: lateDeliveryParent.id }
-      : {}),
+    ...(lateDeliveryParent ? { parent_receipt_id: lateDeliveryParent.id } : {}),
     supplier_name: supplier.trim(),
     additional_cost: stockExpenses || "0",
     ...(status === "received"
-      ? {
-          received_at: new Date(receivedAt || Date.now()).toISOString(),
-        }
+      ? { received_at: new Date(receivedAt || Date.now()).toISOString() }
       : {}),
     catalog_items: selectedKeys.map((key) => {
       const choice = choices.find((item) => item.key === key)!;
-      if (choice.existingId) {
-        return { key: choice.key, product_id: choice.existingId };
-      }
+      if (choice.existingId) return { key: choice.key, product_id: choice.existingId };
       return {
         key: choice.key,
         ...(choice.familyName ? { family_name: choice.familyName } : {}),
@@ -848,9 +869,7 @@ function StockRecordingWorkspaceV2({
         quantity_received: line.quantity,
         received_unit: choice.unit,
         conversion_to_base: "1",
-        ...(line.costValue
-          ? { unit_cost: Number(line.costValue).toFixed(2) }
-          : {}),
+        ...(line.costValue ? { unit_cost: Number(line.costValue).toFixed(2) } : {}),
         tracked_units:
           choice.trackingMode === "individual"
             ? line.trackedUnits.map((unit) => ({
@@ -859,10 +878,7 @@ function StockRecordingWorkspaceV2({
                 color: "",
                 capacity: "",
                 identifiers: [
-                  {
-                    kind: unit.identifierKind,
-                    value: unit.identifierValue.trim(),
-                  },
+                  { kind: unit.identifierKind, value: unit.identifierValue.trim() },
                 ],
               }))
             : [],
@@ -885,25 +901,18 @@ function StockRecordingWorkspaceV2({
 
     setBusy(true);
     try {
-      const response = await createStockReceipt(
-        businessId,
-        accessToken,
-        buildPayload(status),
-      );
+      const response = await createStockReceipt(businessId, accessToken, buildPayload(status));
       const receipt = response.data as StockReceipt | null;
       if (receipt) setSavedReceipt(receipt);
       notify({
         message:
-          status === "draft"
-            ? stockT("success.draftSaved")
-            : commerceT("success.stock"),
+          status === "draft" ? stockT("success.draftSaved") : commerceT("success.stock"),
         tone: "success",
       });
       await load();
     } catch (reason) {
       notify({
-        message:
-          reason instanceof Error ? reason.message : commerceT("errors.save"),
+        message: reason instanceof Error ? reason.message : commerceT("errors.save"),
         tone: "error",
       });
     } finally {
@@ -924,6 +933,8 @@ function StockRecordingWorkspaceV2({
     setVarietyDraft(emptyVariety());
     setSimpleDraft(emptySimpleProduct());
     setUnitDraft(emptyUnit());
+    setExistingOpen(false);
+    setGroupSearch("");
     setStockName(parent?.name ?? "");
     setSupplier(parent?.supplier_name ?? "");
     setReceivedAt(localNow());
@@ -944,8 +955,7 @@ function StockRecordingWorkspaceV2({
         id: line.id,
         name: line.product_name,
         quantity: String(
-          Number(line.quantity_received) /
-            Number(line.conversion_to_base || "1"),
+          Number(line.quantity_received) / Number(line.conversion_to_base || "1"),
         ),
         receivedUnit: line.received_unit,
         cost: line.received_unit_cost ?? "",
@@ -957,32 +967,23 @@ function StockRecordingWorkspaceV2({
     if (!accessToken || !correction) return;
     setBusy(true);
     try {
-      await correctStockReceipt(
-        businessId,
-        correction.receipt.id,
-        accessToken,
-        {
-          name: correction.name.trim(),
-          supplier_name: correction.supplier.trim(),
-          additional_cost: correction.expenses || "0",
-          lines: correction.lines.map((line) => ({
-            id: line.id,
-            quantity: line.quantity,
-            unit: line.receivedUnit,
-            unit_cost: line.cost || null,
-          })),
-        },
-      );
-      setCorrection(null);
-      notify({
-        message: commerceT("success.stockCorrected"),
-        tone: "success",
+      await correctStockReceipt(businessId, correction.receipt.id, accessToken, {
+        name: correction.name.trim(),
+        supplier_name: correction.supplier.trim(),
+        additional_cost: correction.expenses || "0",
+        lines: correction.lines.map((line) => ({
+          id: line.id,
+          quantity: line.quantity,
+          unit: line.receivedUnit,
+          unit_cost: line.cost || null,
+        })),
       });
+      setCorrection(null);
+      notify({ message: commerceT("success.stockCorrected"), tone: "success" });
       await load();
     } catch (reason) {
       notify({
-        message:
-          reason instanceof Error ? reason.message : commerceT("errors.save"),
+        message: reason instanceof Error ? reason.message : commerceT("errors.save"),
         tone: "error",
       });
     } finally {
@@ -992,7 +993,6 @@ function StockRecordingWorkspaceV2({
 
   const titleForScreen = () => {
     if (screen === "products") return t("steps.products");
-    if (screen === "existingGroups") return t("screens.chooseGroup");
     if (screen === "newGroup") return t("screens.newGroup");
     if (screen === "groupVarieties") return t("screens.varieties");
     if (screen === "newVariety") return t("screens.newVariety");
@@ -1007,17 +1007,9 @@ function StockRecordingWorkspaceV2({
   const helpForScreen = () => {
     if (screen === "products") return t("help.products");
     if (screen === "newGroup") return t("help.newCategory");
-    if (
-      screen === "groupVarieties" ||
-      screen === "existingGroups" ||
-      screen === "newVariety"
-    ) {
-      return t("help.autoSku");
-    }
+    if (screen === "groupVarieties" || screen === "newVariety") return t("help.autoSku");
     if (screen === "newSimple") return t("help.uncategorized");
-    if (screen === "recording" || screen === "itemEntry") {
-      return t("help.record");
-    }
+    if (screen === "recording" || screen === "itemEntry") return t("help.record");
     if (screen === "stockDetails") return t("help.stock");
     if (screen === "review") return t("help.review");
     return "";
@@ -1027,7 +1019,7 @@ function StockRecordingWorkspaceV2({
     <div className="divide-y divide-slate-100 dark:divide-slate-800">
       {items.map((group) => (
         <button
-          className="flex w-full min-w-0 items-center gap-3 px-1 py-3 text-left transition hover:text-primary"
+          className="flex w-full min-w-0 items-center gap-3 px-3 py-3 text-left transition hover:bg-slate-50 hover:text-primary dark:hover:bg-slate-900/50"
           key={group.key}
           onClick={() => openGroup(group.key)}
           type="button"
@@ -1036,12 +1028,8 @@ function StockRecordingWorkspaceV2({
             <strong className="block truncate text-sm">{group.name}</strong>
             <span className="mt-0.5 block text-xs text-slate-500">
               {group.brand
-                ? `${group.brand} · ${t("products.varietyCount", {
-                    count: groupCount(group.key),
-                  })}`
-                : t("products.varietyCount", {
-                    count: groupCount(group.key),
-                  })}
+                ? `${group.brand} · ${t("products.varietyCount", { count: groupCount(group.key) })}`
+                : t("products.varietyCount", { count: groupCount(group.key) })}
             </span>
           </span>
           <ChevronRight className="size-4 shrink-0 text-slate-400" />
@@ -1053,6 +1041,8 @@ function StockRecordingWorkspaceV2({
   let body: React.ReactNode;
 
   if (screen === "products") {
+    const hasExisting = groups.length > 0 || existingSimpleChoices.length > 0;
+    const hasSearchResults = filteredGroups.length > 0 || filteredSimpleChoices.length > 0;
     body = (
       <div className="grid gap-4">
         {lateDeliveryParent ? (
@@ -1060,26 +1050,28 @@ function StockRecordingWorkspaceV2({
             <strong className="block text-sm text-slate-950 dark:text-white">
               {stockT("steps.lateDelivery")}
             </strong>
-            <span className="text-xs text-slate-500">
-              {lateDeliveryParent.reference}
-            </span>
+            <span className="text-xs text-slate-500">{lateDeliveryParent.reference}</span>
           </div>
         ) : null}
 
         <div className="grid grid-cols-2 gap-2">
-          {groups.length ? (
+          {hasExisting ? (
             <Button
+              aria-expanded={existingOpen}
               className="min-h-11 rounded-full px-3 text-xs sm:text-sm"
-              onClick={openExistingGroupPicker}
+              onClick={toggleExistingGroups}
               type="button"
               variant="outline"
             >
               {t("actions.addToExistingGroup")}
+              <ChevronDown
+                className={`size-4 transition ${existingOpen ? "rotate-180" : ""}`}
+              />
             </Button>
           ) : null}
           <Button
             className={`min-h-11 rounded-full px-3 text-xs sm:text-sm ${
-              groups.length ? "" : "col-span-2"
+              hasExisting ? "" : "col-span-2"
             }`}
             onClick={beginNewGroup}
             type="button"
@@ -1089,39 +1081,63 @@ function StockRecordingWorkspaceV2({
           </Button>
         </div>
 
-        {groups.length ? (
-          renderGroupRows(groups)
-        ) : (
+        {existingOpen ? (
+          <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800">
+            <div className="border-b border-slate-200 p-2.5 dark:border-slate-800">
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+                <Input
+                  aria-label={t("placeholders.searchGroups")}
+                  className="pl-9"
+                  placeholder={t("placeholders.searchGroups")}
+                  value={groupSearch}
+                  onChange={(event) => setGroupSearch(event.target.value)}
+                />
+              </div>
+            </div>
+
+            {hasSearchResults ? (
+              <div className="max-h-80 overflow-y-auto overscroll-contain">
+                {filteredGroups.length ? renderGroupRows(filteredGroups) : null}
+                {filteredSimpleChoices.length ? (
+                  <div className="border-t border-slate-200 dark:border-slate-800">
+                    <div className="px-3 pt-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                      {t("products.simpleProducts")}
+                    </div>
+                    <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                      {filteredSimpleChoices.map((choice) => (
+                        <button
+                          className="flex w-full min-w-0 items-center gap-3 px-3 py-3 text-left transition hover:bg-slate-50 hover:text-primary dark:hover:bg-slate-900/50"
+                          key={choice.key}
+                          onClick={() => startRecording(choice.key)}
+                          type="button"
+                        >
+                          <span className="min-w-0 flex-1">
+                            <strong className="block truncate text-sm">{choice.name}</strong>
+                            <span className="block truncate text-xs text-slate-500">
+                              {[choice.variant, t(`tracking.${choice.trackingMode}`)]
+                                .filter(Boolean)
+                                .join(" · ")}
+                            </span>
+                          </span>
+                          <ChevronRight className="size-4 shrink-0 text-slate-400" />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            ) : (
+              <p className="px-4 py-6 text-center text-sm text-slate-500">
+                {t("products.noMatchingGroups")}
+              </p>
+            )}
+          </div>
+        ) : null}
+
+        {!hasExisting ? (
           <div className="rounded-xl border border-dashed border-slate-200 px-4 py-7 text-center dark:border-slate-800">
             <p className="text-sm text-slate-500">{t("products.noGroups")}</p>
-          </div>
-        )}
-
-        {existingSimpleChoices.length ? (
-          <div className="grid gap-1">
-            <strong className="text-xs font-semibold text-slate-500">
-              {t("products.simpleProducts")}
-            </strong>
-            <div className="divide-y divide-slate-100 dark:divide-slate-800">
-              {existingSimpleChoices.map((choice) => (
-                <button
-                  className="flex w-full min-w-0 items-center gap-3 px-1 py-2.5 text-left transition hover:text-primary"
-                  key={choice.key}
-                  onClick={() => startRecording(choice.key)}
-                  type="button"
-                >
-                  <span className="min-w-0 flex-1">
-                    <strong className="block truncate text-sm">{choice.name}</strong>
-                    <span className="block truncate text-xs text-slate-500">
-                      {[choice.variant, t(`tracking.${choice.trackingMode}`)]
-                        .filter(Boolean)
-                        .join(" · ")}
-                    </span>
-                  </span>
-                  <ChevronRight className="size-4 shrink-0 text-slate-400" />
-                </button>
-              ))}
-            </div>
           </div>
         ) : null}
 
@@ -1134,14 +1150,6 @@ function StockRecordingWorkspaceV2({
           >
             <Plus className="size-3.5" />
             {t("actions.addSimpleProduct")}
-          </Button>
-          <Button
-            className="h-8 px-2.5 text-xs"
-            onClick={() => showScreen("stockDetails")}
-            type="button"
-            variant="ghost"
-          >
-            {t("actions.stockDetails")}
           </Button>
         </div>
 
@@ -1172,10 +1180,7 @@ function StockRecordingWorkspaceV2({
                 const line = lines.find((item) => item.productKey === key);
                 if (!choice || !line) return null;
                 return (
-                  <div
-                    className="flex min-w-0 items-center gap-2 py-2"
-                    key={key}
-                  >
+                  <div className="flex min-w-0 items-center gap-2 py-2" key={key}>
                     <span className="min-w-0 flex-1 truncate text-xs text-emerald-900 dark:text-emerald-200">
                       {[choice.familyName, varietyLabel(choice)]
                         .filter(
@@ -1202,28 +1207,19 @@ function StockRecordingWorkspaceV2({
         ) : null}
       </div>
     );
-  } else if (screen === "existingGroups") {
-    body = groups.length ? (
-      renderGroupRows(groups)
-    ) : (
-      <p className="py-8 text-center text-sm text-slate-500">
-        {t("products.noGroups")}
-      </p>
-    );
   } else if (screen === "newGroup") {
     body = (
       <form className="grid gap-4" onSubmit={createGroup}>
         <label className={field}>
-          {t("fields.productFamily")}
+          <FieldTitle help={t("fieldHelp.productGroup")} helpLabel={t("helpLabel")}>
+            {t("fields.productFamily")}
+          </FieldTitle>
           <Input
             autoFocus
             placeholder={t("placeholders.group")}
             value={groupDraft.name}
             onChange={(event) =>
-              setGroupDraft((current) => ({
-                ...current,
-                name: event.target.value,
-              }))
+              setGroupDraft((current) => ({ ...current, name: event.target.value }))
             }
           />
         </label>
@@ -1233,10 +1229,7 @@ function StockRecordingWorkspaceV2({
             placeholder={t("placeholders.brand")}
             value={groupDraft.brand}
             onChange={(event) =>
-              setGroupDraft((current) => ({
-                ...current,
-                brand: event.target.value,
-              }))
+              setGroupDraft((current) => ({ ...current, brand: event.target.value }))
             }
           />
         </label>
@@ -1246,9 +1239,7 @@ function StockRecordingWorkspaceV2({
       </form>
     );
   } else if (screen === "groupVarieties") {
-    const groupChoices = currentGroup
-      ? varietiesForGroup(currentGroup.key)
-      : [];
+    const groupChoices = currentGroup ? varietiesForGroup(currentGroup.key) : [];
     body = currentGroup ? (
       <div className="grid gap-4">
         <div className={contextCard}>
@@ -1272,9 +1263,7 @@ function StockRecordingWorkspaceV2({
                   type="button"
                 >
                   <span className="min-w-0 flex-1">
-                    <strong className="block truncate text-sm">
-                      {varietyLabel(choice)}
-                    </strong>
+                    <strong className="block truncate text-sm">{varietyLabel(choice)}</strong>
                     <span className="mt-1 inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600 dark:bg-slate-900 dark:text-slate-300">
                       {line
                         ? `${line.quantity} ${choice.unit} · ${t(
@@ -1313,22 +1302,19 @@ function StockRecordingWorkspaceV2({
           <strong className="block text-sm text-slate-950 dark:text-white">
             {currentGroup.name}
           </strong>
-          <span className="text-xs text-slate-500">
-            {t("products.addingVariety")}
-          </span>
+          <span className="text-xs text-slate-500">{t("products.addingVariety")}</span>
         </div>
 
         <label className={field}>
-          {t("fields.varietyName")}
+          <FieldTitle help={t("fieldHelp.variety")} helpLabel={t("helpLabel")}>
+            {t("fields.varietyName")}
+          </FieldTitle>
           <Input
             autoFocus
             placeholder={t("placeholders.variety")}
             value={varietyDraft.variant}
             onChange={(event) =>
-              setVarietyDraft((current) => ({
-                ...current,
-                variant: event.target.value,
-              }))
+              setVarietyDraft((current) => ({ ...current, variant: event.target.value }))
             }
           />
         </label>
@@ -1338,10 +1324,7 @@ function StockRecordingWorkspaceV2({
           <Select
             value={varietyDraft.unit}
             onChange={(event) =>
-              setVarietyDraft((current) => ({
-                ...current,
-                unit: event.target.value,
-              }))
+              setVarietyDraft((current) => ({ ...current, unit: event.target.value }))
             }
           >
             {availableUnits.map((unit) => (
@@ -1353,17 +1336,16 @@ function StockRecordingWorkspaceV2({
         </label>
 
         <div className="grid gap-2">
-          <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-            {t("fields.trackingMode")}
-          </span>
+          <FieldTitle help={t("fieldHelp.tracking")} helpLabel={t("helpLabel")}>
+            <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+              {t("fields.trackingMode")}
+            </span>
+          </FieldTitle>
           <TrackingChoice
             description={t("trackingHelp.quantity")}
             label={t("tracking.quantity")}
             onClick={() =>
-              setVarietyDraft((current) => ({
-                ...current,
-                trackingMode: "quantity",
-              }))
+              setVarietyDraft((current) => ({ ...current, trackingMode: "quantity" }))
             }
             selected={varietyDraft.trackingMode === "quantity"}
           />
@@ -1371,10 +1353,7 @@ function StockRecordingWorkspaceV2({
             description={t("trackingHelp.individual")}
             label={t("tracking.individual")}
             onClick={() =>
-              setVarietyDraft((current) => ({
-                ...current,
-                trackingMode: "individual",
-              }))
+              setVarietyDraft((current) => ({ ...current, trackingMode: "individual" }))
             }
             selected={varietyDraft.trackingMode === "individual"}
           />
@@ -1389,27 +1368,25 @@ function StockRecordingWorkspaceV2({
     body = (
       <form className="grid gap-4" onSubmit={createSimpleProduct}>
         <label className={field}>
-          {stockT("fields.productName")}
+          <FieldTitle help={t("fieldHelp.simpleProduct")} helpLabel={t("helpLabel")}>
+            {stockT("fields.productName")}
+          </FieldTitle>
           <Input
             autoFocus
+            placeholder={t("placeholders.simpleProduct")}
             value={simpleDraft.name}
             onChange={(event) =>
-              setSimpleDraft((current) => ({
-                ...current,
-                name: event.target.value,
-              }))
+              setSimpleDraft((current) => ({ ...current, name: event.target.value }))
             }
           />
         </label>
         <label className={field}>
           {commerceT("fields.brandOptional")}
           <Input
+            placeholder={t("placeholders.brand")}
             value={simpleDraft.brand}
             onChange={(event) =>
-              setSimpleDraft((current) => ({
-                ...current,
-                brand: event.target.value,
-              }))
+              setSimpleDraft((current) => ({ ...current, brand: event.target.value }))
             }
           />
         </label>
@@ -1418,10 +1395,7 @@ function StockRecordingWorkspaceV2({
           <Select
             value={simpleDraft.unit}
             onChange={(event) =>
-              setSimpleDraft((current) => ({
-                ...current,
-                unit: event.target.value,
-              }))
+              setSimpleDraft((current) => ({ ...current, unit: event.target.value }))
             }
           >
             {availableUnits.map((unit) => (
@@ -1432,17 +1406,16 @@ function StockRecordingWorkspaceV2({
           </Select>
         </label>
         <div className="grid gap-2">
-          <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-            {t("fields.trackingMode")}
-          </span>
+          <FieldTitle help={t("fieldHelp.tracking")} helpLabel={t("helpLabel")}>
+            <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+              {t("fields.trackingMode")}
+            </span>
+          </FieldTitle>
           <TrackingChoice
             description={t("trackingHelp.quantity")}
             label={t("tracking.quantity")}
             onClick={() =>
-              setSimpleDraft((current) => ({
-                ...current,
-                trackingMode: "quantity",
-              }))
+              setSimpleDraft((current) => ({ ...current, trackingMode: "quantity" }))
             }
             selected={simpleDraft.trackingMode === "quantity"}
           />
@@ -1450,10 +1423,7 @@ function StockRecordingWorkspaceV2({
             description={t("trackingHelp.individual")}
             label={t("tracking.individual")}
             onClick={() =>
-              setSimpleDraft((current) => ({
-                ...current,
-                trackingMode: "individual",
-              }))
+              setSimpleDraft((current) => ({ ...current, trackingMode: "individual" }))
             }
             selected={simpleDraft.trackingMode === "individual"}
           />
@@ -1482,38 +1452,34 @@ function StockRecordingWorkspaceV2({
           </div>
 
           <label className={field}>
-            {stockT("fields.quantity")}
+            <FieldTitle help={t("fieldHelp.quantity")} helpLabel={t("helpLabel")}>
+              {stockT("fields.quantity")}
+            </FieldTitle>
             <Input
               min="0.001"
-              step={
-                currentChoice.trackingMode === "individual" ? "1" : "0.001"
-              }
+              placeholder={t("placeholders.quantity")}
+              step={currentChoice.trackingMode === "individual" ? "1" : "0.001"}
               type="number"
               value={currentLine.quantity}
-              onChange={(event) =>
-                updateCurrentLine({ quantity: event.target.value })
-              }
+              onChange={(event) => updateCurrentLine({ quantity: event.target.value })}
             />
           </label>
 
           <label className={field}>
-            {stockT("fields.costPerUnit")}
+            <FieldTitle help={t("fieldHelp.buyingPrice")} helpLabel={t("helpLabel")}>
+              {stockT("fields.costPerUnit")}
+            </FieldTitle>
             <Input
               min="0"
+              placeholder={t("placeholders.buyingPrice")}
               step="0.01"
               type="number"
               value={currentLine.costValue}
-              onChange={(event) =>
-                updateCurrentLine({ costValue: event.target.value })
-              }
+              onChange={(event) => updateCurrentLine({ costValue: event.target.value })}
             />
           </label>
 
-          <Button
-            className="mt-2 rounded-full"
-            onClick={continueRecording}
-            type="button"
-          >
+          <Button className="mt-2 rounded-full" onClick={continueRecording} type="button">
             {stockT("actions.continue")}
           </Button>
         </div>
@@ -1534,10 +1500,7 @@ function StockRecordingWorkspaceV2({
           </div>
 
           <p className="text-center text-xs font-semibold text-slate-500">
-            {t("individualItem", {
-              number: Math.min(recorded + 1, count),
-              count,
-            })}
+            {t("individualItem", { number: Math.min(recorded + 1, count), count })}
           </p>
 
           <label className={field}>
@@ -1560,7 +1523,9 @@ function StockRecordingWorkspaceV2({
           </label>
 
           <label className={field}>
-            {stockT("fields.identifierValue")}
+            <FieldTitle help={t("fieldHelp.identifier")} helpLabel={t("helpLabel")}>
+              {stockT("fields.identifierValue")}
+            </FieldTitle>
             <Input
               autoFocus
               placeholder={t("placeholders.identifier")}
@@ -1609,9 +1574,7 @@ function StockRecordingWorkspaceV2({
         <div className="grid gap-4">
           <div className="rounded-xl bg-emerald-50 p-4 dark:bg-emerald-950/30">
             <strong className="block text-sm text-emerald-800 dark:text-emerald-300">
-              {t("afterVariety.saved", {
-                name: varietyLabel(currentChoice),
-              })}
+              {t("afterVariety.saved", { name: varietyLabel(currentChoice) })}
             </strong>
             <span className="mt-1 block text-xs text-emerald-700/80 dark:text-emerald-300/80">
               {currentChoice.trackingMode === "individual"
@@ -1620,9 +1583,7 @@ function StockRecordingWorkspaceV2({
                     count: currentLine.quantity,
                     unit: currentChoice.unit,
                   })}
-              {currentChoice.familyName
-                ? ` · ${currentChoice.familyName}`
-                : ""}
+              {currentChoice.familyName ? ` · ${currentChoice.familyName}` : ""}
             </span>
           </div>
 
@@ -1637,11 +1598,7 @@ function StockRecordingWorkspaceV2({
                 ? t("actions.addAnotherInCategory")
                 : t("actions.addAnotherProduct")}
             </Button>
-            <Button
-              className="rounded-full"
-              onClick={finishGroup}
-              type="button"
-            >
+            <Button className="rounded-full" onClick={finishGroup} type="button">
               {currentChoice.groupKey
                 ? t("actions.finishCategory")
                 : t("actions.finishProduct")}
@@ -1666,6 +1623,7 @@ function StockRecordingWorkspaceV2({
         <label className={field}>
           {t("fields.stockName")}
           <Input
+            placeholder={t("placeholders.stockName")}
             value={stockName}
             onChange={(event) => setStockName(event.target.value)}
           />
@@ -1673,6 +1631,7 @@ function StockRecordingWorkspaceV2({
         <label className={field}>
           {stockT("fields.supplier")}
           <Input
+            placeholder={t("placeholders.supplier")}
             value={supplier}
             onChange={(event) => setSupplier(event.target.value)}
           />
@@ -1689,6 +1648,7 @@ function StockRecordingWorkspaceV2({
           {stockT("fields.stockExpenses")}
           <Input
             min="0"
+            placeholder={t("placeholders.stockExpenses")}
             step="0.01"
             type="number"
             value={stockExpenses}
@@ -1711,16 +1671,12 @@ function StockRecordingWorkspaceV2({
             </div>
           ) : null}
           <div className="flex items-center justify-between gap-3">
-            <span className="text-slate-500">
-              {stockT("fields.totalProducts")}
-            </span>
+            <span className="text-slate-500">{stockT("fields.totalProducts")}</span>
             <strong>{selectedKeys.length}</strong>
           </div>
           {Number(stockExpenses || 0) > 0 ? (
             <div className="flex items-center justify-between gap-3">
-              <span className="text-slate-500">
-                {stockT("fields.stockExpenses")}
-              </span>
+              <span className="text-slate-500">{stockT("fields.stockExpenses")}</span>
               <strong>{stockExpenses}</strong>
             </div>
           ) : null}
@@ -1771,30 +1727,22 @@ function StockRecordingWorkspaceV2({
             {busy ? stockT("actions.saving") : stockT("actions.finishSave")}
           </Button>
         </div>
-
-        <Button
-          className="w-fit px-2 text-xs"
-          onClick={() => showScreen("stockDetails")}
-          type="button"
-          variant="ghost"
-        >
-          {t("actions.stockDetails")}
-        </Button>
       </div>
     );
   }
 
+  const productStage = screen !== "stockDetails" && screen !== "review";
+
   return (
     <div className="stock-recording-workspace-v2 grid min-w-0 gap-4">
       {recordingOpen ? (
-        <section className={`${panel} mx-auto w-full max-w-xl overflow-hidden`}>
+        <section className={`${panel} mx-auto w-full max-w-5xl overflow-hidden`}>
           {savedReceipt ? (
             <div className="grid gap-4 p-4">
               <div>
                 <h2 className="text-lg font-bold">{stockT("success.savedTitle")}</h2>
                 <p className="mt-1 text-sm text-slate-500">
-                  {savedReceipt.name || savedReceipt.reference} ·{" "}
-                  {savedReceipt.reference}
+                  {savedReceipt.name || savedReceipt.reference} · {savedReceipt.reference}
                 </p>
               </div>
               <div className="grid gap-2">
@@ -1813,16 +1761,59 @@ function StockRecordingWorkspaceV2({
               </Button>
             </div>
           ) : (
-            <>
-              <ScreenHeader
-                canGoBack={screen !== "products"}
-                help={helpForScreen()}
-                helpLabel={t("helpLabel")}
-                onBack={goBack}
-                title={titleForScreen()}
-              />
-              <div className="min-w-0 p-4">{body}</div>
-            </>
+            <div className="min-w-0 md:grid md:grid-cols-[12rem_minmax(0,1fr)]">
+              <aside className="hidden min-w-0 border-r border-slate-200 bg-slate-50/70 p-3 dark:border-slate-800 dark:bg-slate-900/40 md:block">
+                <nav className="grid gap-1" aria-label={t("steps.products")}>
+                  <button
+                    className={`rounded-lg px-3 py-2.5 text-left text-xs font-semibold transition ${
+                      productStage
+                        ? "bg-white text-slate-950 shadow-sm dark:bg-slate-950 dark:text-white"
+                        : "text-slate-500 hover:bg-white/70 hover:text-slate-900 dark:hover:bg-slate-950/70 dark:hover:text-white"
+                    }`}
+                    onClick={goHome}
+                    type="button"
+                  >
+                    {t("steps.products")}
+                  </button>
+                  <button
+                    className={`rounded-lg px-3 py-2.5 text-left text-xs font-semibold transition ${
+                      screen === "stockDetails"
+                        ? "bg-white text-slate-950 shadow-sm dark:bg-slate-950 dark:text-white"
+                        : "text-slate-500 hover:bg-white/70 hover:text-slate-900 dark:hover:bg-slate-950/70 dark:hover:text-white"
+                    }`}
+                    onClick={() => showScreen("stockDetails")}
+                    type="button"
+                  >
+                    {t("steps.stock")}
+                  </button>
+                  <button
+                    className={`rounded-lg px-3 py-2.5 text-left text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-40 ${
+                      screen === "review"
+                        ? "bg-white text-slate-950 shadow-sm dark:bg-slate-950 dark:text-white"
+                        : "text-slate-500 hover:bg-white/70 hover:text-slate-900 dark:hover:bg-slate-950/70 dark:hover:text-white"
+                    }`}
+                    disabled={!selectedKeys.length}
+                    onClick={reviewStock}
+                    type="button"
+                  >
+                    {t("steps.review")}
+                  </button>
+                </nav>
+              </aside>
+
+              <div className="min-w-0">
+                <ScreenHeader
+                  canGoBack={screen !== "products"}
+                  help={helpForScreen()}
+                  helpLabel={t("helpLabel")}
+                  onBack={goBack}
+                  title={titleForScreen()}
+                />
+                <div className="min-w-0 p-4">
+                  <div className="mx-auto w-full max-w-2xl">{body}</div>
+                </div>
+              </div>
+            </div>
           )}
         </section>
       ) : null}
@@ -1830,9 +1821,7 @@ function StockRecordingWorkspaceV2({
       <section className={`${panel} min-w-0`}>
         <div className="flex min-w-0 flex-wrap items-center justify-between gap-3 p-3">
           <div className="flex min-w-0 items-center gap-2">
-            <h2 className="min-w-0 break-words text-sm font-bold">
-              {t("history.title")}
-            </h2>
+            <h2 className="min-w-0 break-words text-sm font-bold">{t("history.title")}</h2>
             <HelpTip label={t("helpLabel")}>{t("history.description")}</HelpTip>
           </div>
           <StockEditControl
@@ -1846,11 +1835,7 @@ function StockRecordingWorkspaceV2({
           <div className="grid min-w-0 gap-3 border-t border-slate-200 p-3 dark:border-slate-800">
             <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
               <strong className="break-words">{t("correction.title")}</strong>
-              <Button
-                onClick={() => setCorrection(null)}
-                type="button"
-                variant="ghost"
-              >
+              <Button onClick={() => setCorrection(null)} type="button" variant="ghost">
                 {commerceT("actions.cancel")}
               </Button>
             </div>
@@ -1869,10 +1854,7 @@ function StockRecordingWorkspaceV2({
                 <Input
                   value={correction.supplier}
                   onChange={(event) =>
-                    setCorrection({
-                      ...correction,
-                      supplier: event.target.value,
-                    })
+                    setCorrection({ ...correction, supplier: event.target.value })
                   }
                 />
               </label>
@@ -1884,10 +1866,7 @@ function StockRecordingWorkspaceV2({
                   type="number"
                   value={correction.expenses}
                   onChange={(event) =>
-                    setCorrection({
-                      ...correction,
-                      expenses: event.target.value,
-                    })
+                    setCorrection({ ...correction, expenses: event.target.value })
                   }
                 />
               </label>
@@ -1898,9 +1877,7 @@ function StockRecordingWorkspaceV2({
                 className="grid min-w-0 gap-2 rounded-xl border border-slate-200 p-3 dark:border-slate-800 sm:grid-cols-3"
                 key={line.id}
               >
-                <strong className="min-w-0 break-words text-xs sm:col-span-3">
-                  {line.name}
-                </strong>
+                <strong className="min-w-0 break-words text-xs sm:col-span-3">{line.name}</strong>
                 <label className={field}>
                   {stockT("fields.quantity")}
                   <Input
@@ -1947,9 +1924,7 @@ function StockRecordingWorkspaceV2({
                       setCorrection({
                         ...correction,
                         lines: correction.lines.map((item, itemIndex) =>
-                          itemIndex === index
-                            ? { ...item, cost: event.target.value }
-                            : item,
+                          itemIndex === index ? { ...item, cost: event.target.value } : item,
                         ),
                       })
                     }

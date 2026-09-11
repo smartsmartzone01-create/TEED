@@ -30,6 +30,15 @@
       "newCategory": "Kundi la bidhaa ni jina kuu la bidhaa ambalo watu hulitambua, kwa mfano iPhone 15 Pro Max. Baada ya kuunda kundi, ongeza aina yake ya kwanza.",
       "uncategorized": "Tumia bidhaa rahisi kama huhitaji kundi la bidhaa. Bado unaweza kuirekodi kwa kiasi au kufuatilia kila kitu moja moja."
     },
+    "fieldHelp": {
+      "productGroup": "Hii ni bidhaa kuu ambayo aina zake zote zinahusishwa nayo. Mfano: iSense TV.",
+      "variety": "Hii ni aina moja ya bidhaa hiyo. Mfano: inchi 43, inchi 32, Silver 256 GB, au 500 ml.",
+      "tracking": "Chagua Kwa kiasi kama unahitaji kujua idadi tu. Chagua Vitu moja moja kama kila kitu kinahitaji IMEI, namba ya seriali, barcode, au kitambulisho chake.",
+      "quantity": "Idadi ya uniti za aina hii ulizopokea kwenye stoo hii.",
+      "buyingPrice": "Bei uliyolipa kwa uniti moja. Bei ya kununua haibadilishi aina ambayo bidhaa hii inahusishwa nayo.",
+      "identifier": "Namba ya kipekee ya kitu hiki, kama IMEI, namba ya seriali, chassis, au barcode.",
+      "simpleProduct": "Tumia hii tu kwa bidhaa ambayo huhitaji kuipanga ndani ya kundi la bidhaa."
+    },
     "fields": {
       "stockName": "Jina la stoo",
       "productFamily": "Kundi la bidhaa",
@@ -85,12 +94,13 @@
     "products": {
       "noGroups": "Bado hakuna makundi ya bidhaa. Unda kundi lako la kwanza kuanza kurekodi stoo.",
       "noVarieties": "Bado hakuna aina. Ongeza toleo la kwanza la bidhaa hii.",
+      "noMatchingGroups": "Hakuna kundi la bidhaa au bidhaa inayolingana.",
       "varietyCount": "Aina {count}",
       "chooseOrAddVariety": "Chagua aina au ongeza mpya",
       "addingVariety": "Unaongeza aina mpya kwenye kundi hili",
       "currentStock": "Kwenye stoo hii",
       "currentCount": "Bidhaa {count} ziko tayari",
-      "simpleProducts": "Bidhaa rahisi zilizopo"
+      "simpleProducts": "Bidhaa nyingine"
     },
     "afterVariety": {
       "saved": "{name} imehifadhiwa",
@@ -98,10 +108,17 @@
       "unitsRecorded": "{count} {unit} zimerekodiwa"
     },
     "placeholders": {
-      "group": "iPhone 15 Pro Max",
-      "brand": "Apple",
-      "variety": "Silver · 256 GB",
-      "identifier": "356123456789012"
+      "group": "mf. iSense TV",
+      "brand": "mf. Hisense",
+      "variety": "mf. inchi 43",
+      "simpleProduct": "mf. Sukari kilo 1",
+      "quantity": "mf. 5",
+      "buyingPrice": "mf. 850000",
+      "identifier": "mf. 356123456789012",
+      "searchGroups": "Tafuta makundi ya bidhaa...",
+      "stockName": "mf. Mzigo wa Septemba",
+      "supplier": "mf. ABC Traders",
+      "stockExpenses": "mf. 25000"
     },
     "validation": {
       "stockName": "Weka jina la stoo.",
