@@ -15,19 +15,80 @@ from .serializers import (
     WebsiteMediaSerializer,
     WebsiteMediaUpdateSerializer,
     WebsiteMediaUploadSerializer,
+    WebsiteSiteSerializer,
+    WebsiteSiteWriteSerializer,
 )
 from .services import (
+    create_site,
     delete_media,
     get_site_for_user,
+    list_sites_for_user,
     register_media,
     reorder_media,
     update_media,
+    update_site,
     upload_media,
 )
 
 
 class WebsiteBaseAPIView(APIView):
     permission_classes = [IsAuthenticated, IsOnboardingComplete]
+
+
+class WebsiteSiteListCreateAPIView(WebsiteBaseAPIView):
+    serializer_class = WebsiteSiteWriteSerializer
+
+    def get(self, request, business_id):
+        sites = list_sites_for_user(user=request.user, business_id=business_id)
+        return SuccessResponse(
+            message="Website sites retrieved successfully.",
+            data={"sites": WebsiteSiteSerializer(sites, many=True).data},
+        )
+
+    @method_decorator(csrf_protect)
+    def post(self, request, business_id):
+        serializer = WebsiteSiteWriteSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        site = create_site(
+            actor=request.user,
+            business_id=business_id,
+            **serializer.validated_data,
+        )
+        return SuccessResponse(
+            message="Website site created successfully.",
+            data=WebsiteSiteSerializer(site).data,
+            status_code=status.HTTP_201_CREATED,
+        )
+
+
+@method_decorator(csrf_protect, name="dispatch")
+class WebsiteSiteDetailAPIView(WebsiteBaseAPIView):
+    serializer_class = WebsiteSiteWriteSerializer
+
+    def get(self, request, business_id, site_id):
+        site = get_site_for_user(
+            user=request.user,
+            business_id=business_id,
+            site_id=site_id,
+        )
+        return SuccessResponse(
+            message="Website site retrieved successfully.",
+            data=WebsiteSiteSerializer(site).data,
+        )
+
+    def patch(self, request, business_id, site_id):
+        serializer = WebsiteSiteWriteSerializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        site = update_site(
+            actor=request.user,
+            business_id=business_id,
+            site_id=site_id,
+            **serializer.validated_data,
+        )
+        return SuccessResponse(
+            message="Website site updated successfully.",
+            data=WebsiteSiteSerializer(site).data,
+        )
 
 
 class WebsiteMediaListCreateAPIView(WebsiteBaseAPIView):

@@ -3,10 +3,65 @@ from io import BytesIO
 from PIL import Image, UnidentifiedImageError
 from rest_framework import serializers
 
-from .models import WebsiteMedia
+from .models import WebsiteMedia, WebsiteSite
 
 WEBSITE_MEDIA_MAX_UPLOAD_BYTES = 10 * 1024 * 1024
 WEBSITE_MEDIA_ALLOWED_FORMATS = {"JPEG", "PNG", "WEBP"}
+
+
+class WebsiteSiteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = WebsiteSite
+        fields = (
+            "id",
+            "public_key",
+            "slug",
+            "display_name",
+            "default_locale",
+            "supported_locales",
+            "primary_color",
+            "surface_color",
+            "text_color",
+            "contact_phone",
+            "contact_email",
+            "contact_whatsapp",
+            "contact_instagram",
+            "navigation",
+            "hero",
+            "services",
+            "newsletter",
+            "is_published",
+            "created_at",
+            "updated_at",
+        )
+        read_only_fields = ("id", "public_key", "created_at", "updated_at")
+
+
+class WebsiteSiteWriteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = WebsiteSite
+        fields = (
+            "slug",
+            "display_name",
+            "default_locale",
+            "supported_locales",
+            "primary_color",
+            "surface_color",
+            "text_color",
+            "contact_phone",
+            "contact_email",
+            "contact_whatsapp",
+            "contact_instagram",
+            "navigation",
+            "hero",
+            "services",
+            "newsletter",
+            "is_published",
+        )
+        extra_kwargs = {
+            "slug": {"required": False},
+            "display_name": {"required": False},
+        }
 
 
 class WebsiteMediaSerializer(serializers.ModelSerializer):
