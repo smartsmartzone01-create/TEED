@@ -23,35 +23,53 @@ export const demoStorefrontSite: StorefrontSiteConfig = {
   ],
   hero: {
     eyebrow: { en: "Built for your business", sw: "Imeundwa kwa biashara yako" },
-    title: { en: "Your next customer starts here", sw: "Mteja wako anayefuata anaanzia hapa" },
+    title: { en: "Your next upgrade starts here", sw: "Hatua yako inayofuata inaanzia hapa" },
     subtitle: {
-      en: "A fast, focused storefront powered by your Tunakuza business data.",
-      sw: "Duka la mtandaoni lenye kasi linalotumia taarifa za biashara yako ya Tunakuza.",
+      en: "Discover products, offers, and services in a storefront shaped around your brand.",
+      sw: "Gundua bidhaa, ofa na huduma katika duka la mtandaoni linaloendana na chapa yako.",
     },
-    primaryAction: { en: "Explore the store", sw: "Tembelea duka" },
+    primaryAction: { en: "Shop now", sw: "Nunua sasa" },
     primaryHref: "/products",
     secondaryAction: { en: "Learn more", sw: "Jifunze zaidi" },
-    secondaryHref: "/#about",
-    imageUrl: "/images/hello1.webp",
+    secondaryHref: "/#services",
+    imageUrl: "/templates/ecommerce/classic/hero.webp",
   },
   services: [
     {
-      id: "delivery",
-      title: { en: "Fast delivery", sw: "Uwasilishaji wa haraka" },
+      id: "trade-in",
+      title: { en: "Trade-In Program", sw: "Mpango wa Kubadilishana" },
       description: {
-        en: "Give customers clear fulfillment options without hardcoding one merchant's process into the template.",
-        sw: "Waonyeshe wateja chaguo za uwasilishaji bila kufunga mfumo kwa mchakato wa mfanyabiashara mmoja.",
+        en: "Help customers upgrade by trading in an older device and applying its value toward a new purchase.",
+        sw: "Wasaidie wateja kuboresha vifaa vyao kwa kubadilisha kifaa cha zamani na kutumia thamani yake kwenye ununuzi mpya.",
       },
-      imageUrl: "/images/services2.webp",
+      imageUrl: "/templates/ecommerce/classic/service-1.webp",
+    },
+    {
+      id: "delivery",
+      title: { en: "Fast Delivery", sw: "Uwasilishaji wa Haraka" },
+      description: {
+        en: "Present clear delivery promises and fulfillment options in a way that fits the merchant's business.",
+        sw: "Onyesha ahadi za uwasilishaji na chaguo za kufikisha bidhaa kwa namna inayolingana na biashara ya mfanyabiashara.",
+      },
+      imageUrl: "/templates/ecommerce/classic/service-2.webp",
     },
     {
       id: "shopping",
-      title: { en: "Simple shopping", sw: "Ununuzi rahisi" },
+      title: { en: "Instant Shopping", sw: "Ununuzi wa Haraka" },
       description: {
-        en: "Keep the focused navigation and product-first experience from the original storefront while making the content configurable.",
-        sw: "Hifadhi urahisi wa urambazaji wa duka la awali huku maudhui yakibadilishwa kulingana na biashara.",
+        en: "Keep browsing focused and product-first, with a clear path from discovery to purchase.",
+        sw: "Weka urambazaji ukiwa rahisi na unaolenga bidhaa, kutoka ugunduzi hadi ununuzi.",
       },
-      imageUrl: "/images/services3.jpg",
+      imageUrl: "/templates/ecommerce/classic/service-3.jpg",
+    },
+    {
+      id: "support",
+      title: { en: "Expert Support", sw: "Msaada wa Wataalamu" },
+      description: {
+        en: "Highlight installation, repair, consultation, or after-sales help as part of the storefront experience.",
+        sw: "Onyesha usakinishaji, matengenezo, ushauri au msaada baada ya mauzo kama sehemu ya uzoefu wa duka.",
+      },
+      imageUrl: "/templates/ecommerce/classic/service-4.webp",
     },
   ],
   newsletter: {
