@@ -126,7 +126,7 @@ function WorkspaceCapabilityDirectory({ businessId }: { businessId: string }) {
               >
                 <span
                   aria-hidden="true"
-                  className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-brand-navy to-brand-orange opacity-70"
+                  className="absolute inset-x-0 top-0 h-0.5 bg-linear-to-r from-brand-navy to-brand-orange opacity-70"
                 />
 
                 <span className="flex min-w-0 items-start gap-2.5 sm:gap-3">
