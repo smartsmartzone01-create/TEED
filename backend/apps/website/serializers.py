@@ -3,10 +3,20 @@ from io import BytesIO
 from PIL import Image, UnidentifiedImageError
 from rest_framework import serializers
 
-from .models import WebsiteMedia, WebsiteSite
+from .models import WebsiteListing, WebsiteMedia, WebsiteSite, WebsiteVariant
 
 WEBSITE_MEDIA_MAX_UPLOAD_BYTES = 10 * 1024 * 1024
 WEBSITE_MEDIA_ALLOWED_FORMATS = {"JPEG", "PNG", "WEBP"}
+
+
+def _validate_locale_map(value, *, field_name, require_value=False):
+    if not isinstance(value, dict):
+        raise serializers.ValidationError(f"{field_name} must be a locale map.")
+    if any(not isinstance(key, str) or not isinstance(item, str) for key, item in value.items()):
+        raise serializers.ValidationError(f"{field_name} locale keys and values must be strings.")
+    if require_value and not any(item.strip() for item in value.values()):
+        raise serializers.ValidationError(f"{field_name} must contain at least one value.")
+    return value
 
 
 class WebsiteSiteSerializer(serializers.ModelSerializer):
@@ -101,9 +111,7 @@ class WebsiteMediaRegisterSerializer(serializers.Serializer):
     sort_order = serializers.IntegerField(min_value=0, required=False)
 
     def validate_alt_text(self, value):
-        if not isinstance(value, dict):
-            raise serializers.ValidationError("Media alt text must be a locale map.")
-        return value
+        return _validate_locale_map(value, field_name="Media alt text")
 
 
 class WebsiteMediaUploadSerializer(serializers.Serializer):
@@ -112,9 +120,7 @@ class WebsiteMediaUploadSerializer(serializers.Serializer):
     sort_order = serializers.IntegerField(min_value=0, required=False)
 
     def validate_alt_text(self, value):
-        if not isinstance(value, dict):
-            raise serializers.ValidationError("Media alt text must be a locale map.")
-        return value
+        return _validate_locale_map(value, field_name="Media alt text")
 
     def validate_file(self, value):
         if value.size > WEBSITE_MEDIA_MAX_UPLOAD_BYTES:
@@ -154,4 +160,121 @@ class WebsiteMediaReorderSerializer(serializers.Serializer):
     def validate_media_ids(self, value):
         if len(value) != len(set(value)):
             raise serializers.ValidationError("Media ids must be unique.")
+        return value
+
+
+class WebsiteVariantSerializer(serializers.ModelSerializer):
+    media_id = serializers.SerializerMethodField()
+    commerce_product_id = serializers.SerializerMethodField()
+
+    class Meta:
+        model = WebsiteVariant
+        fields = (
+            "id",
+            "sku",
+            "options",
+            "website_price",
+            "currency",
+            "website_availability",
+            "media_id",
+            "commerce_product_id",
+            "price_source",
+            "availability_source",
+            "is_published",
+            "sort_order",
+            "created_at",
+            "updated_at",
+        )
+
+    def get_media_id(self, obj):
+        return obj.media_id
+
+    def get_commerce_product_id(self, obj):
+        return obj.commerce_product_id
+
+
+class WebsiteVariantWriteSerializer(serializers.Serializer):
+    sku = serializers.CharField(max_length=64, allow_blank=True, required=False)
+    options = serializers.JSONField(required=False)
+    website_price = serializers.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        min_value=0,
+        allow_null=True,
+        required=False,
+    )
+    currency = serializers.CharField(max_length=3, min_length=3, required=False)
+    website_availability = serializers.ChoiceField(
+        choices=WebsiteVariant.Availability.choices,
+        required=False,
+    )
+    media_id = serializers.UUIDField(allow_null=True, required=False)
+    is_published = serializers.BooleanField(required=False)
+    sort_order = serializers.IntegerField(min_value=0, required=False)
+
+    def validate_options(self, value):
+        if not isinstance(value, dict):
+            raise serializers.ValidationError("Variant options must be an object.")
+        if any(not isinstance(key, str) or not isinstance(item, str) for key, item in value.items()):
+            raise serializers.ValidationError("Variant option keys and values must be strings.")
+        return value
+
+    def validate_currency(self, value):
+        return value.upper()
+
+
+class WebsiteListingSerializer(serializers.ModelSerializer):
+    primary_media_id = serializers.SerializerMethodField()
+    variants = WebsiteVariantSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = WebsiteListing
+        fields = (
+            "id",
+            "slug",
+            "title",
+            "short_description",
+            "description",
+            "brand",
+            "badge",
+            "primary_media_id",
+            "options",
+            "is_published",
+            "sort_order",
+            "variants",
+            "created_at",
+            "updated_at",
+        )
+
+    def get_primary_media_id(self, obj):
+        return obj.primary_media_id
+
+
+class WebsiteListingWriteSerializer(serializers.Serializer):
+    slug = serializers.SlugField(max_length=120)
+    title = serializers.JSONField()
+    short_description = serializers.JSONField(required=False)
+    description = serializers.JSONField(required=False)
+    brand = serializers.CharField(max_length=80, allow_blank=True, required=False)
+    badge = serializers.JSONField(required=False)
+    primary_media_id = serializers.UUIDField(allow_null=True, required=False)
+    options = serializers.JSONField(required=False)
+    is_published = serializers.BooleanField(required=False)
+    sort_order = serializers.IntegerField(min_value=0, required=False)
+
+    def validate_title(self, value):
+        return _validate_locale_map(value, field_name="Listing title", require_value=True)
+
+    def validate_short_description(self, value):
+        return _validate_locale_map(value, field_name="Short description")
+
+    def validate_description(self, value):
+        return _validate_locale_map(value, field_name="Description")
+
+    def validate_badge(self, value):
+        return _validate_locale_map(value, field_name="Badge")
+
+    def validate_options(self, value):
+        if not isinstance(value, list):
+            raise serializers.ValidationError("Listing options must be a list.")
         return value

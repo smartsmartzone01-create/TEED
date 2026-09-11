@@ -158,10 +158,6 @@ def upload_media(
             size_bytes=file.size,
             **values,
         )
-        # The upload URL is generated from Django's configured storage backend rather
-        # than supplied by the client. Django's URLField rejects DRF's test host
-        # (http://testserver/...), so validate every other model field normally while
-        # trusting this internally generated storage URL.
         media.full_clean(exclude={"public_url"})
         media.save()
     except Exception:
@@ -239,3 +235,228 @@ def reorder_media(*, actor, business_id, site_id, media_ids):
             media.sort_order = index
             media.save(update_fields=["sort_order", "updated_at"])
     return list(WebsiteMedia.objects.filter(site=site))
+
+
+def _media_for_site(*, site, media_id):
+    if media_id is None:
+        return None
+    media = WebsiteMedia.objects.filter(id=media_id, site=site).first()
+    if media is None:
+        raise ValidationError(
+            {"media_id": "Media must belong to this Website site."},
+            code="website_media_site_mismatch",
+        )
+    return media
+
+
+def list_listings_for_user(*, user, business_id, site_id):
+    site = get_site_for_user(user=user, business_id=business_id, site_id=site_id)
+    return (
+        WebsiteListing.objects.filter(site=site)
+        .select_related("primary_media")
+        .prefetch_related("variants__media")
+    )
+
+
+def get_listing_for_user(*, user, business_id, site_id, listing_id, manage=False):
+    site = get_site_for_user(
+        user=user,
+        business_id=business_id,
+        site_id=site_id,
+        manage=manage,
+    )
+    listing = (
+        WebsiteListing.objects.filter(id=listing_id, site=site)
+        .select_related("primary_media")
+        .prefetch_related("variants__media")
+        .first()
+    )
+    if listing is None:
+        raise NotFound("Website listing not found.", code="website_listing_not_found")
+    return listing
+
+
+def _listing_slug_conflicts(*, site, slug, exclude_listing_id=None):
+    query = WebsiteListing.all_objects.filter(site=site, slug=slug)
+    if exclude_listing_id is not None:
+        query = query.exclude(id=exclude_listing_id)
+    return query.exists()
+
+
+@transaction.atomic
+def create_listing(*, actor, business_id, site_id, **values):
+    site = get_site_for_user(
+        user=actor,
+        business_id=business_id,
+        site_id=site_id,
+        manage=True,
+    )
+    slug = values["slug"]
+    if _listing_slug_conflicts(site=site, slug=slug):
+        raise ValidationError(
+            {"slug": "A Website listing with this slug already exists."},
+            code="website_listing_slug_conflict",
+        )
+    media_id = values.pop("primary_media_id", None)
+    listing = WebsiteListing(
+        site=site,
+        primary_media=_media_for_site(site=site, media_id=media_id),
+        **values,
+    )
+    listing.full_clean()
+    listing.save()
+    return listing
+
+
+@transaction.atomic
+def update_listing(*, actor, business_id, site_id, listing_id, **changes):
+    listing = get_listing_for_user(
+        user=actor,
+        business_id=business_id,
+        site_id=site_id,
+        listing_id=listing_id,
+        manage=True,
+    )
+    requested_slug = changes.get("slug")
+    if requested_slug and requested_slug != listing.slug and _listing_slug_conflicts(
+        site=listing.site,
+        slug=requested_slug,
+        exclude_listing_id=listing.id,
+    ):
+        raise ValidationError(
+            {"slug": "A Website listing with this slug already exists."},
+            code="website_listing_slug_conflict",
+        )
+    if "primary_media_id" in changes:
+        media_id = changes.pop("primary_media_id")
+        listing.primary_media = _media_for_site(site=listing.site, media_id=media_id)
+    for field, value in changes.items():
+        setattr(listing, field, value)
+    listing.full_clean()
+    listing.save()
+    return listing
+
+
+@transaction.atomic
+def delete_listing(*, actor, business_id, site_id, listing_id):
+    listing = get_listing_for_user(
+        user=actor,
+        business_id=business_id,
+        site_id=site_id,
+        listing_id=listing_id,
+        manage=True,
+    )
+    for variant in WebsiteVariant.objects.filter(listing=listing):
+        variant.delete()
+    listing.delete()
+    return listing
+
+
+def list_variants_for_user(*, user, business_id, site_id, listing_id):
+    listing = get_listing_for_user(
+        user=user,
+        business_id=business_id,
+        site_id=site_id,
+        listing_id=listing_id,
+    )
+    return WebsiteVariant.objects.filter(listing=listing).select_related("media")
+
+
+def get_variant_for_user(
+    *, user, business_id, site_id, listing_id, variant_id, manage=False
+):
+    listing = get_listing_for_user(
+        user=user,
+        business_id=business_id,
+        site_id=site_id,
+        listing_id=listing_id,
+        manage=manage,
+    )
+    variant = WebsiteVariant.objects.filter(id=variant_id, listing=listing).first()
+    if variant is None:
+        raise NotFound("Website variant not found.", code="website_variant_not_found")
+    return variant
+
+
+def _variant_sku_conflicts(*, listing, sku, exclude_variant_id=None):
+    if not sku:
+        return False
+    query = WebsiteVariant.all_objects.filter(listing=listing, sku=sku)
+    if exclude_variant_id is not None:
+        query = query.exclude(id=exclude_variant_id)
+    return query.exists()
+
+
+@transaction.atomic
+def create_variant(*, actor, business_id, site_id, listing_id, **values):
+    listing = get_listing_for_user(
+        user=actor,
+        business_id=business_id,
+        site_id=site_id,
+        listing_id=listing_id,
+        manage=True,
+    )
+    sku = values.get("sku", "")
+    if _variant_sku_conflicts(listing=listing, sku=sku):
+        raise ValidationError(
+            {"sku": "A Website variant with this SKU already exists."},
+            code="website_variant_sku_conflict",
+        )
+    media_id = values.pop("media_id", None)
+    variant = WebsiteVariant(
+        listing=listing,
+        media=_media_for_site(site=listing.site, media_id=media_id),
+        commerce_product=None,
+        price_source=WebsiteVariant.Source.WEBSITE,
+        availability_source=WebsiteVariant.Source.WEBSITE,
+        **values,
+    )
+    variant.full_clean()
+    variant.save()
+    return variant
+
+
+@transaction.atomic
+def update_variant(
+    *, actor, business_id, site_id, listing_id, variant_id, **changes
+):
+    variant = get_variant_for_user(
+        user=actor,
+        business_id=business_id,
+        site_id=site_id,
+        listing_id=listing_id,
+        variant_id=variant_id,
+        manage=True,
+    )
+    requested_sku = changes.get("sku")
+    if requested_sku is not None and requested_sku != variant.sku and _variant_sku_conflicts(
+        listing=variant.listing,
+        sku=requested_sku,
+        exclude_variant_id=variant.id,
+    ):
+        raise ValidationError(
+            {"sku": "A Website variant with this SKU already exists."},
+            code="website_variant_sku_conflict",
+        )
+    if "media_id" in changes:
+        media_id = changes.pop("media_id")
+        variant.media = _media_for_site(site=variant.listing.site, media_id=media_id)
+    for field, value in changes.items():
+        setattr(variant, field, value)
+    variant.full_clean()
+    variant.save()
+    return variant
+
+
+@transaction.atomic
+def delete_variant(*, actor, business_id, site_id, listing_id, variant_id):
+    variant = get_variant_for_user(
+        user=actor,
+        business_id=business_id,
+        site_id=site_id,
+        listing_id=listing_id,
+        variant_id=variant_id,
+        manage=True,
+    )
+    variant.delete()
+    return variant
