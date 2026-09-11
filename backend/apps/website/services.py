@@ -3,6 +3,7 @@ from pathlib import Path
 from common.database.uuid import generate_uuid
 from django.core.files.storage import default_storage
 from django.db import transaction
+from django.utils.text import slugify
 from rest_framework.exceptions import NotFound, ValidationError
 
 from apps.workspaces.policy import WorkspacePermission
@@ -17,8 +18,8 @@ IMAGE_FORMAT_METADATA = {
 }
 
 
-def get_site_for_user(*, user, business_id, site_id, manage=False):
-    membership = require_membership(
+def _website_membership(*, user, business_id, manage=False):
+    return require_membership(
         user=user,
         business_id=business_id,
         permission=(
@@ -27,9 +28,78 @@ def get_site_for_user(*, user, business_id, site_id, manage=False):
             else WorkspacePermission.ACCESS
         ),
     )
+
+
+def list_sites_for_user(*, user, business_id):
+    membership = _website_membership(user=user, business_id=business_id)
+    return WebsiteSite.objects.filter(business=membership.business)
+
+
+def get_site_for_user(*, user, business_id, site_id, manage=False):
+    membership = _website_membership(
+        user=user,
+        business_id=business_id,
+        manage=manage,
+    )
     site = WebsiteSite.objects.filter(id=site_id, business=membership.business).first()
     if site is None:
         raise NotFound("Website site not found.", code="website_site_not_found")
+    return site
+
+
+def _site_slug_exists(*, business, slug, exclude_site_id=None):
+    query = WebsiteSite.objects.filter(business=business, slug=slug)
+    if exclude_site_id is not None:
+        query = query.exclude(id=exclude_site_id)
+    return query.exists()
+
+
+@transaction.atomic
+def create_site(*, actor, business_id, **values):
+    membership = _website_membership(user=actor, business_id=business_id, manage=True)
+    business = membership.business
+    display_name = str(values.pop("display_name", "") or business.name).strip()
+    slug = str(values.pop("slug", "") or slugify(display_name) or "website").strip()
+    if _site_slug_exists(business=business, slug=slug):
+        raise ValidationError(
+            {"slug": "A Website site with this slug already exists."},
+            code="website_site_slug_conflict",
+        )
+
+    site = WebsiteSite(
+        business=business,
+        display_name=display_name,
+        slug=slug,
+        **values,
+    )
+    site.full_clean()
+    site.save()
+    return site
+
+
+@transaction.atomic
+def update_site(*, actor, business_id, site_id, **changes):
+    site = get_site_for_user(
+        user=actor,
+        business_id=business_id,
+        site_id=site_id,
+        manage=True,
+    )
+    requested_slug = changes.get("slug")
+    if requested_slug and requested_slug != site.slug and _site_slug_exists(
+        business=site.business,
+        slug=requested_slug,
+        exclude_site_id=site.id,
+    ):
+        raise ValidationError(
+            {"slug": "A Website site with this slug already exists."},
+            code="website_site_slug_conflict",
+        )
+
+    for field, value in changes.items():
+        setattr(site, field, value)
+    site.full_clean()
+    site.save()
     return site
 
 
