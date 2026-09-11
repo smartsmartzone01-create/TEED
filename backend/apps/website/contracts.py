@@ -176,7 +176,7 @@ def serialize_listing(listing: WebsiteListing):
         "title": localized(listing.title),
         "shortDescription": localized(listing.short_description),
         "description": localized(listing.description),
-        "primaryImageUrl": listing.primary_image_url,
+        "primaryImageUrl": listing.resolved_primary_image_url(),
         "options": options,
         "skus": variants,
     }

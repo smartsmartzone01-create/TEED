@@ -36,6 +36,7 @@ export type StorefrontProductOption = {
 
 export type StorefrontSku = {
   id: string;
+  websiteVariantId: string;
   commerceProductId?: string;
   sku: string;
   options: Record<string, string>;

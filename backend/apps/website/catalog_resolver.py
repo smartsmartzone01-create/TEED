@@ -30,15 +30,6 @@ def _normalized_options(value):
 
 
 def _active_unit_fields(variant, commerce_offers):
-    """Expose every consistently populated customer-facing tracked attribute.
-
-    A single value is still useful storefront information. For example, a SKU whose
-    available units are all Cosmic Orange should still expose Color=Cosmic Orange,
-    while Capacity may expose several values. Fields are omitted only when at least one
-    projected offer is missing the attribute, because that would create incomplete
-    option combinations.
-    """
-
     active = []
     for option_id, attribute, labels in PUBLIC_UNIT_OPTION_FIELDS:
         values = [
@@ -112,6 +103,7 @@ def _offer_payload(
 
     payload = {
         "id": _offer_id(variant, options, tracking_mode),
+        "websiteVariantId": str(variant.id),
         "sku": sku,
         "options": options,
         "price": (
@@ -129,8 +121,9 @@ def _offer_payload(
         payload["commerceProductId"] = commerce["product_id"]
         payload["trackingMode"] = tracking_mode
 
-    if variant.image_url:
-        payload["imageUrl"] = variant.image_url
+    image_url = variant.resolved_image_url()
+    if image_url:
+        payload["imageUrl"] = image_url
 
     return payload
 
@@ -148,13 +141,7 @@ def _deduplicate_offers(offers):
 
 
 def resolve_storefront_variant(variant: WebsiteVariant):
-    """Resolve one Website variant through the Commerce public-safe projection.
-
-    Website does not interpret stock receipts, batches, tracked identifiers, or tracking
-    modes itself. Commerce owns those rules and returns only the product state and safe
-    customer-facing individual attributes needed by the storefront. SKU-level Website
-    options stay authoritative when an old tracked-unit field uses the same option id.
-    """
+    """Resolve one Website variant through the Commerce public-safe projection."""
 
     product = variant.valid_commerce_product()
     base_options = _normalized_options(variant.options)
