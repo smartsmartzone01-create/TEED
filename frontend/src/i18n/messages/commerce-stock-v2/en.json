@@ -1,33 +1,98 @@
 {
   "CommerceStockV2": {
     "steps": {
-      "stock": "Stock information",
+      "stock": "Stock details",
       "products": "Products",
+      "catalog": "Products",
       "record": "Recording",
       "review": "Review"
     },
+    "screens": {
+      "chooseGroup": "Choose group",
+      "newGroup": "New product group",
+      "varieties": "Varieties",
+      "newVariety": "New variety",
+      "simpleProduct": "Simple product",
+      "addItem": "Add item",
+      "varietySaved": "Variety saved"
+    },
+    "helpLabel": "Help",
     "help": {
-      "stock": "Name this stock and enter its supplier, received date, and stock expenses.",
-      "products": "Choose an existing product / SKU or create a new one, then record the stock received for that SKU. You can repeat this for as many products as needed.",
-      "record": "Record one SKU at a time. Quantity-tracked products use a simple quantity entry; individually tracked products are entered one physical item at a time.",
-      "review": "Check the stock information and all recorded product lines, then save a draft or receive the stock."
+      "stock": "Stock details are optional. Add a stock name, supplier, received date, or stock expenses only when you need a fuller purchasing record.",
+      "products": "Think of products as Group → Variety → Item. Example: iPhone 15 Pro Max → Natural Titanium · 256 GB → each phone's IMEI. Start with the group, then record the exact variety you received.",
+      "catalog": "A product group keeps the same main product together. Each variety is one exact sellable configuration inside that group, and individual items can carry their own identifiers.",
+      "record": "Enter how many units you received and the buying price per unit. For individually tracked stock, add each item's IMEI, serial number, or other identifier.",
+      "review": "Check the products you recorded, then save a draft or finish and receive the stock. Optional stock details are included only when you entered them.",
+      "familyAssignment": "A product group keeps related versions of the same product together. Example: iPhone 15 Pro Max is the group; Natural Titanium · 256 GB and Blue Titanium · 512 GB are varieties inside it.",
+      "autoSku": "Describe the details that define this exact variety, such as Color + Storage, Screen size, Size + Color, or RAM + Storage. Tunakuza handles the SKU automatically.",
+      "existingSku": "A variety is one exact version inside a product group. Choose an existing variety if it is already there, or add a new one.",
+      "existingCategory": "Choose a product group, then choose an existing variety or add a new one inside it.",
+      "newCategory": "A product group is the main product people recognize, for example iPhone 15 Pro Max. After creating the group, add its first variety.",
+      "uncategorized": "Use a simple product when you do not need a product group. You can still record it by quantity or track each item separately."
+    },
+    "fieldHelp": {
+      "productGroup": "The main product all its varieties belong to. Example: iSense TV.",
+      "variety": "One exact sellable version of this product.",
+      "varietyDetails": "Add the details that make this variety different from others in the same group. Keep the same detail types across the group when possible. Examples: Color + Storage, Screen size, Size + Color, RAM + Storage, or Pack size.",
+      "tracking": "Choose Quantity when you only need to know how many you have. Choose Individual items when each physical unit needs its own IMEI, serial number, barcode, or other identifier.",
+      "quantity": "How many units of this variety you received in this stock.",
+      "buyingPrice": "What you paid for one unit. Buying price does not change which variety the product belongs to.",
+      "identifier": "The unique number for this physical item, such as an IMEI, serial number, chassis number, or barcode.",
+      "simpleProduct": "Use this only for a product you do not need to organize into a product group."
     },
     "fields": {
       "stockName": "Stock name",
-      "productFamily": "Product family (optional)",
+      "productFamily": "Product group",
+      "newFamilyName": "New product group",
+      "varietyName": "Variety",
+      "varietyDetails": "Variety details",
+      "detailType": "Detail",
+      "customDetail": "Detail name",
+      "detailValue": "Value",
       "trackingMode": "Tracking",
       "receivedUnit": "Received unit",
       "baseUnit": "Inventory unit",
       "conversion": "Inventory units per received unit"
     },
+    "values": {
+      "noFamily": "Choose product group",
+      "createFamily": "+ Create new product group",
+      "autoSku": "SKU assigned automatically",
+      "defaultStockName": "Stock",
+      "chooseDetail": "Choose detail"
+    },
     "tracking": {
       "quantity": "Quantity",
-      "individual": "Individual"
+      "individual": "Individual items"
+    },
+    "trackingHelp": {
+      "quantity": "Count identical items together",
+      "individual": "Each unit has its own identifier"
+    },
+    "optionTypes": {
+      "color": "Color",
+      "storage": "Storage",
+      "capacity": "Capacity",
+      "size": "Size",
+      "ram": "RAM",
+      "screen_size": "Screen size",
+      "pack_size": "Pack size",
+      "material": "Material",
+      "style": "Style",
+      "model": "Model",
+      "weight": "Weight",
+      "length": "Length",
+      "volume": "Volume",
+      "voltage": "Voltage",
+      "flavor": "Flavor",
+      "custom": "Other detail"
     },
     "actions": {
-      "addExisting": "Add product",
+      "addExisting": "Add existing variety",
       "addProduct": "Add product",
       "createAndAdd": "Create & add product",
+      "recordNewProduct": "Record another variety",
+      "continueToRecord": "Continue to recording",
       "recordProduct": "Record product",
       "addIndividual": "Add item",
       "updateIndividual": "Update item",
@@ -36,21 +101,90 @@
       "reviewStock": "Review stock",
       "remove": "Remove product",
       "back": "Back",
+      "changeCategoryChoice": "Change option",
+      "doneStockDetails": "Done",
+      "addAnotherInCategory": "Add another variety",
+      "addAnotherProduct": "Add another product",
+      "finishCategory": "Finish group",
+      "finishProduct": "Finish product",
       "saveCorrection": "Save correction",
-      "archiveDraft": "Archive draft"
+      "archiveDraft": "Archive draft",
+      "addToExistingGroup": "Add to existing group",
+      "createNewGroup": "Create new group",
+      "addSimpleProduct": "Add simple product",
+      "stockDetails": "Stock details",
+      "addNewVariety": "Add new variety",
+      "addDetail": "Add another detail",
+      "removeDetail": "Remove detail"
+    },
+    "products": {
+      "noGroups": "No product groups yet. Create your first group to start recording stock.",
+      "noVarieties": "No varieties yet. Add the first version of this product.",
+      "noMatchingGroups": "No matching product groups or products found.",
+      "varietyCount": "{count} varieties",
+      "chooseOrAddVariety": "Choose a variety or add a new one",
+      "addingVariety": "Adding a new variety to this group",
+      "currentStock": "In this stock",
+      "currentCount": "{count} products ready",
+      "simpleProducts": "Other products"
+    },
+    "afterVariety": {
+      "saved": "{name} saved",
+      "itemsRecorded": "{count} items recorded",
+      "unitsRecorded": "{count} {unit} recorded"
+    },
+    "placeholders": {
+      "group": "e.g. iSense TV",
+      "brand": "e.g. Hisense",
+      "variety": "e.g. 43 inch",
+      "customDetail": "e.g. Heel height",
+      "detailValue": "e.g. 256 GB, Black, 43 inch",
+      "simpleProduct": "e.g. Sugar 1 kg",
+      "quantity": "e.g. 5",
+      "buyingPrice": "e.g. 850000",
+      "identifier": "e.g. 356123456789012",
+      "searchGroups": "Search product groups...",
+      "stockName": "e.g. September delivery",
+      "supplier": "e.g. ABC Traders",
+      "stockExpenses": "e.g. 25000"
     },
     "validation": {
       "stockName": "Enter a stock name.",
-      "catalogRequired": "Choose at least one product / SKU for this stock.",
-      "conversionPositive": "Enter a conversion greater than zero."
+      "catalogRequired": "Add at least one product to this stock.",
+      "conversionPositive": "Enter a conversion greater than zero.",
+      "familyName": "Enter the new product group name.",
+      "varietyName": "Enter a variety name.",
+      "varietyDetails": "Complete each variety detail and do not repeat the same detail type.",
+      "identifier": "Enter the identifier for this item."
     },
+    "categoryChoice": {
+      "existingTitle": "Add to existing group",
+      "newTitle": "Create new group",
+      "uncategorizedTitle": "Add simple product"
+    },
+    "newProduct": {
+      "title": "Product details"
+    },
+    "existingCategory": {
+      "title": "Existing product group"
+    },
+    "newCategory": {
+      "title": "New product group"
+    },
+    "uncategorized": {
+      "title": "Simple product"
+    },
+    "existingSku": {
+      "title": "Existing variety"
+    },
+    "configuration": "Variety",
     "recordedProducts": "Products in this stock",
     "individualProgress": "Recorded {recorded} of {count}",
     "individualItem": "Item {number} of {count}",
     "individualComplete": "All items recorded",
     "history": {
       "title": "Recorded stock",
-      "description": "Current receipts remain available while the new recording flow uses direct product lines.",
+      "description": "Current receipts remain available here, including records created through the simplified product-first flow.",
       "empty": "No stock has been recorded yet.",
       "moreProducts": "+{count} more products",
       "viewDetails": "View stock details",

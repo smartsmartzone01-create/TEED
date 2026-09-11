@@ -1310,7 +1310,7 @@ function SalesList({
     <div className={panel}>
       <h2 className="font-bold">{t("recentSales")}</h2>
       <div className="mt-4 overflow-x-auto">
-        <table className="w-full min-w-[42rem] text-left text-sm">
+        <table className="w-full min-w-2xl text-left text-sm">
           <thead className="text-xs text-slate-500">
             <tr>
               <th className="pb-3">{t("fields.receipt")}</th>

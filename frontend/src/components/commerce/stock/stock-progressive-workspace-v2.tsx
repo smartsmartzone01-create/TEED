@@ -63,13 +63,21 @@ const identifierKinds = [
   "engine",
   "registration",
 ] as const;
+const createFamilyValue = "__create_family__";
 
 type Step = "stock" | "catalog" | "record" | "review";
 type IdentifierKind = (typeof identifierKinds)[number];
 
+type ProductFamilyChoice = {
+  id: string;
+  name: string;
+  brand: string;
+};
+
 type PreparedProduct = {
   key: string;
   name: string;
+  familyId: string;
   familyName: string;
   brand: string;
   variant: string;
@@ -131,6 +139,17 @@ const emptyUnit = (): UnitDraft => ({
   identifierValue: "",
 });
 
+const emptyPreparedProduct = (): PreparedProduct => ({
+  key: "",
+  name: "",
+  familyId: "",
+  familyName: "",
+  brand: "",
+  variant: "",
+  unit: "piece",
+  trackingMode: "quantity",
+});
+
 const normalizedCost = (mode: StockCostMode, value: string, quantity: string) => {
   if (!value) return null;
   const cost = Number(value);
@@ -180,21 +199,14 @@ function StockProgressiveWorkspaceV2({
   const [receivedAt, setReceivedAt] = useState(localNow());
   const [stockExpenses, setStockExpenses] = useState("0");
   const [products, setProducts] = useState<Product[]>([]);
+  const [productFamilies, setProductFamilies] = useState<ProductFamilyChoice[]>([]);
   const [unitDefinitions, setUnitDefinitions] = useState<StockUnitDefinition[]>([]);
   const [receipts, setReceipts] = useState<StockReceipt[]>([]);
   const [preparedProducts, setPreparedProducts] = useState<PreparedProduct[]>([]);
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
   const [existingSelection, setExistingSelection] = useState("");
   const [newProductOpen, setNewProductOpen] = useState(false);
-  const [preparedDraft, setPreparedDraft] = useState<PreparedProduct>({
-    key: "",
-    name: "",
-    familyName: "",
-    brand: "",
-    variant: "",
-    unit: "piece",
-    trackingMode: "quantity",
-  });
+  const [preparedDraft, setPreparedDraft] = useState<PreparedProduct>(emptyPreparedProduct());
   const [lines, setLines] = useState<LineDraft[]>([]);
   const [lateDeliveryParent, setLateDeliveryParent] = useState<StockReceipt | null>(null);
   const [savedReceipt, setSavedReceipt] = useState<StockReceipt | null>(null);
@@ -218,7 +230,12 @@ function StockProgressiveWorkspaceV2({
           getProducts(businessId, accessToken, signal),
           getStockReceipts(businessId, accessToken, signal),
         ]);
-        setProducts(productResponse.data?.products ?? []);
+        const catalogData = productResponse.data as {
+          products?: Product[];
+          families?: ProductFamilyChoice[];
+        } | null;
+        setProducts(catalogData?.products ?? []);
+        setProductFamilies(catalogData?.families ?? []);
         const stockData = stockResponse.data as {
           receipts?: StockReceipt[];
           units?: StockUnitDefinition[];
@@ -251,6 +268,7 @@ function StockProgressiveWorkspaceV2({
           key: `existing:${product.id}`,
           existingId: product.id,
           name: product.name,
+          familyId: product.family ?? "",
           familyName: product.family_name ?? "",
           sku: product.sku,
           brand: product.brand,
@@ -327,10 +345,30 @@ function StockProgressiveWorkspaceV2({
     setExistingSelection("");
   };
 
+  const selectPreparedFamily = (familyId: string) => {
+    if (familyId === createFamilyValue) {
+      setPreparedDraft({ ...preparedDraft, familyId, familyName: "" });
+      return;
+    }
+    const family = productFamilies.find((item) => item.id === familyId);
+    setPreparedDraft({
+      ...preparedDraft,
+      familyId,
+      familyName: family?.name ?? "",
+      brand: family ? family.brand : preparedDraft.brand,
+      name: family && !preparedDraft.name.trim() ? family.name : preparedDraft.name,
+    });
+  };
+
   const savePreparedProduct = (event: FormEvent) => {
     event.preventDefault();
     if (!preparedDraft.name.trim()) {
       notify({ message: stockT("validation.productName"), tone: "error" });
+      return;
+    }
+    const selectedFamily = productFamilies.find((family) => family.id === preparedDraft.familyId);
+    if (preparedDraft.familyId === createFamilyValue && !preparedDraft.familyName.trim()) {
+      notify({ message: t("validation.familyName"), tone: "error" });
       return;
     }
     const key = preparedDraft.key || `new-product-${++sequence.current}`;
@@ -338,8 +376,9 @@ function StockProgressiveWorkspaceV2({
       ...preparedDraft,
       key,
       name: preparedDraft.name.trim(),
-      familyName: preparedDraft.familyName.trim(),
-      brand: preparedDraft.brand.trim(),
+      familyId: selectedFamily?.id ?? "",
+      familyName: selectedFamily?.name ?? preparedDraft.familyName.trim(),
+      brand: (selectedFamily ? selectedFamily.brand : preparedDraft.brand).trim(),
       variant: preparedDraft.variant.trim(),
       unit: preparedDraft.unit.trim() || "piece",
     };
@@ -358,15 +397,7 @@ function StockProgressiveWorkspaceV2({
         }),
       ];
     });
-    setPreparedDraft({
-      key: "",
-      name: "",
-      familyName: "",
-      brand: "",
-      variant: "",
-      unit: "piece",
-      trackingMode: "quantity",
-    });
+    setPreparedDraft(emptyPreparedProduct());
     setNewProductOpen(false);
   };
 
@@ -657,12 +688,27 @@ function StockProgressiveWorkspaceV2({
           <form className={`${inset} grid gap-3 p-3`} onSubmit={savePreparedProduct}>
             <div className="grid gap-3 sm:grid-cols-2">
               <label className={field}>{stockT("fields.productName")}<Input value={preparedDraft.name} onChange={(event) => setPreparedDraft({ ...preparedDraft, name: event.target.value })} /></label>
-              <label className={field}>{t("fields.productFamily")}<Input value={preparedDraft.familyName} onChange={(event) => setPreparedDraft({ ...preparedDraft, familyName: event.target.value })} /></label>
-              <label className={field}>{commerceT("fields.brandOptional")}<Input value={preparedDraft.brand} onChange={(event) => setPreparedDraft({ ...preparedDraft, brand: event.target.value })} /></label>
+              <label className={field}>
+                {t("fields.productFamily")}
+                <Select value={preparedDraft.familyId} onChange={(event) => selectPreparedFamily(event.target.value)}>
+                  <option value="">{t("values.noFamily")}</option>
+                  {productFamilies.map((family) => (
+                    <option key={family.id} value={family.id}>
+                      {family.name}{family.brand ? ` · ${family.brand}` : ""}
+                    </option>
+                  ))}
+                  <option value={createFamilyValue}>{t("values.createFamily")}</option>
+                </Select>
+              </label>
+              {preparedDraft.familyId === createFamilyValue ? (
+                <label className={field}>{t("fields.newFamilyName")}<Input value={preparedDraft.familyName} onChange={(event) => setPreparedDraft({ ...preparedDraft, familyName: event.target.value })} /></label>
+              ) : null}
+              <label className={field}>{commerceT("fields.brandOptional")}<Input disabled={Boolean(productFamilies.find((family) => family.id === preparedDraft.familyId))} value={preparedDraft.brand} onChange={(event) => setPreparedDraft({ ...preparedDraft, brand: event.target.value })} /></label>
               <label className={field}>{commerceT("fields.variant")}<Input value={preparedDraft.variant} onChange={(event) => setPreparedDraft({ ...preparedDraft, variant: event.target.value })} /></label>
               <label className={field}>{stockT("fields.unit")}<Select value={preparedDraft.unit} onChange={(event) => setPreparedDraft({ ...preparedDraft, unit: event.target.value })}>{availableUnits.map((unit) => <option key={unit.key} value={unit.key}>{unit.label}</option>)}</Select></label>
               <label className={field}>{t("fields.trackingMode")}<Select value={preparedDraft.trackingMode} onChange={(event) => setPreparedDraft({ ...preparedDraft, trackingMode: event.target.value as StockTrackingMode })}><option value="quantity">{t("tracking.quantity")}</option><option value="individual">{t("tracking.individual")}</option></Select></label>
             </div>
+            <p className="text-xs text-slate-500">{t("help.familyAssignment")}</p>
             <div className="flex flex-wrap gap-2">
               <Button type="submit">{stockT("actions.enterProduct")}</Button>
               <Button type="button" variant="ghost" onClick={() => setNewProductOpen(false)}>{commerceT("actions.cancel")}</Button>

@@ -13,7 +13,7 @@ function StockRecorderV2({ businessId }: { businessId: string }) {
   const t = useTranslations("CommerceStockV2");
   const stockT = useTranslations("CommerceStock");
   const [recordingOpen, setRecordingOpen] = useState(false);
-  const [activeStage, setActiveStage] = useState<0 | 1 | 2 | 3>(0);
+  const [activeStage, setActiveStage] = useState<0 | 1 | 2 | 3>(1);
   const help = [t("help.stock"), t("help.products"), t("help.record"), t("help.review")][activeStage];
 
   return (

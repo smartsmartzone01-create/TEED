@@ -14,12 +14,12 @@ function Select({
   ...props
 }: SelectProps) {
   return (
-    <div className="relative">
+    <div className="relative w-full min-w-0 max-w-full">
       <select
         aria-invalid={invalid || undefined}
         className={cn(
-          "h-11 w-full appearance-none rounded-lg border",
-          "bg-background/90 px-3 pr-10 text-sm text-foreground",
+          "h-11 w-full min-w-0 max-w-full appearance-none rounded-lg border",
+          "bg-background/90 px-3 pr-10 text-base text-foreground [@media(pointer:fine)]:text-sm",
           "shadow-sm outline-none transition-[border-color,box-shadow]",
           "disabled:cursor-not-allowed disabled:opacity-60",
           "focus-visible:border-primary focus-visible:ring-2",

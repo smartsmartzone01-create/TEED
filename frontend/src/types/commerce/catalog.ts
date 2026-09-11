@@ -1,3 +1,15 @@
+type ProductVariantOption = {
+  key: string;
+  label: string;
+  value: string;
+};
+
+type ProductFamily = {
+  id: string;
+  name: string;
+  brand: string;
+};
+
 type Product = {
   id: string;
   name: string;
@@ -6,6 +18,7 @@ type Product = {
   group: string;
   brand: string;
   variant: string;
+  variant_options: ProductVariantOption[];
   family: string | null;
   family_name: string;
   unit: string;
@@ -16,4 +29,4 @@ type Product = {
   is_active: boolean;
 };
 
-export type { Product };
+export type { Product, ProductFamily, ProductVariantOption };

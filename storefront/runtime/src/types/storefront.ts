@@ -39,7 +39,7 @@ export type StorefrontSku = {
   commerceProductId?: string;
   sku: string;
   options: Record<string, string>;
-  price: StorefrontMoney;
+  price: StorefrontMoney | null;
   availability: StorefrontSkuAvailability;
   trackingMode?: "quantity" | "individual";
   imageUrl?: string;

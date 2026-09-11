@@ -36,7 +36,7 @@ function WorkspaceContent({
   return (
     <div
       className={cn(
-        "flex min-w-0",
+        "flex w-full min-w-0 max-w-full",
         hasSearchBar
           ? "min-h-[calc(100svh-6.5rem)]"
           : "min-h-[calc(100svh-3.5rem)]",
@@ -44,11 +44,11 @@ function WorkspaceContent({
     >
       <main
         className={cn(
-          "min-w-0 flex-1",
+          "w-full min-w-0 max-w-full flex-1",
           kuzaAIAvailable && kuzaAIMode === "expanded" ? "lg:hidden" : "block",
         )}
       >
-        <div className="mx-auto w-full max-w-384 p-4 sm:p-6 lg:p-8">
+        <div className="mx-auto w-full min-w-0 max-w-384 p-4 sm:p-6 lg:p-8">
           {children}
         </div>
       </main>
@@ -124,7 +124,11 @@ function WorkspaceShell({ children }: WorkspaceShellProps) {
   );
 
   return (
-    <div className="min-h-svh bg-white text-slate-950 dark:bg-slate-950 dark:text-slate-50" style={brandStyle}>
+    <div
+      className="min-h-svh w-full min-w-0 max-w-full bg-white text-slate-950 dark:bg-slate-950 dark:text-slate-50"
+      data-workspace-shell
+      style={brandStyle}
+    >
       <WorkspaceSidebar
         collapsed={collapsed}
         mobileOpen={mobileOpen}
@@ -133,7 +137,7 @@ function WorkspaceShell({ children }: WorkspaceShellProps) {
       />
       <div
         className={cn(
-          "min-h-svh transition-[padding] duration-300 ease-out",
+          "min-h-svh w-full min-w-0 max-w-full transition-[padding] duration-300 ease-out",
           collapsed ? "lg:pl-21" : "lg:pl-64",
         )}
       >
@@ -143,7 +147,7 @@ function WorkspaceShell({ children }: WorkspaceShellProps) {
         ) : null}
         <div
           className={cn(
-            "bg-[#F4F7FA] dark:bg-slate-950",
+            "w-full min-w-0 max-w-full bg-[#F4F7FA] dark:bg-slate-950",
             searchAvailable
               ? "min-h-[calc(100svh-6.5rem)]"
               : "min-h-[calc(100svh-3.5rem)]",

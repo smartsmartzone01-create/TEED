@@ -14,16 +14,23 @@ from ..inventory.stock import (
 )
 from ..serializers import UnitDefinitionSerializer
 from ..services import commerce_membership
-from .models import Product, UnitDefinition
+from .models import Product, ProductFamily, UnitDefinition
 from .services import active_catalog_products, set_catalog_product_active
+from .variant_options import normalize_variant_options
 
 
 class CatalogProductSerializer(AvailabilityProductSerializer):
     family = serializers.SerializerMethodField()
     family_name = serializers.SerializerMethodField()
+    variant_options = serializers.SerializerMethodField()
 
     class Meta(AvailabilityProductSerializer.Meta):
-        fields = [*AvailabilityProductSerializer.Meta.fields, "family", "family_name"]
+        fields = [
+            *AvailabilityProductSerializer.Meta.fields,
+            "family",
+            "family_name",
+            "variant_options",
+        ]
 
     def get_family(self, obj):
         return str(obj.family_id) if obj.family_id else None
@@ -31,16 +38,33 @@ class CatalogProductSerializer(AvailabilityProductSerializer):
     def get_family_name(self, obj):
         return obj.family.name if obj.family_id else ""
 
+    def get_variant_options(self, obj):
+        return normalize_variant_options(obj.variant_options)
+
 
 class ActiveProductListCreatePolishAPIView(ProductListCreatePolishAPIView):
-    """Expose active catalog identities, including sold-out items for restocking."""
+    """Expose active catalog identities and product families for stock recording."""
 
     def get(self, request, business_id):
         membership = commerce_membership(user=request.user, business_id=business_id)
         products = active_catalog_products(business=membership.business)
+        families = ProductFamily.objects.filter(
+            business=membership.business,
+            is_active=True,
+        ).order_by("name", "brand", "id")
         return SuccessResponse(
             message="Products retrieved successfully.",
-            data={"products": CatalogProductSerializer(products, many=True).data},
+            data={
+                "products": CatalogProductSerializer(products, many=True).data,
+                "families": [
+                    {
+                        "id": str(family.id),
+                        "name": family.name,
+                        "brand": family.brand,
+                    }
+                    for family in families
+                ],
+            },
         )
 
 

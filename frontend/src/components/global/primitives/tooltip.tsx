@@ -1,10 +1,11 @@
 "use client";
 
 import * as TooltipPrimitive from "@radix-ui/react-tooltip";
-import type {
-  ComponentPropsWithoutRef,
-  ReactElement,
-  ReactNode,
+import {
+  useState,
+  type ComponentPropsWithoutRef,
+  type ReactElement,
+  type ReactNode,
 } from "react";
 
 import { cn } from "@/lib/global/class-names";
@@ -45,13 +46,23 @@ function Tooltip({
   disabled = false,
   side = "bottom",
 }: TooltipProps) {
+  const [open, setOpen] = useState(false);
+
   if (disabled) {
     return children;
   }
 
   return (
-    <TooltipPrimitive.Root>
-      <TooltipPrimitive.Trigger asChild>
+    <TooltipPrimitive.Root open={open} onOpenChange={setOpen}>
+      <TooltipPrimitive.Trigger
+        asChild
+        onClick={(event) => {
+          const keepOpen = !open || event.detail === 0;
+          if (keepOpen) {
+            queueMicrotask(() => setOpen(true));
+          }
+        }}
+      >
         {children}
       </TooltipPrimitive.Trigger>
 

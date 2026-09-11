@@ -8,6 +8,7 @@ import { Button } from "@/components/global/primitives/button";
 import { useNotification } from "@/providers/global/notification-provider";
 import type { StockReceipt, StockReceiptLine } from "@/types/commerce/inventory";
 import { formatQuantityWithUnit } from "@/utils/commerce/quantity";
+import { copyTextToClipboard } from "@/utils/global/clipboard";
 
 type ShareableReceiptLine = {
   id: string;
@@ -96,7 +97,8 @@ function useShareableStockReceipt(receipt: StockReceipt) {
   const text = rows.join("\n");
 
   const copy = async () => {
-    await navigator.clipboard.writeText(text);
+    const copied = await copyTextToClipboard(text);
+    if (!copied) return;
     notify({ message: t("success.copied"), tone: "success" });
   };
 
