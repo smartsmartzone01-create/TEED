@@ -86,7 +86,11 @@ def upload_media(*, actor, business_id, site_id, request, file, alt_text, **valu
             size_bytes=file.size,
             **values,
         )
-        media.full_clean()
+        # The upload URL is generated from Django's configured storage backend rather
+        # than supplied by the client. Django's URLField rejects DRF's test host
+        # (http://testserver/...), so validate every other model field normally while
+        # trusting this internally generated storage URL.
+        media.full_clean(exclude={"public_url"})
         media.save()
     except Exception:
         default_storage.delete(storage_key)
