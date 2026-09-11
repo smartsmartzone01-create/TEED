@@ -1,12 +1,20 @@
 import {
   websiteDeleteEnvelopeSchema,
+  websiteListingEnvelopeSchema,
+  websiteListingListEnvelopeSchema,
   websiteMediaEnvelopeSchema,
   websiteMediaListEnvelopeSchema,
   websiteSiteEnvelopeSchema,
   websiteSiteListEnvelopeSchema,
+  websiteVariantEnvelopeSchema,
+  websiteVariantListEnvelopeSchema,
 } from "@/schemas/website/website";
 import { requestApi } from "@/services/global/api-client";
 import { withCsrfRetry } from "@/services/identity/csrf";
+import type {
+  WebsiteListingInput,
+  WebsiteVariantInput,
+} from "@/types/website/website";
 
 const WEBSITE_BASE_PATH = "/api/v1/website";
 
@@ -85,10 +93,158 @@ function deleteWebsiteMedia(
   );
 }
 
+function getWebsiteListings(
+  businessId: string,
+  siteId: string,
+  accessToken: string,
+  signal?: AbortSignal,
+) {
+  return requestApi({
+    accessToken,
+    path: `${WEBSITE_BASE_PATH}/businesses/${businessId}/sites/${siteId}/listings/`,
+    schema: websiteListingListEnvelopeSchema,
+    signal,
+  });
+}
+
+function createWebsiteListing(
+  businessId: string,
+  siteId: string,
+  values: WebsiteListingInput,
+  accessToken: string,
+) {
+  return withCsrfRetry((csrfToken) =>
+    requestApi({
+      accessToken,
+      body: values,
+      csrfToken,
+      method: "POST",
+      path: `${WEBSITE_BASE_PATH}/businesses/${businessId}/sites/${siteId}/listings/`,
+      schema: websiteListingEnvelopeSchema,
+    }),
+  );
+}
+
+function updateWebsiteListing(
+  businessId: string,
+  siteId: string,
+  listingId: string,
+  values: Partial<WebsiteListingInput>,
+  accessToken: string,
+) {
+  return withCsrfRetry((csrfToken) =>
+    requestApi({
+      accessToken,
+      body: values,
+      csrfToken,
+      method: "PATCH",
+      path: `${WEBSITE_BASE_PATH}/businesses/${businessId}/sites/${siteId}/listings/${listingId}/`,
+      schema: websiteListingEnvelopeSchema,
+    }),
+  );
+}
+
+function deleteWebsiteListing(
+  businessId: string,
+  siteId: string,
+  listingId: string,
+  accessToken: string,
+) {
+  return withCsrfRetry((csrfToken) =>
+    requestApi({
+      accessToken,
+      csrfToken,
+      method: "DELETE",
+      path: `${WEBSITE_BASE_PATH}/businesses/${businessId}/sites/${siteId}/listings/${listingId}/`,
+      schema: websiteDeleteEnvelopeSchema,
+    }),
+  );
+}
+
+function getWebsiteVariants(
+  businessId: string,
+  siteId: string,
+  listingId: string,
+  accessToken: string,
+  signal?: AbortSignal,
+) {
+  return requestApi({
+    accessToken,
+    path: `${WEBSITE_BASE_PATH}/businesses/${businessId}/sites/${siteId}/listings/${listingId}/variants/`,
+    schema: websiteVariantListEnvelopeSchema,
+    signal,
+  });
+}
+
+function createWebsiteVariant(
+  businessId: string,
+  siteId: string,
+  listingId: string,
+  values: WebsiteVariantInput,
+  accessToken: string,
+) {
+  return withCsrfRetry((csrfToken) =>
+    requestApi({
+      accessToken,
+      body: values,
+      csrfToken,
+      method: "POST",
+      path: `${WEBSITE_BASE_PATH}/businesses/${businessId}/sites/${siteId}/listings/${listingId}/variants/`,
+      schema: websiteVariantEnvelopeSchema,
+    }),
+  );
+}
+
+function updateWebsiteVariant(
+  businessId: string,
+  siteId: string,
+  listingId: string,
+  variantId: string,
+  values: Partial<WebsiteVariantInput>,
+  accessToken: string,
+) {
+  return withCsrfRetry((csrfToken) =>
+    requestApi({
+      accessToken,
+      body: values,
+      csrfToken,
+      method: "PATCH",
+      path: `${WEBSITE_BASE_PATH}/businesses/${businessId}/sites/${siteId}/listings/${listingId}/variants/${variantId}/`,
+      schema: websiteVariantEnvelopeSchema,
+    }),
+  );
+}
+
+function deleteWebsiteVariant(
+  businessId: string,
+  siteId: string,
+  listingId: string,
+  variantId: string,
+  accessToken: string,
+) {
+  return withCsrfRetry((csrfToken) =>
+    requestApi({
+      accessToken,
+      csrfToken,
+      method: "DELETE",
+      path: `${WEBSITE_BASE_PATH}/businesses/${businessId}/sites/${siteId}/listings/${listingId}/variants/${variantId}/`,
+      schema: websiteDeleteEnvelopeSchema,
+    }),
+  );
+}
+
 export {
+  createWebsiteListing,
   createWebsiteSite,
+  createWebsiteVariant,
+  deleteWebsiteListing,
   deleteWebsiteMedia,
+  deleteWebsiteVariant,
+  getWebsiteListings,
   getWebsiteMedia,
   getWebsiteSites,
+  getWebsiteVariants,
+  updateWebsiteListing,
+  updateWebsiteVariant,
   uploadWebsiteMedia,
 };

@@ -86,8 +86,11 @@ function WebsiteMediaManager({ businessId }: { businessId: string }) {
 
   useEffect(() => {
     const controller = new AbortController();
-    void load(controller.signal);
-    return () => controller.abort();
+    const initialLoad = window.setTimeout(() => void load(controller.signal), 0);
+    return () => {
+      window.clearTimeout(initialLoad);
+      controller.abort();
+    };
   }, [load]);
 
   async function handleUpload() {

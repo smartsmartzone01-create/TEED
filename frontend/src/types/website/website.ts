@@ -37,4 +37,72 @@ type WebsiteMedia = {
   updated_at: string;
 };
 
-export type { WebsiteMedia, WebsiteSite };
+type WebsiteVariantAvailability = "in_stock" | "low_stock" | "out_of_stock";
+
+type WebsiteVariant = {
+  id: string;
+  sku: string;
+  options: Record<string, string>;
+  website_price: string | null;
+  currency: string;
+  website_availability: WebsiteVariantAvailability;
+  media_id: string | null;
+  commerce_product_id: string | null;
+  price_source: "website" | "commerce";
+  availability_source: "website" | "commerce";
+  is_published: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+};
+
+type WebsiteListing = {
+  id: string;
+  slug: string;
+  title: Record<string, string>;
+  short_description: Record<string, string>;
+  description: Record<string, string>;
+  brand: string;
+  badge: Record<string, string>;
+  primary_media_id: string | null;
+  options: unknown[];
+  is_published: boolean;
+  sort_order: number;
+  variants: WebsiteVariant[];
+  created_at: string;
+  updated_at: string;
+};
+
+type WebsiteListingInput = {
+  slug: string;
+  title: Record<string, string>;
+  short_description?: Record<string, string>;
+  description?: Record<string, string>;
+  brand?: string;
+  badge?: Record<string, string>;
+  primary_media_id?: string | null;
+  options?: unknown[];
+  is_published?: boolean;
+  sort_order?: number;
+};
+
+type WebsiteVariantInput = {
+  sku?: string;
+  options?: Record<string, string>;
+  website_price?: string | null;
+  currency?: string;
+  website_availability?: WebsiteVariantAvailability;
+  media_id?: string | null;
+  is_published?: boolean;
+  sort_order?: number;
+};
+
+export type {
+  WebsiteListing,
+  WebsiteListingInput,
+  WebsiteMedia,
+  WebsiteSite,
+  WebsiteVariant,
+  WebsiteVariantAvailability,
+  WebsiteVariantInput,
+};
