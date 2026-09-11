@@ -2,6 +2,7 @@ from common.responses import SuccessResponse
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_protect
 from rest_framework import status
+from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 
@@ -13,6 +14,7 @@ from .serializers import (
     WebsiteMediaReorderSerializer,
     WebsiteMediaSerializer,
     WebsiteMediaUpdateSerializer,
+    WebsiteMediaUploadSerializer,
 )
 from .services import (
     delete_media,
@@ -20,6 +22,7 @@ from .services import (
     register_media,
     reorder_media,
     update_media,
+    upload_media,
 )
 
 
@@ -54,6 +57,28 @@ class WebsiteMediaListCreateAPIView(WebsiteBaseAPIView):
         )
         return SuccessResponse(
             message="Website media registered successfully.",
+            data=WebsiteMediaSerializer(media).data,
+            status_code=status.HTTP_201_CREATED,
+        )
+
+
+class WebsiteMediaUploadAPIView(WebsiteBaseAPIView):
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
+    serializer_class = WebsiteMediaUploadSerializer
+
+    @method_decorator(csrf_protect)
+    def post(self, request, business_id, site_id):
+        serializer = WebsiteMediaUploadSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        media = upload_media(
+            actor=request.user,
+            business_id=business_id,
+            site_id=site_id,
+            request=request,
+            **serializer.validated_data,
+        )
+        return SuccessResponse(
+            message="Website media uploaded successfully.",
             data=WebsiteMediaSerializer(media).data,
             status_code=status.HTTP_201_CREATED,
         )

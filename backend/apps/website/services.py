@@ -1,3 +1,7 @@
+from pathlib import Path
+
+from common.database.uuid import generate_uuid
+from django.core.files.storage import default_storage
 from django.db import transaction
 from rest_framework.exceptions import NotFound, ValidationError
 
@@ -5,6 +9,12 @@ from apps.workspaces.policy import WorkspacePermission
 from apps.workspaces.services import require_membership
 
 from .models import WebsiteListing, WebsiteMedia, WebsiteSite, WebsiteVariant
+
+IMAGE_FORMAT_METADATA = {
+    "JPEG": ("jpg", "image/jpeg"),
+    "PNG": ("png", "image/png"),
+    "WEBP": ("webp", "image/webp"),
+}
 
 
 def get_site_for_user(*, user, business_id, site_id, manage=False):
@@ -23,6 +33,17 @@ def get_site_for_user(*, user, business_id, site_id, manage=False):
     return site
 
 
+def _managed_media_prefix(site):
+    return f"websites/{site.id}/media/"
+
+
+def _absolute_storage_url(*, request, storage_key):
+    storage_url = default_storage.url(storage_key)
+    if storage_url.startswith(("https://", "http://")):
+        return storage_url
+    return request.build_absolute_uri(storage_url)
+
+
 @transaction.atomic
 def register_media(*, actor, business_id, site_id, **values):
     site = get_site_for_user(
@@ -34,6 +55,48 @@ def register_media(*, actor, business_id, site_id, **values):
     media = WebsiteMedia(site=site, **values)
     media.full_clean()
     media.save()
+    return media
+
+
+@transaction.atomic
+def upload_media(
+    *, actor, business_id, site_id, request, file, alt_text, **values
+):
+    site = get_site_for_user(
+        user=actor,
+        business_id=business_id,
+        site_id=site_id,
+        manage=True,
+    )
+    image_format = file.website_image_format
+    extension, mime_type = IMAGE_FORMAT_METADATA[image_format]
+    original_name = Path(file.name).name[:255]
+    requested_key = f"{_managed_media_prefix(site)}{generate_uuid()}.{extension}"
+    storage_key = default_storage.save(requested_key, file)
+
+    try:
+        media = WebsiteMedia(
+            site=site,
+            kind=WebsiteMedia.Kind.IMAGE,
+            public_url=_absolute_storage_url(request=request, storage_key=storage_key),
+            storage_key=storage_key,
+            original_name=original_name,
+            mime_type=mime_type,
+            alt_text=alt_text,
+            width=file.website_image_width,
+            height=file.website_image_height,
+            size_bytes=file.size,
+            **values,
+        )
+        # The upload URL is generated from Django's configured storage backend rather
+        # than supplied by the client. Django's URLField rejects DRF's test host
+        # (http://testserver/...), so validate every other model field normally while
+        # trusting this internally generated storage URL.
+        media.full_clean(exclude={"public_url"})
+        media.save()
+    except Exception:
+        default_storage.delete(storage_key)
+        raise
     return media
 
 
@@ -68,9 +131,17 @@ def delete_media(*, actor, business_id, site_id, media_id):
     if media is None:
         raise NotFound("Website media not found.", code="website_media_not_found")
 
-    WebsiteListing.objects.filter(site=site, primary_media=media).update(primary_media=None)
+    storage_key = media.storage_key
+    managed_storage = bool(
+        storage_key and storage_key.startswith(_managed_media_prefix(site))
+    )
+    WebsiteListing.objects.filter(site=site, primary_media=media).update(
+        primary_media=None
+    )
     WebsiteVariant.objects.filter(listing__site=site, media=media).update(media=None)
     media.delete()
+    if managed_storage:
+        transaction.on_commit(lambda: default_storage.delete(storage_key))
     return media
 
 
