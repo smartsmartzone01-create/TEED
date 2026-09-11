@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import WebsiteListing, WebsiteSite, WebsiteVariant
+from .models import WebsiteListing, WebsiteMedia, WebsiteSite, WebsiteVariant
 
 
 class WebsiteVariantInline(admin.TabularInline):
@@ -14,6 +14,21 @@ class WebsiteSiteAdmin(admin.ModelAdmin):
     list_filter = ("is_published", "default_locale")
     search_fields = ("display_name", "slug", "business__name")
     readonly_fields = ("public_key",)
+
+
+@admin.register(WebsiteMedia)
+class WebsiteMediaAdmin(admin.ModelAdmin):
+    list_display = (
+        "original_name",
+        "site",
+        "kind",
+        "mime_type",
+        "sort_order",
+        "created_at",
+    )
+    list_filter = ("kind", "mime_type")
+    search_fields = ("original_name", "public_url", "storage_key", "site__display_name")
+    readonly_fields = ("created_at", "updated_at")
 
 
 @admin.register(WebsiteListing)
