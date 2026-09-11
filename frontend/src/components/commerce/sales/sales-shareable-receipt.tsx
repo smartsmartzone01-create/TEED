@@ -8,6 +8,7 @@ import { Button } from "@/components/global/primitives/button";
 import { useNotification } from "@/providers/global/notification-provider";
 import type { Sale, SaleItem } from "@/types/commerce/sales";
 import { formatQuantityWithUnit } from "@/utils/commerce/quantity";
+import { copyTextToClipboard } from "@/utils/global/clipboard";
 
 type ReceiptDetail = {
   label: string;
@@ -195,7 +196,8 @@ function useShareableSalesReceipt(sale: Sale) {
   const text = rows.join("\n");
 
   const copy = async () => {
-    await navigator.clipboard.writeText(text);
+    const copied = await copyTextToClipboard(text);
+    if (!copied) return;
     notify({ message: t("saleReceipt.copied"), tone: "success" });
   };
 
