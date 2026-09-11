@@ -74,6 +74,39 @@ class WebsiteSite(BaseModel):
         return self.display_name
 
 
+class WebsiteMedia(BaseModel):
+    class Kind(models.TextChoices):
+        IMAGE = "image", "Image"
+
+    site = models.ForeignKey(
+        WebsiteSite,
+        on_delete=models.CASCADE,
+        related_name="media",
+    )
+    kind = models.CharField(max_length=16, choices=Kind.choices, default=Kind.IMAGE)
+    public_url = models.URLField(max_length=500)
+    storage_key = models.CharField(max_length=500, blank=True, default="")
+    original_name = models.CharField(max_length=255, blank=True, default="")
+    mime_type = models.CharField(max_length=100, blank=True, default="")
+    alt_text = models.JSONField(default=dict, blank=True)
+    width = models.PositiveIntegerField(null=True, blank=True)
+    height = models.PositiveIntegerField(null=True, blank=True)
+    size_bytes = models.PositiveBigIntegerField(null=True, blank=True)
+    sort_order = models.PositiveIntegerField(default=0, db_index=True)
+
+    class Meta:
+        db_table = "website_media"
+        ordering = ["sort_order", "created_at", "id"]
+
+    def clean(self):
+        super().clean()
+        if not isinstance(self.alt_text, dict):
+            raise ValidationError({"alt_text": "Media alt text must be a locale map."})
+
+    def __str__(self):
+        return self.original_name or self.public_url
+
+
 class WebsiteListing(BaseModel):
     site = models.ForeignKey(
         WebsiteSite,
@@ -87,6 +120,13 @@ class WebsiteListing(BaseModel):
     brand = models.CharField(max_length=80, blank=True, default="")
     badge = models.JSONField(default=dict, blank=True)
     primary_image_url = models.URLField(max_length=500, blank=True, default="")
+    primary_media = models.ForeignKey(
+        WebsiteMedia,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="primary_for_listings",
+    )
     options = models.JSONField(default=list, blank=True)
     is_published = models.BooleanField(default=False, db_index=True)
     sort_order = models.PositiveIntegerField(default=0, db_index=True)
@@ -100,6 +140,18 @@ class WebsiteListing(BaseModel):
                 name="website_site_listing_slug_unique",
             )
         ]
+
+    def clean(self):
+        super().clean()
+        media = self.primary_media
+        if media is not None and media.site_id != self.site_id:
+            raise ValidationError(
+                {"primary_media": "Primary media must belong to the same website site."}
+            )
+
+    def resolved_primary_image_url(self):
+        media = self.primary_media
+        return (media.public_url if media is not None else "") or self.primary_image_url
 
     def __str__(self):
         title = self.title if isinstance(self.title, dict) else {}
@@ -136,6 +188,13 @@ class WebsiteVariant(BaseModel):
         default=Availability.IN_STOCK,
     )
     image_url = models.URLField(max_length=500, blank=True, default="")
+    media = models.ForeignKey(
+        WebsiteMedia,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="variant_usages",
+    )
 
     commerce_product = models.ForeignKey(
         "commerce.Product",
@@ -176,6 +235,12 @@ class WebsiteVariant(BaseModel):
 
     def clean(self):
         super().clean()
+        media = self.media
+        if media is not None and media.site_id != self.listing.site_id:
+            raise ValidationError(
+                {"media": "Variant media must belong to the same website site."}
+            )
+
         product = self.commerce_product
         if product is not None and product.business_id != self.listing.site.business_id:
             raise ValidationError(
@@ -215,6 +280,10 @@ class WebsiteVariant(BaseModel):
         from apps.commerce.catalog.exposure import sku_inventory_state
 
         return sku_inventory_state(product)["availability"]
+
+    def resolved_image_url(self):
+        media = self.media
+        return (media.public_url if media is not None else "") or self.image_url
 
     def resolved_sku(self):
         product = self.valid_commerce_product()
