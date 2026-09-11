@@ -12,9 +12,30 @@ body {
   color: var(--foreground);
 }
 
-
 input,
 select,
 textarea {
   font: inherit;
+}
+
+[data-workspace-shell] {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+@media (hover: none) and (pointer: coarse) {
+  [data-workspace-shell] {
+    overflow-x: hidden;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  [data-workspace-shell]
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  [data-workspace-shell] select,
+  [data-workspace-shell] textarea {
+    max-width: 100%;
+    font-size: 16px !important;
+  }
 }
