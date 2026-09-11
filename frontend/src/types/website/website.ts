@@ -97,7 +97,32 @@ type WebsiteVariantInput = {
   sort_order?: number;
 };
 
+type WebsiteCommerceProduct = {
+  id: string;
+  family_id: string | null;
+  family_name: string;
+  name: string;
+  sku: string;
+  brand: string;
+  variant: string;
+  variant_options: unknown;
+  tracking_mode: string;
+  linked: boolean;
+  website_listing_id: string | null;
+  website_variant_id: string | null;
+};
+
+type WebsiteCommerceImportResult = {
+  requested_product_ids: string[];
+  imported_product_ids: string[];
+  created_listings: number;
+  created_variants: number;
+  existing_variants: number;
+};
+
 export type {
+  WebsiteCommerceImportResult,
+  WebsiteCommerceProduct,
   WebsiteListing,
   WebsiteListingInput,
   WebsiteMedia,

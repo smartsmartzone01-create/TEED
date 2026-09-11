@@ -77,6 +77,29 @@ const websiteListingSchema = z.object({
   updated_at: z.string(),
 });
 
+const websiteCommerceProductSchema = z.object({
+  id: z.string().uuid(),
+  family_id: z.string().uuid().nullable(),
+  family_name: z.string(),
+  name: z.string(),
+  sku: z.string(),
+  brand: z.string(),
+  variant: z.string(),
+  variant_options: z.unknown(),
+  tracking_mode: z.string(),
+  linked: z.boolean(),
+  website_listing_id: z.string().uuid().nullable(),
+  website_variant_id: z.string().uuid().nullable(),
+});
+
+const websiteCommerceImportResultSchema = z.object({
+  requested_product_ids: z.array(z.string().uuid()),
+  imported_product_ids: z.array(z.string().uuid()),
+  created_listings: z.number().int().nonnegative(),
+  created_variants: z.number().int().nonnegative(),
+  existing_variants: z.number().int().nonnegative(),
+});
+
 const websiteSiteEnvelopeSchema = createApiEnvelopeSchema(websiteSiteSchema);
 const websiteSiteListEnvelopeSchema = createApiEnvelopeSchema(
   z.object({ sites: z.array(websiteSiteSchema) }),
@@ -93,9 +116,19 @@ const websiteVariantEnvelopeSchema = createApiEnvelopeSchema(websiteVariantSchem
 const websiteVariantListEnvelopeSchema = createApiEnvelopeSchema(
   z.object({ variants: z.array(websiteVariantSchema) }),
 );
+const websiteCommerceCatalogEnvelopeSchema = createApiEnvelopeSchema(
+  z.object({ products: z.array(websiteCommerceProductSchema) }),
+);
+const websiteCommerceImportEnvelopeSchema = createApiEnvelopeSchema(
+  websiteCommerceImportResultSchema,
+);
 const websiteDeleteEnvelopeSchema = createApiEnvelopeSchema(z.null());
 
 export {
+  websiteCommerceCatalogEnvelopeSchema,
+  websiteCommerceImportEnvelopeSchema,
+  websiteCommerceImportResultSchema,
+  websiteCommerceProductSchema,
   websiteDeleteEnvelopeSchema,
   websiteListingEnvelopeSchema,
   websiteListingListEnvelopeSchema,
