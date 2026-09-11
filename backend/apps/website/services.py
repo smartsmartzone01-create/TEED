@@ -59,7 +59,9 @@ def register_media(*, actor, business_id, site_id, **values):
 
 
 @transaction.atomic
-def upload_media(*, actor, business_id, site_id, request, file, alt_text, **values):
+def upload_media(
+    *, actor, business_id, site_id, request, file, alt_text, **values
+):
     site = get_site_for_user(
         user=actor,
         business_id=business_id,
