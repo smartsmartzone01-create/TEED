@@ -1,7 +1,7 @@
 import type { CSSProperties, ReactNode } from "react";
 
-import { SiteFooter } from "@/components/site-footer";
-import { SiteHeader } from "@/components/site-header";
+import { EcommerceClassicFooter } from "@/components/templates/ecommerce/classic/ecommerce-classic-footer";
+import { EcommerceClassicHeader } from "@/components/templates/ecommerce/classic/ecommerce-classic-header";
 import type { StorefrontSiteConfig } from "@/types/storefront";
 
 export function StorefrontShell({
@@ -18,10 +18,10 @@ export function StorefrontShell({
   } as CSSProperties;
 
   return (
-    <div style={themeStyle}>
-      <SiteHeader site={site} />
+    <div className="ecommerce-classic-template" style={themeStyle}>
+      <EcommerceClassicHeader site={site} />
       {children}
-      <SiteFooter site={site} />
+      <EcommerceClassicFooter site={site} />
     </div>
   );
 }
