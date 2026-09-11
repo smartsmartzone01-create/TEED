@@ -16,6 +16,7 @@ class WorkspacePermission(StrEnum):
     MANAGE_INVITATIONS = "invitations.manage"
     CONTROL_BUSINESS = "business.control"
     TRANSFER_OWNERSHIP = "business.transfer_ownership"
+    MANAGE_WEBSITE = "website.manage"
     VIEW_COMMERCE = "commerce.view"
     MANAGE_CATALOG = "commerce.catalog.manage"
     MANAGE_INVENTORY = "commerce.inventory.manage"
@@ -45,6 +46,7 @@ ROLE_PERMISSIONS = {
             WorkspacePermission.MANAGE_BUSINESS,
             WorkspacePermission.MANAGE_MEMBERS,
             WorkspacePermission.MANAGE_INVITATIONS,
+            WorkspacePermission.MANAGE_WEBSITE,
             WorkspacePermission.VIEW_COMMERCE,
             WorkspacePermission.MANAGE_CATALOG,
             WorkspacePermission.MANAGE_INVENTORY,
@@ -65,6 +67,7 @@ ROLE_PERMISSIONS = {
         {
             WorkspacePermission.ACCESS,
             WorkspacePermission.MANAGE_INVITATIONS,
+            WorkspacePermission.MANAGE_WEBSITE,
             WorkspacePermission.VIEW_COMMERCE,
             WorkspacePermission.MANAGE_CATALOG,
             WorkspacePermission.MANAGE_INVENTORY,
