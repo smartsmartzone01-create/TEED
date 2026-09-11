@@ -12,6 +12,11 @@ from .api import (
     WebsiteVariantDetailAPIView,
     WebsiteVariantListCreateAPIView,
 )
+from .commerce_api import (
+    WebsiteCommerceCatalogAPIView,
+    WebsiteCommerceDisconnectAPIView,
+    WebsiteCommerceImportAPIView,
+)
 
 app_name = "website"
 
@@ -65,5 +70,20 @@ urlpatterns = [
         "businesses/<uuid:business_id>/sites/<uuid:site_id>/listings/<uuid:listing_id>/variants/<uuid:variant_id>/",
         WebsiteVariantDetailAPIView.as_view(),
         name="variant-detail",
+    ),
+    path(
+        "businesses/<uuid:business_id>/sites/<uuid:site_id>/commerce/catalog/",
+        WebsiteCommerceCatalogAPIView.as_view(),
+        name="commerce-catalog",
+    ),
+    path(
+        "businesses/<uuid:business_id>/sites/<uuid:site_id>/commerce/import/",
+        WebsiteCommerceImportAPIView.as_view(),
+        name="commerce-import",
+    ),
+    path(
+        "businesses/<uuid:business_id>/sites/<uuid:site_id>/listings/<uuid:listing_id>/variants/<uuid:variant_id>/commerce/disconnect/",
+        WebsiteCommerceDisconnectAPIView.as_view(),
+        name="commerce-disconnect",
     ),
 ]
