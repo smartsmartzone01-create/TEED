@@ -10,6 +10,8 @@ from apps.profiles.permissions import IsOnboardingComplete
 
 from .models import WebsiteMedia
 from .serializers import (
+    WebsiteListingSerializer,
+    WebsiteListingWriteSerializer,
     WebsiteMediaRegisterSerializer,
     WebsiteMediaReorderSerializer,
     WebsiteMediaSerializer,
@@ -17,16 +19,28 @@ from .serializers import (
     WebsiteMediaUploadSerializer,
     WebsiteSiteSerializer,
     WebsiteSiteWriteSerializer,
+    WebsiteVariantSerializer,
+    WebsiteVariantWriteSerializer,
 )
 from .services import (
+    create_listing,
     create_site,
+    create_variant,
+    delete_listing,
     delete_media,
+    delete_variant,
+    get_listing_for_user,
     get_site_for_user,
+    get_variant_for_user,
+    list_listings_for_user,
     list_sites_for_user,
+    list_variants_for_user,
     register_media,
     reorder_media,
+    update_listing,
     update_media,
     update_site,
+    update_variant,
     upload_media,
 )
 
@@ -193,4 +207,159 @@ class WebsiteMediaReorderAPIView(WebsiteBaseAPIView):
         return SuccessResponse(
             message="Website media reordered successfully.",
             data={"media": WebsiteMediaSerializer(media, many=True).data},
+        )
+
+
+class WebsiteListingListCreateAPIView(WebsiteBaseAPIView):
+    serializer_class = WebsiteListingWriteSerializer
+
+    def get(self, request, business_id, site_id):
+        listings = list_listings_for_user(
+            user=request.user,
+            business_id=business_id,
+            site_id=site_id,
+        )
+        return SuccessResponse(
+            message="Website listings retrieved successfully.",
+            data={"listings": WebsiteListingSerializer(listings, many=True).data},
+        )
+
+    @method_decorator(csrf_protect)
+    def post(self, request, business_id, site_id):
+        serializer = WebsiteListingWriteSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        listing = create_listing(
+            actor=request.user,
+            business_id=business_id,
+            site_id=site_id,
+            **serializer.validated_data,
+        )
+        return SuccessResponse(
+            message="Website listing created successfully.",
+            data=WebsiteListingSerializer(listing).data,
+            status_code=status.HTTP_201_CREATED,
+        )
+
+
+@method_decorator(csrf_protect, name="dispatch")
+class WebsiteListingDetailAPIView(WebsiteBaseAPIView):
+    serializer_class = WebsiteListingWriteSerializer
+
+    def get(self, request, business_id, site_id, listing_id):
+        listing = get_listing_for_user(
+            user=request.user,
+            business_id=business_id,
+            site_id=site_id,
+            listing_id=listing_id,
+        )
+        return SuccessResponse(
+            message="Website listing retrieved successfully.",
+            data=WebsiteListingSerializer(listing).data,
+        )
+
+    def patch(self, request, business_id, site_id, listing_id):
+        serializer = WebsiteListingWriteSerializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        listing = update_listing(
+            actor=request.user,
+            business_id=business_id,
+            site_id=site_id,
+            listing_id=listing_id,
+            **serializer.validated_data,
+        )
+        return SuccessResponse(
+            message="Website listing updated successfully.",
+            data=WebsiteListingSerializer(listing).data,
+        )
+
+    def delete(self, request, business_id, site_id, listing_id):
+        delete_listing(
+            actor=request.user,
+            business_id=business_id,
+            site_id=site_id,
+            listing_id=listing_id,
+        )
+        return SuccessResponse(
+            message="Website listing deleted successfully.",
+            data=None,
+        )
+
+
+class WebsiteVariantListCreateAPIView(WebsiteBaseAPIView):
+    serializer_class = WebsiteVariantWriteSerializer
+
+    def get(self, request, business_id, site_id, listing_id):
+        variants = list_variants_for_user(
+            user=request.user,
+            business_id=business_id,
+            site_id=site_id,
+            listing_id=listing_id,
+        )
+        return SuccessResponse(
+            message="Website variants retrieved successfully.",
+            data={"variants": WebsiteVariantSerializer(variants, many=True).data},
+        )
+
+    @method_decorator(csrf_protect)
+    def post(self, request, business_id, site_id, listing_id):
+        serializer = WebsiteVariantWriteSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        variant = create_variant(
+            actor=request.user,
+            business_id=business_id,
+            site_id=site_id,
+            listing_id=listing_id,
+            **serializer.validated_data,
+        )
+        return SuccessResponse(
+            message="Website variant created successfully.",
+            data=WebsiteVariantSerializer(variant).data,
+            status_code=status.HTTP_201_CREATED,
+        )
+
+
+@method_decorator(csrf_protect, name="dispatch")
+class WebsiteVariantDetailAPIView(WebsiteBaseAPIView):
+    serializer_class = WebsiteVariantWriteSerializer
+
+    def get(self, request, business_id, site_id, listing_id, variant_id):
+        variant = get_variant_for_user(
+            user=request.user,
+            business_id=business_id,
+            site_id=site_id,
+            listing_id=listing_id,
+            variant_id=variant_id,
+        )
+        return SuccessResponse(
+            message="Website variant retrieved successfully.",
+            data=WebsiteVariantSerializer(variant).data,
+        )
+
+    def patch(self, request, business_id, site_id, listing_id, variant_id):
+        serializer = WebsiteVariantWriteSerializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        variant = update_variant(
+            actor=request.user,
+            business_id=business_id,
+            site_id=site_id,
+            listing_id=listing_id,
+            variant_id=variant_id,
+            **serializer.validated_data,
+        )
+        return SuccessResponse(
+            message="Website variant updated successfully.",
+            data=WebsiteVariantSerializer(variant).data,
+        )
+
+    def delete(self, request, business_id, site_id, listing_id, variant_id):
+        delete_variant(
+            actor=request.user,
+            business_id=business_id,
+            site_id=site_id,
+            listing_id=listing_id,
+            variant_id=variant_id,
+        )
+        return SuccessResponse(
+            message="Website variant deleted successfully.",
+            data=None,
         )
