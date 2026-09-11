@@ -16,7 +16,7 @@ function Input({
       aria-invalid={invalid || undefined}
       className={cn(
         "h-11 w-full min-w-0 max-w-full rounded-lg border bg-background/90 px-3",
-        "text-base text-foreground shadow-sm outline-none sm:text-sm",
+        "text-base text-foreground shadow-sm outline-none [@media(pointer:fine)]:text-sm",
         "placeholder:text-muted-foreground/75",
         "transition-[border-color,box-shadow,background-color]",
         "disabled:cursor-not-allowed disabled:opacity-60",
