@@ -1,10 +1,11 @@
 from datetime import timedelta
 
-from apps.workspaces.models import Business
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.utils import timezone
+
+from apps.workspaces.models import Business
 
 from ..models import (
     StorefrontCustomer,

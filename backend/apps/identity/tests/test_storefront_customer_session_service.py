@@ -1,4 +1,3 @@
-from apps.workspaces.models import Business
 from common.exceptions.modules.identity import (
     EmailVerificationRequired,
     InvalidCredentials,
@@ -10,6 +9,8 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 from rest_framework_simplejwt.exceptions import InvalidToken
 from rest_framework_simplejwt.tokens import AccessToken
+
+from apps.workspaces.models import Business
 
 from ..authentication import (
     SessionJWTAuthentication,

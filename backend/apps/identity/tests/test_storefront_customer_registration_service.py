@@ -2,7 +2,6 @@ from datetime import timedelta
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
-from apps.workspaces.models import Business
 from common.exceptions.modules.identity import (
     EmailAlreadyRegistered,
     EmailVerificationCodeInvalid,
@@ -13,6 +12,8 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.hashers import check_password, make_password
 from django.test import TestCase, override_settings
 from django.utils import timezone
+
+from apps.workspaces.models import Business
 
 from ..models import (
     StorefrontCustomer,
