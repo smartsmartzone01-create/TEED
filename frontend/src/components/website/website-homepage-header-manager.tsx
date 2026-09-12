@@ -255,14 +255,14 @@ function WebsiteHomepageHeaderManager({
   }
 
   return (
-    <article className="border-b border-slate-200 p-4 dark:border-slate-800 sm:p-5">
-      <div className="flex gap-4">
+    <article className="min-w-0 overflow-hidden border-b border-slate-200 p-4 dark:border-slate-800 sm:p-5">
+      <div className="flex min-w-0 gap-4">
         <div className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
           <Store className="size-4" />
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
+            <div className="min-w-0">
               <h3 className="text-sm font-semibold text-slate-950 dark:text-white">
                 {sw ? "Kichwa" : "Header"}
               </h3>
@@ -277,8 +277,8 @@ function WebsiteHomepageHeaderManager({
             </span>
           </div>
 
-          <div className="mt-5 grid gap-4 lg:grid-cols-[minmax(0,15rem)_minmax(0,1fr)]">
-            <section className="rounded-lg border border-slate-200 bg-slate-50/60 p-4 dark:border-slate-800 dark:bg-slate-900/40">
+          <div className="mt-5 grid min-w-0 gap-4 lg:grid-cols-[minmax(0,15rem)_minmax(0,1fr)]">
+            <section className="min-w-0 rounded-lg border border-slate-200 bg-slate-50/60 p-4 dark:border-slate-800 dark:bg-slate-900/40">
               <p className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-400">
                 {sw ? "Nembo" : "Logo"}
               </p>
@@ -295,9 +295,9 @@ function WebsiteHomepageHeaderManager({
               </p>
             </section>
 
-            <section className="min-w-0 rounded-lg border border-slate-200 p-4 dark:border-slate-800">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
+            <section className="min-w-0 overflow-hidden rounded-lg border border-slate-200 p-4 dark:border-slate-800">
+              <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
+                <div className="min-w-0">
                   <h4 className="text-sm font-semibold text-slate-900 dark:text-white">
                     {sw ? "Viungo vya urambazaji" : "Navigation links"}
                   </h4>
@@ -322,37 +322,37 @@ function WebsiteHomepageHeaderManager({
                     : "No links yet. Add the first header navigation link."}
                 </div>
               ) : (
-                <div className="mt-4 space-y-3">
+                <div className="mt-4 max-h-[min(60vh,32rem)] space-y-3 overflow-y-auto overscroll-contain pr-1">
                   {navigation.map((item, index) => (
                     <div
-                      className="rounded-lg border border-slate-200 bg-slate-50/50 p-3 dark:border-slate-800 dark:bg-slate-900/30"
+                      className="min-w-0 rounded-lg border border-slate-200 bg-slate-50/50 p-3 dark:border-slate-800 dark:bg-slate-900/30"
                       key={item.id}
                     >
-                      <div className="grid gap-3 md:grid-cols-[1fr_1fr_1.2fr_auto]">
-                        <label className="grid gap-1 text-xs font-medium text-slate-600 dark:text-slate-300">
+                      <div className="grid min-w-0 gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.2fr)_auto]">
+                        <label className="grid min-w-0 gap-1 text-xs font-medium text-slate-600 dark:text-slate-300">
                           English
                           <input
-                            className="h-9 rounded-md border border-slate-300 bg-white px-2.5 text-sm text-slate-900 outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                            className="h-9 min-w-0 w-full rounded-md border border-slate-300 bg-white px-2.5 text-sm text-slate-900 outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
                             disabled={!canManage}
                             onChange={(event) => updateLink(index, "labelEn", event.target.value)}
                             placeholder="Shop"
                             value={item.label.en}
                           />
                         </label>
-                        <label className="grid gap-1 text-xs font-medium text-slate-600 dark:text-slate-300">
+                        <label className="grid min-w-0 gap-1 text-xs font-medium text-slate-600 dark:text-slate-300">
                           Kiswahili
                           <input
-                            className="h-9 rounded-md border border-slate-300 bg-white px-2.5 text-sm text-slate-900 outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                            className="h-9 min-w-0 w-full rounded-md border border-slate-300 bg-white px-2.5 text-sm text-slate-900 outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
                             disabled={!canManage}
                             onChange={(event) => updateLink(index, "labelSw", event.target.value)}
                             placeholder="Duka"
                             value={item.label.sw}
                           />
                         </label>
-                        <label className="grid gap-1 text-xs font-medium text-slate-600 dark:text-slate-300">
+                        <label className="grid min-w-0 gap-1 text-xs font-medium text-slate-600 dark:text-slate-300">
                           {sw ? "Inapoelekea" : "Destination"}
                           <input
-                            className="h-9 rounded-md border border-slate-300 bg-white px-2.5 font-mono text-xs text-slate-900 outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                            className="h-9 min-w-0 w-full rounded-md border border-slate-300 bg-white px-2.5 font-mono text-xs text-slate-900 outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
                             disabled={!canManage}
                             onChange={(event) => updateLink(index, "href", event.target.value)}
                             placeholder="/products"
@@ -360,7 +360,7 @@ function WebsiteHomepageHeaderManager({
                           />
                         </label>
                         {canManage ? (
-                          <div className="flex items-end gap-1">
+                          <div className="flex flex-wrap items-end gap-1">
                             <button
                               aria-label={sw ? "Hamisha juu" : "Move up"}
                               className="inline-flex size-9 items-center justify-center rounded-md border border-slate-300 text-slate-500 hover:bg-white disabled:opacity-30 dark:border-slate-700 dark:hover:bg-slate-950"
@@ -396,8 +396,8 @@ function WebsiteHomepageHeaderManager({
               )}
 
               {canManage ? (
-                <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-4 dark:border-slate-800">
-                  <p className="text-xs text-slate-500">
+                <div className="mt-4 flex min-w-0 flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-4 dark:border-slate-800">
+                  <p className="min-w-0 text-xs text-slate-500">
                     {sw
                       ? "Mabadiliko yataonekana kwenye storefront baada ya kuhifadhi."
                       : "Saved navigation is exposed through the Website public contract."}
