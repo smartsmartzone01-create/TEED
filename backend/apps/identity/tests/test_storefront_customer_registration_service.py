@@ -2,12 +2,14 @@ from datetime import timedelta
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
+from apps.workspaces.models import Business
 from common.exceptions.modules.identity import (
     EmailAlreadyRegistered,
     EmailVerificationCodeInvalid,
     EmailVerificationResendCooldown,
     PhoneNumberAlreadyRegistered,
 )
+from django.contrib.auth import get_user_model
 from django.contrib.auth.hashers import check_password, make_password
 from django.test import TestCase, override_settings
 from django.utils import timezone
@@ -23,6 +25,8 @@ from ..services.storefront_customer_registration import (
     verify_storefront_customer_verification_code,
 )
 
+User = get_user_model()
+
 
 @override_settings(
     EMAIL_VERIFICATION_CODE_LENGTH=6,
@@ -32,6 +36,17 @@ from ..services.storefront_customer_registration import (
     EMAIL_VERIFICATION_DAILY_LIMIT=5,
 )
 class StorefrontCustomerRegistrationServiceTests(TestCase):
+    def setUp(self):
+        self.owner = User.objects.create_user(
+            email="registration-owner@example.com",
+            password="StrongOwnerPassword123!",
+        )
+        self.business = Business.objects.create(
+            name="Registration Storefront",
+            public_handle="registration-storefront",
+            created_by=self.owner,
+        )
+
     @patch(
         "apps.identity.services.storefront_customer_registration._generate_verification_code",
         return_value="123456",
@@ -52,11 +67,13 @@ class StorefrontCustomerRegistrationServiceTests(TestCase):
 
         with self.captureOnCommitCallbacks(execute=True):
             customer = register_storefront_customer_with_email(
+                business=self.business,
                 email="  CUSTOMER@Example.COM ",
                 password="StrongCustomerPassword123!",
                 first_name="Asha",
             )
 
+        self.assertEqual(customer.business_id, self.business.id)
         self.assertEqual(customer.email, "customer@example.com")
         self.assertEqual(customer.first_name, "Asha")
         self.assertNotEqual(customer.password, "StrongCustomerPassword123!")
@@ -97,6 +114,7 @@ class StorefrontCustomerRegistrationServiceTests(TestCase):
 
         with self.captureOnCommitCallbacks(execute=True):
             customer = register_storefront_customer_with_phone(
+                business=self.business,
                 phone_number="+255712345678",
                 password="StrongCustomerPassword123!",
             )
@@ -105,6 +123,7 @@ class StorefrontCustomerRegistrationServiceTests(TestCase):
             customer=customer,
             channel=StorefrontCustomerVerificationChallenge.Channel.PHONE,
         )
+        self.assertEqual(customer.business_id, self.business.id)
         self.assertTrue(check_password("654321", challenge.code_digest))
         self.assertFalse(customer.is_phone_verified)
 
@@ -116,6 +135,7 @@ class StorefrontCustomerRegistrationServiceTests(TestCase):
 
     def test_verify_email_code_marks_only_email_verified(self):
         customer = StorefrontCustomer.objects.create(
+            business=self.business,
             email="verify-email@example.com",
         )
         StorefrontCustomerVerificationChallenge.objects.create(
@@ -142,6 +162,7 @@ class StorefrontCustomerRegistrationServiceTests(TestCase):
 
     def test_verify_phone_code_marks_only_phone_verified(self):
         customer = StorefrontCustomer.objects.create(
+            business=self.business,
             phone_number="+255713456789",
         )
         StorefrontCustomerVerificationChallenge.objects.create(
@@ -164,6 +185,7 @@ class StorefrontCustomerRegistrationServiceTests(TestCase):
 
     def test_invalid_code_increments_attempt_count(self):
         customer = StorefrontCustomer.objects.create(
+            business=self.business,
             email="invalid-code@example.com",
         )
         challenge = StorefrontCustomerVerificationChallenge.objects.create(
@@ -188,6 +210,7 @@ class StorefrontCustomerRegistrationServiceTests(TestCase):
 
     def test_resend_cooldown_uses_shared_verification_policy(self):
         customer = StorefrontCustomer.objects.create(
+            business=self.business,
             email="resend@example.com",
         )
         issue_storefront_customer_verification_challenge(
@@ -202,8 +225,9 @@ class StorefrontCustomerRegistrationServiceTests(TestCase):
                 enforce_resend_limits=True,
             )
 
-    def test_duplicate_email_registration_is_rejected(self):
+    def test_duplicate_email_registration_is_rejected_within_business(self):
         existing = StorefrontCustomer.objects.create(
+            business=self.business,
             email="duplicate@example.com",
         )
         existing.set_password("StrongCustomerPassword123!")
@@ -211,12 +235,14 @@ class StorefrontCustomerRegistrationServiceTests(TestCase):
 
         with self.assertRaises(EmailAlreadyRegistered):
             register_storefront_customer_with_email(
+                business=self.business,
                 email="DUPLICATE@example.com",
                 password="AnotherStrongPassword123!",
             )
 
-    def test_duplicate_phone_registration_is_rejected(self):
+    def test_duplicate_phone_registration_is_rejected_within_business(self):
         existing = StorefrontCustomer.objects.create(
+            business=self.business,
             phone_number="+255714567890",
         )
         existing.set_password("StrongCustomerPassword123!")
@@ -224,6 +250,7 @@ class StorefrontCustomerRegistrationServiceTests(TestCase):
 
         with self.assertRaises(PhoneNumberAlreadyRegistered):
             register_storefront_customer_with_phone(
+                business=self.business,
                 phone_number="+255714567890",
                 password="AnotherStrongPassword123!",
             )

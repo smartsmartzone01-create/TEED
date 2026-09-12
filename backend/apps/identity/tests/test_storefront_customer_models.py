@@ -1,5 +1,6 @@
 from datetime import timedelta
 
+from apps.workspaces.models import Business
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.test import TestCase
@@ -16,7 +17,17 @@ User = get_user_model()
 
 class StorefrontCustomerModelTests(TestCase):
     def setUp(self):
+        self.owner = User.objects.create_user(
+            email="owner@example.com",
+            password="StrongOwnerPassword123!",
+        )
+        self.business = Business.objects.create(
+            name="Storefront Test Business",
+            public_handle="storefront-test-business",
+            created_by=self.owner,
+        )
         self.customer = StorefrontCustomer.objects.create(
+            business=self.business,
             email="customer@example.com",
         )
         self.customer.set_password("StrongCustomerPassword123!")
@@ -50,12 +61,26 @@ class StorefrontCustomerModelTests(TestCase):
 
         self.assertTrue(self.customer.is_identity_verified)
 
+    def test_same_email_can_exist_for_different_businesses(self):
+        second_business = Business.objects.create(
+            name="Second Storefront",
+            public_handle="second-storefront",
+            created_by=self.owner,
+        )
+        second_customer = StorefrontCustomer.objects.create(
+            business=second_business,
+            email="customer@example.com",
+        )
+
+        self.assertNotEqual(second_customer.business_id, self.customer.business_id)
+        self.assertEqual(second_customer.email, self.customer.email)
+
     def test_verification_challenge_never_has_raw_code_field(self):
         challenge = StorefrontCustomerVerificationChallenge.objects.create(
             customer=self.customer,
             channel=StorefrontCustomerVerificationChallenge.Channel.EMAIL,
             destination=self.customer.email,
-            code_digest="hashed-code-only",
+            code_digest="hashed-verification-code",
             expires_at=timezone.now() + timedelta(minutes=10),
         )
 

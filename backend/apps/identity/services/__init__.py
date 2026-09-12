@@ -49,6 +49,16 @@ from .storefront_customer_registration import (
     register_storefront_customer_with_phone,
     verify_storefront_customer_verification_code,
 )
+from .storefront_customer_session import (
+    STOREFRONT_CUSTOMER_AUDIENCE,
+    decode_storefront_customer_refresh_token,
+    issue_storefront_customer_token_pair,
+    login_storefront_customer_with_email,
+    login_storefront_customer_with_phone,
+    revoke_all_storefront_customer_sessions,
+    revoke_storefront_customer_refresh_session,
+    rotate_storefront_customer_refresh_token,
+)
 
 __all__ = [
     "get_account_protection_recommendation",
@@ -85,4 +95,12 @@ __all__ = [
     "hash_identity_identifier",
     "record_identity_security_event",
     "rotate_refresh_token",
+    "STOREFRONT_CUSTOMER_AUDIENCE",
+    "decode_storefront_customer_refresh_token",
+    "issue_storefront_customer_token_pair",
+    "login_storefront_customer_with_email",
+    "login_storefront_customer_with_phone",
+    "revoke_all_storefront_customer_sessions",
+    "revoke_storefront_customer_refresh_session",
+    "rotate_storefront_customer_refresh_token",
 ]

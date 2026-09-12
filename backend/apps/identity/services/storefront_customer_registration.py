@@ -303,18 +303,23 @@ def verify_storefront_customer_verification_code(
 
 def register_storefront_customer_with_email(
     *,
+    business,
     email: str,
     password: str,
     first_name: str = "",
     last_name: str = "",
 ) -> StorefrontCustomer:
     normalized_email = email.strip().lower()
-    if StorefrontCustomer.objects.filter(email__iexact=normalized_email).exists():
+    if StorefrontCustomer.objects.filter(
+        business=business,
+        email__iexact=normalized_email,
+    ).exists():
         raise EmailAlreadyRegistered()
 
     try:
         with transaction.atomic():
             customer = StorefrontCustomer(
+                business=business,
                 email=normalized_email,
                 first_name=first_name.strip(),
                 last_name=last_name.strip(),
@@ -333,18 +338,23 @@ def register_storefront_customer_with_email(
 
 def register_storefront_customer_with_phone(
     *,
+    business,
     phone_number: str,
     password: str,
     first_name: str = "",
     last_name: str = "",
 ) -> StorefrontCustomer:
     normalized_phone = phone_number.strip()
-    if StorefrontCustomer.objects.filter(phone_number=normalized_phone).exists():
+    if StorefrontCustomer.objects.filter(
+        business=business,
+        phone_number=normalized_phone,
+    ).exists():
         raise PhoneNumberAlreadyRegistered()
 
     try:
         with transaction.atomic():
             customer = StorefrontCustomer(
+                business=business,
                 phone_number=normalized_phone,
                 first_name=first_name.strip(),
                 last_name=last_name.strip(),

@@ -7,17 +7,20 @@ from django.utils import timezone
 
 
 class StorefrontCustomer(AbstractBaseUser, BaseModel):
-    """Customer identity for public storefronts, isolated from workspace users."""
+    """Customer identity for one merchant/business storefront realm."""
 
+    business = models.ForeignKey(
+        "workspaces.Business",
+        on_delete=models.CASCADE,
+        related_name="storefront_customers",
+    )
     email = models.EmailField(
         max_length=254,
-        unique=True,
         null=True,
         blank=True,
     )
     phone_number = models.CharField(
         max_length=16,
-        unique=True,
         null=True,
         blank=True,
     )
@@ -36,8 +39,14 @@ class StorefrontCustomer(AbstractBaseUser, BaseModel):
         constraints = [
             models.UniqueConstraint(
                 Lower("email"),
+                models.F("business"),
                 condition=models.Q(email__isnull=False),
-                name="identity_sf_email_ci_uniq",
+                name="identity_sf_biz_email_ci_uniq",
+            ),
+            models.UniqueConstraint(
+                fields=["business", "phone_number"],
+                condition=models.Q(phone_number__isnull=False),
+                name="identity_sf_biz_phone_uniq",
             ),
             models.CheckConstraint(
                 condition=(
