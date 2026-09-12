@@ -81,7 +81,7 @@ const commerceItems: NavigationItem[] = [
   { icon: ShieldCheck, key: "budgets", path: "/commerce/budgets" },
 ];
 const websiteItems: NavigationItem[] = [
-  { icon: Palette, key: "websiteMedia", path: "/website" },
+  { icon: LayoutDashboard, key: "websiteMedia", path: "/website" },
   { icon: Store, key: "websiteProducts", path: "/website/products" },
   { icon: Settings2, key: "websiteCommerce", path: "/website/commerce" },
 ];
@@ -161,7 +161,7 @@ function WorkspaceSidebar({
   const financingLabel =
     locale === "sw" ? "Mikopo na malipo ya awamu" : "Loans & Installments";
   const websiteLabel = locale === "sw" ? "Tovuti" : "Website";
-  const websiteMediaLabel = locale === "sw" ? "Picha na media" : "Media";
+  const websiteMediaLabel = locale === "sw" ? "Ukurasa wa mwanzo" : "Homepage";
   const websiteProductsLabel = locale === "sw" ? "Bidhaa" : "Products";
   const websiteCommerceLabel =
     locale === "sw" ? "Muunganisho wa biashara" : "Commerce Connection";
