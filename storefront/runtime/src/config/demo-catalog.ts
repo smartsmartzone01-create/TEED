@@ -38,6 +38,7 @@ export const demoStorefrontProducts: StorefrontProductListing[] = [
     skus: [
       {
         id: "demo-sku-iphone-16-black-128",
+        websiteVariantId: "demo-variant-iphone-16-black-128",
         commerceProductId: "demo-commerce-iphone-16-black-128",
         sku: "IP16-BLK-128",
         options: { color: "black", storage: "128gb" },
@@ -47,6 +48,7 @@ export const demoStorefrontProducts: StorefrontProductListing[] = [
       },
       {
         id: "demo-sku-iphone-16-black-256",
+        websiteVariantId: "demo-variant-iphone-16-black-256",
         commerceProductId: "demo-commerce-iphone-16-black-256",
         sku: "IP16-BLK-256",
         options: { color: "black", storage: "256gb" },
@@ -56,6 +58,7 @@ export const demoStorefrontProducts: StorefrontProductListing[] = [
       },
       {
         id: "demo-sku-iphone-16-blue-128",
+        websiteVariantId: "demo-variant-iphone-16-blue-128",
         commerceProductId: "demo-commerce-iphone-16-blue-128",
         sku: "IP16-BLU-128",
         options: { color: "blue", storage: "128gb" },
@@ -65,6 +68,7 @@ export const demoStorefrontProducts: StorefrontProductListing[] = [
       },
       {
         id: "demo-sku-iphone-16-pink-128",
+        websiteVariantId: "demo-variant-iphone-16-pink-128",
         commerceProductId: "demo-commerce-iphone-16-pink-128",
         sku: "IP16-PNK-128",
         options: { color: "pink", storage: "128gb" },
@@ -74,6 +78,7 @@ export const demoStorefrontProducts: StorefrontProductListing[] = [
       },
       {
         id: "demo-sku-iphone-16-pink-256",
+        websiteVariantId: "demo-variant-iphone-16-pink-256",
         commerceProductId: "demo-commerce-iphone-16-pink-256",
         sku: "IP16-PNK-256",
         options: { color: "pink", storage: "256gb" },
@@ -119,6 +124,7 @@ export const demoStorefrontProducts: StorefrontProductListing[] = [
     skus: [
       {
         id: "demo-sku-s24u-black-256",
+        websiteVariantId: "demo-variant-s24u-black-256",
         commerceProductId: "demo-commerce-s24u-black-256",
         sku: "S24U-BLK-256",
         options: { color: "black", storage: "256gb" },
@@ -128,6 +134,7 @@ export const demoStorefrontProducts: StorefrontProductListing[] = [
       },
       {
         id: "demo-sku-s24u-black-512",
+        websiteVariantId: "demo-variant-s24u-black-512",
         commerceProductId: "demo-commerce-s24u-black-512",
         sku: "S24U-BLK-512",
         options: { color: "black", storage: "512gb" },
@@ -137,6 +144,7 @@ export const demoStorefrontProducts: StorefrontProductListing[] = [
       },
       {
         id: "demo-sku-s24u-violet-256",
+        websiteVariantId: "demo-variant-s24u-violet-256",
         commerceProductId: "demo-commerce-s24u-violet-256",
         sku: "S24U-VIO-256",
         options: { color: "violet", storage: "256gb" },

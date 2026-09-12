@@ -80,11 +80,15 @@ export function EcommerceClassicHeader({ site }: { site: StorefrontSiteConfig })
       <div className="page-shell commerce-template-mainbar">
         <Link href="/" className="commerce-template-brand" aria-label={site.displayName}>
           {site.header.logoImageUrl ? (
-            <img
-              alt={site.displayName}
-              className="h-11 w-auto max-w-40 object-contain sm:max-w-48"
-              src={site.header.logoImageUrl}
-            />
+            <>
+              {/* Merchant logo URLs are tenant-specific runtime media, so keep the native image element until storefront media hosts are explicitly allowlisted. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                alt={site.displayName}
+                className="h-11 w-auto max-w-40 object-contain sm:max-w-48"
+                src={site.header.logoImageUrl}
+              />
+            </>
           ) : (
             <>
               <span className="commerce-template-brand-mark" aria-hidden="true">
