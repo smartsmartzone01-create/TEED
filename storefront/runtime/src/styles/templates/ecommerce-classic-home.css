@@ -18,7 +18,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  gap: 34px;
+  gap: 16px;
   padding-top: 64px;
   padding-bottom: 0;
   text-align: center;
@@ -76,15 +76,15 @@
   z-index: 1;
   display: grid;
   width: 100%;
-  min-height: 380px;
-  place-items: end center;
+  min-height: 0;
+  place-items: start center;
 }
 
 .commerce-classic-hero-media img {
   width: min(100%, 1180px);
   max-height: 540px;
   object-fit: contain;
-  object-position: center bottom;
+  object-position: center top;
   filter: drop-shadow(0 32px 38px rgb(36 76 112 / 15%));
 }
 
@@ -252,7 +252,7 @@
   }
 
   .commerce-classic-hero-inner-split {
-    gap: 26px;
+    gap: 14px;
     padding-top: 52px;
   }
 
@@ -262,7 +262,7 @@
   }
 
   .commerce-classic-hero-media {
-    min-height: 300px;
+    min-height: 0;
   }
 
   .commerce-classic-service-card {
@@ -280,7 +280,7 @@
 
 @media (max-width: 620px) {
   .commerce-classic-hero-inner-split {
-    gap: 22px;
+    gap: 12px;
     padding-top: 42px;
   }
 
@@ -302,7 +302,7 @@
   }
 
   .commerce-classic-hero-media {
-    min-height: 230px;
+    min-height: 0;
   }
 
   .commerce-classic-hero-media img {
