@@ -74,6 +74,16 @@ type WebsiteListing = {
   updated_at: string;
 };
 
+type WebsiteNavigationSection = "hero" | "popular" | "services" | "footer";
+
+type WebsiteNavigationTarget =
+  | { type: "home" }
+  | { type: "shop" }
+  | { type: "product"; id: string }
+  | { type: "section"; section: WebsiteNavigationSection }
+  | { type: "external"; url: string }
+  | { type: "legacy"; href: string };
+
 type WebsiteListingInput = {
   slug: string;
   title: Record<string, string>;
@@ -127,6 +137,8 @@ export type {
   WebsiteListing,
   WebsiteListingInput,
   WebsiteMedia,
+  WebsiteNavigationSection,
+  WebsiteNavigationTarget,
   WebsiteSite,
   WebsiteVariant,
   WebsiteVariantAvailability,

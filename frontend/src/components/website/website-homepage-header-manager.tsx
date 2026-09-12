@@ -13,16 +13,23 @@ import {
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { Button } from "@/components/global/primitives/button";
+import { WebsiteNavigationDestinationField } from "@/components/website/website-navigation-destination-field";
 import { useWebsiteRequest } from "@/hooks/website/use-website-request";
 import { useNotification } from "@/providers/global/notification-provider";
 import { useWorkspace } from "@/providers/workspace/workspace-provider";
 import {
   createWebsiteSite,
+  getWebsiteListings,
   getWebsiteSites,
   updateWebsiteSite,
   uploadWebsiteMedia,
 } from "@/services/website/website";
-import type { WebsiteSite } from "@/types/website/website";
+import type {
+  WebsiteListing,
+  WebsiteNavigationSection,
+  WebsiteNavigationTarget,
+  WebsiteSite,
+} from "@/types/website/website";
 
 type WebsiteHomepageHeaderManagerProps = {
   businessId: string;
@@ -30,21 +37,85 @@ type WebsiteHomepageHeaderManagerProps = {
 };
 
 type HeaderNavigationEntry = {
-  href: string;
   id: string;
   label: {
     en: string;
     sw: string;
   };
+  target: WebsiteNavigationTarget;
 };
 
 type HeaderNavigationItem = HeaderNavigationEntry & {
   children: HeaderNavigationEntry[];
 };
 
+const NAVIGATION_SECTIONS = new Set<WebsiteNavigationSection>([
+  "hero",
+  "popular",
+  "services",
+  "footer",
+]);
+
+function normalizeTarget(
+  source: Record<string, unknown>,
+  listings: WebsiteListing[],
+): WebsiteNavigationTarget {
+  const rawTarget =
+    source.target && typeof source.target === "object" && !Array.isArray(source.target)
+      ? (source.target as Record<string, unknown>)
+      : null;
+
+  if (rawTarget) {
+    const type = rawTarget.type;
+    if (type === "home") return { type: "home" };
+    if (type === "shop") return { type: "shop" };
+    if (type === "product" && typeof rawTarget.id === "string") {
+      return { type: "product", id: rawTarget.id };
+    }
+    if (
+      type === "section" &&
+      typeof rawTarget.section === "string" &&
+      NAVIGATION_SECTIONS.has(rawTarget.section as WebsiteNavigationSection)
+    ) {
+      return {
+        type: "section",
+        section: rawTarget.section as WebsiteNavigationSection,
+      };
+    }
+    if (type === "external" && typeof rawTarget.url === "string") {
+      return { type: "external", url: rawTarget.url };
+    }
+  }
+
+  const href = typeof source.href === "string" ? source.href.trim() : "";
+  if (href === "/") return { type: "home" };
+  if (href === "/products" || href === "/products/") return { type: "shop" };
+
+  const sectionMatch = href.match(/^\/?#(hero|popular|services|footer)$/);
+  if (sectionMatch) {
+    return {
+      type: "section",
+      section: sectionMatch[1] as WebsiteNavigationSection,
+    };
+  }
+
+  const productMatch = href.match(/^\/products\/([^/?#]+)\/?$/);
+  if (productMatch) {
+    const listing = listings.find((item) => item.slug === productMatch[1]);
+    if (listing) return { type: "product", id: listing.id };
+  }
+
+  if (href.startsWith("https://") || href.startsWith("http://")) {
+    return { type: "external", url: href };
+  }
+
+  return { type: "legacy", href };
+}
+
 function normalizeNavigationEntry(
   value: unknown,
   fallbackId: string,
+  listings: WebsiteListing[],
 ): HeaderNavigationEntry | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   const source = value as Record<string, unknown>;
@@ -54,7 +125,6 @@ function normalizeNavigationEntry(
       : {};
 
   return {
-    href: typeof source.href === "string" ? source.href : "",
     id:
       typeof source.id === "string" && source.id.trim()
         ? source.id
@@ -63,14 +133,22 @@ function normalizeNavigationEntry(
       en: typeof labelSource.en === "string" ? labelSource.en : "",
       sw: typeof labelSource.sw === "string" ? labelSource.sw : "",
     },
+    target: normalizeTarget(source, listings),
   };
 }
 
-function normalizeNavigation(value: unknown): HeaderNavigationItem[] {
+function normalizeNavigation(
+  value: unknown,
+  listings: WebsiteListing[],
+): HeaderNavigationItem[] {
   if (!Array.isArray(value)) return [];
 
   return value.flatMap((entry, index) => {
-    const normalized = normalizeNavigationEntry(entry, `nav-${index + 1}`);
+    const normalized = normalizeNavigationEntry(
+      entry,
+      `nav-${index + 1}`,
+      listings,
+    );
     if (!normalized) return [];
     const source = entry as Record<string, unknown>;
     const children = Array.isArray(source.children)
@@ -78,6 +156,7 @@ function normalizeNavigation(value: unknown): HeaderNavigationItem[] {
           const normalizedChild = normalizeNavigationEntry(
             child,
             `${normalized.id}-child-${childIndex + 1}`,
+            listings,
           );
           return normalizedChild ? [normalizedChild] : [];
         })
@@ -97,20 +176,66 @@ function headerLogoUrl(value: unknown): string {
   return typeof header.logoImageUrl === "string" ? header.logoImageUrl : "";
 }
 
-function validNavigationEntry(item: HeaderNavigationEntry): boolean {
+function validExternalUrl(value: string) {
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+function validNavigationTarget(
+  target: WebsiteNavigationTarget,
+  listings: WebsiteListing[],
+) {
+  if (target.type === "home" || target.type === "shop") return true;
+  if (target.type === "section") return NAVIGATION_SECTIONS.has(target.section);
+  if (target.type === "product") {
+    return Boolean(target.id && listings.some((listing) => listing.id === target.id));
+  }
+  if (target.type === "external") return validExternalUrl(target.url);
+  return Boolean(target.href.trim());
+}
+
+function validNavigationEntry(
+  item: HeaderNavigationEntry,
+  listings: WebsiteListing[],
+): boolean {
   return Boolean(
-    item.href.trim() && (item.label.en.trim() || item.label.sw.trim()),
+    (item.label.en.trim() || item.label.sw.trim()) &&
+      validNavigationTarget(item.target, listings),
   );
 }
 
-function cleanNavigationEntry(item: HeaderNavigationEntry) {
+function resolveTargetHref(
+  target: WebsiteNavigationTarget,
+  listings: WebsiteListing[],
+) {
+  if (target.type === "home") return "/";
+  if (target.type === "shop") return "/products";
+  if (target.type === "section") return `/#${target.section}`;
+  if (target.type === "external") return target.url.trim();
+  if (target.type === "legacy") return target.href.trim();
+  const listing = listings.find((item) => item.id === target.id);
+  return listing ? `/products/${listing.slug}` : "";
+}
+
+function cleanNavigationEntry(
+  item: HeaderNavigationEntry,
+  listings: WebsiteListing[],
+) {
   return {
-    href: item.href.trim(),
+    href: resolveTargetHref(item.target, listings),
     id: item.id,
     label: {
       en: item.label.en.trim(),
       sw: item.label.sw.trim(),
     },
+    target:
+      item.target.type === "legacy"
+        ? undefined
+        : item.target,
   };
 }
 
@@ -128,6 +253,7 @@ function WebsiteHomepageHeaderManager({
   );
 
   const [site, setSite] = useState<WebsiteSite | null>(null);
+  const [listings, setListings] = useState<WebsiteListing[]>([]);
   const [navigation, setNavigation] = useState<HeaderNavigationItem[]>([]);
   const [savedNavigation, setSavedNavigation] = useState("[]");
   const [loading, setLoading] = useState(true);
@@ -158,8 +284,20 @@ function WebsiteHomepageHeaderManager({
           activeSite = created.data ?? null;
         }
 
+        let nextListings: WebsiteListing[] = [];
+        if (activeSite) {
+          const listingResponse = await request((token) =>
+            getWebsiteListings(businessId, activeSite.id, token, signal),
+          );
+          nextListings = listingResponse.data?.listings ?? [];
+        }
+
         setSite(activeSite);
-        const nextNavigation = normalizeNavigation(activeSite?.navigation);
+        setListings(nextListings);
+        const nextNavigation = normalizeNavigation(
+          activeSite?.navigation,
+          nextListings,
+        );
         setNavigation(nextNavigation);
         setSavedNavigation(JSON.stringify(nextNavigation));
       } catch (loadError) {
@@ -187,30 +325,38 @@ function WebsiteHomepageHeaderManager({
     };
   }, [load]);
 
-  function updateLink(
+  function updateLinkLabel(
     index: number,
-    field: "href" | "labelEn" | "labelSw",
+    field: "labelEn" | "labelSw",
     value: string,
   ) {
     setNavigation((current) =>
-      current.map((item, itemIndex) => {
-        if (itemIndex !== index) return item;
-        if (field === "href") return { ...item, href: value };
-        return {
-          ...item,
-          label: {
-            ...item.label,
-            [field === "labelEn" ? "en" : "sw"]: value,
-          },
-        };
-      }),
+      current.map((item, itemIndex) =>
+        itemIndex === index
+          ? {
+              ...item,
+              label: {
+                ...item.label,
+                [field === "labelEn" ? "en" : "sw"]: value,
+              },
+            }
+          : item,
+      ),
     );
   }
 
-  function updateSubLink(
+  function updateLinkTarget(index: number, target: WebsiteNavigationTarget) {
+    setNavigation((current) =>
+      current.map((item, itemIndex) =>
+        itemIndex === index ? { ...item, target } : item,
+      ),
+    );
+  }
+
+  function updateSubLinkLabel(
     parentIndex: number,
     childIndex: number,
-    field: "href" | "labelEn" | "labelSw",
+    field: "labelEn" | "labelSw",
     value: string,
   ) {
     setNavigation((current) =>
@@ -218,17 +364,35 @@ function WebsiteHomepageHeaderManager({
         if (itemIndex !== parentIndex) return item;
         return {
           ...item,
-          children: item.children.map((child, index) => {
-            if (index !== childIndex) return child;
-            if (field === "href") return { ...child, href: value };
-            return {
-              ...child,
-              label: {
-                ...child.label,
-                [field === "labelEn" ? "en" : "sw"]: value,
-              },
-            };
-          }),
+          children: item.children.map((child, index) =>
+            index === childIndex
+              ? {
+                  ...child,
+                  label: {
+                    ...child.label,
+                    [field === "labelEn" ? "en" : "sw"]: value,
+                  },
+                }
+              : child,
+          ),
+        };
+      }),
+    );
+  }
+
+  function updateSubLinkTarget(
+    parentIndex: number,
+    childIndex: number,
+    target: WebsiteNavigationTarget,
+  ) {
+    setNavigation((current) =>
+      current.map((item, itemIndex) => {
+        if (itemIndex !== parentIndex) return item;
+        return {
+          ...item,
+          children: item.children.map((child, index) =>
+            index === childIndex ? { ...child, target } : child,
+          ),
         };
       }),
     );
@@ -240,9 +404,9 @@ function WebsiteHomepageHeaderManager({
       ...current,
       {
         children: [],
-        href: "/",
         id: `nav-${Date.now()}`,
         label: { en: "", sw: "" },
+        target: { type: "home" },
       },
     ]);
   }
@@ -256,9 +420,9 @@ function WebsiteHomepageHeaderManager({
           children: [
             ...item.children,
             {
-              href: "/",
               id: `${item.id}-child-${Date.now()}`,
               label: { en: "", sw: "" },
+              target: { type: "home" },
             },
           ],
         };
@@ -370,23 +534,27 @@ function WebsiteHomepageHeaderManager({
     if (!site || !canManage) return;
     const invalid = navigation.some(
       (item) =>
-        !validNavigationEntry(item) ||
-        item.children.some((child) => !validNavigationEntry(child)),
+        !validNavigationEntry(item, listings) ||
+        item.children.some((child) => !validNavigationEntry(child, listings)),
     );
     if (invalid) {
       notify({
         message: sw
-          ? "Kila kiungo na kiungo kidogo kinahitaji anwani na angalau jina moja."
-          : "Each link and sublink needs a destination and at least one label.",
+          ? "Kila kiungo na kiungo kidogo kinahitaji jina na sehemu halali ya kupeleka mteja."
+          : "Each link and sublink needs a label and a valid destination.",
         tone: "error",
       });
       return;
     }
 
     const cleaned = navigation.map((item) => ({
-      ...cleanNavigationEntry(item),
+      ...cleanNavigationEntry(item, listings),
       ...(item.children.length
-        ? { children: item.children.map(cleanNavigationEntry) }
+        ? {
+            children: item.children.map((child) =>
+              cleanNavigationEntry(child, listings),
+            ),
+          }
         : {}),
     }));
 
@@ -396,7 +564,7 @@ function WebsiteHomepageHeaderManager({
         updateWebsiteSite(businessId, site.id, { navigation: cleaned }, token),
       );
       const updatedSite = response.data ?? site;
-      const nextNavigation = normalizeNavigation(updatedSite.navigation);
+      const nextNavigation = normalizeNavigation(updatedSite.navigation, listings);
       setSite(updatedSite);
       setNavigation(nextNavigation);
       setSavedNavigation(JSON.stringify(nextNavigation));
@@ -453,8 +621,8 @@ function WebsiteHomepageHeaderManager({
               </h3>
               <p className="mt-1 text-sm leading-6 text-slate-500 dark:text-slate-400">
                 {sw
-                  ? "Simamia utambulisho wa kichwa, viungo na viungo vidogo vya menyu."
-                  : "Manage the header identity, navigation links, and one level of dropdown sublinks."}
+                  ? "Chagua sehemu ya Website badala ya kuandika link za API au URL kwa mkono."
+                  : "Choose Website destinations instead of typing API paths or storefront URLs by hand."}
               </p>
             </div>
             <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-medium text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
@@ -533,8 +701,8 @@ function WebsiteHomepageHeaderManager({
                   </h4>
                   <p className="mt-1 text-xs text-slate-500">
                     {sw
-                      ? "Panga hadi viungo 8. Kila kiungo kinaweza kuwa na hadi viungo vidogo 8."
-                      : "Arrange up to 8 links. Each link can contain up to 8 dropdown sublinks."}
+                      ? "Chagua Home, Duka, bidhaa, sehemu ya homepage au tovuti ya nje."
+                      : "Choose Home, Shop, a Website product, a homepage section, or an external website."}
                   </p>
                 </div>
                 {canManage ? (
@@ -563,14 +731,14 @@ function WebsiteHomepageHeaderManager({
                       className="min-w-0 rounded-lg border border-slate-200 bg-slate-50/50 p-3 dark:border-slate-800 dark:bg-slate-900/30"
                       key={item.id}
                     >
-                      <div className="grid min-w-0 gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.2fr)_auto]">
+                      <div className="grid min-w-0 gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.4fr)_auto]">
                         <label className="grid min-w-0 gap-1 text-xs font-medium text-slate-600 dark:text-slate-300">
                           English
                           <input
                             className="h-9 min-w-0 w-full rounded-md border border-slate-300 bg-white px-2.5 text-sm text-slate-900 outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
                             disabled={!canManage}
                             onChange={(event) =>
-                              updateLink(index, "labelEn", event.target.value)
+                              updateLinkLabel(index, "labelEn", event.target.value)
                             }
                             placeholder="Shop"
                             value={item.label.en}
@@ -582,24 +750,19 @@ function WebsiteHomepageHeaderManager({
                             className="h-9 min-w-0 w-full rounded-md border border-slate-300 bg-white px-2.5 text-sm text-slate-900 outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
                             disabled={!canManage}
                             onChange={(event) =>
-                              updateLink(index, "labelSw", event.target.value)
+                              updateLinkLabel(index, "labelSw", event.target.value)
                             }
                             placeholder="Duka"
                             value={item.label.sw}
                           />
                         </label>
-                        <label className="grid min-w-0 gap-1 text-xs font-medium text-slate-600 dark:text-slate-300">
-                          {sw ? "Inapoelekea" : "Destination"}
-                          <input
-                            className="h-9 min-w-0 w-full rounded-md border border-slate-300 bg-white px-2.5 font-mono text-xs text-slate-900 outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
-                            disabled={!canManage}
-                            onChange={(event) =>
-                              updateLink(index, "href", event.target.value)
-                            }
-                            placeholder="/products"
-                            value={item.href}
-                          />
-                        </label>
+                        <WebsiteNavigationDestinationField
+                          disabled={!canManage}
+                          listings={listings}
+                          locale={locale}
+                          onChange={(target) => updateLinkTarget(index, target)}
+                          value={item.target}
+                        />
                         {canManage ? (
                           <div className="flex flex-wrap items-end gap-1">
                             <button
@@ -643,8 +806,8 @@ function WebsiteHomepageHeaderManager({
                             </p>
                             <p className="mt-0.5 text-[11px] text-slate-500">
                               {sw
-                                ? "Vitaonekana kama dropdown chini ya kiungo hiki."
-                                : "These appear in a dropdown beneath this link."}
+                                ? "Kila kiungo kidogo hutumia mfumo huo huo wa kuchagua destination."
+                                : "Each dropdown item uses the same Website destination picker."}
                             </p>
                           </div>
                           {canManage ? (
@@ -674,14 +837,14 @@ function WebsiteHomepageHeaderManager({
                                       className="h-9 min-w-0 w-full rounded-md border border-slate-300 bg-white px-2.5 text-sm text-slate-900 outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
                                       disabled={!canManage}
                                       onChange={(event) =>
-                                        updateSubLink(
+                                        updateSubLinkLabel(
                                           index,
                                           childIndex,
                                           "labelEn",
                                           event.target.value,
                                         )
                                       }
-                                      placeholder="Phones"
+                                      placeholder="iPhone 16 Series"
                                       value={child.label.en}
                                     />
                                   </label>
@@ -691,34 +854,32 @@ function WebsiteHomepageHeaderManager({
                                       className="h-9 min-w-0 w-full rounded-md border border-slate-300 bg-white px-2.5 text-sm text-slate-900 outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
                                       disabled={!canManage}
                                       onChange={(event) =>
-                                        updateSubLink(
+                                        updateSubLinkLabel(
                                           index,
                                           childIndex,
                                           "labelSw",
                                           event.target.value,
                                         )
                                       }
-                                      placeholder="Simu"
+                                      placeholder="iPhone 16 Series"
                                       value={child.label.sw}
                                     />
                                   </label>
-                                  <label className="grid min-w-0 gap-1 text-[11px] font-medium text-slate-600 dark:text-slate-300 sm:col-span-2">
-                                    {sw ? "Inapoelekea" : "Destination"}
-                                    <input
-                                      className="h-9 min-w-0 w-full rounded-md border border-slate-300 bg-white px-2.5 font-mono text-xs text-slate-900 outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                                  <div className="min-w-0 sm:col-span-2">
+                                    <WebsiteNavigationDestinationField
                                       disabled={!canManage}
-                                      onChange={(event) =>
-                                        updateSubLink(
+                                      listings={listings}
+                                      locale={locale}
+                                      onChange={(target) =>
+                                        updateSubLinkTarget(
                                           index,
                                           childIndex,
-                                          "href",
-                                          event.target.value,
+                                          target,
                                         )
                                       }
-                                      placeholder="/products?category=phones"
-                                      value={child.href}
+                                      value={child.target}
                                     />
-                                  </label>
+                                  </div>
                                 </div>
                                 {canManage ? (
                                   <div className="mt-2 flex justify-end gap-1">
@@ -770,8 +931,8 @@ function WebsiteHomepageHeaderManager({
                 <div className="mt-4 flex min-w-0 flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-4 dark:border-slate-800">
                   <p className="min-w-0 text-xs text-slate-500">
                     {sw
-                      ? "Viungo na dropdown zake zitaonekana kwenye storefront baada ya kuhifadhi."
-                      : "Saved links and dropdown sublinks are exposed through the Website public contract."}
+                      ? "Tunakuza huhifadhi identity ya Website resource na hutengeneza link halisi ya storefront yenyewe."
+                      : "Tunakuza stores the Website resource identity and resolves the real storefront route automatically."}
                   </p>
                   <Button
                     disabled={!site || !dirty || saving}

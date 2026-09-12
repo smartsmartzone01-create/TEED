@@ -2,6 +2,12 @@ from .catalog_resolver import resolve_storefront_variant
 from .models import WebsiteListing, WebsiteSite
 
 SUPPORTED_LOCALES = ("en", "sw")
+NAVIGATION_SECTIONS = {
+    "hero": "/#hero",
+    "popular": "/#popular",
+    "services": "/#services",
+    "footer": "/#footer",
+}
 
 
 def localized(value, fallback=""):
@@ -16,10 +22,42 @@ def _clean_optional(payload):
     return {key: value for key, value in payload.items() if value not in (None, "")}
 
 
-def _serialize_navigation_item(item, index, *, prefix="nav", include_children=True):
+def _safe_external_url(value):
+    url = str(value or "").strip()
+    if url.startswith(("https://", "http://")):
+        return url
+    return ""
+
+
+def _resolve_navigation_href(item, listing_routes):
+    target = item.get("target") if isinstance(item, dict) else None
+    if isinstance(target, dict):
+        target_type = target.get("type")
+        if target_type == "home":
+            return "/"
+        if target_type == "shop":
+            return "/products"
+        if target_type == "product":
+            return listing_routes.get(str(target.get("id") or ""), "")
+        if target_type == "section":
+            return NAVIGATION_SECTIONS.get(str(target.get("section") or ""), "")
+        if target_type == "external":
+            return _safe_external_url(target.get("url"))
+
+    return str(item.get("href") or "").strip()
+
+
+def _serialize_navigation_item(
+    item,
+    index,
+    *,
+    listing_routes,
+    prefix="nav",
+    include_children=True,
+):
     if not isinstance(item, dict):
         return None
-    href = str(item.get("href") or "").strip()
+    href = _resolve_navigation_href(item, listing_routes)
     if not href:
         return None
 
@@ -37,6 +75,7 @@ def _serialize_navigation_item(item, index, *, prefix="nav", include_children=Tr
                 serialized = _serialize_navigation_item(
                     child,
                     child_index,
+                    listing_routes=listing_routes,
                     prefix=f"{payload['id']}-child",
                     include_children=False,
                 )
@@ -60,9 +99,19 @@ def serialize_site(site: WebsiteSite):
     if site.default_locale not in supported_locales:
         supported_locales.insert(0, site.default_locale)
 
+    listing_routes = {
+        str(listing_id): f"/products/{slug}"
+        for listing_id, slug in WebsiteListing.objects.filter(site=site).values_list(
+            "id", "slug"
+        )
+    }
     navigation = []
     for index, item in enumerate(site.navigation if isinstance(site.navigation, list) else []):
-        serialized = _serialize_navigation_item(item, index)
+        serialized = _serialize_navigation_item(
+            item,
+            index,
+            listing_routes=listing_routes,
+        )
         if serialized is not None:
             navigation.append(serialized)
 

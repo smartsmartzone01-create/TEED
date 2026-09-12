@@ -18,7 +18,7 @@ export function EcommerceClassicHome({
 
   return (
     <main className="commerce-classic-home">
-      <section className="commerce-classic-hero">
+      <section id="hero" className="commerce-classic-hero">
         <div className="page-shell commerce-classic-hero-inner">
           <div className="commerce-classic-hero-copy">
             {site.hero.eyebrow ? (
@@ -85,7 +85,7 @@ export function EcommerceClassicHome({
       ) : null}
 
       {products.length > 0 ? (
-        <section className="page-shell commerce-classic-popular">
+        <section id="popular" className="page-shell commerce-classic-popular">
           <div className="commerce-classic-section-heading">
             <div>
               <p className="eyebrow">{locale === "sw" ? "Chaguo maarufu" : "Popular picks"}</p>
