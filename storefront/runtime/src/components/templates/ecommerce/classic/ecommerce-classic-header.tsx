@@ -137,9 +137,13 @@ export function EcommerceClassicHeader({ site }: { site: StorefrontSiteConfig })
           <button type="button" className="commerce-template-icon-button" aria-label={locale === "sw" ? "Tafuta" : "Search"} onClick={() => setSearchOpen((value) => !value)}>
             <Icon name={searchOpen ? "x" : "search"} />
           </button>
-          <button type="button" className="commerce-template-icon-button commerce-template-desktop-action" aria-label={locale === "sw" ? "Akaunti" : "Account"} disabled>
+          <Link
+            href="/account"
+            className="commerce-template-icon-button commerce-template-desktop-action"
+            aria-label={locale === "sw" ? "Akaunti" : "Account"}
+          >
             <Icon name="user" />
-          </button>
+          </Link>
           <button type="button" className="commerce-template-icon-button commerce-template-desktop-action" aria-label={locale === "sw" ? "Kikapu" : "Bag"} disabled>
             <Icon name="bag" />
           </button>
@@ -187,6 +191,13 @@ export function EcommerceClassicHeader({ site }: { site: StorefrontSiteConfig })
               </div>
             );
           })}
+          <Link
+            className="commerce-template-mobile-nav-link"
+            href="/account"
+            onClick={() => setMenuOpen(false)}
+          >
+            {locale === "sw" ? "Akaunti" : "Account"}
+          </Link>
           {whatsappHref ? <a href={whatsappHref}>{locale === "sw" ? "Wasiliana nasi" : "Contact us"}</a> : null}
         </nav>
       ) : null}
