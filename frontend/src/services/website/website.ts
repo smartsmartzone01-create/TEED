@@ -28,6 +28,10 @@ function createWebsiteSite(businessId: string, accessToken: string) {
   return withCsrfRetry((csrfToken) => requestApi({ accessToken, body: {}, csrfToken, method: "POST", path: `${WEBSITE_BASE_PATH}/businesses/${businessId}/sites/`, schema: websiteSiteEnvelopeSchema }));
 }
 
+function updateWebsiteSite(businessId: string, siteId: string, values: { navigation?: unknown }, accessToken: string) {
+  return withCsrfRetry((csrfToken) => requestApi({ accessToken, body: values, csrfToken, method: "PATCH", path: `${WEBSITE_BASE_PATH}/businesses/${businessId}/sites/${siteId}/`, schema: websiteSiteEnvelopeSchema }));
+}
+
 function getWebsiteMedia(businessId: string, siteId: string, accessToken: string, signal?: AbortSignal) {
   return requestApi({ accessToken, path: `${WEBSITE_BASE_PATH}/businesses/${businessId}/sites/${siteId}/media/`, schema: websiteMediaListEnvelopeSchema, signal });
 }
@@ -102,6 +106,7 @@ export {
   getWebsiteVariants,
   importWebsiteCommerceProducts,
   updateWebsiteListing,
+  updateWebsiteSite,
   updateWebsiteVariant,
   uploadWebsiteMedia,
 };

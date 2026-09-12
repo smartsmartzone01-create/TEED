@@ -7,7 +7,7 @@ type WebsitePageProps = {
 };
 
 export default async function WebsitePage({ params }: WebsitePageProps) {
-  const { locale } = await params;
+  const { businessId, locale } = await params;
   setRequestLocale(locale);
-  return <WebsiteHomepageManager locale={locale} />;
+  return <WebsiteHomepageManager businessId={businessId} locale={locale} />;
 }
