@@ -12,6 +12,7 @@ type WebsiteSite = {
   contact_email: string;
   contact_whatsapp: string;
   contact_instagram: string;
+  header: unknown;
   navigation: unknown;
   hero: unknown;
   services: unknown;

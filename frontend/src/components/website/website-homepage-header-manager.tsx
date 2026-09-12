@@ -3,6 +3,7 @@
 import {
   ChevronDown,
   ChevronUp,
+  ImagePlus,
   Loader2,
   Plus,
   Save,
@@ -19,6 +20,7 @@ import {
   createWebsiteSite,
   getWebsiteSites,
   updateWebsiteSite,
+  uploadWebsiteMedia,
 } from "@/services/website/website";
 import type { WebsiteSite } from "@/types/website/website";
 
@@ -63,6 +65,16 @@ function normalizeNavigation(value: unknown): HeaderNavigationItem[] {
   });
 }
 
+function normalizeHeader(value: unknown): Record<string, unknown> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  return value as Record<string, unknown>;
+}
+
+function headerLogoUrl(value: unknown): string {
+  const header = normalizeHeader(value);
+  return typeof header.logoImageUrl === "string" ? header.logoImageUrl : "";
+}
+
 function WebsiteHomepageHeaderManager({
   businessId,
   locale,
@@ -81,12 +93,14 @@ function WebsiteHomepageHeaderManager({
   const [savedNavigation, setSavedNavigation] = useState("[]");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const dirty = useMemo(
     () => JSON.stringify(navigation) !== savedNavigation,
     [navigation, savedNavigation],
   );
+  const logoUrl = headerLogoUrl(site?.header);
 
   const load = useCallback(
     async (signal?: AbortSignal) => {
@@ -178,6 +192,55 @@ function WebsiteHomepageHeaderManager({
       [next[index], next[target]] = [next[target], next[index]];
       return next;
     });
+  }
+
+  async function uploadLogo(file: File) {
+    if (!site || !canManage) return;
+    setUploadingLogo(true);
+    try {
+      const uploadResponse = await request((token) =>
+        uploadWebsiteMedia(
+          businessId,
+          site.id,
+          file,
+          {
+            en: `${site.display_name} logo`,
+            sw: `Nembo ya ${site.display_name}`,
+          },
+          token,
+        ),
+      );
+      const media = uploadResponse.data;
+      if (!media) {
+        throw new Error(sw ? "Picha ya nembo haikupakiwa." : "Logo image was not uploaded.");
+      }
+
+      const nextHeader = {
+        ...normalizeHeader(site.header),
+        logoImageUrl: media.public_url,
+        logoMediaId: media.id,
+      };
+      const updateResponse = await request((token) =>
+        updateWebsiteSite(businessId, site.id, { header: nextHeader }, token),
+      );
+      setSite(updateResponse.data ?? { ...site, header: nextHeader });
+      notify({
+        message: sw ? "Nembo imepakiwa na kuhifadhiwa." : "Logo uploaded and saved.",
+        tone: "success",
+      });
+    } catch (uploadError) {
+      notify({
+        message:
+          uploadError instanceof Error
+            ? uploadError.message
+            : sw
+              ? "Imeshindikana kupakia nembo."
+              : "Logo could not be uploaded.",
+        tone: "error",
+      });
+    } finally {
+      setUploadingLogo(false);
+    }
   }
 
   async function saveNavigation() {
@@ -282,17 +345,54 @@ function WebsiteHomepageHeaderManager({
               <p className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-400">
                 {sw ? "Nembo" : "Logo"}
               </p>
-              <div className="mt-3 flex size-12 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 dark:border-slate-700 dark:bg-slate-950">
-                <Store className="size-5" />
+              <div className="mt-3 flex h-20 w-full items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-white p-2 text-slate-500 dark:border-slate-700 dark:bg-slate-950">
+                {logoUrl ? (
+                  <img alt={site?.display_name ?? "Website logo"} className="max-h-full max-w-full object-contain" src={logoUrl} />
+                ) : (
+                  <Store className="size-6" />
+                )}
               </div>
               <p className="mt-3 text-sm font-medium text-slate-800 dark:text-slate-200">
-                {sw ? "Tumia chapa ya workspace" : "Use workspace branding"}
+                {logoUrl
+                  ? sw
+                    ? "Nembo ya tovuti"
+                    : "Website logo"
+                  : sw
+                    ? "Ongeza nembo ya tovuti"
+                    : "Add website logo"}
               </p>
               <p className="mt-1 text-xs leading-5 text-slate-500">
                 {sw
-                  ? "Kwa sasa kichwa kinarithi utambulisho wa workspace ili chapa ibaki sawa."
-                  : "For now the header inherits the workspace identity so the brand stays consistent."}
+                  ? "PNG, JPEG au WEBP, hadi MB 10. Picha hii itaonekana kwenye kichwa cha storefront."
+                  : "PNG, JPEG, or WEBP up to 10 MB. This image will appear in the storefront header."}
               </p>
+              {canManage ? (
+                <label className="mt-3 inline-flex h-9 cursor-pointer items-center gap-2 rounded-md border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:bg-slate-900">
+                  {uploadingLogo ? <Loader2 className="size-4 animate-spin" /> : <ImagePlus className="size-4" />}
+                  {uploadingLogo
+                    ? sw
+                      ? "Inapakia..."
+                      : "Uploading..."
+                    : logoUrl
+                      ? sw
+                        ? "Badilisha nembo"
+                        : "Replace logo"
+                      : sw
+                        ? "Pakia nembo"
+                        : "Upload logo"}
+                  <input
+                    accept="image/jpeg,image/png,image/webp"
+                    className="sr-only"
+                    disabled={uploadingLogo}
+                    onChange={(event) => {
+                      const file = event.currentTarget.files?.[0];
+                      event.currentTarget.value = "";
+                      if (file) void uploadLogo(file);
+                    }}
+                    type="file"
+                  />
+                </label>
+              ) : null}
             </section>
 
             <section className="min-w-0 overflow-hidden rounded-lg border border-slate-200 p-4 dark:border-slate-800">

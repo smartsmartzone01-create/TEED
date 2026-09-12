@@ -17,6 +17,7 @@ def _clean_optional(payload):
 
 
 def serialize_site(site: WebsiteSite):
+    header = site.header if isinstance(site.header, dict) else {}
     hero = site.hero if isinstance(site.hero, dict) else {}
     newsletter = site.newsletter if isinstance(site.newsletter, dict) else {}
     supported_locales = [
@@ -65,6 +66,11 @@ def serialize_site(site: WebsiteSite):
         }
     )
 
+    header_payload = {}
+    logo_image_url = str(header.get("logoImageUrl") or "").strip()
+    if logo_image_url:
+        header_payload["logoImageUrl"] = logo_image_url
+
     hero_payload = {
         "title": localized(hero.get("title"), site.display_name),
         "subtitle": localized(hero.get("subtitle")),
@@ -96,6 +102,7 @@ def serialize_site(site: WebsiteSite):
             "textColor": site.text_color,
         },
         "contact": contact,
+        "header": header_payload,
         "navigation": navigation,
         "hero": hero_payload,
         "services": services,

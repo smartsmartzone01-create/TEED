@@ -59,10 +59,20 @@ export function EcommerceClassicHeader({ site }: { site: StorefrontSiteConfig })
 
       <div className="page-shell commerce-template-mainbar">
         <Link href="/" className="commerce-template-brand" aria-label={site.displayName}>
-          <span className="commerce-template-brand-mark" aria-hidden="true">
-            {site.displayName.slice(0, 1).toUpperCase()}
-          </span>
-          <span className="commerce-template-brand-name">{site.displayName}</span>
+          {site.header.logoImageUrl ? (
+            <img
+              alt={site.displayName}
+              className="h-11 w-auto max-w-40 object-contain sm:max-w-48"
+              src={site.header.logoImageUrl}
+            />
+          ) : (
+            <>
+              <span className="commerce-template-brand-mark" aria-hidden="true">
+                {site.displayName.slice(0, 1).toUpperCase()}
+              </span>
+              <span className="commerce-template-brand-name">{site.displayName}</span>
+            </>
+          )}
         </Link>
 
         <nav className="commerce-template-desktop-nav" aria-label="Primary navigation">

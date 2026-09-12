@@ -77,6 +77,9 @@ export type StorefrontSiteConfig = {
     whatsapp?: string;
     instagram?: string;
   };
+  header: {
+    logoImageUrl?: string;
+  };
   navigation: StorefrontNavigationItem[];
   hero: {
     eyebrow?: LocalizedText;

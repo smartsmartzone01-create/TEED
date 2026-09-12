@@ -15,6 +15,7 @@ export const demoStorefrontSite: StorefrontSiteConfig = {
   contact: {
     email: "hello@example.com",
   },
+  header: {},
   navigation: [
     { id: "home", label: { en: "Home", sw: "Nyumbani" }, href: "/" },
     { id: "products", label: { en: "Shop", sw: "Duka" }, href: "/products" },

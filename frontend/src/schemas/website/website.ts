@@ -18,6 +18,7 @@ const websiteSiteSchema = z.object({
   contact_email: z.string(),
   contact_whatsapp: z.string(),
   contact_instagram: z.string(),
+  header: z.unknown(),
   navigation: z.unknown(),
   hero: z.unknown(),
   services: z.unknown(),
