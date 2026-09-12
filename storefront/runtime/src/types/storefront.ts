@@ -6,6 +6,7 @@ export type StorefrontNavigationItem = {
   id: string;
   label: LocalizedText;
   href: string;
+  children?: StorefrontNavigationItem[];
 };
 
 export type StorefrontServiceHighlight = {
@@ -36,6 +37,7 @@ export type StorefrontProductOption = {
 
 export type StorefrontSku = {
   id: string;
+  websiteVariantId: string;
   commerceProductId?: string;
   sku: string;
   options: Record<string, string>;
@@ -76,8 +78,13 @@ export type StorefrontSiteConfig = {
     whatsapp?: string;
     instagram?: string;
   };
+  header: {
+    logoImageUrl?: string;
+  };
   navigation: StorefrontNavigationItem[];
   hero: {
+    backgroundPreset: "sky-white";
+    layout: "text" | "split";
     eyebrow?: LocalizedText;
     title: LocalizedText;
     subtitle: LocalizedText;
@@ -86,6 +93,7 @@ export type StorefrontSiteConfig = {
     secondaryAction?: LocalizedText;
     secondaryHref?: string;
     imageUrl?: string;
+    imageAlt?: LocalizedText;
   };
   services: StorefrontServiceHighlight[];
   newsletter: {

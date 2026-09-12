@@ -7,16 +7,24 @@
 }
 
 .commerce-classic-hero-inner {
+  position: relative;
+  min-height: 560px;
+  padding: 50px;
+  border-radius: 34px;
+  background: linear-gradient(135deg, #dbeeff 0%, #edf7ff 42%, #ffffff 100%);
+  overflow: hidden;
+}
+
+.commerce-classic-hero-inner-split {
   display: grid;
   grid-template-columns: minmax(0, 0.92fr) minmax(360px, 1.08fr);
   align-items: center;
   gap: 42px;
-  min-height: 560px;
-  padding: 50px;
-  border-radius: 34px;
-  background: linear-gradient(135deg, #fff 0%, #f4eee8 100%);
-  position: relative;
-  overflow: hidden;
+}
+
+.commerce-classic-hero-inner-text {
+  display: flex;
+  align-items: center;
 }
 
 .commerce-classic-hero-copy {
@@ -24,9 +32,14 @@
   z-index: 2;
 }
 
+.commerce-classic-hero-inner-text .commerce-classic-hero-copy {
+  max-width: 900px;
+}
+
 .commerce-classic-hero-copy h1 {
   margin: 0;
   max-width: 720px;
+  color: #172033;
   font-size: clamp(3rem, 6vw, 5.8rem);
   line-height: 0.94;
   letter-spacing: -0.055em;
@@ -35,7 +48,7 @@
 .commerce-classic-hero-copy > p:not(.eyebrow) {
   max-width: 610px;
   margin: 24px 0 0;
-  color: #6d655e;
+  color: #536174;
   font-size: 1.05rem;
   line-height: 1.75;
 }
@@ -59,18 +72,7 @@
   width: 100%;
   max-height: 460px;
   object-fit: contain;
-  filter: drop-shadow(0 32px 38px rgb(37 25 16 / 16%));
-}
-
-.commerce-classic-hero-motto {
-  position: absolute;
-  right: 34px;
-  bottom: 20px;
-  margin: 0;
-  color: color-mix(in srgb, var(--storefront-accent) 75%, #fff 25%);
-  font-size: clamp(1.1rem, 2vw, 1.65rem);
-  font-weight: 850;
-  letter-spacing: -0.03em;
+  filter: drop-shadow(0 32px 38px rgb(36 76 112 / 15%));
 }
 
 .commerce-classic-carousel {
@@ -232,12 +234,13 @@
 }
 
 @media (max-width: 900px) {
-  .commerce-classic-hero-inner,
+  .commerce-classic-hero-inner-split,
   .commerce-classic-service-card {
     grid-template-columns: 1fr;
   }
 
   .commerce-classic-hero-inner {
+    min-height: auto;
     padding: 38px 30px;
   }
 
@@ -261,8 +264,7 @@
 
   .commerce-classic-hero-inner {
     gap: 24px;
-    min-height: auto;
-    padding: 30px 22px 54px;
+    padding: 30px 22px;
     border-radius: 24px;
   }
 
@@ -272,11 +274,6 @@
 
   .commerce-classic-hero-media {
     min-height: 250px;
-  }
-
-  .commerce-classic-hero-motto {
-    right: 22px;
-    bottom: 16px;
   }
 
   .commerce-classic-carousel {

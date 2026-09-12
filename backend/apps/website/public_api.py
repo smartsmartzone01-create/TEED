@@ -20,7 +20,16 @@ def public_site(site_key):
 
 def public_variants():
     return WebsiteVariant.objects.filter(is_published=True).select_related(
-        "commerce_product"
+        "commerce_product",
+        "media",
+    )
+
+
+def public_listings(site):
+    return (
+        WebsiteListing.objects.filter(site=site, is_published=True)
+        .select_related("primary_media")
+        .prefetch_related(Prefetch("variants", queryset=public_variants()))
     )
 
 
@@ -43,11 +52,7 @@ class PublicStorefrontSiteAPIView(PublicStorefrontBaseAPIView):
 class PublicStorefrontProductsAPIView(PublicStorefrontBaseAPIView):
     def get(self, request, site_key):
         site = public_site(site_key)
-        listings = (
-            WebsiteListing.objects.filter(site=site, is_published=True)
-            .prefetch_related(Prefetch("variants", queryset=public_variants()))
-            .order_by("sort_order", "created_at", "id")
-        )
+        listings = public_listings(site).order_by("sort_order", "created_at", "id")
         return SuccessResponse(
             message="Storefront products retrieved successfully.",
             data={"products": [serialize_listing(listing) for listing in listings]},
@@ -57,12 +62,7 @@ class PublicStorefrontProductsAPIView(PublicStorefrontBaseAPIView):
 class PublicStorefrontProductDetailAPIView(PublicStorefrontBaseAPIView):
     def get(self, request, site_key, slug):
         site = public_site(site_key)
-        listing = get_object_or_404(
-            WebsiteListing.objects.filter(site=site, is_published=True).prefetch_related(
-                Prefetch("variants", queryset=public_variants())
-            ),
-            slug=slug,
-        )
+        listing = get_object_or_404(public_listings(site), slug=slug)
         return SuccessResponse(
             message="Storefront product retrieved successfully.",
             data=serialize_listing(listing),

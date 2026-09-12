@@ -6,6 +6,7 @@ import {
   ChevronLeft,
   ChevronRight,
   FolderKanban,
+  Globe2,
   Grid2X2,
   HandCoins,
   Inbox,
@@ -42,7 +43,12 @@ type WorkspaceSidebarProps = {
   onCloseMobile: () => void;
   onToggleCollapsed: () => void;
 };
-type NavigationGroupKey = "commerce" | "membership" | "profile" | "settingsSecurity";
+type NavigationGroupKey =
+  | "commerce"
+  | "website"
+  | "membership"
+  | "profile"
+  | "settingsSecurity";
 type NavigationItem = { icon: LucideIcon; key: string; path: string };
 type NavigationGroup = { icon: LucideIcon; items: NavigationItem[]; key: NavigationGroupKey };
 
@@ -74,11 +80,17 @@ const commerceItems: NavigationItem[] = [
   { icon: Settings2, key: "expenses", path: "/commerce/expenses" },
   { icon: ShieldCheck, key: "budgets", path: "/commerce/budgets" },
 ];
+const websiteItems: NavigationItem[] = [
+  { icon: LayoutDashboard, key: "websiteMedia", path: "/website" },
+  { icon: Store, key: "websiteProducts", path: "/website/products" },
+  { icon: Settings2, key: "websiteCommerce", path: "/website/commerce" },
+];
 
 const navigationItemClassName = "text-sm font-medium leading-5";
 const navigationIconClassName = "size-4 shrink-0";
 
 function groupForPath(pathname: string): NavigationGroupKey | null {
+  if (pathname.includes("/website")) return "website";
   if (pathname.includes("/commerce")) return "commerce";
   if (/\/(members|invitations|access-requests|roles)(\/|$)/.test(pathname)) return "membership";
   if (pathname.includes("/profile")) return "profile";
@@ -112,6 +124,9 @@ function WorkspaceSidebar({
     activeBusiness?.capabilities.includes("business_operations") &&
       activeBusiness.membership.permissions.includes("commerce.view"),
   );
+  const websiteEnabled = Boolean(
+    activeBusiness?.membership.permissions.includes("website.manage"),
+  );
   const collaborationEnabled = Boolean(
     activeBusiness?.capabilities.includes("team_collaboration"),
   );
@@ -122,9 +137,13 @@ function WorkspaceSidebar({
   }>({ group: activeGroup, pathname });
   const openGroup = accordion.pathname === pathname ? accordion.group : activeGroup;
 
-  const operationsGroups: NavigationGroup[] = [
-    { icon: ShoppingBag, items: commerceItems, key: "commerce" },
-  ];
+  const operationsGroups: NavigationGroup[] = [];
+  if (commerceEnabled) {
+    operationsGroups.push({ icon: ShoppingBag, items: commerceItems, key: "commerce" });
+  }
+  if (websiteEnabled) {
+    operationsGroups.push({ icon: Globe2, items: websiteItems, key: "website" });
+  }
   const administrationGroups: NavigationGroup[] = [
     { icon: Building2, items: profileItems, key: "profile" },
     { icon: UsersRound, items: membershipItems, key: "membership" },
@@ -141,6 +160,11 @@ function WorkspaceSidebar({
     locale === "sw" ? "Muhtasari wa biashara" : "Business Overview";
   const financingLabel =
     locale === "sw" ? "Mikopo na malipo ya awamu" : "Loans & Installments";
+  const websiteLabel = locale === "sw" ? "Tovuti" : "Website";
+  const websiteMediaLabel = locale === "sw" ? "Ukurasa wa mwanzo" : "Homepage";
+  const websiteProductsLabel = locale === "sw" ? "Bidhaa" : "Products";
+  const websiteCommerceLabel =
+    locale === "sw" ? "Muunganisho wa biashara" : "Commerce Connection";
 
   function toggleGroup(key: NavigationGroupKey) {
     if (collapsed) onToggleCollapsed();
@@ -149,6 +173,7 @@ function WorkspaceSidebar({
 
   function groupLabel(key: NavigationGroupKey) {
     if (key === "commerce") return commerceLabel;
+    if (key === "website") return websiteLabel;
     return t(`navigation.${key}`);
   }
 
@@ -200,7 +225,13 @@ function WorkspaceSidebar({
                   ? commerceOverviewLabel
                   : item.key === "financing"
                     ? financingLabel
-                    : t(`subnavigation.${item.key}`);
+                    : item.key === "websiteMedia"
+                      ? websiteMediaLabel
+                      : item.key === "websiteProducts"
+                        ? websiteProductsLabel
+                        : item.key === "websiteCommerce"
+                          ? websiteCommerceLabel
+                          : t(`subnavigation.${item.key}`);
               return (
                 <Link
                   aria-current={selected ? "page" : undefined}
@@ -317,7 +348,7 @@ function WorkspaceSidebar({
             </div>
           ) : null}
 
-          {businessId && commerceEnabled ? (
+          {businessId && operationsGroups.length > 0 ? (
             <div className="mt-5">
               <p
                 className={cn(

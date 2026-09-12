@@ -15,6 +15,7 @@ export const demoStorefrontSite: StorefrontSiteConfig = {
   contact: {
     email: "hello@example.com",
   },
+  header: {},
   navigation: [
     { id: "home", label: { en: "Home", sw: "Nyumbani" }, href: "/" },
     { id: "products", label: { en: "Shop", sw: "Duka" }, href: "/products" },
@@ -22,6 +23,8 @@ export const demoStorefrontSite: StorefrontSiteConfig = {
     { id: "about", label: { en: "About", sw: "Kuhusu" }, href: "/#about" },
   ],
   hero: {
+    backgroundPreset: "sky-white",
+    layout: "split",
     eyebrow: { en: "Built for your business", sw: "Imeundwa kwa biashara yako" },
     title: { en: "Your next upgrade starts here", sw: "Hatua yako inayofuata inaanzia hapa" },
     subtitle: {
@@ -33,6 +36,7 @@ export const demoStorefrontSite: StorefrontSiteConfig = {
     secondaryAction: { en: "Learn more", sw: "Jifunze zaidi" },
     secondaryHref: "/#services",
     imageUrl: "/templates/ecommerce/classic/hero.webp",
+    imageAlt: { en: "Featured products", sw: "Bidhaa zilizoangaziwa" },
   },
   services: [
     {

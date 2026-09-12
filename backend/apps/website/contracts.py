@@ -2,6 +2,12 @@ from .catalog_resolver import resolve_storefront_variant
 from .models import WebsiteListing, WebsiteSite
 
 SUPPORTED_LOCALES = ("en", "sw")
+NAVIGATION_SECTIONS = {
+    "hero": "/#hero",
+    "popular": "/#popular",
+    "services": "/#services",
+    "footer": "/#footer",
+}
 
 
 def localized(value, fallback=""):
@@ -16,7 +22,82 @@ def _clean_optional(payload):
     return {key: value for key, value in payload.items() if value not in (None, "")}
 
 
+def _safe_external_url(value):
+    url = str(value or "").strip()
+    if url.startswith(("https://", "http://")):
+        return url
+    return ""
+
+
+def _resolve_target_href(target, listing_routes, fallback=""):
+    if isinstance(target, dict):
+        target_type = target.get("type")
+        if target_type == "home":
+            return "/"
+        if target_type == "shop":
+            return "/products"
+        if target_type == "product":
+            return listing_routes.get(str(target.get("id") or ""), "")
+        if target_type == "section":
+            return NAVIGATION_SECTIONS.get(str(target.get("section") or ""), "")
+        if target_type == "external":
+            return _safe_external_url(target.get("url"))
+
+    return str(fallback or "").strip()
+
+
+def _resolve_navigation_href(item, listing_routes):
+    if not isinstance(item, dict):
+        return ""
+    return _resolve_target_href(
+        item.get("target"),
+        listing_routes,
+        item.get("href"),
+    )
+
+
+def _serialize_navigation_item(
+    item,
+    index,
+    *,
+    listing_routes,
+    prefix="nav",
+    include_children=True,
+):
+    if not isinstance(item, dict):
+        return None
+    href = _resolve_navigation_href(item, listing_routes)
+    if not href:
+        return None
+
+    payload = {
+        "id": str(item.get("id") or f"{prefix}-{index + 1}"),
+        "label": localized(item.get("label")),
+        "href": href,
+    }
+
+    if include_children:
+        children = []
+        raw_children = item.get("children")
+        if isinstance(raw_children, list):
+            for child_index, child in enumerate(raw_children):
+                serialized = _serialize_navigation_item(
+                    child,
+                    child_index,
+                    listing_routes=listing_routes,
+                    prefix=f"{payload['id']}-child",
+                    include_children=False,
+                )
+                if serialized is not None:
+                    children.append(serialized)
+        if children:
+            payload["children"] = children
+
+    return payload
+
+
 def serialize_site(site: WebsiteSite):
+    header = site.header if isinstance(site.header, dict) else {}
     hero = site.hero if isinstance(site.hero, dict) else {}
     newsletter = site.newsletter if isinstance(site.newsletter, dict) else {}
     supported_locales = [
@@ -27,20 +108,21 @@ def serialize_site(site: WebsiteSite):
     if site.default_locale not in supported_locales:
         supported_locales.insert(0, site.default_locale)
 
+    listing_routes = {
+        str(listing_id): f"/products/{slug}"
+        for listing_id, slug in WebsiteListing.objects.filter(site=site).values_list(
+            "id", "slug"
+        )
+    }
     navigation = []
     for index, item in enumerate(site.navigation if isinstance(site.navigation, list) else []):
-        if not isinstance(item, dict):
-            continue
-        href = str(item.get("href") or "").strip()
-        if not href:
-            continue
-        navigation.append(
-            {
-                "id": str(item.get("id") or f"nav-{index + 1}"),
-                "label": localized(item.get("label")),
-                "href": href,
-            }
+        serialized = _serialize_navigation_item(
+            item,
+            index,
+            listing_routes=listing_routes,
         )
+        if serialized is not None:
+            navigation.append(serialized)
 
     services = []
     for index, item in enumerate(site.services if isinstance(site.services, list) else []):
@@ -65,23 +147,47 @@ def serialize_site(site: WebsiteSite):
         }
     )
 
+    header_payload = {}
+    logo_image_url = str(header.get("logoImageUrl") or "").strip()
+    if logo_image_url:
+        header_payload["logoImageUrl"] = logo_image_url
+
+    image_url = str(hero.get("imageUrl") or "").strip()
+    requested_layout = str(hero.get("layout") or "").strip()
+    layout = requested_layout if requested_layout in ("text", "split") else (
+        "split" if image_url else "text"
+    )
+    primary_href = _resolve_target_href(
+        hero.get("primaryTarget"),
+        listing_routes,
+        hero.get("primaryHref") or "/products",
+    ) or "/products"
     hero_payload = {
+        "backgroundPreset": "sky-white",
+        "layout": layout,
         "title": localized(hero.get("title"), site.display_name),
         "subtitle": localized(hero.get("subtitle")),
         "primaryAction": localized(hero.get("primaryAction"), "Browse"),
-        "primaryHref": str(hero.get("primaryHref") or "/products"),
+        "primaryHref": primary_href,
     }
     eyebrow = hero.get("eyebrow")
     if eyebrow:
         hero_payload["eyebrow"] = localized(eyebrow)
     secondary_action = hero.get("secondaryAction")
-    secondary_href = str(hero.get("secondaryHref") or "").strip()
+    secondary_href = _resolve_target_href(
+        hero.get("secondaryTarget"),
+        listing_routes,
+        hero.get("secondaryHref"),
+    )
     if secondary_action and secondary_href:
         hero_payload["secondaryAction"] = localized(secondary_action)
         hero_payload["secondaryHref"] = secondary_href
-    image_url = str(hero.get("imageUrl") or "").strip()
     if image_url:
         hero_payload["imageUrl"] = image_url
+        hero_payload["imageAlt"] = localized(
+            hero.get("imageAlt"),
+            site.display_name,
+        )
 
     return {
         "id": str(site.id),
@@ -96,6 +202,7 @@ def serialize_site(site: WebsiteSite):
             "textColor": site.text_color,
         },
         "contact": contact,
+        "header": header_payload,
         "navigation": navigation,
         "hero": hero_payload,
         "services": services,
@@ -176,7 +283,7 @@ def serialize_listing(listing: WebsiteListing):
         "title": localized(listing.title),
         "shortDescription": localized(listing.short_description),
         "description": localized(listing.description),
-        "primaryImageUrl": listing.primary_image_url,
+        "primaryImageUrl": listing.resolved_primary_image_url(),
         "options": options,
         "skus": variants,
     }

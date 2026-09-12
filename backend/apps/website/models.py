@@ -37,6 +37,7 @@ class WebsiteSite(BaseModel):
     contact_whatsapp = models.CharField(max_length=32, blank=True, default="")
     contact_instagram = models.CharField(max_length=120, blank=True, default="")
 
+    header = models.JSONField(default=dict, blank=True)
     navigation = models.JSONField(default=list, blank=True)
     hero = models.JSONField(default=dict, blank=True)
     services = models.JSONField(default=list, blank=True)
@@ -69,6 +70,8 @@ class WebsiteSite(BaseModel):
                     )
                 }
             )
+        if not isinstance(self.header, dict):
+            raise ValidationError({"header": "Header settings must be an object."})
 
     def __str__(self):
         return self.display_name
