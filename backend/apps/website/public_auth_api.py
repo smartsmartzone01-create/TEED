@@ -13,7 +13,10 @@ from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
 from apps.identity.authentication import StorefrontCustomerJWTAuthentication
-from apps.identity.models import StorefrontCustomer, StorefrontCustomerVerificationChallenge
+from apps.identity.models import (
+    StorefrontCustomer,
+    StorefrontCustomerVerificationChallenge,
+)
 from apps.identity.serializers.storefront_customer import (
     StorefrontEmailLoginSerializer,
     StorefrontEmailRegistrationSerializer,

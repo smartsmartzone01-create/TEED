@@ -1,6 +1,6 @@
 from common.exceptions.modules.identity import SessionInvalid
-from drf_spectacular.extensions import OpenApiAuthenticationExtension
 from django.utils import timezone
+from drf_spectacular.extensions import OpenApiAuthenticationExtension
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from ..models import StorefrontCustomerSession
