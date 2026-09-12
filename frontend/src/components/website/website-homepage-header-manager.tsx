@@ -29,7 +29,7 @@ type WebsiteHomepageHeaderManagerProps = {
   locale: string;
 };
 
-type HeaderNavigationItem = {
+type HeaderNavigationEntry = {
   href: string;
   id: string;
   label: {
@@ -38,30 +38,52 @@ type HeaderNavigationItem = {
   };
 };
 
+type HeaderNavigationItem = HeaderNavigationEntry & {
+  children: HeaderNavigationEntry[];
+};
+
+function normalizeNavigationEntry(
+  value: unknown,
+  fallbackId: string,
+): HeaderNavigationEntry | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const source = value as Record<string, unknown>;
+  const labelSource =
+    source.label && typeof source.label === "object" && !Array.isArray(source.label)
+      ? (source.label as Record<string, unknown>)
+      : {};
+
+  return {
+    href: typeof source.href === "string" ? source.href : "",
+    id:
+      typeof source.id === "string" && source.id.trim()
+        ? source.id
+        : fallbackId,
+    label: {
+      en: typeof labelSource.en === "string" ? labelSource.en : "",
+      sw: typeof labelSource.sw === "string" ? labelSource.sw : "",
+    },
+  };
+}
+
 function normalizeNavigation(value: unknown): HeaderNavigationItem[] {
   if (!Array.isArray(value)) return [];
 
   return value.flatMap((entry, index) => {
-    if (!entry || typeof entry !== "object") return [];
+    const normalized = normalizeNavigationEntry(entry, `nav-${index + 1}`);
+    if (!normalized) return [];
     const source = entry as Record<string, unknown>;
-    const labelSource =
-      source.label && typeof source.label === "object"
-        ? (source.label as Record<string, unknown>)
-        : {};
+    const children = Array.isArray(source.children)
+      ? source.children.flatMap((child, childIndex) => {
+          const normalizedChild = normalizeNavigationEntry(
+            child,
+            `${normalized.id}-child-${childIndex + 1}`,
+          );
+          return normalizedChild ? [normalizedChild] : [];
+        })
+      : [];
 
-    return [
-      {
-        href: typeof source.href === "string" ? source.href : "",
-        id:
-          typeof source.id === "string" && source.id.trim()
-            ? source.id
-            : `nav-${index + 1}`,
-        label: {
-          en: typeof labelSource.en === "string" ? labelSource.en : "",
-          sw: typeof labelSource.sw === "string" ? labelSource.sw : "",
-        },
-      },
-    ];
+    return [{ ...normalized, children }];
   });
 }
 
@@ -73,6 +95,23 @@ function normalizeHeader(value: unknown): Record<string, unknown> {
 function headerLogoUrl(value: unknown): string {
   const header = normalizeHeader(value);
   return typeof header.logoImageUrl === "string" ? header.logoImageUrl : "";
+}
+
+function validNavigationEntry(item: HeaderNavigationEntry): boolean {
+  return Boolean(
+    item.href.trim() && (item.label.en.trim() || item.label.sw.trim()),
+  );
+}
+
+function cleanNavigationEntry(item: HeaderNavigationEntry) {
+  return {
+    href: item.href.trim(),
+    id: item.id,
+    label: {
+      en: item.label.en.trim(),
+      sw: item.label.sw.trim(),
+    },
+  };
 }
 
 function WebsiteHomepageHeaderManager({
@@ -168,11 +207,39 @@ function WebsiteHomepageHeaderManager({
     );
   }
 
+  function updateSubLink(
+    parentIndex: number,
+    childIndex: number,
+    field: "href" | "labelEn" | "labelSw",
+    value: string,
+  ) {
+    setNavigation((current) =>
+      current.map((item, itemIndex) => {
+        if (itemIndex !== parentIndex) return item;
+        return {
+          ...item,
+          children: item.children.map((child, index) => {
+            if (index !== childIndex) return child;
+            if (field === "href") return { ...child, href: value };
+            return {
+              ...child,
+              label: {
+                ...child.label,
+                [field === "labelEn" ? "en" : "sw"]: value,
+              },
+            };
+          }),
+        };
+      }),
+    );
+  }
+
   function addLink() {
     if (navigation.length >= 8) return;
     setNavigation((current) => [
       ...current,
       {
+        children: [],
         href: "/",
         id: `nav-${Date.now()}`,
         label: { en: "", sw: "" },
@@ -180,8 +247,42 @@ function WebsiteHomepageHeaderManager({
     ]);
   }
 
+  function addSubLink(parentIndex: number) {
+    setNavigation((current) =>
+      current.map((item, index) => {
+        if (index !== parentIndex || item.children.length >= 8) return item;
+        return {
+          ...item,
+          children: [
+            ...item.children,
+            {
+              href: "/",
+              id: `${item.id}-child-${Date.now()}`,
+              label: { en: "", sw: "" },
+            },
+          ],
+        };
+      }),
+    );
+  }
+
   function removeLink(index: number) {
     setNavigation((current) => current.filter((_, itemIndex) => itemIndex !== index));
+  }
+
+  function removeSubLink(parentIndex: number, childIndex: number) {
+    setNavigation((current) =>
+      current.map((item, index) =>
+        index === parentIndex
+          ? {
+              ...item,
+              children: item.children.filter(
+                (_, itemIndex) => itemIndex !== childIndex,
+              ),
+            }
+          : item,
+      ),
+    );
   }
 
   function moveLink(index: number, direction: -1 | 1) {
@@ -192,6 +293,26 @@ function WebsiteHomepageHeaderManager({
       [next[index], next[target]] = [next[target], next[index]];
       return next;
     });
+  }
+
+  function moveSubLink(
+    parentIndex: number,
+    childIndex: number,
+    direction: -1 | 1,
+  ) {
+    setNavigation((current) =>
+      current.map((item, index) => {
+        if (index !== parentIndex) return item;
+        const target = childIndex + direction;
+        if (target < 0 || target >= item.children.length) return item;
+        const children = [...item.children];
+        [children[childIndex], children[target]] = [
+          children[target],
+          children[childIndex],
+        ];
+        return { ...item, children };
+      }),
+    );
   }
 
   async function uploadLogo(file: File) {
@@ -212,7 +333,9 @@ function WebsiteHomepageHeaderManager({
       );
       const media = uploadResponse.data;
       if (!media) {
-        throw new Error(sw ? "Picha ya nembo haikupakiwa." : "Logo image was not uploaded.");
+        throw new Error(
+          sw ? "Picha ya nembo haikupakiwa." : "Logo image was not uploaded.",
+        );
       }
 
       const nextHeader = {
@@ -247,25 +370,24 @@ function WebsiteHomepageHeaderManager({
     if (!site || !canManage) return;
     const invalid = navigation.some(
       (item) =>
-        !item.href.trim() || (!item.label.en.trim() && !item.label.sw.trim()),
+        !validNavigationEntry(item) ||
+        item.children.some((child) => !validNavigationEntry(child)),
     );
     if (invalid) {
       notify({
         message: sw
-          ? "Kila kiungo kinahitaji anwani na angalau jina moja."
-          : "Each navigation link needs a destination and at least one label.",
+          ? "Kila kiungo na kiungo kidogo kinahitaji anwani na angalau jina moja."
+          : "Each link and sublink needs a destination and at least one label.",
         tone: "error",
       });
       return;
     }
 
     const cleaned = navigation.map((item) => ({
-      href: item.href.trim(),
-      id: item.id,
-      label: {
-        en: item.label.en.trim(),
-        sw: item.label.sw.trim(),
-      },
+      ...cleanNavigationEntry(item),
+      ...(item.children.length
+        ? { children: item.children.map(cleanNavigationEntry) }
+        : {}),
     }));
 
     setSaving(true);
@@ -331,8 +453,8 @@ function WebsiteHomepageHeaderManager({
               </h3>
               <p className="mt-1 text-sm leading-6 text-slate-500 dark:text-slate-400">
                 {sw
-                  ? "Simamia utambulisho wa kichwa na viungo ambavyo wateja hutumia kuzunguka tovuti."
-                  : "Manage the header identity and the links customers use to move around the storefront."}
+                  ? "Simamia utambulisho wa kichwa, viungo na viungo vidogo vya menyu."
+                  : "Manage the header identity, navigation links, and one level of dropdown sublinks."}
               </p>
             </div>
             <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-medium text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
@@ -347,7 +469,11 @@ function WebsiteHomepageHeaderManager({
               </p>
               <div className="mt-3 flex h-20 w-full items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-white p-2 text-slate-500 dark:border-slate-700 dark:bg-slate-950">
                 {logoUrl ? (
-                  <img alt={site?.display_name ?? "Website logo"} className="max-h-full max-w-full object-contain" src={logoUrl} />
+                  <img
+                    alt={site?.display_name ?? "Website logo"}
+                    className="max-h-full max-w-full object-contain"
+                    src={logoUrl}
+                  />
                 ) : (
                   <Store className="size-6" />
                 )}
@@ -368,7 +494,11 @@ function WebsiteHomepageHeaderManager({
               </p>
               {canManage ? (
                 <label className="mt-3 inline-flex h-9 cursor-pointer items-center gap-2 rounded-md border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:bg-slate-900">
-                  {uploadingLogo ? <Loader2 className="size-4 animate-spin" /> : <ImagePlus className="size-4" />}
+                  {uploadingLogo ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <ImagePlus className="size-4" />
+                  )}
                   {uploadingLogo
                     ? sw
                       ? "Inapakia..."
@@ -403,12 +533,17 @@ function WebsiteHomepageHeaderManager({
                   </h4>
                   <p className="mt-1 text-xs text-slate-500">
                     {sw
-                      ? "Panga hadi viungo 8 kwa mpangilio unaotaka vionekane."
-                      : "Arrange up to 8 links in the order they should appear."}
+                      ? "Panga hadi viungo 8. Kila kiungo kinaweza kuwa na hadi viungo vidogo 8."
+                      : "Arrange up to 8 links. Each link can contain up to 8 dropdown sublinks."}
                   </p>
                 </div>
                 {canManage ? (
-                  <Button disabled={navigation.length >= 8} onClick={addLink} size="small" variant="outline">
+                  <Button
+                    disabled={navigation.length >= 8}
+                    onClick={addLink}
+                    size="small"
+                    variant="outline"
+                  >
                     <Plus className="size-4" />
                     {sw ? "Ongeza kiungo" : "Add link"}
                   </Button>
@@ -434,7 +569,9 @@ function WebsiteHomepageHeaderManager({
                           <input
                             className="h-9 min-w-0 w-full rounded-md border border-slate-300 bg-white px-2.5 text-sm text-slate-900 outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
                             disabled={!canManage}
-                            onChange={(event) => updateLink(index, "labelEn", event.target.value)}
+                            onChange={(event) =>
+                              updateLink(index, "labelEn", event.target.value)
+                            }
                             placeholder="Shop"
                             value={item.label.en}
                           />
@@ -444,7 +581,9 @@ function WebsiteHomepageHeaderManager({
                           <input
                             className="h-9 min-w-0 w-full rounded-md border border-slate-300 bg-white px-2.5 text-sm text-slate-900 outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
                             disabled={!canManage}
-                            onChange={(event) => updateLink(index, "labelSw", event.target.value)}
+                            onChange={(event) =>
+                              updateLink(index, "labelSw", event.target.value)
+                            }
                             placeholder="Duka"
                             value={item.label.sw}
                           />
@@ -454,7 +593,9 @@ function WebsiteHomepageHeaderManager({
                           <input
                             className="h-9 min-w-0 w-full rounded-md border border-slate-300 bg-white px-2.5 font-mono text-xs text-slate-900 outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
                             disabled={!canManage}
-                            onChange={(event) => updateLink(index, "href", event.target.value)}
+                            onChange={(event) =>
+                              updateLink(index, "href", event.target.value)
+                            }
                             placeholder="/products"
                             value={item.href}
                           />
@@ -490,6 +631,136 @@ function WebsiteHomepageHeaderManager({
                           </div>
                         ) : null}
                       </div>
+
+                      <div className="mt-3 border-t border-slate-200 pt-3 dark:border-slate-800">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <div>
+                            <p className="text-xs font-semibold text-slate-700 dark:text-slate-200">
+                              {sw ? "Viungo vidogo" : "Sublinks"}
+                              <span className="ml-2 font-normal text-slate-400">
+                                {item.children.length}/8
+                              </span>
+                            </p>
+                            <p className="mt-0.5 text-[11px] text-slate-500">
+                              {sw
+                                ? "Vitaonekana kama dropdown chini ya kiungo hiki."
+                                : "These appear in a dropdown beneath this link."}
+                            </p>
+                          </div>
+                          {canManage ? (
+                            <Button
+                              disabled={item.children.length >= 8}
+                              onClick={() => addSubLink(index)}
+                              size="small"
+                              variant="outline"
+                            >
+                              <Plus className="size-3.5" />
+                              {sw ? "Ongeza kiungo kidogo" : "Add sublink"}
+                            </Button>
+                          ) : null}
+                        </div>
+
+                        {item.children.length ? (
+                          <div className="mt-3 space-y-2">
+                            {item.children.map((child, childIndex) => (
+                              <div
+                                className="min-w-0 rounded-md border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-950"
+                                key={child.id}
+                              >
+                                <div className="grid min-w-0 gap-3 sm:grid-cols-2">
+                                  <label className="grid min-w-0 gap-1 text-[11px] font-medium text-slate-600 dark:text-slate-300">
+                                    English
+                                    <input
+                                      className="h-9 min-w-0 w-full rounded-md border border-slate-300 bg-white px-2.5 text-sm text-slate-900 outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                                      disabled={!canManage}
+                                      onChange={(event) =>
+                                        updateSubLink(
+                                          index,
+                                          childIndex,
+                                          "labelEn",
+                                          event.target.value,
+                                        )
+                                      }
+                                      placeholder="Phones"
+                                      value={child.label.en}
+                                    />
+                                  </label>
+                                  <label className="grid min-w-0 gap-1 text-[11px] font-medium text-slate-600 dark:text-slate-300">
+                                    Kiswahili
+                                    <input
+                                      className="h-9 min-w-0 w-full rounded-md border border-slate-300 bg-white px-2.5 text-sm text-slate-900 outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                                      disabled={!canManage}
+                                      onChange={(event) =>
+                                        updateSubLink(
+                                          index,
+                                          childIndex,
+                                          "labelSw",
+                                          event.target.value,
+                                        )
+                                      }
+                                      placeholder="Simu"
+                                      value={child.label.sw}
+                                    />
+                                  </label>
+                                  <label className="grid min-w-0 gap-1 text-[11px] font-medium text-slate-600 dark:text-slate-300 sm:col-span-2">
+                                    {sw ? "Inapoelekea" : "Destination"}
+                                    <input
+                                      className="h-9 min-w-0 w-full rounded-md border border-slate-300 bg-white px-2.5 font-mono text-xs text-slate-900 outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                                      disabled={!canManage}
+                                      onChange={(event) =>
+                                        updateSubLink(
+                                          index,
+                                          childIndex,
+                                          "href",
+                                          event.target.value,
+                                        )
+                                      }
+                                      placeholder="/products?category=phones"
+                                      value={child.href}
+                                    />
+                                  </label>
+                                </div>
+                                {canManage ? (
+                                  <div className="mt-2 flex justify-end gap-1">
+                                    <button
+                                      aria-label={sw ? "Hamisha juu" : "Move sublink up"}
+                                      className="inline-flex size-8 items-center justify-center rounded-md border border-slate-300 text-slate-500 hover:bg-slate-50 disabled:opacity-30 dark:border-slate-700 dark:hover:bg-slate-900"
+                                      disabled={childIndex === 0}
+                                      onClick={() =>
+                                        moveSubLink(index, childIndex, -1)
+                                      }
+                                      type="button"
+                                    >
+                                      <ChevronUp className="size-3.5" />
+                                    </button>
+                                    <button
+                                      aria-label={sw ? "Hamisha chini" : "Move sublink down"}
+                                      className="inline-flex size-8 items-center justify-center rounded-md border border-slate-300 text-slate-500 hover:bg-slate-50 disabled:opacity-30 dark:border-slate-700 dark:hover:bg-slate-900"
+                                      disabled={childIndex === item.children.length - 1}
+                                      onClick={() =>
+                                        moveSubLink(index, childIndex, 1)
+                                      }
+                                      type="button"
+                                    >
+                                      <ChevronDown className="size-3.5" />
+                                    </button>
+                                    <button
+                                      aria-label={sw ? "Ondoa kiungo kidogo" : "Remove sublink"}
+                                      className="inline-flex size-8 items-center justify-center rounded-md border border-slate-300 text-slate-400 hover:border-red-200 hover:bg-red-50 hover:text-red-600 dark:border-slate-700 dark:hover:border-red-900 dark:hover:bg-red-950/30"
+                                      onClick={() =>
+                                        removeSubLink(index, childIndex)
+                                      }
+                                      type="button"
+                                    >
+                                      <Trash2 className="size-3.5" />
+                                    </button>
+                                  </div>
+                                ) : null}
+                              </div>
+                            ))}
+                          </div>
+                        ) : null}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -499,11 +770,19 @@ function WebsiteHomepageHeaderManager({
                 <div className="mt-4 flex min-w-0 flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-4 dark:border-slate-800">
                   <p className="min-w-0 text-xs text-slate-500">
                     {sw
-                      ? "Mabadiliko yataonekana kwenye storefront baada ya kuhifadhi."
-                      : "Saved navigation is exposed through the Website public contract."}
+                      ? "Viungo na dropdown zake zitaonekana kwenye storefront baada ya kuhifadhi."
+                      : "Saved links and dropdown sublinks are exposed through the Website public contract."}
                   </p>
-                  <Button disabled={!site || !dirty || saving} onClick={() => void saveNavigation()} size="small">
-                    {saving ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
+                  <Button
+                    disabled={!site || !dirty || saving}
+                    onClick={() => void saveNavigation()}
+                    size="small"
+                  >
+                    {saving ? (
+                      <Loader2 className="size-4 animate-spin" />
+                    ) : (
+                      <Save className="size-4" />
+                    )}
                     {sw ? "Hifadhi kichwa" : "Save header"}
                   </Button>
                 </div>

@@ -16,6 +16,38 @@ def _clean_optional(payload):
     return {key: value for key, value in payload.items() if value not in (None, "")}
 
 
+def _serialize_navigation_item(item, index, *, prefix="nav", include_children=True):
+    if not isinstance(item, dict):
+        return None
+    href = str(item.get("href") or "").strip()
+    if not href:
+        return None
+
+    payload = {
+        "id": str(item.get("id") or f"{prefix}-{index + 1}"),
+        "label": localized(item.get("label")),
+        "href": href,
+    }
+
+    if include_children:
+        children = []
+        raw_children = item.get("children")
+        if isinstance(raw_children, list):
+            for child_index, child in enumerate(raw_children):
+                serialized = _serialize_navigation_item(
+                    child,
+                    child_index,
+                    prefix=f"{payload['id']}-child",
+                    include_children=False,
+                )
+                if serialized is not None:
+                    children.append(serialized)
+        if children:
+            payload["children"] = children
+
+    return payload
+
+
 def serialize_site(site: WebsiteSite):
     header = site.header if isinstance(site.header, dict) else {}
     hero = site.hero if isinstance(site.hero, dict) else {}
@@ -30,18 +62,9 @@ def serialize_site(site: WebsiteSite):
 
     navigation = []
     for index, item in enumerate(site.navigation if isinstance(site.navigation, list) else []):
-        if not isinstance(item, dict):
-            continue
-        href = str(item.get("href") or "").strip()
-        if not href:
-            continue
-        navigation.append(
-            {
-                "id": str(item.get("id") or f"nav-{index + 1}"),
-                "label": localized(item.get("label")),
-                "href": href,
-            }
-        )
+        serialized = _serialize_navigation_item(item, index)
+        if serialized is not None:
+            navigation.append(serialized)
 
     services = []
     for index, item in enumerate(site.services if isinstance(site.services, list) else []):

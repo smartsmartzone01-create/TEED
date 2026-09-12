@@ -6,6 +6,7 @@ export type StorefrontNavigationItem = {
   id: string;
   label: LocalizedText;
   href: string;
+  children?: StorefrontNavigationItem[];
 };
 
 export type StorefrontServiceHighlight = {
