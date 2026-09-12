@@ -1,7 +1,6 @@
 import {
   Globe2,
   Grid2X2,
-  ImagePlus,
   Palette,
   Settings2,
   ShoppingBag,
@@ -9,6 +8,7 @@ import {
 } from "lucide-react";
 
 import { WebsiteHomepageHeaderManager } from "@/components/website/website-homepage-header-manager";
+import { WebsiteHomepageHeroManager } from "@/components/website/website-homepage-hero-manager";
 import { WebsiteHomepageLivePreview } from "@/components/website/website-homepage-live-preview";
 
 type WebsiteHomepageManagerProps = {
@@ -26,13 +26,6 @@ function WebsiteHomepageManager({ businessId, locale }: WebsiteHomepageManagerPr
   const sw = locale === "sw";
 
   const sections: HomepageSection[] = [
-    {
-      description: sw
-        ? "Kichwa kikuu, maelezo, vitufe vya mwito na picha kuu ya ukurasa wa mwanzo."
-        : "Headline, supporting copy, calls to action, and the main hero artwork.",
-      icon: ImagePlus,
-      title: sw ? "Sehemu kuu" : "Hero",
-    },
     {
       description: sw
         ? "Bidhaa maarufu zitakazochaguliwa kiotomatiki au kwa mkono kwa ukurasa wa mwanzo."
@@ -147,12 +140,13 @@ function WebsiteHomepageManager({ businessId, locale }: WebsiteHomepageManagerPr
             </p>
           </div>
           <span className="shrink-0 text-xs font-medium text-slate-400">
-            {sections.length + 1} {sw ? "sehemu" : "sections"}
+            {sections.length + 2} {sw ? "sehemu" : "sections"}
           </span>
         </div>
 
         <div className="min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950">
           <WebsiteHomepageHeaderManager businessId={businessId} locale={locale} />
+          <WebsiteHomepageHeroManager businessId={businessId} locale={locale} />
           {sections.map((section, index) => {
             const Icon = section.icon;
             return (
@@ -176,7 +170,7 @@ function WebsiteHomepageManager({ businessId, locale }: WebsiteHomepageManagerPr
                     {section.description}
                   </p>
                   <div className="mt-3 flex items-center gap-2 text-xs font-medium text-slate-400">
-                    <span className="font-mono">{String(index + 2).padStart(2, "0")}</span>
+                    <span className="font-mono">{String(index + 3).padStart(2, "0")}</span>
                     <span className="h-px w-5 bg-slate-200 dark:bg-slate-800" />
                     <span>{sw ? "Mpangilio wa storefront" : "Storefront structure"}</span>
                   </div>

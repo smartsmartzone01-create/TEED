@@ -15,17 +15,22 @@ export function EcommerceClassicHome({
   products: StorefrontProductListing[];
 }) {
   const locale = site.defaultLocale;
+  const showHeroImage = site.hero.layout === "split" && Boolean(site.hero.imageUrl);
 
   return (
     <main className="commerce-classic-home">
       <section id="hero" className="commerce-classic-hero">
-        <div className="page-shell commerce-classic-hero-inner">
+        <div
+          className={`page-shell commerce-classic-hero-inner${showHeroImage ? " commerce-classic-hero-inner-split" : " commerce-classic-hero-inner-text"}`}
+        >
           <div className="commerce-classic-hero-copy">
             {site.hero.eyebrow ? (
               <p className="eyebrow">{localized(site.hero.eyebrow, locale)}</p>
             ) : null}
             <h1>{localized(site.hero.title, locale)}</h1>
-            <p>{localized(site.hero.subtitle, locale)}</p>
+            {localized(site.hero.subtitle, locale) ? (
+              <p>{localized(site.hero.subtitle, locale)}</p>
+            ) : null}
             <div className="commerce-classic-hero-actions">
               <Link className="button button-primary" href={site.hero.primaryHref}>
                 {localized(site.hero.primaryAction, locale)}
@@ -38,20 +43,16 @@ export function EcommerceClassicHome({
             </div>
           </div>
 
-          {site.hero.imageUrl ? (
+          {showHeroImage && site.hero.imageUrl ? (
             <div className="commerce-classic-hero-media">
               <StorefrontImage
                 src={site.hero.imageUrl}
-                alt={localized(site.hero.title, locale)}
+                alt={site.hero.imageAlt ? localized(site.hero.imageAlt, locale) : localized(site.hero.title, locale)}
                 width={1400}
                 height={900}
               />
             </div>
           ) : null}
-
-          <p className="commerce-classic-hero-motto" aria-hidden="true">
-            {locale === "sw" ? "nzuri, bora, bora zaidi" : "good, best, better"}
-          </p>
         </div>
       </section>
 

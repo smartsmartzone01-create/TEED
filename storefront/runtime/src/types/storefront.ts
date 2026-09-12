@@ -83,6 +83,8 @@ export type StorefrontSiteConfig = {
   };
   navigation: StorefrontNavigationItem[];
   hero: {
+    backgroundPreset: "sky-white";
+    layout: "text" | "split";
     eyebrow?: LocalizedText;
     title: LocalizedText;
     subtitle: LocalizedText;
@@ -91,6 +93,7 @@ export type StorefrontSiteConfig = {
     secondaryAction?: LocalizedText;
     secondaryHref?: string;
     imageUrl?: string;
+    imageAlt?: LocalizedText;
   };
   services: StorefrontServiceHighlight[];
   newsletter: {

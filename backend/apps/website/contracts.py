@@ -29,8 +29,7 @@ def _safe_external_url(value):
     return ""
 
 
-def _resolve_navigation_href(item, listing_routes):
-    target = item.get("target") if isinstance(item, dict) else None
+def _resolve_target_href(target, listing_routes, fallback=""):
     if isinstance(target, dict):
         target_type = target.get("type")
         if target_type == "home":
@@ -44,7 +43,17 @@ def _resolve_navigation_href(item, listing_routes):
         if target_type == "external":
             return _safe_external_url(target.get("url"))
 
-    return str(item.get("href") or "").strip()
+    return str(fallback or "").strip()
+
+
+def _resolve_navigation_href(item, listing_routes):
+    if not isinstance(item, dict):
+        return ""
+    return _resolve_target_href(
+        item.get("target"),
+        listing_routes,
+        item.get("href"),
+    )
 
 
 def _serialize_navigation_item(
@@ -143,23 +152,42 @@ def serialize_site(site: WebsiteSite):
     if logo_image_url:
         header_payload["logoImageUrl"] = logo_image_url
 
+    image_url = str(hero.get("imageUrl") or "").strip()
+    requested_layout = str(hero.get("layout") or "").strip()
+    layout = requested_layout if requested_layout in ("text", "split") else (
+        "split" if image_url else "text"
+    )
+    primary_href = _resolve_target_href(
+        hero.get("primaryTarget"),
+        listing_routes,
+        hero.get("primaryHref") or "/products",
+    ) or "/products"
     hero_payload = {
+        "backgroundPreset": "sky-white",
+        "layout": layout,
         "title": localized(hero.get("title"), site.display_name),
         "subtitle": localized(hero.get("subtitle")),
         "primaryAction": localized(hero.get("primaryAction"), "Browse"),
-        "primaryHref": str(hero.get("primaryHref") or "/products"),
+        "primaryHref": primary_href,
     }
     eyebrow = hero.get("eyebrow")
     if eyebrow:
         hero_payload["eyebrow"] = localized(eyebrow)
     secondary_action = hero.get("secondaryAction")
-    secondary_href = str(hero.get("secondaryHref") or "").strip()
+    secondary_href = _resolve_target_href(
+        hero.get("secondaryTarget"),
+        listing_routes,
+        hero.get("secondaryHref"),
+    )
     if secondary_action and secondary_href:
         hero_payload["secondaryAction"] = localized(secondary_action)
         hero_payload["secondaryHref"] = secondary_href
-    image_url = str(hero.get("imageUrl") or "").strip()
     if image_url:
         hero_payload["imageUrl"] = image_url
+        hero_payload["imageAlt"] = localized(
+            hero.get("imageAlt"),
+            site.display_name,
+        )
 
     return {
         "id": str(site.id),

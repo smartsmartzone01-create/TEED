@@ -28,7 +28,7 @@ function createWebsiteSite(businessId: string, accessToken: string) {
   return withCsrfRetry((csrfToken) => requestApi({ accessToken, body: {}, csrfToken, method: "POST", path: `${WEBSITE_BASE_PATH}/businesses/${businessId}/sites/`, schema: websiteSiteEnvelopeSchema }));
 }
 
-function updateWebsiteSite(businessId: string, siteId: string, values: { header?: unknown; navigation?: unknown }, accessToken: string) {
+function updateWebsiteSite(businessId: string, siteId: string, values: { header?: unknown; hero?: unknown; navigation?: unknown }, accessToken: string) {
   return withCsrfRetry((csrfToken) => requestApi({ accessToken, body: values, csrfToken, method: "PATCH", path: `${WEBSITE_BASE_PATH}/businesses/${businessId}/sites/${siteId}/`, schema: websiteSiteEnvelopeSchema }));
 }
 
