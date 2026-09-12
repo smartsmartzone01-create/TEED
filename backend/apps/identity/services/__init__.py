@@ -43,6 +43,12 @@ from .session import (
     revoke_refresh_session,
     rotate_refresh_token,
 )
+from .storefront_customer_registration import (
+    issue_storefront_customer_verification_challenge,
+    register_storefront_customer_with_email,
+    register_storefront_customer_with_phone,
+    verify_storefront_customer_verification_code,
+)
 
 __all__ = [
     "get_account_protection_recommendation",
@@ -52,6 +58,7 @@ __all__ = [
     "verify_phone_account_protection",
     "issue_email_verification_challenge",
     "issue_phone_verification_challenge",
+    "issue_storefront_customer_verification_challenge",
     "enqueue_email_delivery",
     "process_email_delivery",
     "process_email_deliveries",
@@ -59,8 +66,11 @@ __all__ = [
     "issue_token_pair",
     "register_email_user",
     "register_phone_user",
+    "register_storefront_customer_with_email",
+    "register_storefront_customer_with_phone",
     "verify_email_verification_code",
     "verify_phone_verification_code",
+    "verify_storefront_customer_verification_code",
     "complete_onboarding",
     "confirm_password_reset",
     "request_password_reset",
