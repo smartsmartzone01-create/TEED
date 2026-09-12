@@ -6,6 +6,10 @@ type StorefrontRuntimeConfig =
   | { demoMode: true; apiUrl: null; siteKey: null }
   | { demoMode: false; apiUrl: string; siteKey: string };
 
+type StorefrontFetchOptions = {
+  fresh?: boolean;
+};
+
 function storefrontRuntimeConfig(): StorefrontRuntimeConfig {
   const apiUrl = process.env.STOREFRONT_API_URL?.replace(/\/$/, "") || null;
   const siteKey = process.env.STOREFRONT_SITE_KEY?.trim() || null;
@@ -34,16 +38,19 @@ function unwrapData<T>(payload: T | { data: T }): T {
     : (payload as T);
 }
 
-export async function getStorefrontSite(): Promise<StorefrontSiteConfig> {
+export async function getStorefrontSite(
+  options: StorefrontFetchOptions = {},
+): Promise<StorefrontSiteConfig> {
   const config = storefrontRuntimeConfig();
 
   if (config.demoMode) {
     return demoStorefrontSite;
   }
 
-  const response = await fetch(`${publicSiteBase(config.apiUrl, config.siteKey)}/`, {
-    next: { revalidate: 60 },
-  });
+  const response = await fetch(
+    `${publicSiteBase(config.apiUrl, config.siteKey)}/`,
+    options.fresh ? { cache: "no-store" } : { next: { revalidate: 60 } },
+  );
 
   if (!response.ok) {
     throw new Error(`Storefront site request failed with status ${response.status}`);
@@ -53,16 +60,19 @@ export async function getStorefrontSite(): Promise<StorefrontSiteConfig> {
   return unwrapData(payload);
 }
 
-export async function getStorefrontProducts(): Promise<StorefrontProductListing[]> {
+export async function getStorefrontProducts(
+  options: StorefrontFetchOptions = {},
+): Promise<StorefrontProductListing[]> {
   const config = storefrontRuntimeConfig();
 
   if (config.demoMode) {
     return demoStorefrontProducts;
   }
 
-  const response = await fetch(`${publicSiteBase(config.apiUrl, config.siteKey)}/products/`, {
-    next: { revalidate: 30 },
-  });
+  const response = await fetch(
+    `${publicSiteBase(config.apiUrl, config.siteKey)}/products/`,
+    options.fresh ? { cache: "no-store" } : { next: { revalidate: 30 } },
+  );
 
   if (!response.ok) {
     throw new Error(`Storefront products request failed with status ${response.status}`);
