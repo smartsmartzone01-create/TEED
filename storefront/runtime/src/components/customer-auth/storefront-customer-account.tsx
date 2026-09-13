@@ -1,7 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 
+import { StorefrontGoogleSignIn } from "@/components/customer-auth/storefront-google-sign-in";
 import {
   getCurrentStorefrontCustomer,
   loginStorefrontCustomer,
@@ -89,6 +91,11 @@ export function StorefrontCustomerAccount({
     setErrorMessage(null);
   }
 
+  function changeMode(nextMode: AuthMode) {
+    setMode(nextMode);
+    clearFeedback();
+  }
+
   function showError(error: unknown) {
     if (error instanceof StorefrontCustomerRequestError) {
       setErrorMessage(error.message);
@@ -104,13 +111,26 @@ export function StorefrontCustomerAccount({
   async function handleAuthSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     clearFeedback();
-    setSubmitting(true);
 
     const form = new FormData(event.currentTarget);
     const password = String(form.get("password") || "");
     const email = String(form.get("email") || "").trim();
     const countryCode = String(form.get("country_code") || "TZ");
     const phoneNumber = String(form.get("phone_number") || "").trim();
+
+    if (mode === "register") {
+      const passwordConfirm = String(form.get("password_confirm") || "");
+      if (password !== passwordConfirm) {
+        setErrorMessage(
+          isSwahili
+            ? "Manenosiri hayafanani. Tafadhali jaribu tena."
+            : "Passwords do not match. Please try again.",
+        );
+        return;
+      }
+    }
+
+    setSubmitting(true);
 
     try {
       if (mode === "signin") {
@@ -227,12 +247,12 @@ export function StorefrontCustomerAccount({
   if (customer) {
     return (
       <section className="storefront-customer-auth-card storefront-customer-account-card">
-        <div>
+        <div className="storefront-customer-auth-card-intro">
           <p className="storefront-customer-auth-eyebrow">
             {isSwahili ? "Akaunti yako" : "Your account"}
           </p>
           <h1>{customerDisplayName(customer)}</h1>
-          <p className="storefront-customer-auth-muted">
+          <p>
             {isSwahili
               ? `Umeingia kwenye ${siteName}.`
               : `You are signed in to ${siteName}.`}
@@ -273,7 +293,11 @@ export function StorefrontCustomerAccount({
         </div>
 
         {message ? <p className="storefront-customer-auth-success">{message}</p> : null}
-        {errorMessage ? <p className="storefront-customer-auth-error">{errorMessage}</p> : null}
+        {errorMessage ? (
+          <p className="storefront-customer-auth-error" role="alert">
+            {errorMessage}
+          </p>
+        ) : null}
 
         <button
           className="storefront-customer-auth-secondary-button"
@@ -296,19 +320,20 @@ export function StorefrontCustomerAccount({
   if (pendingVerification) {
     return (
       <section className="storefront-customer-auth-card">
-        <p className="storefront-customer-auth-eyebrow">
-          {isSwahili ? "Thibitisha akaunti" : "Verify account"}
-        </p>
-        <h1>{isSwahili ? "Weka nambari ya uthibitisho" : "Enter your verification code"}</h1>
-        <p className="storefront-customer-auth-muted">
-          {pendingVerification.channel === "email"
-            ? isSwahili
-              ? `Nambari imetumwa kwa ${pendingVerification.email}.`
-              : `The code was sent to ${pendingVerification.email}.`
-            : isSwahili
-              ? `Nambari imetumwa kwa ${pendingVerification.phoneNumber}.`
-              : `The code was sent to ${pendingVerification.phoneNumber}.`}
-        </p>
+        <div className="storefront-customer-auth-card-intro">
+          <h1>
+            {isSwahili ? "Weka nambari ya uthibitisho" : "Enter your verification code"}
+          </h1>
+          <p>
+            {pendingVerification.channel === "email"
+              ? isSwahili
+                ? `Nambari imetumwa kwa ${pendingVerification.email}.`
+                : `The code was sent to ${pendingVerification.email}.`
+              : isSwahili
+                ? `Nambari imetumwa kwa ${pendingVerification.phoneNumber}.`
+                : `The code was sent to ${pendingVerification.phoneNumber}.`}
+          </p>
+        </div>
 
         <form className="storefront-customer-auth-form" onSubmit={handleVerificationSubmit}>
           <label>
@@ -323,7 +348,11 @@ export function StorefrontCustomerAccount({
             />
           </label>
           {message ? <p className="storefront-customer-auth-success">{message}</p> : null}
-          {errorMessage ? <p className="storefront-customer-auth-error">{errorMessage}</p> : null}
+          {errorMessage ? (
+            <p className="storefront-customer-auth-error" role="alert">
+              {errorMessage}
+            </p>
+          ) : null}
           <button className="storefront-customer-auth-primary-button" disabled={submitting} type="submit">
             {submitting
               ? isSwahili
@@ -349,36 +378,41 @@ export function StorefrontCustomerAccount({
     );
   }
 
+  const isSignIn = mode === "signin";
+
   return (
     <section className="storefront-customer-auth-card">
-      <h1>{isSwahili ? "Akaunti ya mteja" : "Customer account"}</h1>
-
-      <div className="storefront-customer-auth-tabs" aria-label={isSwahili ? "Chagua hatua" : "Choose action"}>
-        <button
-          aria-pressed={mode === "signin"}
-          onClick={() => {
-            setMode("signin");
-            clearFeedback();
-          }}
-          type="button"
-        >
-          {isSwahili ? "Ingia" : "Sign in"}
-        </button>
-        <button
-          aria-pressed={mode === "register"}
-          onClick={() => {
-            setMode("register");
-            clearFeedback();
-          }}
-          type="button"
-        >
-          {isSwahili ? "Jisajili" : "Create account"}
-        </button>
+      <div className="storefront-customer-auth-card-intro">
+        <h1>
+          {isSignIn
+            ? isSwahili
+              ? "Ingia"
+              : "Sign in"
+            : isSwahili
+              ? "Fungua akaunti"
+              : "Create account"}
+        </h1>
+        <p>
+          {isSignIn
+            ? isSwahili
+              ? `Ingia ili uendelee kwenye ${siteName}.`
+              : `Sign in to continue with ${siteName}.`
+            : isSwahili
+              ? `Fungua akaunti yako ya mteja kwenye ${siteName}.`
+              : `Create your customer account for ${siteName}.`}
+        </p>
       </div>
 
-      <div className="storefront-customer-channel-toggle">
+      <StorefrontGoogleSignIn locale={locale} />
+
+      <div
+        className="storefront-customer-auth-methods"
+        role="group"
+        aria-label={isSwahili ? "Njia ya kuingia" : "Authentication method"}
+      >
         <button
           aria-pressed={channel === "email"}
+          className="storefront-customer-auth-method-button"
           onClick={() => {
             setChannel("email");
             clearFeedback();
@@ -389,6 +423,7 @@ export function StorefrontCustomerAccount({
         </button>
         <button
           aria-pressed={channel === "phone"}
+          className="storefront-customer-auth-method-button"
           onClick={() => {
             setChannel("phone");
             clearFeedback();
@@ -400,7 +435,7 @@ export function StorefrontCustomerAccount({
       </div>
 
       <form className="storefront-customer-auth-form" onSubmit={handleAuthSubmit}>
-        {mode === "register" ? (
+        {!isSignIn ? (
           <div className="storefront-customer-name-grid">
             <label>
               <span>{isSwahili ? "Jina la kwanza" : "First name"}</span>
@@ -440,23 +475,53 @@ export function StorefrontCustomerAccount({
         <label>
           <span>{isSwahili ? "Nenosiri" : "Password"}</span>
           <input
-            autoComplete={mode === "signin" ? "current-password" : "new-password"}
+            autoComplete={isSignIn ? "current-password" : "new-password"}
             minLength={8}
             name="password"
             required
             type="password"
           />
+          {!isSignIn ? (
+            <small className="storefront-customer-auth-field-hint">
+              {isSwahili ? "Tumia angalau herufi 8." : "Use at least 8 characters."}
+            </small>
+          ) : null}
         </label>
 
+        {!isSignIn ? (
+          <label>
+            <span>{isSwahili ? "Thibitisha nenosiri" : "Confirm password"}</span>
+            <input
+              autoComplete="new-password"
+              minLength={8}
+              name="password_confirm"
+              required
+              type="password"
+            />
+          </label>
+        ) : null}
+
+        {isSignIn ? (
+          <div className="storefront-customer-auth-forgot-row">
+            <Link href="/account/forgot-password">
+              {isSwahili ? "Umesahau nenosiri?" : "Forgot password?"}
+            </Link>
+          </div>
+        ) : null}
+
         {message ? <p className="storefront-customer-auth-success">{message}</p> : null}
-        {errorMessage ? <p className="storefront-customer-auth-error">{errorMessage}</p> : null}
+        {errorMessage ? (
+          <p className="storefront-customer-auth-error" role="alert">
+            {errorMessage}
+          </p>
+        ) : null}
 
         <button className="storefront-customer-auth-primary-button" disabled={submitting} type="submit">
           {submitting
             ? isSwahili
               ? "Tafadhali subiri..."
               : "Please wait..."
-            : mode === "signin"
+            : isSignIn
               ? isSwahili
                 ? "Ingia"
                 : "Sign in"
@@ -465,6 +530,28 @@ export function StorefrontCustomerAccount({
                 : "Create account"}
         </button>
       </form>
+
+      <p className="storefront-customer-auth-switch">
+        {isSignIn
+          ? isSwahili
+            ? "Huna akaunti?"
+            : "No account yet?"
+          : isSwahili
+            ? "Tayari una akaunti?"
+            : "Already have an account?"}{" "}
+        <button
+          onClick={() => changeMode(isSignIn ? "register" : "signin")}
+          type="button"
+        >
+          {isSignIn
+            ? isSwahili
+              ? "Fungua akaunti"
+              : "Create account"
+            : isSwahili
+              ? "Ingia"
+              : "Sign in"}
+        </button>
+      </p>
     </section>
   );
 }

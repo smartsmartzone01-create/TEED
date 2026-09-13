@@ -3,7 +3,6 @@
 import Script from "next/script";
 import { useEffect, useRef, useState } from "react";
 
-import { getCurrentStorefrontCustomer } from "@/services/storefront-customer-auth-client";
 import {
   getStorefrontGoogleConfig,
   loginStorefrontCustomerWithGoogle,
@@ -45,30 +44,18 @@ export function StorefrontGoogleSignIn({ locale }: { locale: StorefrontLocale })
   const buttonRef = useRef<HTMLDivElement | null>(null);
   const [clientId, setClientId] = useState<string | null>(null);
   const [scriptReady, setScriptReady] = useState(false);
-  const [authenticated, setAuthenticated] = useState<boolean | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
-    void getCurrentStorefrontCustomer()
-      .then((customer) => {
-        if (!active) {
-          return;
+    void getStorefrontGoogleConfig()
+      .then((config) => {
+        if (active && config.enabled && config.client_id) {
+          setClientId(config.client_id);
         }
-        if (customer) {
-          setAuthenticated(true);
-          return;
-        }
-        setAuthenticated(false);
-        return getStorefrontGoogleConfig().then((config) => {
-          if (active && config.enabled && config.client_id) {
-            setClientId(config.client_id);
-          }
-        });
       })
       .catch(() => {
         if (active) {
-          setAuthenticated(false);
           setErrorMessage(
             isSwahili
               ? "Kuingia kwa Google hakupatikani kwa sasa."
@@ -90,6 +77,7 @@ export function StorefrontGoogleSignIn({ locale }: { locale: StorefrontLocale })
       return;
     }
 
+    const measuredWidth = Math.floor(buttonRef.current.clientWidth || 320);
     buttonRef.current.replaceChildren();
     identity.initialize({
       client_id: clientId,
@@ -118,11 +106,11 @@ export function StorefrontGoogleSignIn({ locale }: { locale: StorefrontLocale })
       text: "continue_with",
       shape: "rectangular",
       locale: isSwahili ? "sw" : "en",
-      width: 320,
+      width: Math.min(Math.max(measuredWidth, 200), 400),
     });
   }, [clientId, isSwahili, scriptReady]);
 
-  if (authenticated !== false || (!clientId && !errorMessage)) {
+  if (!clientId && !errorMessage) {
     return null;
   }
 
@@ -142,11 +130,13 @@ export function StorefrontGoogleSignIn({ locale }: { locale: StorefrontLocale })
             src="https://accounts.google.com/gsi/client"
             strategy="afterInteractive"
           />
-          <div ref={buttonRef} />
+          <div className="storefront-google-auth-button" ref={buttonRef} />
         </>
       ) : null}
       {errorMessage ? (
-        <p className="storefront-customer-auth-error">{errorMessage}</p>
+        <p className="storefront-customer-auth-error" role="alert">
+          {errorMessage}
+        </p>
       ) : null}
     </div>
   );
