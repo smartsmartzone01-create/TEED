@@ -43,6 +43,11 @@ from .session import (
     revoke_refresh_session,
     rotate_refresh_token,
 )
+from .storefront_customer_password_reset import (
+    confirm_storefront_customer_password_reset,
+    request_storefront_customer_password_reset,
+    verify_storefront_customer_password_reset_code,
+)
 from .storefront_customer_registration import (
     issue_storefront_customer_verification_challenge,
     register_storefront_customer_with_email,
@@ -85,6 +90,9 @@ __all__ = [
     "confirm_password_reset",
     "request_password_reset",
     "verify_password_reset_code",
+    "confirm_storefront_customer_password_reset",
+    "request_storefront_customer_password_reset",
+    "verify_storefront_customer_password_reset_code",
     "authenticated_login_result",
     "authenticate_google_user",
     "login_email_user",

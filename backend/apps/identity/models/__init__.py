@@ -7,6 +7,7 @@ from .security_event import IdentitySecurityEvent
 from .session import UserSession
 from .storefront_customer import (
     StorefrontCustomer,
+    StorefrontCustomerPasswordResetGrant,
     StorefrontCustomerSession,
     StorefrontCustomerVerificationChallenge,
 )
@@ -20,6 +21,7 @@ __all__ = [
     "IdentitySecurityEvent",
     "PasswordResetGrant",
     "StorefrontCustomer",
+    "StorefrontCustomerPasswordResetGrant",
     "StorefrontCustomerSession",
     "StorefrontCustomerVerificationChallenge",
     "User",

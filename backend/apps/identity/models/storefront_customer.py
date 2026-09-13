@@ -142,6 +142,34 @@ class StorefrontCustomerVerificationChallenge(BaseModel):
         )
 
 
+class StorefrontCustomerPasswordResetGrant(BaseModel):
+    """Single-use authority to replace one storefront customer's password."""
+
+    customer = models.ForeignKey(
+        StorefrontCustomer,
+        on_delete=models.CASCADE,
+        related_name="password_reset_grants",
+    )
+    challenge_id = models.UUIDField(db_index=True)
+    token_digest = models.CharField(max_length=64, unique=True)
+    expires_at = models.DateTimeField(db_index=True)
+    consumed_at = models.DateTimeField(null=True, blank=True, db_index=True)
+    device_id = models.UUIDField(null=True, blank=True)
+
+    class Meta:
+        db_table = "identity_storefront_customer_password_reset_grants"
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(
+                fields=["customer", "consumed_at", "expires_at"],
+                name="identity_sf_reset_grant_idx",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.customer_id}:{self.created_at}"
+
+
 class StorefrontCustomerSession(BaseModel):
     """Server-side authority for a storefront customer refresh-token family."""
 
