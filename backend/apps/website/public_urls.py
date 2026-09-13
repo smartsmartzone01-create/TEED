@@ -10,6 +10,8 @@ from .public_auth_api import (
     PublicStorefrontEmailLoginAPIView,
     PublicStorefrontEmailRegistrationAPIView,
     PublicStorefrontEmailVerificationAPIView,
+    PublicStorefrontGoogleAuthenticationAPIView,
+    PublicStorefrontGoogleConfigAPIView,
     PublicStorefrontPhoneLoginAPIView,
     PublicStorefrontPhoneRegistrationAPIView,
     PublicStorefrontPhoneVerificationAPIView,
@@ -69,6 +71,16 @@ urlpatterns = [
         "sites/<uuid:site_key>/auth/login/phone/",
         PublicStorefrontPhoneLoginAPIView.as_view(),
         name="auth-login-phone",
+    ),
+    path(
+        "sites/<uuid:site_key>/auth/google/config/",
+        PublicStorefrontGoogleConfigAPIView.as_view(),
+        name="auth-google-config",
+    ),
+    path(
+        "sites/<uuid:site_key>/auth/login/google/",
+        PublicStorefrontGoogleAuthenticationAPIView.as_view(),
+        name="auth-login-google",
     ),
     path(
         "sites/<uuid:site_key>/auth/password-reset/request/",

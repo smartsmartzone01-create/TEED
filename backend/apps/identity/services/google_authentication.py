@@ -28,6 +28,12 @@ def _google_client_id() -> str:
     return config("GOOGLE_CLIENT_ID", default="").strip()
 
 
+def get_google_client_id() -> str:
+    """Return the configured public Google OAuth client ID."""
+
+    return _google_client_id()
+
+
 def _verify_google_credential(credential: str) -> dict:
     client_id = _google_client_id()
     if not client_id:
@@ -49,10 +55,22 @@ def _verify_google_credential(credential: str) -> dict:
     return claims
 
 
+def verify_google_credential(credential: str) -> dict:
+    """Verify a Google ID credential using Tunakuza's configured client."""
+
+    return _verify_google_credential(credential)
+
+
 def _google_is_authoritative_for_email(*, email: str, claims: dict) -> bool:
     if not claims.get("email_verified"):
         return False
     return email.endswith("@gmail.com") or bool(claims.get("hd"))
+
+
+def google_is_authoritative_for_email(*, email: str, claims: dict) -> bool:
+    """Apply the same Google-email linking policy across identity realms."""
+
+    return _google_is_authoritative_for_email(email=email, claims=claims)
 
 
 def _populate_profile_if_missing(*, user: User, claims: dict) -> User:

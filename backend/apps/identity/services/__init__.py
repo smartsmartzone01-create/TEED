@@ -20,7 +20,7 @@ from .email_verification import (
     issue_email_verification_challenge,
     verify_email_verification_code,
 )
-from .google_authentication import authenticate_google_user
+from .google_authentication import authenticate_google_user, get_google_client_id
 from .onboarding import complete_onboarding
 from .password_reset import (
     confirm_password_reset,
@@ -42,6 +42,9 @@ from .session import (
     revoke_all_user_sessions,
     revoke_refresh_session,
     rotate_refresh_token,
+)
+from .storefront_customer_google_authentication import (
+    authenticate_storefront_google_customer,
 )
 from .storefront_customer_password_reset import (
     confirm_storefront_customer_password_reset,
@@ -95,6 +98,8 @@ __all__ = [
     "verify_storefront_customer_password_reset_code",
     "authenticated_login_result",
     "authenticate_google_user",
+    "authenticate_storefront_google_customer",
+    "get_google_client_id",
     "login_email_user",
     "login_phone_user",
     "revoke_all_user_sessions",

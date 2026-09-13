@@ -21,13 +21,16 @@ from apps.identity.serializers.storefront_customer import (
     StorefrontEmailLoginSerializer,
     StorefrontEmailRegistrationSerializer,
     StorefrontEmailVerificationSerializer,
+    StorefrontGoogleAuthenticationSerializer,
     StorefrontPhoneLoginSerializer,
     StorefrontPhoneRegistrationSerializer,
     StorefrontPhoneVerificationSerializer,
     StorefrontRefreshCredentialSerializer,
 )
 from apps.identity.services import (
+    authenticate_storefront_google_customer,
     decode_storefront_customer_refresh_token,
+    get_google_client_id,
     issue_storefront_customer_token_pair,
     login_storefront_customer_with_email,
     login_storefront_customer_with_phone,
@@ -266,6 +269,48 @@ class PublicStorefrontPhoneLoginAPIView(APIView):
         )
         return _authenticated_response(
             message="Signed in successfully.",
+            customer=result["customer"],
+            tokens=result["tokens"],
+        )
+
+
+class PublicStorefrontGoogleConfigAPIView(APIView):
+    authentication_classes = []
+    permission_classes = [AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "storefront_public"
+
+    def get(self, request, site_key):
+        public_site(site_key)
+        client_id = get_google_client_id()
+        return _no_store(
+            SuccessResponse(
+                message="Storefront Google authentication configuration retrieved.",
+                data={
+                    "enabled": bool(client_id),
+                    "client_id": client_id or None,
+                },
+            )
+        )
+
+
+class PublicStorefrontGoogleAuthenticationAPIView(APIView):
+    authentication_classes = []
+    permission_classes = [AllowAny]
+    throttle_classes = [StorefrontLoginIPThrottle]
+    serializer_class = StorefrontGoogleAuthenticationSerializer
+
+    def post(self, request, site_key):
+        site = public_site(site_key)
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        result = authenticate_storefront_google_customer(
+            business=site.business,
+            **serializer.validated_data,
+            **get_request_metadata(request),
+        )
+        return _authenticated_response(
+            message="Signed in with Google successfully.",
             customer=result["customer"],
             tokens=result["tokens"],
         )

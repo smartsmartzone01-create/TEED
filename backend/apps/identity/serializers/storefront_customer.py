@@ -1,7 +1,11 @@
 from common.localization import SUPPORTED_COUNTRY_CHOICES
 from rest_framework import serializers
 
-from .authentication import EmailLoginSerializer, PhoneLoginSerializer
+from .authentication import (
+    EmailLoginSerializer,
+    GoogleAuthenticationSerializer,
+    PhoneLoginSerializer,
+)
 from .phone import normalize_phone_number
 from .registration import EmailRegistrationSerializer, PhoneRegistrationSerializer
 
@@ -21,6 +25,10 @@ class StorefrontEmailLoginSerializer(EmailLoginSerializer):
 
 
 class StorefrontPhoneLoginSerializer(PhoneLoginSerializer):
+    pass
+
+
+class StorefrontGoogleAuthenticationSerializer(GoogleAuthenticationSerializer):
     pass
 
 

@@ -72,7 +72,51 @@ class StorefrontCustomer(AbstractBaseUser, BaseModel):
 
     @property
     def is_identity_verified(self):
-        return self.is_email_verified or self.is_phone_verified
+        return (
+            self.is_email_verified
+            or self.is_phone_verified
+            or self.external_identities.filter(is_deleted=False).exists()
+        )
+
+
+class StorefrontCustomerExternalIdentity(BaseModel):
+    """External provider identity scoped to one merchant customer realm."""
+
+    class Provider(models.TextChoices):
+        GOOGLE = "google", "Google"
+
+    business = models.ForeignKey(
+        "workspaces.Business",
+        on_delete=models.CASCADE,
+        related_name="storefront_customer_external_identities",
+    )
+    customer = models.ForeignKey(
+        StorefrontCustomer,
+        on_delete=models.CASCADE,
+        related_name="external_identities",
+    )
+    provider = models.CharField(max_length=32, choices=Provider.choices)
+    subject = models.CharField(max_length=255)
+    email_snapshot = models.EmailField(max_length=254, blank=True, default="")
+
+    class Meta:
+        db_table = "identity_storefront_customer_external_identities"
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["business", "provider", "subject"],
+                condition=models.Q(is_deleted=False),
+                name="identity_sf_ext_subject_uniq",
+            ),
+            models.UniqueConstraint(
+                fields=["customer", "provider"],
+                condition=models.Q(is_deleted=False),
+                name="identity_sf_ext_customer_uniq",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.provider}:{self.subject}"
 
 
 class StorefrontCustomerVerificationChallenge(BaseModel):
