@@ -34,6 +34,10 @@ function customerDisplayName(customer: StorefrontCustomerProfile): string {
   return name || customer.email || customer.phone_number || "Customer";
 }
 
+function redirectAfterAuthentication() {
+  window.location.replace("/");
+}
+
 export function StorefrontCustomerAccount({
   locale,
   siteName,
@@ -110,7 +114,7 @@ export function StorefrontCustomerAccount({
 
     try {
       if (mode === "signin") {
-        const signedInCustomer = await loginStorefrontCustomer(
+        await loginStorefrontCustomer(
           channel,
           channel === "email"
             ? { email, password }
@@ -120,8 +124,7 @@ export function StorefrontCustomerAccount({
                 password,
               },
         );
-        setCustomer(signedInCustomer);
-        setMessage(isSwahili ? "Umeingia kwenye akaunti yako." : "You are signed in.");
+        redirectAfterAuthentication();
         return;
       }
 
@@ -177,7 +180,7 @@ export function StorefrontCustomerAccount({
     const code = String(form.get("code") || "").trim();
 
     try {
-      const verifiedCustomer = await verifyStorefrontCustomer(
+      await verifyStorefrontCustomer(
         pendingVerification.channel,
         pendingVerification.channel === "email"
           ? { email: pendingVerification.email || "", code }
@@ -187,13 +190,7 @@ export function StorefrontCustomerAccount({
               code,
             },
       );
-      setCustomer(verifiedCustomer);
-      setPendingVerification(null);
-      setMessage(
-        isSwahili
-          ? "Akaunti yako imethibitishwa na umeingia."
-          : "Your account is verified and you are signed in.",
-      );
+      redirectAfterAuthentication();
     } catch (error) {
       showError(error);
     } finally {
@@ -354,23 +351,7 @@ export function StorefrontCustomerAccount({
 
   return (
     <section className="storefront-customer-auth-card">
-      <p className="storefront-customer-auth-eyebrow">
-        {isSwahili ? "Akaunti ya mteja" : "Customer account"}
-      </p>
-      <h1>
-        {mode === "signin"
-          ? isSwahili
-            ? "Ingia kwenye akaunti yako"
-            : "Sign in to your account"
-          : isSwahili
-            ? "Fungua akaunti"
-            : "Create your account"}
-      </h1>
-      <p className="storefront-customer-auth-muted">
-        {isSwahili
-          ? "Unaweza kuendelea kuangalia bidhaa bila kuingia. Akaunti inahitajika unapoweka oda."
-          : "You can keep browsing without signing in. An account is required when you place an order."}
-      </p>
+      <h1>{isSwahili ? "Akaunti ya mteja" : "Customer account"}</h1>
 
       <div className="storefront-customer-auth-tabs" aria-label={isSwahili ? "Chagua hatua" : "Choose action"}>
         <button
