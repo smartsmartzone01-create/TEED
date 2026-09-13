@@ -9,6 +9,16 @@
   justify-content: center;
 }
 
+.storefront-customer-auth-stack {
+  display: grid;
+  width: min(100%, 620px);
+  gap: 8px;
+}
+
+.storefront-customer-auth-stack > .storefront-customer-auth-card {
+  width: 100%;
+}
+
 .storefront-customer-auth-card {
   width: min(100%, 620px);
   border: 1px solid rgba(15, 23, 42, 0.1);
@@ -137,11 +147,15 @@
 }
 
 .storefront-customer-auth-primary-button {
+  display: inline-flex;
   min-height: 50px;
+  align-items: center;
+  justify-content: center;
   border-radius: 14px;
   background: var(--storefront-accent);
   color: #ffffff;
   padding: 0 20px;
+  text-decoration: none;
 }
 
 .storefront-customer-auth-secondary-button {
@@ -159,6 +173,7 @@
   background: transparent;
   color: var(--storefront-accent);
   padding: 8px 12px;
+  text-decoration: none;
 }
 
 .storefront-customer-auth-primary-button:disabled,

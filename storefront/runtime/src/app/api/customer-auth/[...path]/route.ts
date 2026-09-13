@@ -15,6 +15,8 @@ import {
 
 export const dynamic = "force-dynamic";
 
+const STOREFRONT_PASSWORD_RESET_COOKIE = "tunakuza_storefront_password_reset";
+
 const FORWARDED_POST_PATHS = new Set([
   "register/email",
   "register/phone",
@@ -22,11 +24,15 @@ const FORWARDED_POST_PATHS = new Set([
   "verify/phone",
   "login/email",
   "login/phone",
+  "password-reset/request",
+  "password-reset/verify",
 ]);
 
 type RouteContext = {
   params: Promise<{ path: string[] }>;
 };
+
+type JsonObject = Record<string, unknown>;
 
 async function readBackendPayload(response: Response): Promise<unknown> {
   const text = await response.text();
@@ -80,6 +86,50 @@ function routePath(parts: string[]): string {
   return parts.join("/");
 }
 
+function isJsonObject(value: unknown): value is JsonObject {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function passwordResetGrant(payload: unknown): { grant: string; maxAge: number } | null {
+  if (!isJsonObject(payload) || !isJsonObject(payload.data)) {
+    return null;
+  }
+  const grant = payload.data.reset_grant;
+  const maxAge = payload.data.reset_grant_expires_in;
+  if (typeof grant !== "string" || typeof maxAge !== "number") {
+    return null;
+  }
+  return { grant, maxAge: Math.max(0, Math.floor(maxAge)) };
+}
+
+function stripPasswordResetGrant(payload: unknown): unknown {
+  if (!isJsonObject(payload) || !isJsonObject(payload.data)) {
+    return payload;
+  }
+  const data = { ...payload.data };
+  delete data.reset_grant;
+  delete data.reset_grant_expires_in;
+  return { ...payload, data };
+}
+
+function setPasswordResetCookie(
+  response: NextResponse,
+  grant: string,
+  maxAge: number,
+): void {
+  response.cookies.set(STOREFRONT_PASSWORD_RESET_COOKIE, grant, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge,
+  });
+}
+
+function clearPasswordResetCookie(response: NextResponse): void {
+  response.cookies.delete(STOREFRONT_PASSWORD_RESET_COOKIE);
+}
+
 async function forwardAuthPost(request: NextRequest, path: string): Promise<NextResponse> {
   const body = await request.text();
   const backendResponse = await requestStorefrontCustomerAuth(path, {
@@ -87,18 +137,54 @@ async function forwardAuthPost(request: NextRequest, path: string): Promise<Next
     body: body || "{}",
   });
   const payload = await readBackendPayload(backendResponse);
-  const response = jsonResponse(
-    stripStorefrontCustomerAuthTokens(payload),
-    backendResponse.status,
-  );
+  const responsePayload =
+    path === "password-reset/verify"
+      ? stripPasswordResetGrant(payload)
+      : stripStorefrontCustomerAuthTokens(payload);
+  const response = jsonResponse(responsePayload, backendResponse.status);
 
   if (backendResponse.ok) {
-    const tokens = extractStorefrontCustomerAuthTokens(payload);
-    if (tokens) {
-      setStorefrontCustomerSessionCookies(response, tokens);
+    if (path === "password-reset/verify") {
+      const resetGrant = passwordResetGrant(payload);
+      if (resetGrant) {
+        setPasswordResetCookie(response, resetGrant.grant, resetGrant.maxAge);
+      }
+    } else {
+      const tokens = extractStorefrontCustomerAuthTokens(payload);
+      if (tokens) {
+        setStorefrontCustomerSessionCookies(response, tokens);
+      }
     }
   }
 
+  return response;
+}
+
+async function confirmPasswordReset(request: NextRequest): Promise<NextResponse> {
+  const resetGrant = request.cookies.get(STOREFRONT_PASSWORD_RESET_COOKIE)?.value;
+  if (!resetGrant) {
+    return errorResponse("The password reset session has expired. Request a new code.", 400);
+  }
+
+  let body: JsonObject;
+  try {
+    const parsed = JSON.parse((await request.text()) || "{}") as unknown;
+    body = isJsonObject(parsed) ? parsed : {};
+  } catch {
+    body = {};
+  }
+
+  const backendResponse = await requestStorefrontCustomerAuth("password-reset/confirm", {
+    method: "POST",
+    body: JSON.stringify({ ...body, reset_grant: resetGrant }),
+  });
+  const payload = await readBackendPayload(backendResponse);
+  const response = jsonResponse(payload, backendResponse.status);
+
+  if (backendResponse.ok) {
+    clearPasswordResetCookie(response);
+    clearStorefrontCustomerSessionCookies(response);
+  }
   return response;
 }
 
@@ -225,6 +311,9 @@ export async function POST(request: NextRequest, context: RouteContext): Promise
   try {
     if (FORWARDED_POST_PATHS.has(target)) {
       return await forwardAuthPost(request, target);
+    }
+    if (target === "password-reset/confirm") {
+      return await confirmPasswordReset(request);
     }
     if (target === "refresh") {
       return await refreshSession(request);

@@ -16,6 +16,11 @@ from .public_auth_api import (
     PublicStorefrontSessionLogoutAPIView,
     PublicStorefrontSessionRefreshAPIView,
 )
+from .public_password_reset_api import (
+    PublicStorefrontPasswordResetConfirmAPIView,
+    PublicStorefrontPasswordResetRequestAPIView,
+    PublicStorefrontPasswordResetVerifyAPIView,
+)
 
 app_name = "website-public"
 
@@ -64,6 +69,21 @@ urlpatterns = [
         "sites/<uuid:site_key>/auth/login/phone/",
         PublicStorefrontPhoneLoginAPIView.as_view(),
         name="auth-login-phone",
+    ),
+    path(
+        "sites/<uuid:site_key>/auth/password-reset/request/",
+        PublicStorefrontPasswordResetRequestAPIView.as_view(),
+        name="auth-password-reset-request",
+    ),
+    path(
+        "sites/<uuid:site_key>/auth/password-reset/verify/",
+        PublicStorefrontPasswordResetVerifyAPIView.as_view(),
+        name="auth-password-reset-verify",
+    ),
+    path(
+        "sites/<uuid:site_key>/auth/password-reset/confirm/",
+        PublicStorefrontPasswordResetConfirmAPIView.as_view(),
+        name="auth-password-reset-confirm",
     ),
     path(
         "sites/<uuid:site_key>/auth/session/refresh/",

@@ -13,6 +13,18 @@ export type StorefrontCustomerSessionResult = {
   customer: StorefrontCustomerProfile;
 };
 
+export type StorefrontPasswordResetRequestResult = {
+  next_step: "verify_reset_code";
+};
+
+export type StorefrontPasswordResetVerifyResult = {
+  next_step: "choose_new_password";
+};
+
+export type StorefrontPasswordResetConfirmResult = {
+  next_step: "sign_in";
+};
+
 export class StorefrontCustomerRequestError extends Error {
   constructor(
     message: string,
@@ -103,6 +115,45 @@ export async function loginStorefrontCustomer(
     },
   );
   return response.data.customer;
+}
+
+export async function requestStorefrontCustomerPasswordReset(
+  payload: Record<string, string>,
+): Promise<StorefrontPasswordResetRequestResult> {
+  const response = await requestCustomerAuth<StorefrontPasswordResetRequestResult>(
+    "password-reset/request",
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+  );
+  return response.data;
+}
+
+export async function verifyStorefrontCustomerPasswordReset(
+  payload: Record<string, string>,
+): Promise<StorefrontPasswordResetVerifyResult> {
+  const response = await requestCustomerAuth<StorefrontPasswordResetVerifyResult>(
+    "password-reset/verify",
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+  );
+  return response.data;
+}
+
+export async function confirmStorefrontCustomerPasswordReset(
+  payload: Record<string, string>,
+): Promise<StorefrontPasswordResetConfirmResult> {
+  const response = await requestCustomerAuth<StorefrontPasswordResetConfirmResult>(
+    "password-reset/confirm",
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+  );
+  return response.data;
 }
 
 export async function logoutStorefrontCustomer(): Promise<void> {
