@@ -43,7 +43,7 @@
 .commerce-classic-categories-heading h2 { margin: 0; font-size: clamp(1.35rem, 2.3vw, 1.9rem); letter-spacing: -0.03em; }
 .commerce-classic-categories-heading .text-link { font-size: .82rem; font-weight: 700; }
 .commerce-classic-categories-scroller { position: relative; }
-.commerce-classic-category-rail { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(104px, 128px); gap: 44px; overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none; padding: 2px 8px 6px; }
+.commerce-classic-category-rail { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(104px, 128px); gap: 44px; overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none; padding: 2px 8px 6px; justify-content: center; justify-content: safe center; }
 .commerce-classic-category-rail::-webkit-scrollbar { display: none; }
 .commerce-classic-category-item { min-width: 0; scroll-snap-align: start; text-align: center; }
 .commerce-classic-category-media { height: 84px; width: 100%; box-sizing: border-box; padding: 10px; display: block; overflow: hidden; background: transparent; }
