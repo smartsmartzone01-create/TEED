@@ -30,6 +30,16 @@ export type StorefrontFeaturedSlide = {
   textColor: string;
 };
 
+export type StorefrontCategory = {
+  id: string;
+  source: "standalone" | "family";
+  familyId?: string;
+  title: LocalizedText;
+  description: LocalizedText;
+  href: string;
+  imageUrl?: string;
+};
+
 export type StorefrontMoney = {
   amount: string;
   currency: string;
@@ -70,6 +80,7 @@ export type StorefrontProductListing = {
   brand?: string;
   badge?: LocalizedText;
   primaryImageUrl: string;
+  familyIds: string[];
   options: StorefrontProductOption[];
   skus: StorefrontSku[];
 };
@@ -113,6 +124,12 @@ export type StorefrontSiteConfig = {
     enabled: boolean;
     items: StorefrontFeaturedSlide[];
     rotationMs: number;
+  };
+  categories: {
+    enabled: boolean;
+    title: LocalizedText;
+    items: StorefrontCategory[];
+    viewAllHref: string;
   };
   services: StorefrontServiceHighlight[];
   newsletter: {
