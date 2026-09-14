@@ -143,12 +143,42 @@ def _serialize_featured_item(item, index, listing_routes):
     return payload
 
 
+def _serialize_category_item(item, index):
+    if not isinstance(item, dict):
+        return None
+    title = localized(item.get("title"))
+    if not any(value.strip() for value in title.values()):
+        return None
+
+    source = "family" if item.get("source") == "family" else "standalone"
+    family_id = str(item.get("familyId") or "").strip()
+    raw_href = str(item.get("href") or "").strip()
+    href = f"/products?family={family_id}" if source == "family" and family_id else raw_href
+    if not href:
+        href = "/products"
+
+    payload = {
+        "id": str(item.get("id") or f"category-{index + 1}"),
+        "source": source,
+        "title": title,
+        "description": localized(item.get("description")),
+        "href": href,
+    }
+    if family_id:
+        payload["familyId"] = family_id
+    image_url = str(item.get("imageUrl") or "").strip()
+    if image_url:
+        payload["imageUrl"] = image_url
+    return payload
+
+
 def serialize_site(site: WebsiteSite):
     header = site.header if isinstance(site.header, dict) else {}
     hero = site.hero if isinstance(site.hero, dict) else {}
     featured_products = (
         site.featured_products if isinstance(site.featured_products, dict) else {}
     )
+    categories = site.categories if isinstance(site.categories, dict) else {}
     newsletter = site.newsletter if isinstance(site.newsletter, dict) else {}
     supported_locales = [
         locale
@@ -272,6 +302,14 @@ def serialize_site(site: WebsiteSite):
                 if len(featured_items) == 4:
                     break
 
+    category_items = []
+    raw_categories = categories.get("items")
+    if isinstance(raw_categories, list):
+        for index, item in enumerate(raw_categories[:30]):
+            serialized = _serialize_category_item(item, index)
+            if serialized is not None:
+                category_items.append(serialized)
+
     return {
         "id": str(site.id),
         "businessId": str(site.business_id),
@@ -292,6 +330,15 @@ def serialize_site(site: WebsiteSite):
             "enabled": bool(featured_products.get("enabled", True)),
             "items": featured_items,
             "rotationMs": 5000,
+        },
+        "categories": {
+            "enabled": bool(categories.get("enabled", True)),
+            "title": localized(
+                categories.get("title"),
+                "Products",
+            ),
+            "items": category_items,
+            "viewAllHref": "/products",
         },
         "services": services,
         "newsletter": {
@@ -349,6 +396,7 @@ def _merge_option(options, incoming):
 
 def serialize_listing(listing: WebsiteListing):
     options = []
+    family_ids = []
     for index, option in enumerate(
         listing.options if isinstance(listing.options, list) else []
     ):
@@ -360,6 +408,11 @@ def serialize_listing(listing: WebsiteListing):
     for variant in listing.variants.all():
         if not variant.is_published:
             continue
+        product = variant.valid_commerce_product()
+        if product is not None and product.family_id:
+            family_id = str(product.family_id)
+            if family_id not in family_ids:
+                family_ids.append(family_id)
         derived_options, resolved_variants = resolve_storefront_variant(variant)
         for derived_option in derived_options:
             _merge_option(options, derived_option)
@@ -372,6 +425,7 @@ def serialize_listing(listing: WebsiteListing):
         "shortDescription": localized(listing.short_description),
         "description": localized(listing.description),
         "primaryImageUrl": listing.resolved_primary_image_url(),
+        "familyIds": family_ids,
         "options": options,
         "skus": variants,
     }
