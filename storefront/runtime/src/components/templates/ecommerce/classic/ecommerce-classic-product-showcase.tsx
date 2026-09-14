@@ -123,13 +123,12 @@ export function EcommerceClassicProductShowcase({
       </div>
 
       {hasLoop ? (
-        <div className="commerce-classic-showcase-controls page-shell">
-          <div className="commerce-classic-showcase-dots" aria-hidden="true">
+        <div className="commerce-classic-showcase-controls" aria-hidden="true">
+          <div className="commerce-classic-showcase-dots">
             {slides.map((slide, index) => (
               <span className={index === activeIndex ? "is-active" : ""} key={slide.id} />
             ))}
           </div>
-          <button aria-label={locale === "sw" ? "Slide inayofuata" : "Next slide"} disabled={trackIndex === slides.length} onClick={() => setTrackIndex((current) => current < slides.length ? current + 1 : current)} type="button">›</button>
         </div>
       ) : null}
     </section>
