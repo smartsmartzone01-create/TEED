@@ -36,10 +36,11 @@ export function ProductCard({
       : "Price on request";
 
   return (
-    <article className="product-card">
+    <article className="product-card product-card-store">
       <Link href={`/products/${product.slug}`} className="product-card-link">
         <div className="product-card-media">
           {product.badge ? <span className="product-badge">{localized(product.badge, locale)}</span> : null}
+          <span className="product-save-toggle" aria-hidden="true">♡</span>
           {imageUrl ? (
             <StorefrontImage
               src={imageUrl}
@@ -54,14 +55,17 @@ export function ProductCard({
           )}
         </div>
         <div className="product-card-copy">
+          {product.brand ? <p className="product-brand">{product.brand}</p> : null}
           <h3>{productTitle}</h3>
           <p className="product-card-description">{localized(product.shortDescription, locale)}</p>
-          <div className="product-card-meta">
+          <div className="product-card-price-row">
             <strong>{priceLabel}</strong>
             <span className={isAvailable ? "availability-dot in-stock" : "availability-dot out-of-stock"}>
               {isAvailable ? (locale === "sw" ? "Inapatikana" : "Available") : locale === "sw" ? "Imeisha" : "Sold out"}
             </span>
           </div>
+          <p className="product-trade-note">{locale === "sw" ? "Pata punguzo kupitia trade-in" : "Get trade-in at a discount"}</p>
+          <span className="product-buy-button">{locale === "sw" ? "Nunua sasa" : "Buy now"}</span>
         </div>
       </Link>
     </article>
