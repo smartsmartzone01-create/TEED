@@ -45,6 +45,7 @@ export function EcommerceClassicProductShowcase({
   rotationMs: number;
 }) {
   const [activeIndex, setActiveIndex] = useState(0);
+  const safeActiveIndex = activeIndex < slides.length ? activeIndex : 0;
 
   useEffect(() => {
     if (slides.length < 2) return;
@@ -54,16 +55,12 @@ export function EcommerceClassicProductShowcase({
     return () => window.clearInterval(timer);
   }, [rotationMs, slides.length]);
 
-  useEffect(() => {
-    if (activeIndex >= slides.length) setActiveIndex(0);
-  }, [activeIndex, slides.length]);
-
   if (!slides.length) return null;
 
   return (
     <section id="popular" className="commerce-classic-showcase" aria-label={locale === "sw" ? "Bidhaa maalum" : "Featured showcase"}>
       <div className="commerce-classic-showcase-viewport" aria-live="polite">
-        <div className="commerce-classic-showcase-track" style={{ transform: `translateX(-${activeIndex * 100}%)` }}>
+        <div className="commerce-classic-showcase-track" style={{ transform: `translateX(-${safeActiveIndex * 100}%)` }}>
           {slides.map((slide) => {
             const title = slideTitle(slide, locale);
             const description = slideDescription(slide, locale);
@@ -100,7 +97,7 @@ export function EcommerceClassicProductShowcase({
           <button aria-label={locale === "sw" ? "Slide iliyotangulia" : "Previous slide"} onClick={() => setActiveIndex((current) => (current - 1 + slides.length) % slides.length)} type="button">‹</button>
           <div className="commerce-classic-showcase-dots">
             {slides.map((slide, index) => (
-              <button aria-label={`${locale === "sw" ? "Slide" : "Slide"} ${index + 1}`} className={index === activeIndex ? "is-active" : ""} key={slide.id} onClick={() => setActiveIndex(index)} type="button" />
+              <button aria-label={`Slide ${index + 1}`} className={index === safeActiveIndex ? "is-active" : ""} key={slide.id} onClick={() => setActiveIndex(index)} type="button" />
             ))}
           </div>
           <button aria-label={locale === "sw" ? "Slide inayofuata" : "Next slide"} onClick={() => setActiveIndex((current) => (current + 1) % slides.length)} type="button">›</button>
