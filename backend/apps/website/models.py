@@ -41,6 +41,7 @@ class WebsiteSite(BaseModel):
     navigation = models.JSONField(default=list, blank=True)
     hero = models.JSONField(default=dict, blank=True)
     featured_products = models.JSONField(default=dict, blank=True)
+    categories = models.JSONField(default=dict, blank=True)
     services = models.JSONField(default=list, blank=True)
     newsletter = models.JSONField(default=dict, blank=True)
 
@@ -77,6 +78,8 @@ class WebsiteSite(BaseModel):
             raise ValidationError(
                 {"featured_products": "Featured products settings must be an object."}
             )
+        if not isinstance(self.categories, dict):
+            raise ValidationError({"categories": "Category settings must be an object."})
 
     def __str__(self):
         return self.display_name
@@ -276,8 +279,6 @@ class WebsiteVariant(BaseModel):
         return product
 
     def resolved_price(self):
-        # Public storefront price is Website-owned. Commerce/Stock selling_price is
-        # operational and optional, so it must never be published implicitly.
         return self.website_price
 
     def resolved_availability(self):
