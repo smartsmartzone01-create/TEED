@@ -40,6 +40,7 @@ class WebsiteSite(BaseModel):
     header = models.JSONField(default=dict, blank=True)
     navigation = models.JSONField(default=list, blank=True)
     hero = models.JSONField(default=dict, blank=True)
+    featured_products = models.JSONField(default=dict, blank=True)
     services = models.JSONField(default=list, blank=True)
     newsletter = models.JSONField(default=dict, blank=True)
 
@@ -72,6 +73,10 @@ class WebsiteSite(BaseModel):
             )
         if not isinstance(self.header, dict):
             raise ValidationError({"header": "Header settings must be an object."})
+        if not isinstance(self.featured_products, dict):
+            raise ValidationError(
+                {"featured_products": "Featured products settings must be an object."}
+            )
 
     def __str__(self):
         return self.display_name

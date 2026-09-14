@@ -38,6 +38,12 @@ export const demoStorefrontSite: StorefrontSiteConfig = {
     imageUrl: "/templates/ecommerce/classic/hero.webp",
     imageAlt: { en: "Featured products", sw: "Bidhaa zilizoangaziwa" },
   },
+  featuredProducts: {
+    enabled: true,
+    title: { en: "Featured products", sw: "Bidhaa zilizochaguliwa" },
+    listingIds: [],
+    rotationMs: 5000,
+  },
   services: [
     {
       id: "trade-in",

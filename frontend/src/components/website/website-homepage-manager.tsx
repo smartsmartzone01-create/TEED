@@ -3,10 +3,10 @@ import {
   Grid2X2,
   Palette,
   Settings2,
-  ShoppingBag,
   type LucideIcon,
 } from "lucide-react";
 
+import { WebsiteHomepageFeaturedProductsManager } from "@/components/website/website-homepage-featured-products-manager";
 import { WebsiteHomepageHeaderManager } from "@/components/website/website-homepage-header-manager";
 import { WebsiteHomepageHeroManager } from "@/components/website/website-homepage-hero-manager";
 import { WebsiteHomepageLivePreview } from "@/components/website/website-homepage-live-preview";
@@ -26,13 +26,6 @@ function WebsiteHomepageManager({ businessId, locale }: WebsiteHomepageManagerPr
   const sw = locale === "sw";
 
   const sections: HomepageSection[] = [
-    {
-      description: sw
-        ? "Bidhaa maarufu zitakazochaguliwa kiotomatiki au kwa mkono kwa ukurasa wa mwanzo."
-        : "Popular products that can later be selected automatically or manually for the homepage.",
-      icon: ShoppingBag,
-      title: sw ? "Chaguo maarufu" : "Popular picks",
-    },
     {
       description: sw
         ? "Njia za haraka za kwenda kwenye makundi muhimu ya bidhaa na sehemu za ugunduzi."
@@ -101,28 +94,16 @@ function WebsiteHomepageManager({ businessId, locale }: WebsiteHomepageManagerPr
         </div>
         <div className="mt-5 grid gap-3 sm:grid-cols-3">
           <div className="min-w-0 rounded-lg border border-slate-200 bg-slate-50/70 p-3 dark:border-slate-800 dark:bg-slate-900/40">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-400">
-              {sw ? "Chanzo" : "Source"}
-            </p>
-            <p className="mt-1 text-sm font-medium text-slate-800 dark:text-slate-200">
-              {sw ? "Chapa ya workspace" : "Workspace branding"}
-            </p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-400">{sw ? "Chanzo" : "Source"}</p>
+            <p className="mt-1 text-sm font-medium text-slate-800 dark:text-slate-200">{sw ? "Chapa ya workspace" : "Workspace branding"}</p>
           </div>
           <div className="min-w-0 rounded-lg border border-slate-200 bg-slate-50/70 p-3 dark:border-slate-800 dark:bg-slate-900/40">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-400">
-              Template
-            </p>
-            <p className="mt-1 text-sm font-medium text-slate-800 dark:text-slate-200">
-              Classic e-commerce
-            </p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-400">Template</p>
+            <p className="mt-1 text-sm font-medium text-slate-800 dark:text-slate-200">Classic e-commerce</p>
           </div>
           <div className="min-w-0 rounded-lg border border-slate-200 bg-slate-50/70 p-3 dark:border-slate-800 dark:bg-slate-900/40">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-400">
-              {sw ? "Mkazo" : "Focus"}
-            </p>
-            <p className="mt-1 text-sm font-medium text-slate-800 dark:text-slate-200">
-              {sw ? "Ukurasa wa mwanzo pekee" : "Homepage only"}
-            </p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-400">{sw ? "Mkazo" : "Focus"}</p>
+            <p className="mt-1 text-sm font-medium text-slate-800 dark:text-slate-200">{sw ? "Ukurasa wa mwanzo pekee" : "Homepage only"}</p>
           </div>
         </div>
       </section>
@@ -130,50 +111,25 @@ function WebsiteHomepageManager({ businessId, locale }: WebsiteHomepageManagerPr
       <section className="min-w-0">
         <div className="mb-3 flex items-end justify-between gap-4">
           <div className="min-w-0">
-            <h2 className="text-base font-semibold text-slate-950 dark:text-white">
-              {sw ? "Sehemu za ukurasa" : "Homepage sections"}
-            </h2>
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-              {sw
-                ? "Tutasanidi kila sehemu hapa kulingana na muundo wa storefront."
-                : "Each section will be configured here to match the storefront design."}
-            </p>
+            <h2 className="text-base font-semibold text-slate-950 dark:text-white">{sw ? "Sehemu za ukurasa" : "Homepage sections"}</h2>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{sw ? "Tutasanidi kila sehemu hapa kulingana na muundo wa storefront." : "Each section will be configured here to match the storefront design."}</p>
           </div>
-          <span className="shrink-0 text-xs font-medium text-slate-400">
-            {sections.length + 2} {sw ? "sehemu" : "sections"}
-          </span>
+          <span className="shrink-0 text-xs font-medium text-slate-400">{sections.length + 3} {sw ? "sehemu" : "sections"}</span>
         </div>
 
         <div className="min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950">
           <WebsiteHomepageHeaderManager businessId={businessId} locale={locale} />
           <WebsiteHomepageHeroManager businessId={businessId} locale={locale} />
+          <WebsiteHomepageFeaturedProductsManager businessId={businessId} locale={locale} />
           {sections.map((section, index) => {
             const Icon = section.icon;
             return (
-              <article
-                className="flex min-w-0 gap-4 border-b border-slate-200 p-4 last:border-b-0 dark:border-slate-800 sm:p-5"
-                key={section.title}
-              >
-                <div className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
-                  <Icon className="size-4" />
-                </div>
+              <article className="flex min-w-0 gap-4 border-b border-slate-200 p-4 last:border-b-0 dark:border-slate-800 sm:p-5" key={section.title}>
+                <div className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300"><Icon className="size-4" /></div>
                 <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <h3 className="text-sm font-semibold text-slate-950 dark:text-white">
-                      {section.title}
-                    </h3>
-                    <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-500 dark:bg-slate-900 dark:text-slate-400">
-                      {sw ? "Tayari kusanidi" : "Ready to configure"}
-                    </span>
-                  </div>
-                  <p className="mt-1.5 max-w-2xl text-sm leading-6 text-slate-500 dark:text-slate-400">
-                    {section.description}
-                  </p>
-                  <div className="mt-3 flex items-center gap-2 text-xs font-medium text-slate-400">
-                    <span className="font-mono">{String(index + 3).padStart(2, "0")}</span>
-                    <span className="h-px w-5 bg-slate-200 dark:bg-slate-800" />
-                    <span>{sw ? "Mpangilio wa storefront" : "Storefront structure"}</span>
-                  </div>
+                  <div className="flex flex-wrap items-center justify-between gap-2"><h3 className="text-sm font-semibold text-slate-950 dark:text-white">{section.title}</h3><span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-500 dark:bg-slate-900 dark:text-slate-400">{sw ? "Tayari kusanidi" : "Ready to configure"}</span></div>
+                  <p className="mt-1.5 max-w-2xl text-sm leading-6 text-slate-500 dark:text-slate-400">{section.description}</p>
+                  <div className="mt-3 flex items-center gap-2 text-xs font-medium text-slate-400"><span className="font-mono">{String(index + 4).padStart(2, "0")}</span><span className="h-px w-5 bg-slate-200 dark:bg-slate-800" /><span>{sw ? "Mpangilio wa storefront" : "Storefront structure"}</span></div>
                 </div>
               </article>
             );

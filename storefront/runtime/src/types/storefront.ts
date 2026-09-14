@@ -95,6 +95,12 @@ export type StorefrontSiteConfig = {
     imageUrl?: string;
     imageAlt?: LocalizedText;
   };
+  featuredProducts: {
+    enabled: boolean;
+    title: LocalizedText;
+    listingIds: string[];
+    rotationMs: number;
+  };
   services: StorefrontServiceHighlight[];
   newsletter: {
     enabled: boolean;

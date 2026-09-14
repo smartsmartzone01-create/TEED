@@ -99,6 +99,9 @@ def _serialize_navigation_item(
 def serialize_site(site: WebsiteSite):
     header = site.header if isinstance(site.header, dict) else {}
     hero = site.hero if isinstance(site.hero, dict) else {}
+    featured_products = (
+        site.featured_products if isinstance(site.featured_products, dict) else {}
+    )
     newsletter = site.newsletter if isinstance(site.newsletter, dict) else {}
     supported_locales = [
         locale
@@ -189,6 +192,16 @@ def serialize_site(site: WebsiteSite):
             site.display_name,
         )
 
+    raw_listing_ids = featured_products.get("listingIds")
+    listing_ids = []
+    if isinstance(raw_listing_ids, list):
+        for value in raw_listing_ids:
+            listing_id = str(value or "").strip()
+            if listing_id in listing_routes and listing_id not in listing_ids:
+                listing_ids.append(listing_id)
+            if len(listing_ids) == 4:
+                break
+
     return {
         "id": str(site.id),
         "businessId": str(site.business_id),
@@ -205,6 +218,12 @@ def serialize_site(site: WebsiteSite):
         "header": header_payload,
         "navigation": navigation,
         "hero": hero_payload,
+        "featuredProducts": {
+            "enabled": bool(featured_products.get("enabled", True)),
+            "title": localized(featured_products.get("title"), "Featured products"),
+            "listingIds": listing_ids,
+            "rotationMs": 5000,
+        },
         "services": services,
         "newsletter": {
             "enabled": bool(newsletter.get("enabled", False)),
