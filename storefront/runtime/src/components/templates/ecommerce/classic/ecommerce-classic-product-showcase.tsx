@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 
 import { ProductCard } from "@/components/catalog/product-card";
-import type { LocalizedText, StorefrontLocale, StorefrontProductListing } from "@/types/storefront";
 import { localized } from "@/lib/localized";
+import type { LocalizedText, StorefrontLocale, StorefrontProductListing } from "@/types/storefront";
 
 export function EcommerceClassicProductShowcase({
   locale,

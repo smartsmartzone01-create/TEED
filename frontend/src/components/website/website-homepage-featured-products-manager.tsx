@@ -87,19 +87,25 @@ export function WebsiteHomepageFeaturedProductsManager({ businessId, locale }: P
 
   useEffect(() => {
     const controller = new AbortController();
-    void load(controller.signal);
-    return () => controller.abort();
+    const initialLoad = window.setTimeout(() => void load(controller.signal), 0);
+    return () => {
+      window.clearTimeout(initialLoad);
+      controller.abort();
+    };
   }, [load]);
 
   function toggleListing(id: string) {
-    setDraft((current) => {
-      if (!current) return current;
-      const selected = current.listingIds.includes(id);
-      if (!selected && current.listingIds.length >= 4) {
-        notify({ message: sw ? "Chagua hadi bidhaa nne." : "Choose up to four products.", tone: "error" });
-        return current;
-      }
-      return { ...current, listingIds: selected ? current.listingIds.filter((item) => item !== id) : [...current.listingIds, id] };
+    if (!draft) return;
+    const selected = draft.listingIds.includes(id);
+    if (!selected && draft.listingIds.length >= 4) {
+      notify({ message: sw ? "Chagua hadi bidhaa nne." : "Choose up to four products.", tone: "error" });
+      return;
+    }
+    setDraft({
+      ...draft,
+      listingIds: selected
+        ? draft.listingIds.filter((item) => item !== id)
+        : [...draft.listingIds, id],
     });
   }
 

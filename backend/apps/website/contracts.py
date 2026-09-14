@@ -202,6 +202,13 @@ def serialize_site(site: WebsiteSite):
             if len(listing_ids) == 4:
                 break
 
+    featured_title = featured_products.get("title")
+    if not isinstance(featured_title, dict):
+        featured_title = {
+            "en": "Featured products",
+            "sw": "Bidhaa zilizochaguliwa",
+        }
+
     return {
         "id": str(site.id),
         "businessId": str(site.business_id),
@@ -220,7 +227,7 @@ def serialize_site(site: WebsiteSite):
         "hero": hero_payload,
         "featuredProducts": {
             "enabled": bool(featured_products.get("enabled", True)),
-            "title": localized(featured_products.get("title"), "Featured products"),
+            "title": localized(featured_title),
             "listingIds": listing_ids,
             "rotationMs": 5000,
         },
