@@ -21,6 +21,18 @@ const eslintConfig = defineConfig([
       "react-hooks/set-state-in-effect": "off",
     },
   },
+  // Website manager previews render arbitrary merchant-uploaded media URLs.
+  // Keep them as plain img elements so preview rendering does not depend on
+  // Next Image remote-host allowlists or optimization infrastructure.
+  {
+    files: [
+      "src/components/website/website-homepage-header-manager.tsx",
+      "src/components/website/website-homepage-hero-manager.tsx",
+    ],
+    rules: {
+      "@next/next/no-img-element": "off",
+    },
+  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:

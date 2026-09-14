@@ -558,7 +558,7 @@ function WebsiteHomepageHeroManager({ businessId, locale }: WebsiteHomepageHeroM
                 </h4>
                 <div className="mt-3 flex min-h-36 items-center justify-center overflow-hidden rounded-lg border border-dashed border-slate-300 bg-gradient-to-br from-sky-100 via-sky-50 to-white p-3 dark:border-slate-700 dark:from-sky-950 dark:via-slate-950 dark:to-slate-950">
                   {hero.imageUrl ? (
-                    <img alt={hero.imageAlt.en || hero.imageAlt.sw || site.display_name} className="max-h-44 max-w-full object-contain" src={hero.imageUrl} />
+                    <img alt={hero.imageAlt.en || hero.imageAlt.sw || site?.display_name || "Website hero"} className="max-h-44 max-w-full object-contain" src={hero.imageUrl} />
                   ) : (
                     <div className="text-center text-slate-400">
                       <ImagePlus className="mx-auto size-7" />

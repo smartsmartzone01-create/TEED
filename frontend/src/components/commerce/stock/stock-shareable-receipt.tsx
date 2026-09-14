@@ -203,10 +203,10 @@ function StockReceiptPreview({ receipt }: { receipt: StockReceipt }) {
 
 function StockReceiptIconActions({
   receipt,
-  className,
+  className = "flex items-center gap-1",
 }: {
   receipt: StockReceipt;
-  className: string;
+  className?: string;
 }) {
   const t = useTranslations("CommerceStock");
   const { copy, share, print } = useShareableStockReceipt(receipt);

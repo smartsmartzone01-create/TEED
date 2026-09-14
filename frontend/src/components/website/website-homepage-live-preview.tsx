@@ -19,9 +19,13 @@ function WebsiteHomepageLivePreview({ locale }: WebsiteHomepageLivePreviewProps)
   useEffect(() => {
     if (configuredPreviewOrigin) return;
     const hostname = window.location.hostname;
-    if (hostname === "localhost" || hostname === "127.0.0.1") {
+    if (hostname !== "localhost" && hostname !== "127.0.0.1") return;
+
+    const initialPreview = window.setTimeout(() => {
       setPreviewOrigin(`${window.location.protocol}//${hostname}:3001`);
-    }
+    }, 0);
+
+    return () => window.clearTimeout(initialPreview);
   }, []);
 
   const previewUrl = useMemo(() => {
