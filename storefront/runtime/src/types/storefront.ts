@@ -33,7 +33,7 @@ export type StorefrontFeaturedSlide = {
 export type StorefrontCategory = {
   id: string;
   source: "standalone" | "family";
-  familyId?: string;
+  familyIds?: string[];
   title: LocalizedText;
   description: LocalizedText;
   href: string;

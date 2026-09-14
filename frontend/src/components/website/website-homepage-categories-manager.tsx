@@ -22,7 +22,7 @@ type CategorySource = "standalone" | "family";
 type CategoryDraft = {
   id: string;
   source: CategorySource;
-  familyId: string;
+  familyIds: string[];
   title: LocalizedValue;
   description: LocalizedValue;
   href: string;
@@ -46,11 +46,20 @@ function localizedValue(value: unknown, fallback: LocalizedValue = { en: "", sw:
   };
 }
 
+function normalizeFamilyIds(item: Record<string, unknown>): string[] {
+  const familyIds = Array.isArray(item.familyIds)
+    ? item.familyIds.filter((value): value is string => typeof value === "string" && Boolean(value.trim())).map((value) => value.trim())
+    : [];
+  const legacyFamilyId = typeof item.familyId === "string" ? item.familyId.trim() : "";
+  if (legacyFamilyId && !familyIds.includes(legacyFamilyId)) familyIds.push(legacyFamilyId);
+  return [...new Set(familyIds)];
+}
+
 function blankCategory(index: number): CategoryDraft {
   return {
     id: `category-${Date.now()}-${index}`,
     source: "standalone",
-    familyId: "",
+    familyIds: [],
     title: { en: "", sw: "" },
     description: { en: "", sw: "" },
     href: "/products",
@@ -65,11 +74,11 @@ function normalize(value: unknown): Draft {
     ? source.items.slice(0, 30).flatMap((value, index) => {
         const item = objectValue(value);
         if (!Object.keys(item).length) return [];
-        const familyId = typeof item.familyId === "string" ? item.familyId : "";
+        const familyIds = normalizeFamilyIds(item);
         return [{
           id: typeof item.id === "string" && item.id ? item.id : `category-${index + 1}`,
-          source: item.source === "family" && familyId ? "family" as const : "standalone" as const,
-          familyId,
+          source: item.source === "family" && familyIds.length ? "family" as const : "standalone" as const,
+          familyIds,
           title: localizedValue(item.title),
           description: localizedValue(item.description),
           href: typeof item.href === "string" && item.href ? item.href : "/products",
@@ -92,10 +101,10 @@ function payloadFor(draft: Draft) {
     items: draft.items.map((item) => ({
       id: item.id,
       source: item.source,
-      familyId: item.source === "family" ? item.familyId : "",
+      familyIds: item.source === "family" ? item.familyIds : [],
       title: { en: item.title.en.trim(), sw: item.title.sw.trim() },
       description: { en: item.description.en.trim(), sw: item.description.sw.trim() },
-      href: item.source === "family" && item.familyId ? `/products?family=${item.familyId}` : item.href.trim() || "/products",
+      href: item.source === "family" && item.familyIds.length ? `/products?category=${encodeURIComponent(item.id)}` : item.href.trim() || "/products",
       imageUrl: item.imageUrl,
       imageMediaId: item.imageMediaId,
     })),
@@ -167,6 +176,15 @@ export function WebsiteHomepageCategoriesManager({ businessId, locale }: Props) 
     setDraft((current) => current ? { ...current, items: current.items.map((item) => item.id === id ? change(item) : item) } : current);
   }
 
+  function toggleFamily(itemId: string, familyId: string) {
+    updateItem(itemId, (current) => ({
+      ...current,
+      familyIds: current.familyIds.includes(familyId)
+        ? current.familyIds.filter((value) => value !== familyId)
+        : [...current.familyIds, familyId],
+    }));
+  }
+
   async function persist(nextDraft: Draft) {
     if (!site) return;
     const payload = payloadFor(nextDraft);
@@ -222,14 +240,22 @@ export function WebsiteHomepageCategoriesManager({ businessId, locale }: Props) 
       <div className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300"><Grid2X2 className="size-4" /></div>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-start justify-between gap-3">
-          <div><div className="flex items-center gap-2"><span className="font-mono text-xs font-medium text-slate-400">04</span><h3 className="text-sm font-semibold text-slate-950 dark:text-white">{sw ? "Makundi ya bidhaa" : "Product categories"}</h3></div><p className="mt-1.5 max-w-3xl text-sm leading-6 text-slate-500 dark:text-slate-400">{sw ? "Ongeza makundi madogo ya homepage. Yanaweza kujitegemea au kuunganishwa na Product Family ya Commerce." : "Add compact homepage categories. They can stand alone or connect to a Commerce Product Family."}</p></div>
+          <div><div className="flex items-center gap-2"><span className="font-mono text-xs font-medium text-slate-400">04</span><h3 className="text-sm font-semibold text-slate-950 dark:text-white">{sw ? "Makundi ya bidhaa" : "Product categories"}</h3></div><p className="mt-1.5 max-w-3xl text-sm leading-6 text-slate-500 dark:text-slate-400">{sw ? "Kundi ni la Website. Linaweza kujitegemea au kukusanya Product Families moja au nyingi bila kubadilisha rekodi za Commerce." : "A category belongs to Website. It can stand alone or group one or many Commerce Product Families without changing Commerce records."}</p></div>
           <div className="flex gap-2"><Button disabled={!canManage || draft.items.length >= 30} onClick={() => setDraft((current) => current ? { ...current, items: [...current.items, blankCategory(current.items.length)] } : current)} size="small" variant="outline"><Plus className="size-4" />{sw ? "Ongeza" : "Add"}</Button><Button disabled={!dirty || saving || !canManage} onClick={() => void save()} size="small"><Save className="size-4" />{saving ? (sw ? "Inahifadhi..." : "Saving...") : sw ? "Hifadhi" : "Save"}</Button></div>
         </div>
         <label className="mt-4 flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-300"><input checked={draft.enabled} disabled={!canManage} onChange={(event) => setDraft((current) => current ? { ...current, enabled: event.target.checked } : current)} type="checkbox" />{sw ? "Onyesha makundi kwenye homepage" : "Show categories on the homepage"}</label>
         <div className="mt-4 grid gap-3 sm:grid-cols-2"><input className={inputClassName} disabled={!canManage} placeholder="Section title (English)" value={draft.title.en} onChange={(event) => setDraft((current) => current ? { ...current, title: { ...current.title, en: event.target.value } } : current)} /><input className={inputClassName} disabled={!canManage} placeholder="Kichwa (Kiswahili)" value={draft.title.sw} onChange={(event) => setDraft((current) => current ? { ...current, title: { ...current.title, sw: event.target.value } } : current)} /></div>
         <div className="mt-5 space-y-3">{draft.items.map((item, index) => <section className="grid gap-3 rounded-xl border border-slate-200 p-4 dark:border-slate-800 lg:grid-cols-[9rem_minmax(0,1fr)_auto]" key={item.id}>
           <div><div className="flex h-24 items-center justify-center overflow-hidden rounded-lg border border-dashed border-slate-300 bg-transparent p-2 dark:border-slate-700">{item.imageUrl ? <img alt={item.title.en || item.title.sw || "Category"} className="max-h-full max-w-full object-contain" src={item.imageUrl} /> : <ImagePlus className="size-6 text-slate-300" />}</div>{canManage ? <label className="mt-2 inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-md border border-slate-300 px-2.5 text-xs font-semibold dark:border-slate-700">{uploadingId === item.id ? <Loader2 className="size-3.5 animate-spin" /> : <ImagePlus className="size-3.5" />}{sw ? "Pakia" : "Upload"}<input accept="image/jpeg,image/png,image/webp" className="sr-only" disabled={uploadingId === item.id} onChange={(event) => { const file = event.currentTarget.files?.[0]; event.currentTarget.value = ""; if (file) void uploadImage(item, file); }} type="file" /></label> : null}</div>
-          <div className="min-w-0 space-y-3"><div className="grid gap-3 sm:grid-cols-2"><select className={inputClassName} disabled={!canManage} value={item.source} onChange={(event) => updateItem(item.id, (current) => ({ ...current, source: event.target.value as CategorySource, familyId: event.target.value === "standalone" ? "" : current.familyId }))}><option value="standalone">Standalone</option><option value="family">Commerce Product Family</option></select>{item.source === "family" ? <select className={inputClassName} disabled={!canManage} value={item.familyId} onChange={(event) => updateItem(item.id, (current) => ({ ...current, familyId: event.target.value }))}><option value="">{sw ? "Chagua family" : "Choose family"}</option>{families.map((family) => <option key={family.id} value={family.id}>{family.brand ? `${family.brand} · ` : ""}{family.name}</option>)}</select> : <input className={inputClassName} disabled={!canManage} placeholder="/products or https://..." value={item.href} onChange={(event) => updateItem(item.id, (current) => ({ ...current, href: event.target.value }))} />}</div><div className="grid gap-3 sm:grid-cols-2"><input className={inputClassName} disabled={!canManage} placeholder="Category title (English)" value={item.title.en} onChange={(event) => updateItem(item.id, (current) => ({ ...current, title: { ...current.title, en: event.target.value } }))} /><input className={inputClassName} disabled={!canManage} placeholder="Kichwa (Kiswahili)" value={item.title.sw} onChange={(event) => updateItem(item.id, (current) => ({ ...current, title: { ...current.title, sw: event.target.value } }))} /></div><div className="grid gap-3 sm:grid-cols-2"><input className={inputClassName} disabled={!canManage} placeholder="Short text (English)" value={item.description.en} onChange={(event) => updateItem(item.id, (current) => ({ ...current, description: { ...current.description, en: event.target.value } }))} /><input className={inputClassName} disabled={!canManage} placeholder="Maelezo mafupi" value={item.description.sw} onChange={(event) => updateItem(item.id, (current) => ({ ...current, description: { ...current.description, sw: event.target.value } }))} /></div></div>
+          <div className="min-w-0 space-y-3">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <select className={inputClassName} disabled={!canManage} value={item.source} onChange={(event) => updateItem(item.id, (current) => ({ ...current, source: event.target.value as CategorySource, familyIds: event.target.value === "standalone" ? [] : current.familyIds }))}><option value="standalone">Standalone</option><option value="family">Commerce Product Families</option></select>
+              {item.source === "standalone" ? <input className={inputClassName} disabled={!canManage} placeholder="/products or https://..." value={item.href} onChange={(event) => updateItem(item.id, (current) => ({ ...current, href: event.target.value }))} /> : <div className="rounded-md border border-slate-300 bg-white px-3 py-2 text-xs text-slate-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-400">{item.familyIds.length ? (sw ? `${item.familyIds.length} family zimechaguliwa` : `${item.familyIds.length} families selected`) : (sw ? "Chagua family moja au nyingi hapa chini" : "Choose one or more families below")}</div>}
+            </div>
+            {item.source === "family" ? <div className="max-h-44 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-2 dark:border-slate-800 dark:bg-slate-900/40">{families.length ? <div className="grid gap-1 sm:grid-cols-2">{families.map((family) => <label className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-sm text-slate-700 hover:bg-white dark:text-slate-300 dark:hover:bg-slate-950" key={family.id}><input checked={item.familyIds.includes(family.id)} disabled={!canManage} onChange={() => toggleFamily(item.id, family.id)} type="checkbox" /><span className="min-w-0 truncate">{family.brand ? `${family.brand} · ` : ""}{family.name}</span></label>)}</div> : <p className="px-2 py-3 text-sm text-slate-500">{sw ? "Hakuna Product Families za Commerce zinazopatikana." : "No Commerce Product Families are available."}</p>}</div> : null}
+            <div className="grid gap-3 sm:grid-cols-2"><input className={inputClassName} disabled={!canManage} placeholder="Category title (English)" value={item.title.en} onChange={(event) => updateItem(item.id, (current) => ({ ...current, title: { ...current.title, en: event.target.value } }))} /><input className={inputClassName} disabled={!canManage} placeholder="Kichwa (Kiswahili)" value={item.title.sw} onChange={(event) => updateItem(item.id, (current) => ({ ...current, title: { ...current.title, sw: event.target.value } }))} /></div>
+            <div className="grid gap-3 sm:grid-cols-2"><input className={inputClassName} disabled={!canManage} placeholder="Short text (English)" value={item.description.en} onChange={(event) => updateItem(item.id, (current) => ({ ...current, description: { ...current.description, en: event.target.value } }))} /><input className={inputClassName} disabled={!canManage} placeholder="Maelezo mafupi" value={item.description.sw} onChange={(event) => updateItem(item.id, (current) => ({ ...current, description: { ...current.description, sw: event.target.value } }))} /></div>
+          </div>
           <Button disabled={!canManage} onClick={() => setDraft((current) => current ? { ...current, items: current.items.filter((candidate) => candidate.id !== item.id) } : current)} size="small" variant="outline"><Trash2 className="size-4" /><span className="sr-only">{sw ? `Ondoa ${index + 1}` : `Remove ${index + 1}`}</span></Button>
         </section>)}</div>
       </div>

@@ -44,6 +44,8 @@
 .commerce-classic-categories-heading .text-link { font-size: .82rem; font-weight: 700; }
 .commerce-classic-categories-scroller { position: relative; }
 .commerce-classic-category-rail { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(104px, 128px); gap: 44px; overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none; padding: 2px 8px 6px; }
+.commerce-classic-category-rail.is-compact { display: flex; justify-content: center; overflow-x: visible; scroll-snap-type: none; }
+.commerce-classic-category-rail.is-compact .commerce-classic-category-item { flex: 0 1 128px; width: 128px; }
 .commerce-classic-category-rail::-webkit-scrollbar { display: none; }
 .commerce-classic-category-item { min-width: 0; scroll-snap-align: start; text-align: center; }
 .commerce-classic-category-media { height: 84px; width: 100%; box-sizing: border-box; padding: 10px; display: block; overflow: hidden; background: transparent; }
@@ -109,6 +111,8 @@
   .commerce-classic-categories-heading { margin-bottom: 10px; }
   .commerce-classic-categories-heading h2 { font-size: 1.25rem; }
   .commerce-classic-category-rail { grid-auto-columns: minmax(88px, 108px); gap: 30px; padding-inline: 6px; }
+  .commerce-classic-category-rail.is-compact { gap: 16px; padding-inline: 0; }
+  .commerce-classic-category-rail.is-compact .commerce-classic-category-item { flex: 1 1 0; width: auto; max-width: 108px; }
   .commerce-classic-category-media { height: 68px; padding: 8px; }
   .commerce-classic-category-chevron { top: 19px; width: 30px; height: 30px; }
   .commerce-classic-service-card { min-height: auto; border-radius: 24px; }

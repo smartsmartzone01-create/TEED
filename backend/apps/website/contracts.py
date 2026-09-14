@@ -143,6 +143,21 @@ def _serialize_featured_item(item, index, listing_routes):
     return payload
 
 
+def _category_family_ids(item):
+    family_ids = []
+    raw_family_ids = item.get("familyIds")
+    if isinstance(raw_family_ids, list):
+        for value in raw_family_ids:
+            family_id = str(value or "").strip()
+            if family_id and family_id not in family_ids:
+                family_ids.append(family_id)
+
+    legacy_family_id = str(item.get("familyId") or "").strip()
+    if legacy_family_id and legacy_family_id not in family_ids:
+        family_ids.append(legacy_family_id)
+    return family_ids
+
+
 def _serialize_category_item(item, index):
     if not isinstance(item, dict):
         return None
@@ -150,22 +165,23 @@ def _serialize_category_item(item, index):
     if not any(value.strip() for value in title.values()):
         return None
 
-    source = "family" if item.get("source") == "family" else "standalone"
-    family_id = str(item.get("familyId") or "").strip()
+    category_id = str(item.get("id") or f"category-{index + 1}")
+    family_ids = _category_family_ids(item)
+    source = "family" if item.get("source") == "family" and family_ids else "standalone"
     raw_href = str(item.get("href") or "").strip()
-    href = f"/products?family={family_id}" if source == "family" and family_id else raw_href
+    href = f"/products?category={category_id}" if source == "family" else raw_href
     if not href:
         href = "/products"
 
     payload = {
-        "id": str(item.get("id") or f"category-{index + 1}"),
+        "id": category_id,
         "source": source,
         "title": title,
         "description": localized(item.get("description")),
         "href": href,
     }
-    if family_id:
-        payload["familyId"] = family_id
+    if family_ids:
+        payload["familyIds"] = family_ids
     image_url = str(item.get("imageUrl") or "").strip()
     if image_url:
         payload["imageUrl"] = image_url

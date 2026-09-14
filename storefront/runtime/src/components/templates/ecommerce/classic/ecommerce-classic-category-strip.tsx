@@ -19,6 +19,7 @@ export function EcommerceClassicCategoryStrip({
   viewAllHref: string;
 }) {
   const railRef = useRef<HTMLDivElement>(null);
+  const compact = items.length <= 4;
 
   function scroll(direction: -1 | 1) {
     railRef.current?.scrollBy({ left: direction * 420, behavior: "smooth" });
@@ -36,15 +37,17 @@ export function EcommerceClassicCategoryStrip({
       </div>
 
       <div className="commerce-classic-categories-scroller">
-        <button
-          aria-label={locale === "sw" ? "Sogeza makundi kushoto" : "Scroll categories left"}
-          className="commerce-classic-category-chevron commerce-classic-category-chevron-left"
-          onClick={() => scroll(-1)}
-          type="button"
-        >
-          ‹
-        </button>
-        <div className="commerce-classic-category-rail" ref={railRef}>
+        {!compact ? (
+          <button
+            aria-label={locale === "sw" ? "Sogeza makundi kushoto" : "Scroll categories left"}
+            className="commerce-classic-category-chevron commerce-classic-category-chevron-left"
+            onClick={() => scroll(-1)}
+            type="button"
+          >
+            ‹
+          </button>
+        ) : null}
+        <div className={`commerce-classic-category-rail${compact ? " is-compact" : ""}`} ref={railRef}>
           {items.map((item) => (
             <Link className="commerce-classic-category-item" href={item.href} key={item.id}>
               <div className="commerce-classic-category-media">
@@ -66,14 +69,16 @@ export function EcommerceClassicCategoryStrip({
             </Link>
           ))}
         </div>
-        <button
-          aria-label={locale === "sw" ? "Sogeza makundi kulia" : "Scroll categories right"}
-          className="commerce-classic-category-chevron commerce-classic-category-chevron-right"
-          onClick={() => scroll(1)}
-          type="button"
-        >
-          ›
-        </button>
+        {!compact ? (
+          <button
+            aria-label={locale === "sw" ? "Sogeza makundi kulia" : "Scroll categories right"}
+            className="commerce-classic-category-chevron commerce-classic-category-chevron-right"
+            onClick={() => scroll(1)}
+            type="button"
+          >
+            ›
+          </button>
+        ) : null}
       </div>
     </section>
   );
