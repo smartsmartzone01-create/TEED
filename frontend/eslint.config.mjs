@@ -28,6 +28,7 @@ const eslintConfig = defineConfig([
     files: [
       "src/components/website/website-homepage-header-manager.tsx",
       "src/components/website/website-homepage-hero-manager.tsx",
+      "src/components/website/website-homepage-featured-products-manager.tsx",
     ],
     rules: {
       "@next/next/no-img-element": "off",
