@@ -80,7 +80,7 @@ export type StorefrontProductListing = {
   brand?: string;
   badge?: LocalizedText;
   primaryImageUrl: string;
-  familyIds: string[];
+  familyIds?: string[];
   options: StorefrontProductOption[];
   skus: StorefrontSku[];
 };
@@ -125,7 +125,7 @@ export type StorefrontSiteConfig = {
     items: StorefrontFeaturedSlide[];
     rotationMs: number;
   };
-  categories: {
+  categories?: {
     enabled: boolean;
     title: LocalizedText;
     items: StorefrontCategory[];
