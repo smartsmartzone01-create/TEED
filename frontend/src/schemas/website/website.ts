@@ -22,6 +22,7 @@ const websiteSiteSchema = z.object({
   navigation: z.unknown(),
   hero: z.unknown(),
   featured_products: z.unknown(),
+  categories: z.unknown(),
   services: z.unknown(),
   newsletter: z.unknown(),
   is_published: z.boolean(),
