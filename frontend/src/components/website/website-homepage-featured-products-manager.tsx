@@ -158,6 +158,26 @@ function normalize(value: unknown): Draft {
   };
 }
 
+function payloadFor(draft: Draft) {
+  return {
+    enabled: draft.enabled,
+    items: draft.items.map((slide) => ({
+      id: slide.id,
+      source: slide.source,
+      listingId: slide.source === "listing" ? slide.listingId : "",
+      title: { en: slide.title.en.trim(), sw: slide.title.sw.trim() },
+      description: { en: slide.description.en.trim(), sw: slide.description.sw.trim() },
+      actionLabel: { en: slide.actionLabel.en.trim(), sw: slide.actionLabel.sw.trim() },
+      actionTarget: slide.actionTarget,
+      imageUrl: slide.imageUrl,
+      imageMediaId: slide.imageMediaId,
+      imageSide: slide.imageSide,
+      backgroundColor: slide.backgroundColor,
+      textColor: slide.textColor,
+    })),
+  };
+}
+
 function labelFor(listing: WebsiteListing, sw: boolean) {
   return listing.title[sw ? "sw" : "en"] || listing.title.en || listing.title.sw || listing.slug;
 }
@@ -232,7 +252,7 @@ export function WebsiteHomepageFeaturedProductsManager({ businessId, locale }: P
   }
 
   async function uploadSlideImage(slide: SlideDraft, file: File) {
-    if (!site || !canManage) return;
+    if (!site || !draft || !canManage) return;
     setUploadingSlideId(slide.id);
     try {
       const uploadResponse = await request((token) => uploadWebsiteMedia(
@@ -247,8 +267,30 @@ export function WebsiteHomepageFeaturedProductsManager({ businessId, locale }: P
       ));
       const media = uploadResponse.data;
       if (!media) throw new Error(sw ? "Picha haikupakiwa." : "Image was not uploaded.");
-      updateSlide(slide.id, (current) => ({ ...current, imageMediaId: media.id, imageUrl: media.public_url }));
-      notify({ message: sw ? "Picha imepakiwa. Hifadhi sehemu hii ili kuitumia." : "Image uploaded. Save this section to use it.", tone: "success" });
+
+      const nextDraft: Draft = {
+        ...draft,
+        items: draft.items.map((current) =>
+          current.id === slide.id
+            ? { ...current, imageMediaId: media.id, imageUrl: media.public_url }
+            : current,
+        ),
+      };
+      const payload = payloadFor(nextDraft);
+      const response = await request((token) =>
+        updateWebsiteSite(businessId, site.id, { featured_products: payload }, token),
+      );
+      const updated = response.data ?? { ...site, featured_products: payload };
+      const persisted = normalize(updated.featured_products);
+      setSite(updated);
+      setDraft(persisted);
+      setSaved(JSON.stringify(persisted));
+      notify({
+        message: sw
+          ? "Picha imepakiwa na kuhifadhiwa."
+          : "Image uploaded and saved.",
+        tone: "success",
+      });
     } catch (uploadError) {
       notify({ message: uploadError instanceof Error ? uploadError.message : sw ? "Imeshindikana kupakia picha." : "Image could not be uploaded.", tone: "error" });
     } finally {
@@ -260,23 +302,7 @@ export function WebsiteHomepageFeaturedProductsManager({ businessId, locale }: P
     if (!site || !draft || !canManage) return;
     setSaving(true);
     try {
-      const payload = {
-        enabled: draft.enabled,
-        items: draft.items.map((slide) => ({
-          id: slide.id,
-          source: slide.source,
-          listingId: slide.source === "listing" ? slide.listingId : "",
-          title: { en: slide.title.en.trim(), sw: slide.title.sw.trim() },
-          description: { en: slide.description.en.trim(), sw: slide.description.sw.trim() },
-          actionLabel: { en: slide.actionLabel.en.trim(), sw: slide.actionLabel.sw.trim() },
-          actionTarget: slide.actionTarget,
-          imageUrl: slide.imageUrl,
-          imageMediaId: slide.imageMediaId,
-          imageSide: slide.imageSide,
-          backgroundColor: slide.backgroundColor,
-          textColor: slide.textColor,
-        })),
-      };
+      const payload = payloadFor(draft);
       const response = await request((token) => updateWebsiteSite(businessId, site.id, { featured_products: payload }, token));
       const updated = response.data ?? { ...site, featured_products: payload };
       const next = normalize(updated.featured_products);
