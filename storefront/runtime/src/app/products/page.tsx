@@ -2,9 +2,20 @@ import { ProductCard } from "@/components/catalog/product-card";
 import { StorefrontShell } from "@/components/storefront-shell";
 import { getStorefrontProducts, getStorefrontSite } from "@/services/storefront-api";
 
-export default async function ProductsPage() {
-  const [site, products] = await Promise.all([getStorefrontSite(), getStorefrontProducts()]);
+export default async function ProductsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ family?: string }>;
+}) {
+  const [{ family }, site, products] = await Promise.all([
+    searchParams,
+    getStorefrontSite(),
+    getStorefrontProducts(),
+  ]);
   const locale = site.defaultLocale;
+  const visibleProducts = family
+    ? products.filter((product) => product.familyIds?.includes(family))
+    : products;
 
   return (
     <StorefrontShell site={site}>
@@ -19,15 +30,15 @@ export default async function ProductsPage() {
           </p>
         </div>
 
-        {products.length > 0 ? (
+        {visibleProducts.length > 0 ? (
           <div className="catalog-grid">
-            {products.map((product) => (
+            {visibleProducts.map((product) => (
               <ProductCard key={product.id} product={product} locale={locale} />
             ))}
           </div>
         ) : (
           <div className="empty-state">
-            {locale === "sw" ? "Hakuna bidhaa zilizochapishwa bado." : "No products have been published yet."}
+            {locale === "sw" ? "Hakuna bidhaa zilizochapishwa kwenye kundi hili bado." : "No published products are available in this category yet."}
           </div>
         )}
       </main>
