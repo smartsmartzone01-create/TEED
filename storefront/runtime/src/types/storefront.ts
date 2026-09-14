@@ -16,6 +16,20 @@ export type StorefrontServiceHighlight = {
   imageUrl?: string;
 };
 
+export type StorefrontFeaturedSlide = {
+  id: string;
+  source: "standalone" | "listing";
+  listingId?: string;
+  title: LocalizedText;
+  description: LocalizedText;
+  actionLabel: LocalizedText;
+  actionHref: string;
+  imageUrl?: string;
+  imageSide: "left" | "right";
+  backgroundColor: string;
+  textColor: string;
+};
+
 export type StorefrontMoney = {
   amount: string;
   currency: string;
@@ -97,8 +111,7 @@ export type StorefrontSiteConfig = {
   };
   featuredProducts: {
     enabled: boolean;
-    title: LocalizedText;
-    listingIds: string[];
+    items: StorefrontFeaturedSlide[];
     rotationMs: number;
   };
   services: StorefrontServiceHighlight[];
