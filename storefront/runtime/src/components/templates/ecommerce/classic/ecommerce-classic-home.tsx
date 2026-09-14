@@ -16,13 +16,12 @@ export function EcommerceClassicHome({
 }) {
   const locale = site.defaultLocale;
   const showHeroImage = site.hero.layout === "split" && Boolean(site.hero.imageUrl);
-  const configuredIds = site.featuredProducts.listingIds;
-  const featuredProducts = configuredIds.length
-    ? configuredIds
-        .map((id) => products.find((product) => product.id === id))
-        .filter((product): product is StorefrontProductListing => Boolean(product))
-        .slice(0, 4)
-    : products.slice(0, 4);
+  const featuredSlides = site.featuredProducts.items.map((slide) => ({
+    ...slide,
+    product: slide.listingId
+      ? products.find((product) => product.id === slide.listingId)
+      : undefined,
+  }));
 
   return (
     <main className="commerce-classic-home">
@@ -41,7 +40,7 @@ export function EcommerceClassicHome({
         </div>
       </section>
 
-      {site.featuredProducts.enabled ? <EcommerceClassicProductShowcase locale={locale} products={featuredProducts} rotationMs={site.featuredProducts.rotationMs} title={site.featuredProducts.title} /> : null}
+      {site.featuredProducts.enabled && featuredSlides.length ? <EcommerceClassicProductShowcase locale={locale} slides={featuredSlides} rotationMs={site.featuredProducts.rotationMs} /> : null}
 
       {site.services.length > 0 ? (
         <section id="services" className="page-shell commerce-classic-services">
