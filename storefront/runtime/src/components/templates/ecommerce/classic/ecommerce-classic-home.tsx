@@ -5,6 +5,7 @@ import { StorefrontImage } from "@/components/storefront-image";
 import { localized } from "@/lib/localized";
 import type { StorefrontProductListing, StorefrontSiteConfig } from "@/types/storefront";
 
+import { EcommerceClassicCategoryStrip } from "./ecommerce-classic-category-strip";
 import { EcommerceClassicProductShowcase } from "./ecommerce-classic-product-showcase";
 
 export function EcommerceClassicHome({
@@ -41,6 +42,8 @@ export function EcommerceClassicHome({
       </section>
 
       {site.featuredProducts.enabled && featuredSlides.length ? <EcommerceClassicProductShowcase locale={locale} slides={featuredSlides} rotationMs={site.featuredProducts.rotationMs} /> : null}
+
+      {site.categories?.enabled && site.categories.items.length ? <EcommerceClassicCategoryStrip items={site.categories.items} locale={locale} title={site.categories.title} viewAllHref={site.categories.viewAllHref} /> : null}
 
       {site.services.length > 0 ? (
         <section id="services" className="page-shell commerce-classic-services">

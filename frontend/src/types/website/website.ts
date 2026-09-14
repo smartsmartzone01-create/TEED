@@ -16,6 +16,7 @@ type WebsiteSite = {
   navigation: unknown;
   hero: unknown;
   featured_products: unknown;
+  categories: unknown;
   services: unknown;
   newsletter: unknown;
   is_published: boolean;
