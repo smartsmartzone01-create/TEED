@@ -1,7 +1,21 @@
+import Link from "next/link";
+
 import { ProductCard } from "@/components/catalog/product-card";
+import { StorefrontImage } from "@/components/storefront-image";
 import { StorefrontShell } from "@/components/storefront-shell";
 import { localized } from "@/lib/localized";
+import { formatMoney } from "@/lib/money";
 import { getStorefrontProducts, getStorefrontSite } from "@/services/storefront-api";
+import type { StorefrontLocale, StorefrontProductListing } from "@/types/storefront";
+
+function quickPrice(product: StorefrontProductListing, locale: StorefrontLocale) {
+  const priced = product.skus.filter((sku) => sku.price !== null);
+  const visible = priced.filter((sku) => sku.availability !== "out_of_stock");
+  const candidates = visible.length > 0 ? visible : priced;
+  const lowest = [...candidates].sort((a, b) => Number(a.price!.amount) - Number(b.price!.amount))[0];
+  if (!lowest?.price) return locale === "sw" ? "Ulizia bei" : "Ask for price";
+  return formatMoney(lowest.price, locale);
+}
 
 export default async function ProductsPage({
   searchParams,
@@ -28,22 +42,36 @@ export default async function ProductsPage({
   const heading = selectedCategory
     ? localized(selectedCategory.title, locale)
     : locale === "sw" ? "Bidhaa zote" : "All products";
-  const description = selectedCategory && localized(selectedCategory.description, locale)
-    ? localized(selectedCategory.description, locale)
-    : locale === "sw"
-      ? "Chunguza bidhaa zinazopatikana na tumia vichujio kupata unachotafuta kwa haraka."
-      : "Explore available products and use the filters to narrow the catalog quickly.";
   const brands = [...new Set(visibleProducts.map((product) => product.brand?.trim()).filter((brand): brand is string => Boolean(brand)))].sort();
   const whatsapp = site.contact.whatsapp?.replace(/\D/g, "");
+  const quickProducts = visibleProducts.slice(0, 8);
 
   return (
     <StorefrontShell site={site}>
       <main className="catalog-page product-catalog-page page-shell">
-        <header className="catalog-heading catalog-heading-compact">
-          <p className="eyebrow">{locale === "sw" ? "Duka" : "Shop"}</p>
-          <h1>{heading}</h1>
-          <p>{description}</p>
-        </header>
+        <section className="product-quick-strip" aria-label={locale === "sw" ? "Bidhaa za kufikia haraka" : "Quick access products"}>
+          <div className="product-quick-strip-heading">
+            <strong>{selectedCategory ? localized(selectedCategory.title, locale) : locale === "sw" ? "Chagua kwa haraka" : "Quick access"}</strong>
+            <span>{locale === "sw" ? "Chagua bidhaa na uende moja kwa moja" : "Jump straight to a product"}</span>
+          </div>
+          <div className="product-quick-strip-rail">
+            {quickProducts.length > 0 ? quickProducts.map((product) => {
+              const title = localized(product.title, locale);
+              const imageUrl = product.primaryImageUrl?.trim() ?? "";
+              return (
+                <Link className="product-quick-item" href={`/products/${product.slug}`} key={product.id}>
+                  <span className="product-quick-media">
+                    {imageUrl ? <StorefrontImage alt={title} height={96} src={imageUrl} width={96} /> : <span className="product-quick-placeholder" />}
+                  </span>
+                  <span className="product-quick-copy">
+                    <strong>{title}</strong>
+                    <small>{quickPrice(product, locale)}</small>
+                  </span>
+                </Link>
+              );
+            }) : <span className="product-quick-empty">{locale === "sw" ? "Hakuna bidhaa za kuonyesha bado." : "No quick products to show yet."}</span>}
+          </div>
+        </section>
 
         <div className="product-catalog-toolbar">
           <span className="product-results-count">
