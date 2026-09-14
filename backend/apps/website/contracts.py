@@ -8,6 +8,7 @@ NAVIGATION_SECTIONS = {
     "services": "/#services",
     "footer": "/#footer",
 }
+FEATURED_BACKGROUNDS = ("#eef6ff", "#fff4e8", "#effaf3", "#f6efff")
 
 
 def localized(value, fallback=""):
@@ -27,6 +28,17 @@ def _safe_external_url(value):
     if url.startswith(("https://", "http://")):
         return url
     return ""
+
+
+def _safe_hex_color(value, fallback):
+    color = str(value or "").strip()
+    if len(color) == 7 and color.startswith("#"):
+        try:
+            int(color[1:], 16)
+            return color.lower()
+        except ValueError:
+            pass
+    return fallback
 
 
 def _resolve_target_href(target, listing_routes, fallback=""):
@@ -93,6 +105,41 @@ def _serialize_navigation_item(
         if children:
             payload["children"] = children
 
+    return payload
+
+
+def _serialize_featured_item(item, index, listing_routes):
+    if not isinstance(item, dict):
+        return None
+
+    raw_listing_id = str(item.get("listingId") or "").strip()
+    listing_id = raw_listing_id if raw_listing_id in listing_routes else ""
+    source = "listing" if item.get("source") == "listing" and listing_id else "standalone"
+    action_href = _resolve_target_href(
+        item.get("actionTarget"),
+        listing_routes,
+        listing_routes.get(listing_id, "") if source == "listing" else "",
+    )
+
+    payload = {
+        "id": str(item.get("id") or f"featured-{index + 1}"),
+        "source": source,
+        "title": localized(item.get("title")),
+        "description": localized(item.get("description")),
+        "actionLabel": localized(item.get("actionLabel")),
+        "actionHref": action_href,
+        "imageSide": "left" if item.get("imageSide") == "left" else "right",
+        "backgroundColor": _safe_hex_color(
+            item.get("backgroundColor"),
+            FEATURED_BACKGROUNDS[index % len(FEATURED_BACKGROUNDS)],
+        ),
+        "textColor": _safe_hex_color(item.get("textColor"), "#172033"),
+    }
+    if listing_id:
+        payload["listingId"] = listing_id
+    image_url = str(item.get("imageUrl") or "").strip()
+    if image_url:
+        payload["imageUrl"] = image_url
     return payload
 
 
@@ -192,22 +239,38 @@ def serialize_site(site: WebsiteSite):
             site.display_name,
         )
 
-    raw_listing_ids = featured_products.get("listingIds")
-    listing_ids = []
-    if isinstance(raw_listing_ids, list):
-        for value in raw_listing_ids:
-            listing_id = str(value or "").strip()
-            if listing_id in listing_routes and listing_id not in listing_ids:
-                listing_ids.append(listing_id)
-            if len(listing_ids) == 4:
-                break
+    featured_items = []
+    raw_items = featured_products.get("items")
+    if isinstance(raw_items, list):
+        for index, item in enumerate(raw_items[:4]):
+            serialized = _serialize_featured_item(item, index, listing_routes)
+            if serialized is not None:
+                featured_items.append(serialized)
 
-    featured_title = featured_products.get("title")
-    if not isinstance(featured_title, dict):
-        featured_title = {
-            "en": "Featured products",
-            "sw": "Bidhaa zilizochaguliwa",
-        }
+    if not featured_items:
+        raw_listing_ids = featured_products.get("listingIds")
+        if isinstance(raw_listing_ids, list):
+            for value in raw_listing_ids:
+                listing_id = str(value or "").strip()
+                if listing_id not in listing_routes:
+                    continue
+                index = len(featured_items)
+                featured_items.append(
+                    {
+                        "id": f"featured-listing-{listing_id}",
+                        "source": "listing",
+                        "listingId": listing_id,
+                        "title": localized({}),
+                        "description": localized({}),
+                        "actionLabel": localized({"en": "View product", "sw": "Tazama bidhaa"}),
+                        "actionHref": listing_routes[listing_id],
+                        "imageSide": "left" if index % 2 else "right",
+                        "backgroundColor": FEATURED_BACKGROUNDS[index % len(FEATURED_BACKGROUNDS)],
+                        "textColor": "#172033",
+                    }
+                )
+                if len(featured_items) == 4:
+                    break
 
     return {
         "id": str(site.id),
@@ -227,8 +290,7 @@ def serialize_site(site: WebsiteSite):
         "hero": hero_payload,
         "featuredProducts": {
             "enabled": bool(featured_products.get("enabled", True)),
-            "title": localized(featured_title),
-            "listingIds": listing_ids,
+            "items": featured_items,
             "rotationMs": 5000,
         },
         "services": services,

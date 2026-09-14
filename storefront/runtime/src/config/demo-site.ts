@@ -40,9 +40,24 @@ export const demoStorefrontSite: StorefrontSiteConfig = {
   },
   featuredProducts: {
     enabled: true,
-    title: { en: "Featured products", sw: "Bidhaa zilizochaguliwa" },
-    listingIds: [],
     rotationMs: 5000,
+    items: [
+      {
+        id: "demo-featured-1",
+        source: "standalone",
+        title: { en: "Built to stand out", sw: "Imeundwa kuvutia" },
+        description: {
+          en: "Use a full-width product story with your own image, message, and background.",
+          sw: "Tumia sehemu pana yenye picha, ujumbe na rangi yako mwenyewe.",
+        },
+        actionLabel: { en: "Explore", sw: "Gundua" },
+        actionHref: "/products",
+        imageUrl: "/templates/ecommerce/classic/hero.webp",
+        imageSide: "right",
+        backgroundColor: "#eef6ff",
+        textColor: "#172033",
+      },
+    ],
   },
   services: [
     {
