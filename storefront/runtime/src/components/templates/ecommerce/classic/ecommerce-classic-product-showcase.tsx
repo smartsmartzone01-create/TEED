@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { StorefrontImage } from "@/components/storefront-image";
 import { localized } from "@/lib/localized";
@@ -44,24 +44,54 @@ export function EcommerceClassicProductShowcase({
   slides: ShowcaseSlide[];
   rotationMs: number;
 }) {
-  const [activeIndex, setActiveIndex] = useState(0);
-  const safeActiveIndex = activeIndex < slides.length ? activeIndex : 0;
+  const [trackIndex, setTrackIndex] = useState(0);
+  const [animateTrack, setAnimateTrack] = useState(true);
+  const hasLoop = slides.length > 1;
+  const loopSlides = hasLoop ? [...slides, slides[0]!] : slides;
+  const activeIndex = trackIndex === slides.length ? 0 : Math.min(trackIndex, slides.length - 1);
+
+  const resetLoop = useCallback(() => {
+    if (!hasLoop || trackIndex !== slides.length) return;
+    setAnimateTrack(false);
+    setTrackIndex(0);
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => setAnimateTrack(true));
+    });
+  }, [hasLoop, slides.length, trackIndex]);
 
   useEffect(() => {
-    if (slides.length < 2) return;
+    if (!hasLoop) return;
     const timer = window.setInterval(() => {
-      setActiveIndex((current) => (current + 1) % slides.length);
+      setTrackIndex((current) => current < slides.length ? current + 1 : current);
     }, rotationMs);
     return () => window.clearInterval(timer);
-  }, [rotationMs, slides.length]);
+  }, [hasLoop, rotationMs, slides.length]);
+
+  useEffect(() => {
+    if (!hasLoop || trackIndex !== slides.length) return;
+    const fallback = window.setTimeout(resetLoop, 700);
+    return () => window.clearTimeout(fallback);
+  }, [hasLoop, resetLoop, slides.length, trackIndex]);
 
   if (!slides.length) return null;
 
   return (
     <section id="popular" className="commerce-classic-showcase" aria-label={locale === "sw" ? "Bidhaa maalum" : "Featured showcase"}>
+      <div className="page-shell commerce-classic-showcase-bridge">
+        <p className="eyebrow">{locale === "sw" ? "Chaguo maalum" : "Featured"}</p>
+        <h2>{locale === "sw" ? "Bidhaa maalum" : "Featured products"}</h2>
+      </div>
+
       <div className="commerce-classic-showcase-viewport" aria-live="polite">
-        <div className="commerce-classic-showcase-track" style={{ transform: `translateX(-${safeActiveIndex * 100}%)` }}>
-          {slides.map((slide) => {
+        <div
+          className="commerce-classic-showcase-track"
+          onTransitionEnd={resetLoop}
+          style={{
+            transform: `translateX(-${trackIndex * 100}%)`,
+            transition: animateTrack ? undefined : "none",
+          }}
+        >
+          {loopSlides.map((slide, index) => {
             const title = slideTitle(slide, locale);
             const description = slideDescription(slide, locale);
             const actionLabel = slideActionLabel(slide, locale);
@@ -72,7 +102,7 @@ export function EcommerceClassicProductShowcase({
             return (
               <article
                 className={`commerce-classic-showcase-slide${imageFirst ? " commerce-classic-showcase-slide-image-left" : ""}`}
-                key={slide.id}
+                key={`${slide.id}-${index}`}
                 style={{ backgroundColor: slide.backgroundColor, color: slide.textColor }}
               >
                 <div className="page-shell commerce-classic-showcase-inner">
@@ -92,15 +122,14 @@ export function EcommerceClassicProductShowcase({
         </div>
       </div>
 
-      {slides.length > 1 ? (
+      {hasLoop ? (
         <div className="commerce-classic-showcase-controls page-shell">
-          <button aria-label={locale === "sw" ? "Slide iliyotangulia" : "Previous slide"} onClick={() => setActiveIndex((current) => (current - 1 + slides.length) % slides.length)} type="button">‹</button>
-          <div className="commerce-classic-showcase-dots">
+          <div className="commerce-classic-showcase-dots" aria-hidden="true">
             {slides.map((slide, index) => (
-              <button aria-label={`Slide ${index + 1}`} className={index === safeActiveIndex ? "is-active" : ""} key={slide.id} onClick={() => setActiveIndex(index)} type="button" />
+              <span className={index === activeIndex ? "is-active" : ""} key={slide.id} />
             ))}
           </div>
-          <button aria-label={locale === "sw" ? "Slide inayofuata" : "Next slide"} onClick={() => setActiveIndex((current) => (current + 1) % slides.length)} type="button">›</button>
+          <button aria-label={locale === "sw" ? "Slide inayofuata" : "Next slide"} disabled={trackIndex === slides.length} onClick={() => setTrackIndex((current) => current < slides.length ? current + 1 : current)} type="button">›</button>
         </div>
       ) : null}
     </section>
