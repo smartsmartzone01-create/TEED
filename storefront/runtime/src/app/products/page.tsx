@@ -1,7 +1,4 @@
-import Link from "next/link";
-
 import { ProductCard } from "@/components/catalog/product-card";
-import { StorefrontImage } from "@/components/storefront-image";
 import { StorefrontShell } from "@/components/storefront-shell";
 import { localized } from "@/lib/localized";
 import { getStorefrontProducts, getStorefrontSite } from "@/services/storefront-api";
@@ -31,35 +28,21 @@ export default async function ProductsPage({
   const heading = selectedCategory
     ? localized(selectedCategory.title, locale)
     : locale === "sw" ? "Bidhaa zote" : "All products";
-  const activeFilterLabel = selectedCategory
-    ? localized(selectedCategory.title, locale)
-    : family
-      ? locale === "sw" ? "Familia iliyochaguliwa" : "Selected family"
-      : locale === "sw" ? "Bidhaa zote" : "All products";
   const whatsapp = site.contact.whatsapp?.replace(/\D/g, "");
-  const quickProducts = visibleProducts.slice(0, 10);
+  const showcaseProducts = products;
 
   return (
     <StorefrontShell site={site}>
       <main className="catalog-page product-catalog-page">
         <div className="product-catalog-sticky-controls">
-          <section className="product-quick-strip" aria-label={locale === "sw" ? "Bidhaa za kufikia haraka" : "Quick access products"}>
+          <section className="product-quick-strip" aria-label={locale === "sw" ? "Bidhaa mpya" : "Newest products"}>
             <div className="page-shell product-catalog-control-inner">
               <div className="product-quick-strip-rail">
-                {quickProducts.length > 0 ? quickProducts.map((product) => {
-                  const title = localized(product.title, locale);
-                  const imageUrl = product.primaryImageUrl?.trim() ?? "";
-                  return (
-                    <Link className="product-quick-item" href={`/products/${product.slug}`} key={product.id}>
-                      <span className="product-quick-media">
-                        {imageUrl ? <StorefrontImage alt={title} height={88} src={imageUrl} width={88} /> : <span className="product-quick-placeholder" />}
-                      </span>
-                      <span className="product-quick-copy">
-                        <strong>{title}</strong>
-                      </span>
-                    </Link>
-                  );
-                }) : <span className="product-quick-empty">{locale === "sw" ? "Hakuna bidhaa za kuonyesha bado." : "No products to show yet."}</span>}
+                {showcaseProducts.length > 0 ? showcaseProducts.map((product) => (
+                  <div className="product-quick-card" key={product.id}>
+                    <ProductCard product={product} locale={locale} />
+                  </div>
+                )) : <span className="product-quick-empty">{locale === "sw" ? "Hakuna bidhaa za kuonyesha bado." : "No products to show yet."}</span>}
               </div>
             </div>
           </section>
@@ -68,8 +51,7 @@ export default async function ProductsPage({
             <div className="page-shell product-catalog-toolbar-inner">
               <div className="product-filter-summary">
                 <span>{locale === "sw" ? "Chuja" : "Filter"}</span>
-                <strong>{activeFilterLabel}</strong>
-                <small>{visibleProducts.length} {locale === "sw" ? "matokeo" : "results"}</small>
+                <small>{visibleProducts.length} {locale === "sw" ? "bidhaa" : "products"}</small>
               </div>
               <div className="product-toolbar-actions">
                 <label className="product-sort-control">

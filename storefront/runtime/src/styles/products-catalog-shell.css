@@ -18,8 +18,7 @@
 }
 
 .product-quick-strip {
-  min-height: 82px;
-  padding: 6px 0 7px;
+  padding: 10px 0 12px;
   border-bottom: 1px solid #ececec;
 }
 
@@ -31,10 +30,11 @@
 .product-quick-strip-rail {
   min-width: 0;
   display: flex;
-  align-items: start;
-  gap: 16px;
+  align-items: stretch;
+  gap: 14px;
   overflow-x: auto;
-  padding: 0 2px 2px;
+  padding: 2px 2px 6px;
+  scroll-snap-type: x proximity;
   scrollbar-width: none;
 }
 
@@ -42,52 +42,90 @@
   display: none;
 }
 
-.product-quick-item {
-  min-width: 82px;
-  max-width: 96px;
-  display: grid;
-  justify-items: center;
-  gap: 3px;
-  text-align: center;
+.product-quick-card {
+  width: 224px;
+  min-width: 224px;
+  scroll-snap-align: start;
 }
 
-.product-quick-media {
-  width: 54px;
-  height: 54px;
-  display: grid;
-  place-items: center;
-  overflow: hidden;
-  background: transparent;
-}
-
-.product-quick-media img {
-  width: 100%;
+.product-quick-card .product-card-store {
   height: 100%;
-  object-fit: contain;
-  object-position: center;
+  border-radius: 14px;
+  box-shadow: 0 4px 14px rgb(0 0 0 / 4%);
 }
 
-.product-quick-placeholder {
-  width: 40px;
-  height: 40px;
-  border: 1px dashed #d8d8d8;
-  border-radius: 10px;
+.product-quick-card .product-card-media {
+  min-height: 126px;
+  padding: 12px;
 }
 
-.product-quick-copy {
-  width: 100%;
-  min-width: 0;
+.product-quick-card .product-card-media img {
+  max-width: 112px;
+  max-height: 112px;
 }
 
-.product-quick-copy strong {
-  display: block;
-  overflow: hidden;
-  color: #1d1d1d;
-  font-size: 0.66rem;
-  font-weight: 700;
-  line-height: 1.15;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.product-quick-card .product-badge {
+  top: 8px;
+  left: 8px;
+  padding: 4px 7px;
+  font-size: 0.58rem;
+}
+
+.product-quick-card .product-save-toggle {
+  top: 7px;
+  right: 8px;
+  width: 26px;
+  height: 26px;
+  font-size: 0.95rem;
+}
+
+.product-quick-card .product-card-copy {
+  min-height: 168px;
+  padding: 11px 12px 12px;
+}
+
+.product-quick-card .product-brand {
+  margin-bottom: 3px;
+  font-size: 0.58rem;
+}
+
+.product-quick-card .product-card-copy h3 {
+  font-size: 0.83rem;
+  line-height: 1.2;
+}
+
+.product-quick-card .product-card-description {
+  margin: 5px 0 9px;
+  font-size: 0.68rem;
+  line-height: 1.35;
+}
+
+.product-quick-card .product-card-price-row {
+  gap: 7px;
+}
+
+.product-quick-card .product-card-price-row strong {
+  font-size: 0.72rem;
+}
+
+.product-quick-card .availability-dot {
+  gap: 4px;
+  font-size: 0.58rem;
+}
+
+.product-quick-card .availability-dot::before {
+  width: 5px;
+  height: 5px;
+}
+
+.product-quick-card .product-trade-note {
+  margin: 7px 0 8px;
+  font-size: 0.61rem;
+}
+
+.product-quick-card .product-buy-button {
+  min-height: 30px;
+  font-size: 0.67rem;
 }
 
 .product-quick-empty {
@@ -107,28 +145,20 @@
   min-width: 0;
   display: flex;
   align-items: baseline;
-  gap: 7px;
+  gap: 8px;
 }
 
 .product-filter-summary > span {
-  color: #8b8b8b;
-  font-size: 0.68rem;
-  font-weight: 700;
+  color: #444444;
+  font-size: 0.7rem;
+  font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
-.product-filter-summary strong {
-  overflow: hidden;
-  color: #222222;
-  font-size: 0.76rem;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .product-filter-summary small {
   color: #999999;
-  font-size: 0.66rem;
+  font-size: 0.68rem;
   white-space: nowrap;
 }
 
@@ -197,21 +227,16 @@
 
 @media (max-width: 900px) {
   .product-quick-strip {
-    min-height: 78px;
+    padding-block: 8px 10px;
   }
 
   .product-quick-strip-rail {
     gap: 12px;
   }
 
-  .product-quick-item {
-    min-width: 76px;
-    max-width: 88px;
-  }
-
-  .product-quick-media {
-    width: 50px;
-    height: 50px;
+  .product-quick-card {
+    width: 208px;
+    min-width: 208px;
   }
 
   .product-chat-floating {
@@ -221,17 +246,16 @@
 }
 
 @media (max-width: 620px) {
-  .product-quick-strip {
-    min-height: 74px;
-    padding-bottom: 6px;
+  .product-quick-card {
+    width: 196px;
+    min-width: 196px;
   }
 
-  .product-quick-media {
-    width: 46px;
-    height: 46px;
+  .product-quick-card .product-card-media {
+    min-height: 116px;
   }
 
-  .product-filter-summary small {
-    display: none;
+  .product-quick-card .product-card-copy {
+    min-height: 162px;
   }
 }
