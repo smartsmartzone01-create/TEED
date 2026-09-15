@@ -1,6 +1,7 @@
+import Link from "next/link";
+
 import { ProductCatalogGrid } from "@/components/catalog/product-catalog-grid";
 import { ProductFilterSelect } from "@/components/catalog/product-filter-select";
-import { EcommerceClassicCategoryStrip } from "@/components/templates/ecommerce/classic/ecommerce-classic-category-strip";
 import { StorefrontShell } from "@/components/storefront-shell";
 import { localized } from "@/lib/localized";
 import { getStorefrontProducts, getStorefrontSite } from "@/services/storefront-api";
@@ -51,6 +52,12 @@ function applySystemFilter(products: StorefrontProductListing[], filter: Storefr
   return products;
 }
 
+function productMatchesCategory(product: StorefrontProductListing, listingIds: string[], familyIds: string[]) {
+  if (listingIds.length) return listingIds.includes(product.id);
+  if (familyIds.length) return product.familyIds?.some((familyId) => familyIds.includes(familyId)) ?? false;
+  return false;
+}
+
 export default async function ProductsPage({
   searchParams,
 }: {
@@ -65,17 +72,17 @@ export default async function ProductsPage({
   const activeFilter: StorefrontProductFilter = VALID_FILTERS.has(requestedFilter as StorefrontProductFilter)
     ? (requestedFilter as StorefrontProductFilter)
     : "all";
+  const categories = site.categories?.enabled ? site.categories.items : [];
   const selectedCategory = category
-    ? site.categories?.items.find((item) => item.id === category)
+    ? categories.find((item) => item.id === category)
     : undefined;
+  const selectedListingIds = selectedCategory?.listingIds ?? [];
   const selectedFamilyIds = selectedCategory?.familyIds ?? [];
-  const categoryProducts = selectedFamilyIds.length
-    ? products.filter((product) => product.familyIds?.some((familyId) => selectedFamilyIds.includes(familyId)))
+  const categoryProducts = selectedCategory
+    ? products.filter((product) => productMatchesCategory(product, selectedListingIds, selectedFamilyIds))
     : family
       ? products.filter((product) => product.familyIds?.includes(family))
-      : selectedCategory
-        ? []
-        : products;
+      : products;
   const visibleProducts = applySystemFilter(categoryProducts, activeFilter);
   const heading = selectedCategory
     ? localized(selectedCategory.title, locale)
@@ -92,31 +99,76 @@ export default async function ProductsPage({
         "Price and availability can change depending on the selected SKU and current product status.",
         "Product details may vary by the selected option, version, or SKU configuration.",
       ];
+  const filterQuery = activeFilter === "all" ? "" : `&filter=${encodeURIComponent(activeFilter)}`;
 
   return (
     <StorefrontShell site={site}>
       <main className="catalog-page product-catalog-page">
         <div className="product-catalog-sticky-controls">
-          {site.categories?.enabled && site.categories.items.length ? (
-            <div className="product-category-showcase">
-              <EcommerceClassicCategoryStrip
-                items={site.categories.items}
-                locale={locale}
-                selectedItemId={selectedCategory?.id}
-                title={site.categories.title}
-                viewAllHref={site.categories.viewAllHref}
-                variant="catalog"
-              />
-            </div>
-          ) : null}
-
           <div className="product-catalog-toolbar">
-            <div className="page-shell product-catalog-toolbar-inner">
-              <div className="product-filter-summary">
-                <span>{locale === "sw" ? "Chuja" : "Filter"}</span>
+            <div
+              className="page-shell product-catalog-toolbar-inner"
+              style={{
+                alignItems: "center",
+                display: "grid",
+                gap: "16px",
+                gridTemplateColumns: "minmax(110px,auto) minmax(0,1fr) minmax(132px,auto)",
+              }}
+            >
+              <div className="product-filter-summary" style={{ minWidth: 0 }}>
+                <span>{heading}</span>
                 <small>{visibleProducts.length} {locale === "sw" ? "bidhaa" : "products"}</small>
               </div>
-              <div className="product-toolbar-actions">
+
+              <nav
+                aria-label={locale === "sw" ? "Makundi ya bidhaa" : "Product categories"}
+                style={{
+                  display: "flex",
+                  gap: "8px",
+                  minWidth: 0,
+                  overflowX: "auto",
+                  padding: "2px 0",
+                  scrollbarWidth: "thin",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                <Link
+                  href={activeFilter === "all" ? "/products" : `/products?filter=${encodeURIComponent(activeFilter)}`}
+                  style={{
+                    border: `1px solid ${!selectedCategory && !family ? "#111111" : "#dedede"}`,
+                    borderRadius: "999px",
+                    color: "#111111",
+                    flex: "0 0 auto",
+                    fontSize: "0.78rem",
+                    fontWeight: 800,
+                    padding: "9px 14px",
+                  }}
+                >
+                  {locale === "sw" ? "Zote" : "All"}
+                </Link>
+                {categories.map((item) => {
+                  const active = selectedCategory?.id === item.id;
+                  return (
+                    <Link
+                      href={`/products?category=${encodeURIComponent(item.id)}${filterQuery}`}
+                      key={item.id}
+                      style={{
+                        border: `1px solid ${active ? "#111111" : "#dedede"}`,
+                        borderRadius: "999px",
+                        color: "#111111",
+                        flex: "0 0 auto",
+                        fontSize: "0.78rem",
+                        fontWeight: 800,
+                        padding: "9px 14px",
+                      }}
+                    >
+                      {localized(item.title, locale)}
+                    </Link>
+                  );
+                })}
+              </nav>
+
+              <div className="product-toolbar-actions" style={{ justifyContent: "flex-end" }}>
                 <ProductFilterSelect locale={locale} value={activeFilter} />
               </div>
             </div>
@@ -137,26 +189,8 @@ export default async function ProductsPage({
             </div>
           )}
 
-          <details
-            style={{
-              borderTop: "1px solid #e5e5e5",
-              marginTop: "34px",
-              paddingTop: "18px",
-            }}
-          >
-            <summary
-              style={{
-                alignItems: "center",
-                color: "#111111",
-                cursor: "pointer",
-                display: "flex",
-                fontSize: "0.86rem",
-                fontWeight: 800,
-                gap: "8px",
-                listStyle: "none",
-                width: "fit-content",
-              }}
-            >
+          <details style={{ borderTop: "1px solid #e5e5e5", marginTop: "34px", paddingTop: "18px" }}>
+            <summary style={{ alignItems: "center", color: "#111111", cursor: "pointer", display: "flex", fontSize: "0.86rem", fontWeight: 800, gap: "8px", listStyle: "none", width: "fit-content" }}>
               <span>{locale === "sw" ? "Tazama maelezo zaidi" : "View more information"}</span>
               <svg aria-hidden="true" fill="none" height="18" viewBox="0 0 24 24" width="18">
                 <path d="m7 10 5 5 5-5" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" />
