@@ -1,6 +1,6 @@
 "use client";
 
-import { Archive, CircleHelp, Pencil, Plus, TrendingUp, X } from "lucide-react";
+import { Archive, CircleHelp, Plus, TrendingUp, X } from "lucide-react";
 import {
   useCallback,
   useEffect,
@@ -8,6 +8,7 @@ import {
   useState,
   type FormEvent,
 } from "react";
+import { createPortal } from "react-dom";
 import { useLocale, useTranslations } from "next-intl";
 
 import {
@@ -64,6 +65,8 @@ const controlClassName =
   "h-10 rounded-md border-slate-300 bg-white shadow-none dark:border-slate-700 dark:bg-slate-950";
 const primaryAccentClassName =
   "text-[var(--workspace-primary,var(--brand-navy))] dark:[color:color-mix(in_srgb,var(--workspace-primary,var(--brand-navy))_35%,white)]";
+const manageActionClassName =
+  "inline-flex h-8 shrink-0 items-center justify-center rounded-md bg-[var(--workspace-secondary,var(--brand-orange))] px-3 text-xs font-semibold text-white shadow-sm transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--workspace-secondary,var(--brand-orange))] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50";
 
 type EditDraft = {
   name: string;
@@ -260,6 +263,7 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
     () => products.filter((product) => product.family === managingFamilyId),
     [managingFamilyId, products],
   );
+  const portalTarget = typeof document === "undefined" ? null : document.body;
 
   const load = useCallback(async () => {
     if (!accessToken) return;
@@ -453,12 +457,12 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
                 <p className="text-[10px] text-slate-500 dark:text-slate-400">{product.variant || standaloneLabel}</p>
               </div>
               <button
-                aria-label={`${editLabel}: ${product.sku}`}
-                className="inline-flex size-7 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
+                aria-label={`${manageLabel}: ${product.sku}`}
+                className={manageActionClassName}
                 onClick={() => openEdit(product)}
                 type="button"
               >
-                <Pencil className="size-3.5" />
+                {manageLabel}
               </button>
             </div>
           </td>
@@ -482,7 +486,7 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
               <strong className="block text-sm font-bold text-slate-950 dark:text-white">{entry.family.name}</strong>
               <span className="mt-0.5 block text-[11px] font-semibold text-slate-400">{familyLabel} · {entry.products.length} SKU</span>
             </div>
-            <Button onClick={() => setManagingFamilyId(entry.family.id)} size="small" type="button" variant="ghost">{manageLabel}</Button>
+            <button className={manageActionClassName} onClick={() => setManagingFamilyId(entry.family.id)} type="button">{manageLabel}</button>
           </div>
         </td>
         <td className="px-3 py-3 text-slate-600 dark:text-slate-300">{entry.family.brand || "—"}</td>
@@ -495,12 +499,12 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
                   <p className="truncate text-[10px] text-slate-500 dark:text-slate-400">{product.variant || product.name} · {formatQuantityNumber(product.current_quantity, locale)}</p>
                 </div>
                 <button
-                  aria-label={`${editLabel}: ${product.sku}`}
-                  className="inline-flex size-7 shrink-0 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
+                  aria-label={`${manageLabel}: ${product.sku}`}
+                  className={manageActionClassName}
                   onClick={() => openEdit(product)}
                   type="button"
                 >
-                  <Pencil className="size-3.5" />
+                  {manageLabel}
                 </button>
               </div>
             ))}
@@ -567,13 +571,13 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
                 <div className={index % 2 === 0 ? "bg-white p-3.5 dark:bg-slate-950" : "bg-[#F4F7FA] p-3.5 dark:bg-slate-900/35"} key={entry.key}>
                   <div className="flex items-start justify-between gap-3">
                     <div><p className="text-sm font-bold text-slate-950 dark:text-white">{name}</p><p className="mt-1 text-xs text-slate-500">{family ? `${familyLabel} · ${rowProducts.length} SKU` : standaloneLabel}{brand ? ` · ${brand}` : ""}</p></div>
-                    {family ? <Button onClick={() => setManagingFamilyId(entry.family.id)} size="small" type="button" variant="ghost">{manageLabel}</Button> : null}
+                    {family ? <button className={manageActionClassName} onClick={() => setManagingFamilyId(entry.family.id)} type="button">{manageLabel}</button> : null}
                   </div>
                   <div className="mt-2.5 rounded-md bg-slate-50 px-2.5 py-1.5 dark:bg-slate-900/60">
                     {rowProducts.map((product) => (
                       <div className="flex items-center justify-between gap-2 py-1" key={product.id}>
                         <div className="min-w-0 text-[11px]"><p className="truncate font-mono font-semibold text-[var(--workspace-secondary,var(--brand-orange))]">{product.sku}</p><p className="truncate text-slate-500">{product.variant || product.name} · {formatQuantityWithUnit(product.current_quantity, product.unit, locale)}</p></div>
-                        <button aria-label={`${editLabel}: ${product.sku}`} className="inline-flex size-7 items-center justify-center rounded-md text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-800" onClick={() => openEdit(product)} type="button"><Pencil className="size-3.5" /></button>
+                        <button aria-label={`${manageLabel}: ${product.sku}`} className={manageActionClassName} onClick={() => openEdit(product)} type="button">{manageLabel}</button>
                       </div>
                     ))}
                   </div>
@@ -591,7 +595,7 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
               {emptyProducts.map((product) => (
                 <div className="flex flex-wrap items-center justify-between gap-3 bg-white px-3 py-3 text-sm dark:bg-slate-950" key={product.id}>
                   <div><strong>{product.family_name || product.name}</strong><p className="mt-1 text-[11px] text-slate-500">{product.family ? `${familyLabel} · ` : `${standaloneLabel} · `}<span className="font-mono">{product.sku}</span></p></div>
-                  <div className="flex gap-2"><Button onClick={() => openEdit(product)} size="small" type="button" variant="outline"><Pencil className="size-3.5" />{editLabel}</Button><Tooltip content={t("tooltips.archiveEmptyItem")}><Button disabled={busy} onClick={() => void archiveEmptyProduct(product)} size="small" type="button" variant="ghost"><Archive className="size-4" />{t("actions.archiveItem")}</Button></Tooltip></div>
+                  <div className="flex gap-2"><button className={manageActionClassName} onClick={() => openEdit(product)} type="button">{manageLabel}</button><Tooltip content={t("tooltips.archiveEmptyItem")}><Button disabled={busy} onClick={() => void archiveEmptyProduct(product)} size="small" type="button" variant="ghost"><Archive className="size-4" />{t("actions.archiveItem")}</Button></Tooltip></div>
                 </div>
               ))}
             </div>
@@ -599,68 +603,74 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
         ) : null}
       </div>
 
-      {managingFamily ? (
-        <div aria-modal="true" className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/35 p-4 backdrop-blur-[1px]" role="dialog">
-          <div className="flex max-h-[90svh] w-full max-w-3xl flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-950">
-            <div className="flex items-start justify-between gap-3 border-b border-slate-200 px-4 py-3.5 dark:border-slate-800 sm:px-5">
-              <div><h2 className="font-semibold text-slate-950 dark:text-white">{managingFamily.name}</h2><p className="mt-0.5 text-xs text-slate-500">{familyLabel} · {managingProducts.length} SKU</p></div>
-              <button aria-label={t("actions.cancel")} className="inline-flex size-8 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-900" onClick={() => { setManagingFamilyId(""); setAddingSku(false); setNewSku(emptyNewSku()); }} type="button"><X className="size-4" /></button>
-            </div>
-            <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5">
-              <div className="space-y-2">
-                {managingProducts.map((product) => (
-                  <div className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 px-3 py-2.5 dark:border-slate-800" key={product.id}>
-                    <div className="min-w-0"><p className="font-mono text-xs font-semibold">{product.sku}</p><p className="truncate text-xs text-slate-500">{product.variant || product.name} · {formatQuantityWithUnit(product.current_quantity, product.unit, locale)}</p></div>
-                    <Button onClick={() => openEdit(product)} size="small" type="button" variant="outline"><Pencil className="size-3.5" />{editLabel}</Button>
+      {managingFamily && portalTarget
+        ? createPortal(
+            <div aria-modal="true" className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/35 p-4 backdrop-blur-[1px] sm:p-6" role="dialog">
+              <div className="flex max-h-[90svh] w-full max-w-3xl flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-950">
+                <div className="flex items-start justify-between gap-3 border-b border-slate-200 px-4 py-3.5 dark:border-slate-800 sm:px-5">
+                  <div><h2 className="font-semibold text-slate-950 dark:text-white">{managingFamily.name}</h2><p className="mt-0.5 text-xs text-slate-500">{familyLabel} · {managingProducts.length} SKU</p></div>
+                  <button aria-label={t("actions.cancel")} className="inline-flex size-8 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-900" onClick={() => { setManagingFamilyId(""); setAddingSku(false); setNewSku(emptyNewSku()); }} type="button"><X className="size-4" /></button>
+                </div>
+                <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5">
+                  <div className="space-y-2">
+                    {managingProducts.map((product) => (
+                      <div className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 px-3 py-2.5 dark:border-slate-800" key={product.id}>
+                        <div className="min-w-0"><p className="font-mono text-xs font-semibold">{product.sku}</p><p className="truncate text-xs text-slate-500">{product.variant || product.name} · {formatQuantityWithUnit(product.current_quantity, product.unit, locale)}</p></div>
+                        <button className={manageActionClassName} onClick={() => openEdit(product)} type="button">{manageLabel}</button>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
 
-              {!addingSku ? (
-                <Button className="mt-4" onClick={() => setAddingSku(true)} size="small" type="button" variant="outline"><Plus className="size-4" />{locale === "sw" ? "Ongeza SKU" : "Add SKU"}</Button>
-              ) : (
-                <form className="mt-5 space-y-4 rounded-xl border border-slate-200 p-4 dark:border-slate-800" onSubmit={(event) => void createFamilySku(event)}>
-                  <div><h3 className="text-sm font-semibold">{locale === "sw" ? "SKU mpya" : "New SKU"}</h3><p className="mt-1 text-xs text-slate-500">{locale === "sw" ? "Namba ya SKU itatolewa kiotomatiki. SKU hii haitakuwa na stock mpaka stock itakaporekodiwa." : "The SKU number will be assigned automatically. This SKU will have zero stock until stock is recorded."}</p></div>
-                  <StockSkuOptionEditor value={newSku.options} onChange={(options) => setNewSku((current) => ({ ...current, options }))} />
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <label className={field}>{t("fields.barcode")}<Input className={controlClassName} value={newSku.barcode} onChange={(event) => setNewSku((current) => ({ ...current, barcode: event.target.value }))} /></label>
-                    <label className={field}>{t("fields.unit")}<Select className={controlClassName} value={newSku.unit} onChange={(event) => setNewSku((current) => ({ ...current, unit: event.target.value }))}>{unitOptions.map((unit) => <option key={unit} value={unit}>{t(`units.${unit}`)}</option>)}</Select></label>
-                    <label className={field}>{locale === "sw" ? "Ufuatiliaji" : "Tracking"}<Select className={controlClassName} value={newSku.trackingMode} onChange={(event) => setNewSku((current) => ({ ...current, trackingMode: event.target.value as "quantity" | "individual" }))}><option value="quantity">{t("values.quantity")}</option><option value="individual">{t("values.individual")}</option></Select></label>
-                    <label className={field}>{t("fields.price")}<Input className={controlClassName} min="0" step="0.01" type="number" value={newSku.sellingPrice} onChange={(event) => setNewSku((current) => ({ ...current, sellingPrice: event.target.value }))} /></label>
-                  </div>
-                  <div className="flex justify-end gap-2"><Button onClick={() => { setAddingSku(false); setNewSku(emptyNewSku()); }} size="small" type="button" variant="ghost">{t("actions.cancel")}</Button><Button disabled={busy} size="small" type="submit">{locale === "sw" ? "Unda SKU" : "Create SKU"}</Button></div>
-                </form>
-              )}
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      {editingProduct && draft ? (
-        <div aria-modal="true" className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/35 p-4 backdrop-blur-[1px] sm:p-6" role="dialog">
-          <div className="flex max-h-[82svh] w-full max-w-md min-h-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-950 sm:max-h-[90svh] sm:max-w-2xl">
-            <div className="flex shrink-0 items-start justify-between gap-3 border-b border-slate-200 px-4 py-3.5 dark:border-slate-800 sm:px-5">
-              <div><h2 className="text-sm font-semibold text-slate-950 dark:text-white sm:text-base">{editLabel}</h2><p className="mt-0.5 font-mono text-xs text-slate-500">{editingProduct.sku}</p></div>
-              <button aria-label={t("actions.cancel")} className="inline-flex size-8 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-900" onClick={closeEdit} type="button"><X className="size-4" /></button>
-            </div>
-            <form className="flex min-h-0 flex-1 flex-col" onSubmit={(event) => void save(event, editingProduct)}>
-              <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5">
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <label className={field}>{t("fields.name")}<Input className={controlClassName} value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} /></label>
-                  <label className={field}>{t("fields.brandOptional")}<Input className={controlClassName} value={draft.brand} onChange={(event) => setDraft({ ...draft, brand: event.target.value })} /></label>
-                  <label className={field}>{t("fields.variant")}<Input className={controlClassName} value={draft.variant} onChange={(event) => setDraft({ ...draft, variant: event.target.value })} /></label>
-                  <label className={field}>{t("fields.barcode")}<Input className={controlClassName} value={draft.barcode} onChange={(event) => setDraft({ ...draft, barcode: event.target.value })} /></label>
-                  <label className={field}><span className="flex items-center gap-1">{t("fields.unit")}<Tooltip content={t("tooltips.unitCorrection")}><span className="inline-flex cursor-help text-slate-400" tabIndex={0}><CircleHelp className="size-3.5" /></span></Tooltip></span><Select className={controlClassName} value={draft.unit} onChange={(event) => setDraft({ ...draft, unit: event.target.value })}>{unitOptions.map((unit) => <option key={unit} value={unit}>{t(`units.${unit}`)}</option>)}</Select></label>
-                  <label className={field}>{locale === "sw" ? "Ufuatiliaji" : "Tracking"}<Select className={controlClassName} value={draft.trackingMode} onChange={(event) => setDraft({ ...draft, trackingMode: event.target.value as "quantity" | "individual" })}><option value="quantity">{t("values.quantity")}</option><option value="individual">{t("values.individual")}</option></Select></label>
-                  <label className={field}>{t("fields.price")}<Input className={controlClassName} min="0" step="0.01" type="number" value={draft.sellingPrice} onChange={(event) => setDraft({ ...draft, sellingPrice: event.target.value })} /></label>
-                  <label className={field}>{locale === "sw" ? "Kiwango cha stock ndogo" : "Low-stock threshold"}<Input className={controlClassName} min="0" step="0.001" type="number" value={draft.lowStockThreshold} onChange={(event) => setDraft({ ...draft, lowStockThreshold: event.target.value })} /></label>
+                  {!addingSku ? (
+                    <Button className="mt-4" onClick={() => setAddingSku(true)} size="small" type="button" variant="outline"><Plus className="size-4" />{locale === "sw" ? "Ongeza SKU" : "Add SKU"}</Button>
+                  ) : (
+                    <form className="mt-5 space-y-4 rounded-xl border border-slate-200 p-4 dark:border-slate-800" onSubmit={(event) => void createFamilySku(event)}>
+                      <div><h3 className="text-sm font-semibold">{locale === "sw" ? "SKU mpya" : "New SKU"}</h3><p className="mt-1 text-xs text-slate-500">{locale === "sw" ? "Namba ya SKU itatolewa kiotomatiki. SKU hii haitakuwa na stock mpaka stock itakaporekodiwa." : "The SKU number will be assigned automatically. This SKU will have zero stock until stock is recorded."}</p></div>
+                      <StockSkuOptionEditor value={newSku.options} onChange={(options) => setNewSku((current) => ({ ...current, options }))} />
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <label className={field}>{t("fields.barcode")}<Input className={controlClassName} value={newSku.barcode} onChange={(event) => setNewSku((current) => ({ ...current, barcode: event.target.value }))} /></label>
+                        <label className={field}>{t("fields.unit")}<Select className={controlClassName} value={newSku.unit} onChange={(event) => setNewSku((current) => ({ ...current, unit: event.target.value }))}>{unitOptions.map((unit) => <option key={unit} value={unit}>{t(`units.${unit}`)}</option>)}</Select></label>
+                        <label className={field}>{locale === "sw" ? "Ufuatiliaji" : "Tracking"}<Select className={controlClassName} value={newSku.trackingMode} onChange={(event) => setNewSku((current) => ({ ...current, trackingMode: event.target.value as "quantity" | "individual" }))}><option value="quantity">{t("values.quantity")}</option><option value="individual">{t("values.individual")}</option></Select></label>
+                        <label className={field}>{t("fields.price")}<Input className={controlClassName} min="0" step="0.01" type="number" value={newSku.sellingPrice} onChange={(event) => setNewSku((current) => ({ ...current, sellingPrice: event.target.value }))} /></label>
+                      </div>
+                      <div className="flex justify-end gap-2"><Button onClick={() => { setAddingSku(false); setNewSku(emptyNewSku()); }} size="small" type="button" variant="ghost">{t("actions.cancel")}</Button><Button disabled={busy} size="small" type="submit">{locale === "sw" ? "Unda SKU" : "Create SKU"}</Button></div>
+                    </form>
+                  )}
                 </div>
               </div>
-              <div className="flex shrink-0 flex-wrap justify-end gap-2 border-t border-slate-200 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-950 sm:px-5 sm:py-4"><Button onClick={closeEdit} size="small" type="button" variant="ghost">{t("actions.cancel")}</Button><Button disabled={busy} size="small" type="submit">{t("actions.saveCorrection")}</Button></div>
-            </form>
-          </div>
-        </div>
-      ) : null}
+            </div>,
+            portalTarget,
+          )
+        : null}
+
+      {editingProduct && draft && portalTarget
+        ? createPortal(
+            <div aria-modal="true" className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/35 p-4 backdrop-blur-[1px] sm:p-6" role="dialog">
+              <div className="flex max-h-[82svh] w-full max-w-md min-h-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-950 sm:max-h-[90svh] sm:max-w-2xl">
+                <div className="flex shrink-0 items-start justify-between gap-3 border-b border-slate-200 px-4 py-3.5 dark:border-slate-800 sm:px-5">
+                  <div><h2 className="text-sm font-semibold text-slate-950 dark:text-white sm:text-base">{editLabel}</h2><p className="mt-0.5 font-mono text-xs text-slate-500">{editingProduct.sku}</p></div>
+                  <button aria-label={t("actions.cancel")} className="inline-flex size-8 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-900" onClick={closeEdit} type="button"><X className="size-4" /></button>
+                </div>
+                <form className="flex min-h-0 flex-1 flex-col" onSubmit={(event) => void save(event, editingProduct)}>
+                  <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5">
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <label className={field}>{t("fields.name")}<Input className={controlClassName} value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} /></label>
+                      <label className={field}>{t("fields.brandOptional")}<Input className={controlClassName} value={draft.brand} onChange={(event) => setDraft({ ...draft, brand: event.target.value })} /></label>
+                      <label className={field}>{t("fields.variant")}<Input className={controlClassName} value={draft.variant} onChange={(event) => setDraft({ ...draft, variant: event.target.value })} /></label>
+                      <label className={field}>{t("fields.barcode")}<Input className={controlClassName} value={draft.barcode} onChange={(event) => setDraft({ ...draft, barcode: event.target.value })} /></label>
+                      <label className={field}><span className="flex items-center gap-1">{t("fields.unit")}<Tooltip content={t("tooltips.unitCorrection")}><span className="inline-flex cursor-help text-slate-400" tabIndex={0}><CircleHelp className="size-3.5" /></span></Tooltip></span><Select className={controlClassName} value={draft.unit} onChange={(event) => setDraft({ ...draft, unit: event.target.value })}>{unitOptions.map((unit) => <option key={unit} value={unit}>{t(`units.${unit}`)}</option>)}</Select></label>
+                      <label className={field}>{locale === "sw" ? "Ufuatiliaji" : "Tracking"}<Select className={controlClassName} value={draft.trackingMode} onChange={(event) => setDraft({ ...draft, trackingMode: event.target.value as "quantity" | "individual" })}><option value="quantity">{t("values.quantity")}</option><option value="individual">{t("values.individual")}</option></Select></label>
+                      <label className={field}>{t("fields.price")}<Input className={controlClassName} min="0" step="0.01" type="number" value={draft.sellingPrice} onChange={(event) => setDraft({ ...draft, sellingPrice: event.target.value })} /></label>
+                      <label className={field}>{locale === "sw" ? "Kiwango cha stock ndogo" : "Low-stock threshold"}<Input className={controlClassName} min="0" step="0.001" type="number" value={draft.lowStockThreshold} onChange={(event) => setDraft({ ...draft, lowStockThreshold: event.target.value })} /></label>
+                    </div>
+                  </div>
+                  <div className="flex shrink-0 flex-wrap justify-end gap-2 border-t border-slate-200 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-950 sm:px-5 sm:py-4"><Button onClick={closeEdit} size="small" type="button" variant="ghost">{t("actions.cancel")}</Button><Button disabled={busy} size="small" type="submit">{t("actions.saveCorrection")}</Button></div>
+                </form>
+              </div>
+            </div>,
+            portalTarget,
+          )
+        : null}
     </section>
   );
 }
