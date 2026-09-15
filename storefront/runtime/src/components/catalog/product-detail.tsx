@@ -39,9 +39,9 @@ export function ProductDetail({ product, locale }: { product: StorefrontProductL
   }, [product.skus, selectedOptions, visibleOptions]);
 
   const productTitle = localized(product.title, locale);
-  const description = localized(product.description, locale);
-  const detailLines = description.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  const description = localized(product.description, locale).trim();
   const selectedImage = selectedSku?.imageUrl?.trim() || product.primaryImageUrl?.trim() || "";
+  const storyImage = product.primaryImageUrl?.trim() || selectedImage;
   const imageSkus = useMemo(() => {
     const seen = new Set<string>();
     return product.skus.filter((sku) => {
@@ -121,17 +121,33 @@ export function ProductDetail({ product, locale }: { product: StorefrontProductL
                 {option.values.map((value) => {
                   const selected = selectedOptions[option.id] === value.value;
                   const available = optionValueHasStock(option.id, value.value);
+                  const label = localized(value.label, locale);
+
+                  if (value.colorHex) {
+                    return (
+                      <button
+                        key={value.value}
+                        type="button"
+                        disabled={!available}
+                        className={`option-chip option-chip-color${selected ? " option-chip-active" : ""}`}
+                        onClick={() => chooseOption(option.id, value.value)}
+                        title={label}
+                        aria-label={label}
+                      >
+                        <span className="color-swatch" style={{ backgroundColor: value.colorHex }} aria-hidden="true" />
+                      </button>
+                    );
+                  }
+
                   return (
                     <button
                       key={value.value}
                       type="button"
                       disabled={!available}
-                      className={`option-chip${value.colorHex ? " option-chip-color" : ""}${selected ? " option-chip-active" : ""}`}
+                      className={`option-chip${selected ? " option-chip-active" : ""}`}
                       onClick={() => chooseOption(option.id, value.value)}
-                      title={localized(value.label, locale)}
                     >
-                      {value.colorHex ? <span className="color-swatch" style={{ backgroundColor: value.colorHex }} aria-hidden="true" /> : null}
-                      <span>{localized(value.label, locale)}</span>
+                      {label}
                     </button>
                   );
                 })}
@@ -163,13 +179,47 @@ export function ProductDetail({ product, locale }: { product: StorefrontProductL
         </div>
       </section>
 
-      <section className="product-detail-information">
-        <h2>{locale === "sw" ? "Maelezo ya bidhaa" : "Product details"}</h2>
-        {detailLines.length > 1 ? (
-          <ul>{detailLines.map((line) => <li key={line}>{line}</li>)}</ul>
-        ) : (
-          <p>{description}</p>
-        )}
+      <section className="product-story" aria-label={locale === "sw" ? `Kuhusu ${productTitle}` : `About ${productTitle}`}>
+        <div className="product-story-intro">
+          <p className="product-story-eyebrow">{locale === "sw" ? "Gundua" : "Discover"}</p>
+          <h2>{productTitle}</h2>
+          {description ? <p>{description}</p> : null}
+        </div>
+
+        {storyImage ? (
+          <div className="product-story-media">
+            <StorefrontImage src={storyImage} alt={productTitle} width={1600} height={1100} />
+          </div>
+        ) : null}
+
+        {visibleOptions.length > 0 ? (
+          <div className="product-story-configurations">
+            <div className="product-story-config-heading">
+              <p className="product-story-eyebrow">{locale === "sw" ? "Chaguo" : "Configurations"}</p>
+              <h3>{locale === "sw" ? "Chagua inayokufaa" : "Choose what fits you"}</h3>
+            </div>
+            <div className="product-story-config-list">
+              {visibleOptions.map((option) => (
+                <div className="product-story-config-row" key={option.id}>
+                  <strong>{localized(option.name, locale)}</strong>
+                  <div className="product-story-config-values">
+                    {option.values.map((value) => value.colorHex ? (
+                      <span
+                        className="product-story-color"
+                        key={value.value}
+                        style={{ backgroundColor: value.colorHex }}
+                        title={localized(value.label, locale)}
+                        aria-label={localized(value.label, locale)}
+                      />
+                    ) : (
+                      <span key={value.value}>{localized(value.label, locale)}</span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
       </section>
     </>
   );
