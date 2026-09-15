@@ -70,17 +70,28 @@ export function ProductCard({
         </div>
         <p className="product-trade-note">{locale === "sw" ? "Pata punguzo kupitia trade-in" : "Get trade-in at a discount"}</p>
 
-        <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 0.72fr) minmax(0, 1.28fr)", gap: "10px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "10px" }}>
+          <Link
+            href={`/products/${product.slug}`}
+            className="product-buy-button"
+            style={{ width: "100%", minHeight: "42px" }}
+          >
+            {locale === "sw" ? "Nunua sasa" : "Buy now"}
+          </Link>
           <button
             type="button"
             disabled
             title={locale === "sw" ? "Kuhifadhi kutaunganishwa baadaye" : "Saving will be connected later"}
             style={{
-              minHeight: "40px",
-              border: "1px solid #d7d7d7",
+              width: "100%",
+              minHeight: "42px",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              border: "1px solid #111111",
               borderRadius: "999px",
               background: "#ffffff",
-              color: "#333333",
+              color: "#111111",
               font: "inherit",
               fontSize: "0.82rem",
               fontWeight: 800,
@@ -89,9 +100,6 @@ export function ProductCard({
           >
             {locale === "sw" ? "Hifadhi" : "Save"}
           </button>
-          <Link href={`/products/${product.slug}`} className="product-buy-button">
-            {locale === "sw" ? "Nunua sasa" : "Buy now"}
-          </Link>
         </div>
       </div>
     </article>
