@@ -1,4 +1,4 @@
-import { ProductCard } from "@/components/catalog/product-card";
+import { ProductCatalogGrid } from "@/components/catalog/product-catalog-grid";
 import { ProductFilterSelect } from "@/components/catalog/product-filter-select";
 import { EcommerceClassicCategoryStrip } from "@/components/templates/ecommerce/classic/ecommerce-classic-category-strip";
 import { StorefrontShell } from "@/components/storefront-shell";
@@ -81,6 +81,17 @@ export default async function ProductsPage({
     ? localized(selectedCategory.title, locale)
     : locale === "sw" ? "Bidhaa zote" : "All products";
   const whatsapp = site.contact.whatsapp?.replace(/\D/g, "");
+  const notes = locale === "sw"
+    ? [
+        "Picha za bidhaa ni za kuonyesha; mwonekano halisi unaweza kutofautiana kidogo.",
+        "Bei na upatikanaji zinaweza kubadilika kulingana na SKU iliyochaguliwa na hali ya sasa ya bidhaa.",
+        "Maelezo ya bidhaa yanaweza kutofautiana kulingana na chaguo, toleo au aina ya SKU iliyochaguliwa.",
+      ]
+    : [
+        "Product images are for presentation; actual appearance may vary slightly.",
+        "Price and availability can change depending on the selected SKU and current product status.",
+        "Product details may vary by the selected option, version, or SKU configuration.",
+      ];
 
   return (
     <StorefrontShell site={site}>
@@ -114,36 +125,47 @@ export default async function ProductsPage({
 
         <section className="product-list-section page-shell" aria-label={heading}>
           {visibleProducts.length > 0 ? (
-            <div className="catalog-grid catalog-grid-store">
-              {visibleProducts.map((product) => (
-                <div key={product.id} style={{ position: "relative", minWidth: 0 }}>
-                  {product.isNew ? (
-                    <span
-                      style={{
-                        position: "absolute",
-                        top: "14px",
-                        right: "14px",
-                        zIndex: 4,
-                        padding: "6px 10px",
-                        borderRadius: "999px",
-                        background: "#111111",
-                        color: "#ffffff",
-                        fontSize: "0.7rem",
-                        fontWeight: 800,
-                      }}
-                    >
-                      {locale === "sw" ? "Mpya" : "New"}
-                    </span>
-                  ) : null}
-                  <ProductCard product={product} locale={locale} />
-                </div>
-              ))}
-            </div>
+            <ProductCatalogGrid
+              key={`${activeFilter}-${category ?? "all"}-${family ?? "all"}`}
+              locale={locale}
+              paginate={activeFilter !== "newest"}
+              products={visibleProducts}
+            />
           ) : (
             <div className="empty-state">
               {locale === "sw" ? "Hakuna bidhaa zilizochapishwa kwenye kundi hili bado." : "No published products are available in this category yet."}
             </div>
           )}
+
+          <details
+            style={{
+              borderTop: "1px solid #e5e5e5",
+              marginTop: "34px",
+              paddingTop: "18px",
+            }}
+          >
+            <summary
+              style={{
+                alignItems: "center",
+                color: "#111111",
+                cursor: "pointer",
+                display: "flex",
+                fontSize: "0.86rem",
+                fontWeight: 800,
+                gap: "8px",
+                listStyle: "none",
+                width: "fit-content",
+              }}
+            >
+              <span>{locale === "sw" ? "Tazama maelezo zaidi" : "View more information"}</span>
+              <svg aria-hidden="true" fill="none" height="18" viewBox="0 0 24 24" width="18">
+                <path d="m7 10 5 5 5-5" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" />
+              </svg>
+            </summary>
+            <div style={{ color: "#666666", fontSize: "0.76rem", lineHeight: 1.6, padding: "16px 0 2px" }}>
+              {notes.map((note) => <p key={note} style={{ margin: "0 0 10px" }}>* {note}</p>)}
+            </div>
+          </details>
         </section>
 
         {whatsapp ? (
