@@ -56,6 +56,7 @@ const websiteVariantSchema = z.object({
   media_id: z.string().uuid().nullable(),
   gallery_media_ids: z.array(z.string().uuid()),
   commerce_product_id: z.string().uuid().nullable(),
+  commerce_connected: z.boolean(),
   price_source: z.enum(["website", "commerce"]),
   availability_source: z.enum(["website", "commerce"]),
   is_published: z.boolean(),

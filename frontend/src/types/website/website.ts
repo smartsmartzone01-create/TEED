@@ -52,6 +52,7 @@ type WebsiteVariant = {
   media_id: string | null;
   gallery_media_ids: string[];
   commerce_product_id: string | null;
+  commerce_connected: boolean;
   price_source: "website" | "commerce";
   availability_source: "website" | "commerce";
   is_published: boolean;

@@ -8,6 +8,10 @@ def default_supported_locales():
     return ["en", "sw"]
 
 
+def generate_website_variant_sku():
+    return f"WEB-{generate_uuid().hex[:10].upper()}"
+
+
 class WebsiteSite(BaseModel):
     class Locale(models.TextChoices):
         ENGLISH = "en", "English"
@@ -129,7 +133,7 @@ class WebsiteVariant(BaseModel):
         COMMERCE = "commerce", "Commerce"
 
     listing = models.ForeignKey(WebsiteListing, on_delete=models.CASCADE, related_name="variants")
-    sku = models.CharField(max_length=64, blank=True, default="")
+    sku = models.CharField(max_length=64, blank=True, default=generate_website_variant_sku)
     options = models.JSONField(default=dict, blank=True)
     website_price = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True)
     currency = models.CharField(max_length=3, default="TZS")
@@ -160,6 +164,8 @@ class WebsiteVariant(BaseModel):
             raise ValidationError({"commerce_product": "The linked Commerce product must belong to the same workspace."})
         if self.availability_source == self.Source.COMMERCE and product is None:
             raise ValidationError({"availability_source": "Commerce availability requires a linked Commerce product."})
+        if product is not None and not self.commerce_connected and self.is_published:
+            raise ValidationError({"is_published": "A Commerce variant must be reconnected to Website before it can be published."})
 
     def valid_commerce_product(self):
         product = self.commerce_product

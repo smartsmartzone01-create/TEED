@@ -125,8 +125,9 @@ class WebsiteVariantSerializer(serializers.ModelSerializer):
         fields = (
             "id", "sku", "options", "website_price", "currency",
             "website_availability", "media_id", "gallery_media_ids",
-            "commerce_product_id", "price_source", "availability_source",
-            "is_published", "sort_order", "created_at", "updated_at",
+            "commerce_product_id", "commerce_connected", "price_source",
+            "availability_source", "is_published", "sort_order", "created_at",
+            "updated_at",
         )
 
     def get_media_id(self, obj):
