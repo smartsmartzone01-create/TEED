@@ -1,22 +1,33 @@
 from common.responses import SuccessResponse
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_protect
-from rest_framework import serializers
+from rest_framework import serializers, status
 from rest_framework.exceptions import ValidationError
 
 from apps.workspaces.policy import WorkspacePermission
 
 from ..api import CommerceBaseAPIView
-from ..inventory.stock import (
-    AvailabilityProductSerializer,
-    ProductCorrectionSerializer,
-    ProductListCreatePolishAPIView,
-)
+from ..inventory.stock import AvailabilityProductSerializer
 from ..serializers import UnitDefinitionSerializer
-from ..services import commerce_membership
+from ..services import commerce_membership, create_product
 from .models import Product, ProductFamily, UnitDefinition
 from .services import active_catalog_products, set_catalog_product_active
-from .variant_options import normalize_variant_options
+from .variant_options import normalize_variant_options, variant_display_name
+
+
+def _family_for_business(*, business, family_id):
+    if family_id in (None, ""):
+        return None
+    family = ProductFamily.objects.filter(
+        id=family_id,
+        business=business,
+        is_active=True,
+    ).first()
+    if family is None:
+        raise serializers.ValidationError(
+            {"family_id": ["Select an active product family from this workspace."]}
+        )
+    return family
 
 
 class CatalogProductSerializer(AvailabilityProductSerializer):
@@ -42,8 +53,101 @@ class CatalogProductSerializer(AvailabilityProductSerializer):
         return normalize_variant_options(obj.variant_options)
 
 
-class ActiveProductListCreatePolishAPIView(ProductListCreatePolishAPIView):
-    """Expose active catalog identities and product families for stock recording."""
+class CatalogProductCreateSerializer(serializers.Serializer):
+    family_id = serializers.UUIDField(required=False, allow_null=True)
+    name = serializers.CharField(max_length=120, required=False, allow_blank=True)
+    barcode = serializers.CharField(max_length=80, required=False, allow_blank=True, default="")
+    brand = serializers.CharField(max_length=80, required=False, allow_blank=True, default="")
+    variant = serializers.CharField(max_length=120, required=False, allow_blank=True, default="")
+    variant_options = serializers.JSONField(required=False, default=list)
+    unit = serializers.CharField(max_length=32, default="piece")
+    selling_price = serializers.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        min_value=0,
+        required=False,
+        allow_null=True,
+    )
+    tracking_mode = serializers.ChoiceField(
+        choices=Product.TrackingMode.choices,
+        default=Product.TrackingMode.QUANTITY,
+    )
+    low_stock_threshold = serializers.DecimalField(
+        max_digits=14,
+        decimal_places=3,
+        min_value=0,
+        required=False,
+        default=0,
+    )
+
+    def validate_variant_options(self, value):
+        return normalize_variant_options(value)
+
+    def validate(self, attrs):
+        business = self.context["business"]
+        family = _family_for_business(
+            business=business,
+            family_id=attrs.pop("family_id", None),
+        )
+        attrs["family"] = family
+
+        options = attrs.get("variant_options", [])
+        if options:
+            attrs["variant"] = variant_display_name(options)[:120]
+
+        name = attrs.get("name", "").strip()
+        if family is not None:
+            attrs["name"] = name or family.name
+            if not attrs.get("brand"):
+                attrs["brand"] = family.brand
+        elif not name:
+            raise serializers.ValidationError(
+                {"name": ["Enter a product name for a standalone product."]}
+            )
+        else:
+            attrs["name"] = name
+
+        return attrs
+
+
+class CatalogProductCorrectionSerializer(serializers.ModelSerializer):
+    family_id = serializers.UUIDField(required=False, allow_null=True, write_only=True)
+    variant_options = serializers.JSONField(required=False)
+
+    class Meta:
+        model = Product
+        fields = [
+            "family_id",
+            "name",
+            "barcode",
+            "brand",
+            "variant",
+            "variant_options",
+            "unit",
+            "selling_price",
+            "tracking_mode",
+            "low_stock_threshold",
+            "is_active",
+        ]
+
+    def validate_variant_options(self, value):
+        return normalize_variant_options(value)
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        if "family_id" in attrs:
+            attrs["family"] = _family_for_business(
+                business=self.context["business"],
+                family_id=attrs.pop("family_id"),
+            )
+        options = attrs.get("variant_options")
+        if options:
+            attrs["variant"] = variant_display_name(options)[:120]
+        return attrs
+
+
+class ActiveProductListCreatePolishAPIView(CommerceBaseAPIView):
+    """Expose and create canonical catalog identities for Stock v2 and catalog UI."""
 
     def get(self, request, business_id):
         membership = commerce_membership(user=request.user, business_id=business_id)
@@ -67,9 +171,33 @@ class ActiveProductListCreatePolishAPIView(ProductListCreatePolishAPIView):
             },
         )
 
+    @method_decorator(csrf_protect)
+    def post(self, request, business_id):
+        membership = commerce_membership(
+            user=request.user,
+            business_id=business_id,
+            permission=WorkspacePermission.MANAGE_CATALOG,
+        )
+        serializer = CatalogProductCreateSerializer(
+            data=request.data,
+            context={"business": membership.business},
+        )
+        serializer.is_valid(raise_exception=True)
+        product = create_product(
+            actor=request.user,
+            business_id=business_id,
+            **serializer.validated_data,
+        )
+        product = Product.objects.select_related("family").get(pk=product.pk)
+        return SuccessResponse(
+            message="Catalog SKU created successfully.",
+            data=CatalogProductSerializer(product).data,
+            status_code=status.HTTP_201_CREATED,
+        )
+
 
 class ProductDetailOperationsPolishAPIView(CommerceBaseAPIView):
-    """Correct metadata while keeping catalog archive rules explicit."""
+    """Correct catalog metadata while protecting inventory-sensitive SKU policy."""
 
     @method_decorator(csrf_protect)
     def patch(self, request, business_id, product_id):
@@ -94,26 +222,47 @@ class ProductDetailOperationsPolishAPIView(CommerceBaseAPIView):
             permission=WorkspacePermission.MANAGE_CATALOG,
         )
         product = Product.objects.select_related("family").filter(
-            id=product_id, business=membership.business
+            id=product_id,
+            business=membership.business,
         ).first()
         if product is None:
             raise ValidationError({"product": ["Item not found."]})
-        serializer = ProductCorrectionSerializer(
-            product, data=request.data, partial=True
+
+        serializer = CatalogProductCorrectionSerializer(
+            product,
+            data=request.data,
+            partial=True,
+            context={"business": membership.business},
         )
         serializer.is_valid(raise_exception=True)
-        new_unit = serializer.validated_data.get("unit", product.unit)
-        if new_unit.casefold() != product.unit.casefold() and (
+
+        has_history = (
             product.stock_batches.exists()
             or product.movements.exists()
             or product.sale_items.exists()
-        ):
+        )
+        new_unit = serializer.validated_data.get("unit", product.unit)
+        if new_unit.casefold() != product.unit.casefold() and has_history:
             raise ValidationError(
                 {
                     "unit": [
-                        "This item already has stock history. Correct its unit from the "
+                        "This SKU already has stock history. Correct its unit from the "
                         "original stock receipt while that receipt is inside its 48-hour "
                         "correction window."
+                    ]
+                }
+            )
+        new_tracking_mode = serializer.validated_data.get(
+            "tracking_mode",
+            product.tracking_mode,
+        )
+        if new_tracking_mode != product.tracking_mode and has_history:
+            raise ValidationError(
+                {
+                    "tracking_mode": [
+                        "This SKU already has inventory history, so its tracking mode "
+                        "cannot be changed. Create another SKU if a different tracking "
+                        "policy is required."
                     ]
                 }
             )
@@ -124,9 +273,10 @@ class ProductDetailOperationsPolishAPIView(CommerceBaseAPIView):
             raise ValidationError(
                 {"is_active": ["An item with available stock cannot be archived."]}
             )
+
         product = serializer.save()
         return SuccessResponse(
-            message="Available item corrected successfully.",
+            message="Catalog SKU updated successfully.",
             data=CatalogProductSerializer(product).data,
         )
 
