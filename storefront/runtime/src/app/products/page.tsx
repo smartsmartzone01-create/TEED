@@ -41,55 +41,52 @@ export default async function ProductsPage({
 
   return (
     <StorefrontShell site={site}>
-      <main className="catalog-page product-catalog-page page-shell">
+      <main className="catalog-page product-catalog-page">
         <div className="product-catalog-sticky-controls">
           <section className="product-quick-strip" aria-label={locale === "sw" ? "Bidhaa za kufikia haraka" : "Quick access products"}>
-            <div className="product-quick-strip-rail">
-              {quickProducts.length > 0 ? quickProducts.map((product) => {
-                const title = localized(product.title, locale);
-                const imageUrl = product.primaryImageUrl?.trim() ?? "";
-                return (
-                  <Link className="product-quick-item" href={`/products/${product.slug}`} key={product.id}>
-                    <span className="product-quick-media">
-                      {imageUrl ? <StorefrontImage alt={title} height={88} src={imageUrl} width={88} /> : <span className="product-quick-placeholder" />}
-                    </span>
-                    <span className="product-quick-copy">
-                      <strong>{title}</strong>
-                    </span>
-                  </Link>
-                );
-              }) : <span className="product-quick-empty">{locale === "sw" ? "Hakuna bidhaa za kuonyesha bado." : "No products to show yet."}</span>}
+            <div className="page-shell product-catalog-control-inner">
+              <div className="product-quick-strip-rail">
+                {quickProducts.length > 0 ? quickProducts.map((product) => {
+                  const title = localized(product.title, locale);
+                  const imageUrl = product.primaryImageUrl?.trim() ?? "";
+                  return (
+                    <Link className="product-quick-item" href={`/products/${product.slug}`} key={product.id}>
+                      <span className="product-quick-media">
+                        {imageUrl ? <StorefrontImage alt={title} height={88} src={imageUrl} width={88} /> : <span className="product-quick-placeholder" />}
+                      </span>
+                      <span className="product-quick-copy">
+                        <strong>{title}</strong>
+                      </span>
+                    </Link>
+                  );
+                }) : <span className="product-quick-empty">{locale === "sw" ? "Hakuna bidhaa za kuonyesha bado." : "No products to show yet."}</span>}
+              </div>
             </div>
           </section>
 
           <div className="product-catalog-toolbar">
-            <div className="product-filter-summary">
-              <span>{locale === "sw" ? "Chuja" : "Filter"}</span>
-              <strong>{activeFilterLabel}</strong>
-              <small>{visibleProducts.length} {locale === "sw" ? "matokeo" : "results"}</small>
-            </div>
-            <div className="product-toolbar-actions">
-              <label className="product-sort-control">
-                <span className="sr-only">{locale === "sw" ? "Chuja bidhaa" : "Filter products"}</span>
-                <select defaultValue="all" aria-label={locale === "sw" ? "Chuja bidhaa" : "Filter products"}>
-                  <option value="all">{locale === "sw" ? "Bidhaa zote" : "All products"}</option>
-                  <option value="newest">{locale === "sw" ? "Mpya zaidi" : "Newest"}</option>
-                  <option value="recommended">{locale === "sw" ? "Zinazopendekezwa" : "Recommended"}</option>
-                  <option value="most_clicked">{locale === "sw" ? "Zilizobonyezwa zaidi" : "Most clicked"}</option>
-                </select>
-              </label>
-              {whatsapp ? (
-                <a className="product-chat-link" href={`https://wa.me/${whatsapp}`} rel="noreferrer" target="_blank">
-                  {locale === "sw" ? "Ongea sasa" : "Chat now"}
-                </a>
-              ) : (
-                <span className="product-chat-link is-disabled">{locale === "sw" ? "Ongea sasa" : "Chat now"}</span>
-              )}
+            <div className="page-shell product-catalog-toolbar-inner">
+              <div className="product-filter-summary">
+                <span>{locale === "sw" ? "Chuja" : "Filter"}</span>
+                <strong>{activeFilterLabel}</strong>
+                <small>{visibleProducts.length} {locale === "sw" ? "matokeo" : "results"}</small>
+              </div>
+              <div className="product-toolbar-actions">
+                <label className="product-sort-control">
+                  <span className="sr-only">{locale === "sw" ? "Chuja bidhaa" : "Filter products"}</span>
+                  <select defaultValue="all" aria-label={locale === "sw" ? "Chuja bidhaa" : "Filter products"}>
+                    <option value="all">{locale === "sw" ? "Bidhaa zote" : "All products"}</option>
+                    <option value="newest">{locale === "sw" ? "Mpya zaidi" : "Newest"}</option>
+                    <option value="recommended">{locale === "sw" ? "Zinazopendekezwa" : "Recommended"}</option>
+                    <option value="most_clicked">{locale === "sw" ? "Zilizobonyezwa zaidi" : "Most clicked"}</option>
+                  </select>
+                </label>
+              </div>
             </div>
           </div>
         </div>
 
-        <section className="product-list-section" aria-label={heading}>
+        <section className="product-list-section page-shell" aria-label={heading}>
           {visibleProducts.length > 0 ? (
             <div className="catalog-grid catalog-grid-store">
               {visibleProducts.map((product) => (
@@ -102,6 +99,14 @@ export default async function ProductsPage({
             </div>
           )}
         </section>
+
+        {whatsapp ? (
+          <a className="product-chat-floating" href={`https://wa.me/${whatsapp}`} rel="noreferrer" target="_blank">
+            {locale === "sw" ? "Ongea sasa" : "Chat now"}
+          </a>
+        ) : (
+          <span className="product-chat-floating is-disabled">{locale === "sw" ? "Ongea sasa" : "Chat now"}</span>
+        )}
       </main>
     </StorefrontShell>
   );
