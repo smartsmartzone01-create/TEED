@@ -229,6 +229,17 @@ def _listing_slug_conflicts(*, site, slug, exclude_listing_id=None):
     return query.exists()
 
 
+def _standalone_website_variant(listing):
+    variants = list(WebsiteVariant.objects.filter(listing=listing).order_by("created_at", "id")[:2])
+    if len(variants) != 1:
+        return None
+    variant = variants[0]
+    options = variant.options if isinstance(variant.options, dict) else {}
+    if variant.commerce_product_id is not None or options:
+        return None
+    return variant
+
+
 @transaction.atomic
 def create_listing(*, actor, business_id, site_id, **values):
     site = get_site_for_user(user=actor, business_id=business_id, site_id=site_id, manage=True)
@@ -248,6 +259,7 @@ def update_listing(*, actor, business_id, site_id, listing_id, **changes):
     requested_slug = changes.get("slug")
     if requested_slug and requested_slug != listing.slug and _listing_slug_conflicts(site=listing.site, slug=requested_slug, exclude_listing_id=listing.id):
         raise ValidationError({"slug": "A Website listing with this slug already exists."}, code="website_listing_slug_conflict")
+    requested_publication = changes.get("is_published") if "is_published" in changes else None
     if "primary_media_id" in changes:
         media_id = changes.pop("primary_media_id")
         listing.primary_media = _media_for_site(site=listing.site, media_id=media_id)
@@ -255,6 +267,12 @@ def update_listing(*, actor, business_id, site_id, listing_id, **changes):
         setattr(listing, field, value)
     listing.full_clean()
     listing.save()
+    if requested_publication is not None:
+        standalone_variant = _standalone_website_variant(listing)
+        if standalone_variant is not None and standalone_variant.is_published != requested_publication:
+            standalone_variant.is_published = requested_publication
+            standalone_variant.full_clean()
+            standalone_variant.save(update_fields=["is_published", "updated_at"])
     return listing
 
 
