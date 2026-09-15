@@ -1,4 +1,5 @@
 import { ProductCard } from "@/components/catalog/product-card";
+import { EcommerceClassicCategoryStrip } from "@/components/templates/ecommerce/classic/ecommerce-classic-category-strip";
 import { StorefrontShell } from "@/components/storefront-shell";
 import { localized } from "@/lib/localized";
 import { getStorefrontProducts, getStorefrontSite } from "@/services/storefront-api";
@@ -29,23 +30,22 @@ export default async function ProductsPage({
     ? localized(selectedCategory.title, locale)
     : locale === "sw" ? "Bidhaa zote" : "All products";
   const whatsapp = site.contact.whatsapp?.replace(/\D/g, "");
-  const showcaseProducts = products;
 
   return (
     <StorefrontShell site={site}>
       <main className="catalog-page product-catalog-page">
         <div className="product-catalog-sticky-controls">
-          <section className="product-quick-strip" aria-label={locale === "sw" ? "Bidhaa mpya" : "Newest products"}>
-            <div className="page-shell product-catalog-control-inner">
-              <div className="product-quick-strip-rail">
-                {showcaseProducts.length > 0 ? showcaseProducts.map((product) => (
-                  <div className="product-quick-card" key={product.id}>
-                    <ProductCard product={product} locale={locale} />
-                  </div>
-                )) : <span className="product-quick-empty">{locale === "sw" ? "Hakuna bidhaa za kuonyesha bado." : "No products to show yet."}</span>}
-              </div>
+          {site.categories?.enabled && site.categories.items.length ? (
+            <div className="product-category-showcase">
+              <EcommerceClassicCategoryStrip
+                items={site.categories.items}
+                locale={locale}
+                title={site.categories.title}
+                viewAllHref={site.categories.viewAllHref}
+                variant="catalog"
+              />
             </div>
-          </section>
+          ) : null}
 
           <div className="product-catalog-toolbar">
             <div className="page-shell product-catalog-toolbar-inner">

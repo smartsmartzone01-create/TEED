@@ -12,14 +12,17 @@ export function EcommerceClassicCategoryStrip({
   title,
   items,
   viewAllHref,
+  variant = "default",
 }: {
   locale: StorefrontLocale;
   title: LocalizedText;
   items: StorefrontCategory[];
   viewAllHref: string;
+  variant?: "default" | "catalog";
 }) {
   const railRef = useRef<HTMLDivElement>(null);
   const compact = items.length <= 4;
+  const isCatalog = variant === "catalog";
 
   function scroll(direction: -1 | 1) {
     railRef.current?.scrollBy({ left: direction * 420, behavior: "smooth" });
@@ -28,13 +31,18 @@ export function EcommerceClassicCategoryStrip({
   if (!items.length) return null;
 
   return (
-    <section className="commerce-classic-categories page-shell" aria-label={localized(title, locale)}>
-      <div className="commerce-classic-categories-heading">
-        <h2>{localized(title, locale)}</h2>
-        <Link className="text-link" href={viewAllHref}>
-          {locale === "sw" ? "Tazama bidhaa zote" : "View all products"} →
-        </Link>
-      </div>
+    <section
+      className={`commerce-classic-categories page-shell${isCatalog ? " is-catalog-strip" : ""}`}
+      aria-label={localized(title, locale)}
+    >
+      {!isCatalog ? (
+        <div className="commerce-classic-categories-heading">
+          <h2>{localized(title, locale)}</h2>
+          <Link className="text-link" href={viewAllHref}>
+            {locale === "sw" ? "Tazama bidhaa zote" : "View all products"} →
+          </Link>
+        </div>
+      ) : null}
 
       <div className="commerce-classic-categories-scroller">
         {!compact ? (
@@ -64,7 +72,7 @@ export function EcommerceClassicCategoryStrip({
               </div>
               <div className="commerce-classic-category-copy">
                 <h3>{localized(item.title, locale)}</h3>
-                {localized(item.description, locale) ? <p>{localized(item.description, locale)}</p> : null}
+                {!isCatalog && localized(item.description, locale) ? <p>{localized(item.description, locale)}</p> : null}
               </div>
             </Link>
           ))}
