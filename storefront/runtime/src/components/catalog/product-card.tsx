@@ -9,45 +9,25 @@ function lowestVisiblePricedSku(product: StorefrontProductListing) {
   const priced = product.skus.filter((sku) => sku.price !== null);
   const visible = priced.filter((sku) => sku.availability !== "out_of_stock");
   const candidates = visible.length > 0 ? visible : priced;
-
   return [...candidates].sort((a, b) => Number(a.price!.amount) - Number(b.price!.amount))[0];
 }
 
-export function ProductCard({
-  product,
-  locale,
-}: {
-  product: StorefrontProductListing;
-  locale: StorefrontLocale;
-}) {
+export function ProductCard({ product, locale }: { product: StorefrontProductListing; locale: StorefrontLocale }) {
   const priceSku = lowestVisiblePricedSku(product);
-  const prices = new Set(
-    product.skus
-      .filter((sku) => sku.price !== null)
-      .map((sku) => `${sku.price!.currency}:${sku.price!.amount}`),
-  );
+  const prices = new Set(product.skus.filter((sku) => sku.price !== null).map((sku) => `${sku.price!.currency}:${sku.price!.amount}`));
   const isAvailable = product.skus.some((sku) => sku.availability !== "out_of_stock");
   const imageUrl = product.primaryImageUrl?.trim() ?? "";
   const productTitle = localized(product.title, locale);
   const priceLabel = priceSku
     ? `${prices.size > 1 ? (locale === "sw" ? "Kuanzia " : "From ") : ""}${formatMoney(priceSku.price!, locale)}`
-    : locale === "sw"
-      ? "Wasiliana kwa bei"
-      : "Price on request";
+    : locale === "sw" ? "Wasiliana kwa bei" : "Price on request";
 
   return (
     <article className="product-card product-card-store" style={{ display: "flex", flexDirection: "column" }}>
-      <Link href={`/products/${product.slug}`}>
+      <Link href={`/products/${product.slug}`} prefetch={false}>
         <div className="product-card-media">
           {product.badge ? <span className="product-badge">{localized(product.badge, locale)}</span> : null}
-          {imageUrl ? (
-            <StorefrontImage
-              src={imageUrl}
-              alt={productTitle}
-              width={640}
-              height={640}
-            />
-          ) : (
+          {imageUrl ? <StorefrontImage src={imageUrl} alt={productTitle} width={640} height={640} /> : (
             <div className="product-image-placeholder" role="img" aria-label={productTitle}>
               <span>{locale === "sw" ? "Picha inakuja hivi karibuni" : "Image coming soon"}</span>
             </div>
@@ -56,7 +36,7 @@ export function ProductCard({
       </Link>
 
       <div className="product-card-copy">
-        <Link href={`/products/${product.slug}`}>
+        <Link href={`/products/${product.slug}`} prefetch={false}>
           {product.brand ? <p className="product-brand">{product.brand}</p> : null}
           <h3>{productTitle}</h3>
           <p className="product-card-description">{localized(product.shortDescription, locale)}</p>
@@ -71,33 +51,10 @@ export function ProductCard({
         <p className="product-trade-note">{locale === "sw" ? "Pata punguzo kupitia trade-in" : "Get trade-in at a discount"}</p>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "10px" }}>
-          <Link
-            href={`/products/${product.slug}`}
-            className="product-buy-button"
-            style={{ width: "100%", minHeight: "42px" }}
-          >
+          <Link href={`/products/${product.slug}`} prefetch={false} className="product-buy-button" style={{ width: "100%", minHeight: "42px" }}>
             {locale === "sw" ? "Nunua sasa" : "Buy now"}
           </Link>
-          <button
-            type="button"
-            disabled
-            title={locale === "sw" ? "Kuhifadhi kutaunganishwa baadaye" : "Saving will be connected later"}
-            style={{
-              width: "100%",
-              minHeight: "42px",
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              border: "1px solid #111111",
-              borderRadius: "999px",
-              background: "#ffffff",
-              color: "#111111",
-              font: "inherit",
-              fontSize: "0.82rem",
-              fontWeight: 800,
-              opacity: 0.72,
-            }}
-          >
+          <button type="button" disabled style={{ width: "100%", minHeight: "42px", border: "1px solid #111111", borderRadius: "999px", background: "#ffffff", color: "#111111", font: "inherit", fontSize: "0.82rem", fontWeight: 800, opacity: 0.72 }}>
             {locale === "sw" ? "Hifadhi" : "Save"}
           </button>
         </div>

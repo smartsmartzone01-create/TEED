@@ -1,4 +1,5 @@
 export type StorefrontLocale = "en" | "sw";
+export type StorefrontProductFilter = "all" | "newest" | "recommended" | "most_clicked";
 
 export type LocalizedText = Record<StorefrontLocale, string>;
 
@@ -36,6 +37,9 @@ export type StorefrontProductListing = {
   familyIds?: string[];
   options: StorefrontProductOption[];
   skus: StorefrontSku[];
+  publishedAt?: string;
+  detailViewCount?: number;
+  isNew?: boolean;
 };
 
 export type StorefrontSiteConfig = {

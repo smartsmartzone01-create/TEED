@@ -1,5 +1,5 @@
 from common.responses import SuccessResponse
-from django.db.models import Prefetch
+from django.db.models import F, Prefetch
 from django.shortcuts import get_object_or_404
 from rest_framework.permissions import AllowAny
 from rest_framework.throttling import ScopedRateThrottle
@@ -33,6 +33,23 @@ def public_listings(site):
     )
 
 
+def newest_listing_ids(site):
+    return set(
+        public_listings(site)
+        .order_by(F("published_at").desc(nulls_last=True), "-created_at", "-id")
+        .values_list("id", flat=True)[:5]
+    )
+
+
+def serialize_public_listing(listing, *, newest_ids):
+    payload = serialize_listing(listing)
+    published_at = listing.published_at or listing.created_at
+    payload["publishedAt"] = published_at.isoformat()
+    payload["detailViewCount"] = listing.detail_view_count
+    payload["isNew"] = listing.id in newest_ids
+    return payload
+
+
 class PublicStorefrontBaseAPIView(APIView):
     authentication_classes = []
     permission_classes = [AllowAny]
@@ -53,9 +70,15 @@ class PublicStorefrontProductsAPIView(PublicStorefrontBaseAPIView):
     def get(self, request, site_key):
         site = public_site(site_key)
         listings = public_listings(site).order_by("sort_order", "created_at", "id")
+        newest_ids = newest_listing_ids(site)
         return SuccessResponse(
             message="Storefront products retrieved successfully.",
-            data={"products": [serialize_listing(listing) for listing in listings]},
+            data={
+                "products": [
+                    serialize_public_listing(listing, newest_ids=newest_ids)
+                    for listing in listings
+                ]
+            },
         )
 
 
@@ -63,7 +86,11 @@ class PublicStorefrontProductDetailAPIView(PublicStorefrontBaseAPIView):
     def get(self, request, site_key, slug):
         site = public_site(site_key)
         listing = get_object_or_404(public_listings(site), slug=slug)
+        WebsiteListing.objects.filter(id=listing.id).update(
+            detail_view_count=F("detail_view_count") + 1
+        )
+        listing.detail_view_count += 1
         return SuccessResponse(
             message="Storefront product retrieved successfully.",
-            data=serialize_listing(listing),
+            data=serialize_public_listing(listing, newest_ids=newest_listing_ids(site)),
         )

@@ -2,6 +2,7 @@ from common.database.base_model import BaseModel
 from common.database.uuid import generate_uuid
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.utils import timezone
 
 
 def default_supported_locales():
@@ -102,6 +103,8 @@ class WebsiteListing(BaseModel):
     primary_media = models.ForeignKey(WebsiteMedia, on_delete=models.SET_NULL, null=True, blank=True, related_name="primary_for_listings")
     options = models.JSONField(default=list, blank=True)
     is_published = models.BooleanField(default=False, db_index=True)
+    published_at = models.DateTimeField(null=True, blank=True, db_index=True)
+    detail_view_count = models.PositiveBigIntegerField(default=0, db_index=True)
     sort_order = models.PositiveIntegerField(default=0, db_index=True)
 
     class Meta:
@@ -113,6 +116,14 @@ class WebsiteListing(BaseModel):
         super().clean()
         if self.primary_media is not None and self.primary_media.site_id != self.site_id:
             raise ValidationError({"primary_media": "Primary media must belong to the same website site."})
+
+    def save(self, *args, **kwargs):
+        if self.is_published and self.published_at is None:
+            self.published_at = timezone.now()
+            update_fields = kwargs.get("update_fields")
+            if update_fields is not None:
+                kwargs["update_fields"] = list(set(update_fields) | {"published_at"})
+        super().save(*args, **kwargs)
 
     def resolved_primary_image_url(self):
         return (self.primary_media.public_url if self.primary_media is not None else "") or self.primary_image_url

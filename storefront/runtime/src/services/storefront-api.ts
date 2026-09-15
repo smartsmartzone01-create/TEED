@@ -105,7 +105,7 @@ export async function getStorefrontProduct(slug: string): Promise<StorefrontProd
 
   const response = await fetch(
     `${publicSiteBase(config.apiUrl, config.siteKey)}/products/${encodeURIComponent(slug)}/`,
-    { next: { revalidate: 30 } },
+    { cache: "no-store" },
   );
 
   if (response.status === 404) {
