@@ -441,8 +441,6 @@ function ShowcaseEditor({ businessId, canManage, listing, media, onChanged, onUp
   const { notify } = useNotification();
   const [mediaId, setMediaId] = useState(listing.primary_media_id ?? "");
   const [saving, setSaving] = useState(false);
-
-  useEffect(() => setMediaId(listing.primary_media_id ?? ""), [listing.primary_media_id]);
   const dirty = mediaId !== (listing.primary_media_id ?? "");
 
   async function save() {
@@ -498,13 +496,6 @@ function VariantEditor({ businessId, canManage, listingId, media, onChanged, onU
   const [galleryMediaIds, setGalleryMediaIds] = useState<string[]>(variant.gallery_media_ids);
   const [published, setPublished] = useState(variant.is_published);
   const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    setPrice(variant.website_price ?? "");
-    setAvailability(variant.website_availability);
-    setGalleryMediaIds(variant.gallery_media_ids);
-    setPublished(variant.is_published);
-  }, [variant.gallery_media_ids, variant.is_published, variant.website_availability, variant.website_price]);
 
   const commerceOrigin = Boolean(variant.commerce_product_id);
   const commerceConnected = !commerceOrigin || variant.commerce_connected;
@@ -927,9 +918,22 @@ function WebsiteProductManager({ businessId }: { businessId: string }) {
                 {canManage ? <div className="flex gap-2"><Button onClick={() => void toggleListing(listing)} size="small" variant="outline">{listing.is_published ? (sw ? "Rudisha rasimu" : "Unpublish") : (sw ? "Chapisha" : "Publish")}</Button><button aria-label={sw ? "Futa bidhaa" : "Delete product"} className="inline-flex size-9 items-center justify-center rounded-lg text-red-500 hover:bg-red-50" onClick={() => void removeListing(listing)} type="button"><Trash2 className="size-4" /></button></div> : null}
               </div>
 
-              <ShowcaseEditor businessId={businessId} canManage={canManage} listing={listing} media={media} onChanged={load} onUpload={uploadMedia} siteId={site.id} sw={sw} />
+              <ShowcaseEditor businessId={businessId} canManage={canManage} key={`${listing.id}:${listing.primary_media_id ?? ""}`} listing={listing} media={media} onChanged={load} onUpload={uploadMedia} siteId={site.id} sw={sw} />
 
-              <div className="mt-4 space-y-2">{listing.variants.map((variant) => <VariantEditor businessId={businessId} canManage={canManage} key={variant.id} listingId={listing.id} media={media} onChanged={load} onUpload={uploadMedia} siteId={site.id} sw={sw} variant={variant} />)}</div>
+              <div className="mt-4 space-y-2">{listing.variants.map((variant) => (
+                <VariantEditor
+                  businessId={businessId}
+                  canManage={canManage}
+                  key={`${variant.id}:${variant.website_price ?? ""}:${variant.website_availability}:${variant.is_published ? "1" : "0"}:${variant.gallery_media_ids.join(",")}:${variant.commerce_connected ? "1" : "0"}`}
+                  listingId={listing.id}
+                  media={media}
+                  onChanged={load}
+                  onUpload={uploadMedia}
+                  siteId={site.id}
+                  sw={sw}
+                  variant={variant}
+                />
+              ))}</div>
 
               {canManage && !websiteStandalone ? (
                 <div className="mt-4">
