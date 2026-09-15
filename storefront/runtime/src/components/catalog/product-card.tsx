@@ -36,8 +36,8 @@ export function ProductCard({
       : "Price on request";
 
   return (
-    <article className="product-card product-card-store">
-      <Link href={`/products/${product.slug}`} className="product-card-link">
+    <article className="product-card product-card-store" style={{ display: "flex", flexDirection: "column" }}>
+      <Link href={`/products/${product.slug}`}>
         <div className="product-card-media">
           {product.badge ? <span className="product-badge">{localized(product.badge, locale)}</span> : null}
           {imageUrl ? (
@@ -53,32 +53,46 @@ export function ProductCard({
             </div>
           )}
         </div>
-        <div className="product-card-copy">
+      </Link>
+
+      <div className="product-card-copy">
+        <Link href={`/products/${product.slug}`}>
           {product.brand ? <p className="product-brand">{product.brand}</p> : null}
           <h3>{productTitle}</h3>
           <p className="product-card-description">{localized(product.shortDescription, locale)}</p>
-          <div className="product-card-price-row">
-            <strong>{priceLabel}</strong>
-            <span className={isAvailable ? "availability-dot in-stock" : "availability-dot out-of-stock"}>
-              {isAvailable ? (locale === "sw" ? "Inapatikana" : "Available") : locale === "sw" ? "Imeisha" : "Sold out"}
-            </span>
-          </div>
-          <p className="product-trade-note">{locale === "sw" ? "Pata punguzo kupitia trade-in" : "Get trade-in at a discount"}</p>
-        </div>
-      </Link>
-
-      <div className="product-card-actions">
-        <button
-          className="product-save-button"
-          type="button"
-          disabled
-          title={locale === "sw" ? "Kuhifadhi kutaunganishwa baadaye" : "Saving will be connected later"}
-        >
-          {locale === "sw" ? "Hifadhi" : "Save"}
-        </button>
-        <Link href={`/products/${product.slug}`} className="product-buy-button">
-          {locale === "sw" ? "Nunua sasa" : "Buy now"}
         </Link>
+
+        <div className="product-card-price-row">
+          <strong>{priceLabel}</strong>
+          <span className={isAvailable ? "availability-dot in-stock" : "availability-dot out-of-stock"}>
+            {isAvailable ? (locale === "sw" ? "Inapatikana" : "Available") : locale === "sw" ? "Imeisha" : "Sold out"}
+          </span>
+        </div>
+        <p className="product-trade-note">{locale === "sw" ? "Pata punguzo kupitia trade-in" : "Get trade-in at a discount"}</p>
+
+        <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 0.72fr) minmax(0, 1.28fr)", gap: "10px" }}>
+          <button
+            type="button"
+            disabled
+            title={locale === "sw" ? "Kuhifadhi kutaunganishwa baadaye" : "Saving will be connected later"}
+            style={{
+              minHeight: "40px",
+              border: "1px solid #d7d7d7",
+              borderRadius: "999px",
+              background: "#ffffff",
+              color: "#333333",
+              font: "inherit",
+              fontSize: "0.82rem",
+              fontWeight: 800,
+              opacity: 0.72,
+            }}
+          >
+            {locale === "sw" ? "Hifadhi" : "Save"}
+          </button>
+          <Link href={`/products/${product.slug}`} className="product-buy-button">
+            {locale === "sw" ? "Nunua sasa" : "Buy now"}
+          </Link>
+        </div>
       </div>
     </article>
   );
