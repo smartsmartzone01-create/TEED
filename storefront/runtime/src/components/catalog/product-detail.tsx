@@ -19,26 +19,14 @@ function isPurchasable(sku: StorefrontSku): boolean {
 }
 
 function availabilityLabel(status: StorefrontSkuAvailability, locale: StorefrontLocale): string {
-  if (status === "in_stock") {
-    return locale === "sw" ? "Ipo dukani" : "In stock";
-  }
-  if (status === "low_stock") {
-    return locale === "sw" ? "Imebaki chache" : "Low stock";
-  }
+  if (status === "in_stock") return locale === "sw" ? "Ipo dukani" : "In stock";
+  if (status === "low_stock") return locale === "sw" ? "Imebaki chache" : "Low stock";
   return locale === "sw" ? "Imeisha" : "Out of stock";
 }
 
-export function ProductDetail({
-  product,
-  locale,
-}: {
-  product: StorefrontProductListing;
-  locale: StorefrontLocale;
-}) {
+export function ProductDetail({ product, locale }: { product: StorefrontProductListing; locale: StorefrontLocale }) {
   const initialSku = product.skus.find(isPurchasable) ?? product.skus[0];
-  const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>(
-    initialSku?.options ?? {},
-  );
+  const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>(initialSku?.options ?? {});
   const visibleOptions = useMemo(
     () => product.options.filter((option) => !hiddenOptionIds.has(option.id)),
     [product.options],
@@ -50,132 +38,139 @@ export function ProductDetail({
     );
   }, [product.skus, selectedOptions, visibleOptions]);
 
-  const selectedImage = selectedSku?.imageUrl?.trim() || product.primaryImageUrl?.trim() || "";
   const productTitle = localized(product.title, locale);
+  const description = localized(product.description, locale);
+  const detailLines = description.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  const selectedImage = selectedSku?.imageUrl?.trim() || product.primaryImageUrl?.trim() || "";
+  const imageSkus = useMemo(() => {
+    const seen = new Set<string>();
+    return product.skus.filter((sku) => {
+      const image = sku.imageUrl?.trim();
+      if (!image || seen.has(image)) return false;
+      seen.add(image);
+      return true;
+    });
+  }, [product.skus]);
 
   function optionValueHasStock(optionId: string, value: string): boolean {
-    return product.skus.some(
-      (sku) => isPurchasable(sku) && sku.options[optionId] === value,
-    );
+    return product.skus.some((sku) => isPurchasable(sku) && sku.options[optionId] === value);
   }
 
   function chooseOption(optionId: string, value: string) {
     const proposed = { ...selectedOptions, [optionId]: value };
     const exactMatch = product.skus.find(
-      (sku) =>
-        isPurchasable(sku) &&
-        visibleOptions.every((option) => sku.options[option.id] === proposed[option.id]),
+      (sku) => isPurchasable(sku) && visibleOptions.every((option) => sku.options[option.id] === proposed[option.id]),
     );
-
     if (exactMatch) {
       setSelectedOptions(exactMatch.options);
       return;
     }
-
-    const compatibleSku = product.skus.find(
-      (sku) => isPurchasable(sku) && sku.options[optionId] === value,
-    );
-
-    if (compatibleSku) {
-      setSelectedOptions(compatibleSku.options);
-    }
+    const compatibleSku = product.skus.find((sku) => isPurchasable(sku) && sku.options[optionId] === value);
+    if (compatibleSku) setSelectedOptions(compatibleSku.options);
   }
 
+  const selectedPrice = selectedSku?.price
+    ? formatMoney(selectedSku.price, locale)
+    : locale === "sw" ? "Wasiliana kwa bei" : "Price on request";
+
   return (
-    <div className="product-detail">
-      <div className="product-detail-media">
-        {selectedImage ? (
-          <StorefrontImage
-            src={selectedImage}
-            alt={productTitle}
-            width={960}
-            height={960}
-            className="product-detail-image"
-          />
-        ) : (
-          <div
-            className="product-image-placeholder product-detail-image-placeholder"
-            role="img"
-            aria-label={productTitle}
-          >
-            <span>{locale === "sw" ? "Picha inakuja hivi karibuni" : "Image coming soon"}</span>
-          </div>
-        )}
-      </div>
-
-      <div className="product-detail-copy">
-        <h1>{productTitle}</h1>
-        <p className="product-detail-description">{localized(product.description, locale)}</p>
-
-        {visibleOptions.map((option) => (
-          <fieldset className="option-group" key={option.id}>
-            <legend>{localized(option.name, locale)}</legend>
-            <div className="option-values">
-              {option.values.map((value) => {
-                const selected = selectedOptions[option.id] === value.value;
-                const available = optionValueHasStock(option.id, value.value);
-
+    <>
+      <section className="product-detail product-detail-reference">
+        <div className="product-detail-gallery">
+          {imageSkus.length > 0 ? (
+            <div className="product-detail-thumbnails" aria-label={locale === "sw" ? "Picha za bidhaa" : "Product images"}>
+              {imageSkus.map((sku) => {
+                const imageUrl = sku.imageUrl?.trim() ?? "";
+                const active = imageUrl === selectedImage;
                 return (
                   <button
-                    key={value.value}
+                    className={`product-detail-thumbnail${active ? " is-active" : ""}`}
+                    key={`${sku.sku}-${imageUrl}`}
+                    onClick={() => setSelectedOptions(sku.options)}
                     type="button"
-                    disabled={!available}
-                    className={`option-chip${selected ? " option-chip-active" : ""}`}
-                    onClick={() => chooseOption(option.id, value.value)}
                   >
-                    {value.colorHex ? (
-                      <span className="color-swatch" style={{ backgroundColor: value.colorHex }} aria-hidden="true" />
-                    ) : null}
-                    {localized(value.label, locale)}
+                    <StorefrontImage src={imageUrl} alt={productTitle} width={120} height={120} />
                   </button>
                 );
               })}
             </div>
-          </fieldset>
-        ))}
+          ) : null}
 
-        {selectedSku ? (
-          <div className="sku-summary">
-            <div>
-              <span className="sku-label">SKU</span>
-              <strong>{selectedSku.sku}</strong>
-            </div>
-            <div>
-              <span className="sku-label">{locale === "sw" ? "Bei" : "Price"}</span>
-              <strong className="selected-price">
-                {selectedSku.price
-                  ? formatMoney(selectedSku.price, locale)
-                  : locale === "sw"
-                    ? "Wasiliana kwa bei"
-                    : "Price on request"}
+          <div className="product-detail-media">
+            {selectedImage ? (
+              <StorefrontImage src={selectedImage} alt={productTitle} width={960} height={960} className="product-detail-image" />
+            ) : (
+              <div className="product-image-placeholder product-detail-image-placeholder" role="img" aria-label={productTitle}>
+                <span>{locale === "sw" ? "Picha inakuja hivi karibuni" : "Image coming soon"}</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="product-detail-copy">
+          <div className="product-detail-pricing">
+            {product.brand ? <p className="product-detail-brand">{product.brand}</p> : null}
+            <h1>{productTitle}</h1>
+            <strong className="product-detail-price">{selectedPrice}</strong>
+          </div>
+
+          {visibleOptions.map((option) => (
+            <fieldset className="option-group" key={option.id}>
+              <legend>{localized(option.name, locale)}</legend>
+              <div className="option-values">
+                {option.values.map((value) => {
+                  const selected = selectedOptions[option.id] === value.value;
+                  const available = optionValueHasStock(option.id, value.value);
+                  return (
+                    <button
+                      key={value.value}
+                      type="button"
+                      disabled={!available}
+                      className={`option-chip${value.colorHex ? " option-chip-color" : ""}${selected ? " option-chip-active" : ""}`}
+                      onClick={() => chooseOption(option.id, value.value)}
+                      title={localized(value.label, locale)}
+                    >
+                      {value.colorHex ? <span className="color-swatch" style={{ backgroundColor: value.colorHex }} aria-hidden="true" /> : null}
+                      <span>{localized(value.label, locale)}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </fieldset>
+          ))}
+
+          <div className="product-detail-save-row">
+            <button className="product-detail-save" type="button" aria-label={locale === "sw" ? "Hifadhi bidhaa" : "Save product"}>♡</button>
+            <span>{locale === "sw" ? "Hifadhi bidhaa" : "Save product"}</span>
+          </div>
+
+          {selectedSku ? (
+            <div className="product-detail-availability-row">
+              <span>{locale === "sw" ? "Hali" : "Status"}</span>
+              <strong className={`availability-pill availability-${selectedSku.availability}`}>
+                {availabilityLabel(selectedSku.availability, locale)}
               </strong>
             </div>
-            <span className={`availability-pill availability-${selectedSku.availability}`}>
-              {availabilityLabel(selectedSku.availability, locale)}
-            </span>
-          </div>
-        ) : (
-          <div className="sku-summary sku-missing">
-            {locale === "sw"
-              ? "Mchanganyiko huu haujaunganishwa na SKU ya dukani."
-              : "This combination is not backed by a storefront SKU."}
-          </div>
-        )}
+          ) : null}
 
-        <button
-          type="button"
-          className="button button-primary product-add-button"
-          disabled
-          aria-describedby="cart-roadmap"
-        >
-          {locale === "sw" ? "Ongeza kwenye kikapu" : "Add to bag"}
-        </button>
-        <p className="product-purchase-note" id="cart-roadmap">
-          {locale === "sw"
-            ? "Kikapu kitaunganishwa kwenye hatua inayofuata; kwa sasa hakuna oda inayotengenezwa."
-            : "Cart wiring comes next; no order is created from this preview yet."}
-        </p>
-      </div>
-    </div>
+          <div className="product-detail-actions">
+            <button type="button" className="product-detail-buy-now" disabled>{locale === "sw" ? "Nunua sasa" : "Buy now"}</button>
+            <button type="button" className="product-detail-add-cart" disabled>{locale === "sw" ? "Ongeza kwenye kikapu" : "Add to bag"}</button>
+          </div>
+          <p className="product-purchase-note">
+            {locale === "sw" ? "Ununuzi utaunganishwa kwenye hatua inayofuata." : "Purchase actions will be wired in the next phase."}
+          </p>
+        </div>
+      </section>
+
+      <section className="product-detail-information">
+        <h2>{locale === "sw" ? "Maelezo ya bidhaa" : "Product details"}</h2>
+        {detailLines.length > 1 ? (
+          <ul>{detailLines.map((line) => <li key={line}>{line}</li>)}</ul>
+        ) : (
+          <p>{description}</p>
+        )}
+      </section>
+    </>
   );
 }
