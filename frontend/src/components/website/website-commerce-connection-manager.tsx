@@ -115,14 +115,20 @@ function WebsiteCommerceConnectionManager({ businessId }: { businessId: string }
     setBusyKey(group.key);
     try {
       const response = await request((token) =>
-        importWebsiteCommerceProducts(businessId, site.id, [candidate.id], token),
+        importWebsiteCommerceProducts(
+          businessId,
+          site.id,
+          [candidate.id],
+          token,
+          "group",
+        ),
       );
       const created = response.data?.created_variants ?? 0;
       notify({
         message: sw
           ? created
             ? `Imeunganishwa kwenye Website. SKU ${created} zimeongezwa kama rasimu.`
-            : "Imeunganishwa tena kwenye Website. Hali ya uchapishaji inasimamiwa kwenye Products."
+            : "Imeunganishwa tena kwenye Website. Uchapishaji unasimamiwa kwenye Products."
           : created
             ? `Connected to Website. ${created} SKU(s) were added as drafts.`
             : "Reconnected to Website. Publishing is managed from Products.",
@@ -137,6 +143,47 @@ function WebsiteCommerceConnectionManager({ businessId }: { businessId: string }
             : sw
               ? "Imeshindikana kuunganisha kwenye Website."
               : "The item could not be connected to Website.",
+        tone: "error",
+      });
+    } finally {
+      setBusyKey(null);
+    }
+  }
+
+  async function connectProduct(product: WebsiteCommerceProduct) {
+    if (!site || !canManage || product.linked) return;
+    const key = `sku:${product.id}`;
+    setBusyKey(key);
+    try {
+      const response = await request((token) =>
+        importWebsiteCommerceProducts(
+          businessId,
+          site.id,
+          [product.id],
+          token,
+          "product",
+        ),
+      );
+      const created = response.data?.created_variants ?? 0;
+      notify({
+        message: sw
+          ? created
+            ? "SKU imeongezwa kwenye Website kama rasimu."
+            : "SKU imeunganishwa tena kwenye Website kama rasimu."
+          : created
+            ? "SKU added to Website as a draft."
+            : "SKU reconnected to Website as a draft.",
+        tone: "success",
+      });
+      await load();
+    } catch (importError) {
+      notify({
+        message:
+          importError instanceof Error
+            ? importError.message
+            : sw
+              ? "Imeshindikana kuongeza SKU kwenye Website."
+              : "The SKU could not be added to Website.",
         tone: "error",
       });
     } finally {
@@ -167,6 +214,7 @@ function WebsiteCommerceConnectionManager({ businessId }: { businessId: string }
           anchor.website_listing_id!,
           anchor.website_variant_id!,
           token,
+          "group",
         ),
       );
       notify({
@@ -184,6 +232,58 @@ function WebsiteCommerceConnectionManager({ businessId }: { businessId: string }
             : sw
               ? "Imeshindikana kuondoa kwenye Website."
               : "The item could not be removed from Website.",
+        tone: "error",
+      });
+    } finally {
+      setBusyKey(null);
+    }
+  }
+
+  async function removeProduct(product: WebsiteCommerceProduct) {
+    if (
+      !site ||
+      !canManage ||
+      !product.linked ||
+      !product.website_listing_id ||
+      !product.website_variant_id
+    ) {
+      return;
+    }
+    const confirmed = window.confirm(
+      sw
+        ? `Ondoa SKU ${product.sku} pekee kwenye Website? SKU nyingine za familia zitaendelea kuunganishwa.`
+        : `Remove only SKU ${product.sku} from Website? Other SKUs in this family will remain connected.`,
+    );
+    if (!confirmed) return;
+
+    const key = `sku:${product.id}`;
+    setBusyKey(key);
+    try {
+      await request((token) =>
+        disconnectWebsiteCommerceVariant(
+          businessId,
+          site.id,
+          product.website_listing_id!,
+          product.website_variant_id!,
+          token,
+          "product",
+        ),
+      );
+      notify({
+        message: sw
+          ? "SKU imeondolewa kwenye Website. Uwasilishaji wake umehifadhiwa."
+          : "SKU removed from Website. Its presentation was preserved.",
+        tone: "success",
+      });
+      await load();
+    } catch (disconnectError) {
+      notify({
+        message:
+          disconnectError instanceof Error
+            ? disconnectError.message
+            : sw
+              ? "Imeshindikana kuondoa SKU kwenye Website."
+              : "The SKU could not be removed from Website.",
         tone: "error",
       });
     } finally {
@@ -241,8 +341,8 @@ function WebsiteCommerceConnectionManager({ businessId }: { businessId: string }
         </h1>
         <p className="mt-1 max-w-3xl text-sm text-slate-500">
           {sw
-            ? "Chagua familia au bidhaa binafsi zitakazokuwa sehemu ya katalogi ya Website. Uchapishaji, bei, picha na maudhui yanasimamiwa kwenye Products."
-            : "Choose which product families or standalone products belong to the Website catalog. Publishing, prices, images, and presentation are managed from Products."}
+            ? "Chagua familia, SKU maalum, au bidhaa binafsi zitakazokuwa sehemu ya katalogi ya Website. Uchapishaji, bei, picha na maudhui yanasimamiwa kwenye Products."
+            : "Choose which product families, individual SKUs, or standalone products belong to the Website catalog. Publishing, prices, images, and presentation are managed from Products."}
         </p>
       </header>
 
@@ -274,7 +374,7 @@ function WebsiteCommerceConnectionManager({ businessId }: { businessId: string }
                         </span>
                       ) : partiallyConnected ? (
                         <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold uppercase text-amber-700 dark:bg-amber-950/30 dark:text-amber-300">
-                          {sw ? "Inahitaji kusawazishwa" : "Needs sync"}
+                          {sw ? `${connectedCount}/${group.products.length} SKU` : `${connectedCount}/${group.products.length} SKUs connected`}
                         </span>
                       ) : null}
                     </div>
@@ -292,7 +392,7 @@ function WebsiteCommerceConnectionManager({ businessId }: { businessId: string }
                         variant="outline"
                       >
                         {busyKey === group.key ? <Loader2 className="size-4 animate-spin" /> : <Unplug className="size-4" />}
-                        {sw ? "Ondoa kwenye Website" : "Remove from Website"}
+                        {sw ? "Ondoa zote" : "Remove all"}
                       </Button>
                     ) : (
                       <Button
@@ -302,7 +402,7 @@ function WebsiteCommerceConnectionManager({ businessId }: { businessId: string }
                       >
                         {busyKey === group.key ? <Loader2 className="size-4 animate-spin" /> : <Plug className="size-4" />}
                         {partiallyConnected
-                          ? sw ? "Sawazisha" : "Complete connection"
+                          ? sw ? "Ongeza SKU zote" : "Add all SKUs"
                           : sw ? "Ongeza kwenye Website" : "Add to Website"}
                       </Button>
                     )
@@ -310,19 +410,47 @@ function WebsiteCommerceConnectionManager({ businessId }: { businessId: string }
                 </div>
 
                 <div className="mt-4 divide-y divide-slate-100 rounded-md border border-slate-100 px-3 dark:divide-slate-800 dark:border-slate-800">
-                  {group.products.map((product) => (
-                    <div className="flex items-center justify-between gap-3 py-2.5" key={product.id}>
-                      <div className="min-w-0">
-                        <p className="truncate font-mono text-xs font-semibold text-slate-800 dark:text-slate-200">{product.sku}</p>
-                        <p className="mt-0.5 truncate text-xs text-slate-500">
-                          {[product.variant || product.name, product.tracking_mode].filter(Boolean).join(" · ")}
-                        </p>
+                  {group.products.map((product) => {
+                    const productBusy = busyKey === `sku:${product.id}`;
+                    return (
+                      <div className="flex items-center justify-between gap-3 py-2.5" key={product.id}>
+                        <div className="min-w-0">
+                          <p className="truncate font-mono text-xs font-semibold text-slate-800 dark:text-slate-200">{product.sku}</p>
+                          <p className="mt-0.5 truncate text-xs text-slate-500">
+                            {[product.variant || product.name, product.tracking_mode].filter(Boolean).join(" · ")}
+                          </p>
+                        </div>
+                        <div className="flex shrink-0 items-center gap-2">
+                          <span className={`text-[11px] font-semibold ${product.linked ? "text-emerald-600 dark:text-emerald-400" : "text-slate-400"}`}>
+                            {product.linked ? (sw ? "Imeunganishwa" : "Connected") : (sw ? "Haijaunganishwa" : "Not connected")}
+                          </span>
+                          {canManage && group.kind === "family" ? (
+                            product.linked ? (
+                              <Button
+                                disabled={productBusy}
+                                onClick={() => void removeProduct(product)}
+                                size="small"
+                                variant="outline"
+                              >
+                                {productBusy ? <Loader2 className="size-4 animate-spin" /> : <Unplug className="size-4" />}
+                                {sw ? "Ondoa SKU" : "Remove SKU"}
+                              </Button>
+                            ) : (
+                              <Button
+                                disabled={productBusy}
+                                onClick={() => void connectProduct(product)}
+                                size="small"
+                                variant="outline"
+                              >
+                                {productBusy ? <Loader2 className="size-4 animate-spin" /> : <Plug className="size-4" />}
+                                {sw ? "Ongeza SKU" : "Add SKU"}
+                              </Button>
+                            )
+                          ) : null}
+                        </div>
                       </div>
-                      <span className={`text-[11px] font-semibold ${product.linked ? "text-emerald-600 dark:text-emerald-400" : "text-slate-400"}`}>
-                        {product.linked ? (sw ? "Imeunganishwa" : "Connected") : (sw ? "Haijaunganishwa" : "Not connected")}
-                      </span>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </section>
             );

@@ -65,7 +65,7 @@ def list_commerce_catalog(*, user, business_id, site_id):
     ]
 
 
-def _expand_selected_products(*, business, product_ids):
+def _selected_products(*, business, product_ids, expand_family):
     requested = list(
         Product.objects.filter(
             business=business,
@@ -78,25 +78,28 @@ def _expand_selected_products(*, business, product_ids):
             {"product_ids": "Every selected Commerce product must be active and belong to this workspace."},
             code="website_commerce_product_invalid",
         )
-    family_ids = {product.family_id for product in requested if product.family_id is not None}
-    familyless_ids = {product.id for product in requested if product.family_id is None}
-    products = []
-    if family_ids:
-        products.extend(
-            Product.objects.filter(
-                business=business,
-                is_active=True,
-                family_id__in=family_ids,
-            ).select_related("family")
-        )
-    if familyless_ids:
-        products.extend(
-            Product.objects.filter(
-                business=business,
-                is_active=True,
-                id__in=familyless_ids,
-            ).select_related("family")
-        )
+    if not expand_family:
+        products = requested
+    else:
+        family_ids = {product.family_id for product in requested if product.family_id is not None}
+        familyless_ids = {product.id for product in requested if product.family_id is None}
+        products = []
+        if family_ids:
+            products.extend(
+                Product.objects.filter(
+                    business=business,
+                    is_active=True,
+                    family_id__in=family_ids,
+                ).select_related("family")
+            )
+        if familyless_ids:
+            products.extend(
+                Product.objects.filter(
+                    business=business,
+                    is_active=True,
+                    id__in=familyless_ids,
+                ).select_related("family")
+            )
     return sorted(
         {product.id: product for product in products}.values(),
         key=lambda product: (
@@ -109,11 +112,72 @@ def _expand_selected_products(*, business, product_ids):
     )
 
 
+def _managed_option_ids(products):
+    managed = {"variant"}
+    for product in products:
+        managed.update(variant_option_values(product.variant_options).keys())
+    return managed
+
+
+def _sync_listing_membership_options(listing):
+    known_products = list(
+        Product.objects.filter(
+            website_variants__listing=listing,
+            website_variants__commerce_product__isnull=False,
+        ).distinct()
+    )
+    connected_products = list(
+        Product.objects.filter(
+            website_variants__listing=listing,
+            website_variants__commerce_connected=True,
+            website_variants__commerce_product__isnull=False,
+            is_active=True,
+        ).distinct()
+    )
+    managed_option_ids = _managed_option_ids(known_products)
+    structured_options = (
+        _structured_family_options(connected_products) if connected_products else None
+    )
+    family_options = (
+        structured_options
+        if structured_options is not None
+        else _legacy_family_options(connected_products)
+    )
+    next_options = _replace_managed_listing_options(
+        listing.options,
+        managed_option_ids,
+        family_options,
+    )
+    if next_options != listing.options:
+        listing.options = next_options
+        listing.save(update_fields=["options", "updated_at"])
+
+
+def _existing_family_listing(*, site, family_id):
+    if not family_id:
+        return None
+    return (
+        WebsiteListing.objects.filter(
+            site=site,
+            variants__commerce_product__family_id=family_id,
+        )
+        .distinct()
+        .order_by("created_at", "id")
+        .first()
+    )
+
+
 @transaction.atomic
-def import_commerce_products(*, actor, business_id, site_id, product_ids):
+def import_commerce_products(
+    *, actor, business_id, site_id, product_ids, expand_family=True
+):
     site = get_site_for_user(user=actor, business_id=business_id, site_id=site_id, manage=True)
     _require_commerce_view(user=actor, business_id=business_id)
-    products = _expand_selected_products(business=site.business, product_ids=product_ids)
+    products = _selected_products(
+        business=site.business,
+        product_ids=product_ids,
+        expand_family=expand_family,
+    )
 
     grouped = defaultdict(list)
     for product in products:
@@ -134,7 +198,13 @@ def import_commerce_products(*, actor, business_id, site_id, product_ids):
         family_options = structured_options if structured_mode else _legacy_family_options(group_products)
         managed_option_ids = {"variant", *(option["id"] for option in (structured_options or []))}
 
-        listing, _linked_listings = _canonical_listing(site=site, products=group_products, display_name=display_name)
+        listing, _linked_listings = _canonical_listing(
+            site=site,
+            products=group_products,
+            display_name=display_name,
+        )
+        if listing is None and family is not None:
+            listing = _existing_family_listing(site=site, family_id=family.id)
         if listing is None:
             listing = WebsiteListing.objects.create(
                 site=site,
@@ -146,7 +216,11 @@ def import_commerce_products(*, actor, business_id, site_id, product_ids):
             )
             created_listings += 1
         elif structured_mode:
-            next_options = _replace_managed_listing_options(listing.options, managed_option_ids, family_options)
+            next_options = _replace_managed_listing_options(
+                listing.options,
+                managed_option_ids,
+                family_options,
+            )
             if next_options != listing.options:
                 listing.options = next_options
                 listing.save(update_fields=["options", "updated_at"])
@@ -155,11 +229,18 @@ def import_commerce_products(*, actor, business_id, site_id, product_ids):
             listing.save(update_fields=["options", "updated_at"])
 
         for product in group_products:
-            existing = WebsiteVariant.objects.filter(listing__site=site, commerce_product=product).first()
+            existing = WebsiteVariant.objects.filter(
+                listing__site=site,
+                commerce_product=product,
+            ).first()
             product_options = (
                 variant_option_values(product.variant_options)
                 if structured_mode
-                else ({} if product.tracking_mode == Product.TrackingMode.INDIVIDUAL else ({"variant": product.variant} if product.variant else {}))
+                else (
+                    {}
+                    if product.tracking_mode == Product.TrackingMode.INDIVIDUAL
+                    else ({"variant": product.variant} if product.variant else {})
+                )
             )
             if existing is not None:
                 linked_existing_variants += 1
@@ -172,7 +253,11 @@ def import_commerce_products(*, actor, business_id, site_id, product_ids):
                     changed.append("commerce_connected")
                 if structured_mode:
                     current_options = existing.options if isinstance(existing.options, dict) else {}
-                    preserved = {key: value for key, value in current_options.items() if key not in managed_option_ids}
+                    preserved = {
+                        key: value
+                        for key, value in current_options.items()
+                        if key not in managed_option_ids
+                    }
                     next_options = {**preserved, **product_options}
                     if next_options != current_options:
                         existing.options = next_options
@@ -194,6 +279,8 @@ def import_commerce_products(*, actor, business_id, site_id, product_ids):
             )
             created_variants += 1
 
+        _sync_listing_membership_options(listing)
+
     return {
         "requested_product_ids": [str(product_id) for product_id in product_ids],
         "imported_product_ids": [str(product.id) for product in products],
@@ -204,7 +291,9 @@ def import_commerce_products(*, actor, business_id, site_id, product_ids):
 
 
 @transaction.atomic
-def disconnect_commerce_variant(*, actor, business_id, site_id, listing_id, variant_id):
+def disconnect_commerce_variant(
+    *, actor, business_id, site_id, listing_id, variant_id, scope="group"
+):
     anchor = get_variant_for_user(
         user=actor,
         business_id=business_id,
@@ -224,18 +313,32 @@ def disconnect_commerce_variant(*, actor, business_id, site_id, listing_id, vari
         listing__site_id=site_id,
         commerce_product__business_id=business_id,
     )
-    if product.family_id:
+    if scope == "product":
+        group = group.filter(id=anchor.id)
+    elif product.family_id:
         group = group.filter(commerce_product__family_id=product.family_id)
     else:
         group = group.filter(commerce_product_id=product.id)
 
     listing_ids = list(group.values_list("listing_id", flat=True).distinct())
-    updated = group.update(commerce_connected=False, is_published=False)
+    updated = group.filter(commerce_connected=True).update(
+        commerce_connected=False,
+        is_published=False,
+    )
     if not updated:
         raise ValidationError(
             {"variant_id": "No connected Website variants were found for this Commerce item."},
             code="website_variant_not_connected",
         )
-    WebsiteListing.objects.filter(id__in=listing_ids).update(is_published=False)
+
+    for listing in WebsiteListing.objects.filter(id__in=listing_ids):
+        _sync_listing_membership_options(listing)
+        if not WebsiteVariant.objects.filter(
+            listing=listing,
+            is_published=True,
+        ).exists():
+            listing.is_published = False
+            listing.save(update_fields=["is_published", "updated_at"])
+
     anchor.refresh_from_db()
     return anchor

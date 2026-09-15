@@ -12,6 +12,7 @@ from .commerce_connection import (
     list_commerce_catalog,
 )
 from .commerce_serializers import (
+    WebsiteCommerceDisconnectSerializer,
     WebsiteCommerceImportSerializer,
     WebsiteCommerceProductSerializer,
 )
@@ -49,6 +50,7 @@ class WebsiteCommerceImportAPIView(WebsiteCommerceBaseAPIView):
             business_id=business_id,
             site_id=site_id,
             product_ids=serializer.validated_data["product_ids"],
+            expand_family=serializer.validated_data["scope"] == "group",
         )
         return SuccessResponse(
             message="Commerce products imported successfully.",
@@ -59,14 +61,17 @@ class WebsiteCommerceImportAPIView(WebsiteCommerceBaseAPIView):
 class WebsiteCommerceDisconnectAPIView(WebsiteCommerceBaseAPIView):
     @method_decorator(csrf_protect)
     def post(self, request, business_id, site_id, listing_id, variant_id):
+        serializer = WebsiteCommerceDisconnectSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
         variant = disconnect_commerce_variant(
             actor=request.user,
             business_id=business_id,
             site_id=site_id,
             listing_id=listing_id,
             variant_id=variant_id,
+            scope=serializer.validated_data["scope"],
         )
         return SuccessResponse(
-            message="Website variant disconnected from Commerce successfully.",
+            message="Website Commerce membership updated successfully.",
             data=WebsiteVariantSerializer(variant).data,
         )
