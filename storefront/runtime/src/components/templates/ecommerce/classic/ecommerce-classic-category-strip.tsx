@@ -13,12 +13,14 @@ export function EcommerceClassicCategoryStrip({
   items,
   viewAllHref,
   variant = "default",
+  selectedItemId,
 }: {
   locale: StorefrontLocale;
   title: LocalizedText;
   items: StorefrontCategory[];
   viewAllHref: string;
   variant?: "default" | "catalog";
+  selectedItemId?: string;
 }) {
   const railRef = useRef<HTMLDivElement>(null);
   const compact = items.length <= 4;
@@ -56,26 +58,34 @@ export function EcommerceClassicCategoryStrip({
           </button>
         ) : null}
         <div className={`commerce-classic-category-rail${compact ? " is-compact" : ""}`} ref={railRef}>
-          {items.map((item) => (
-            <Link className="commerce-classic-category-item" href={item.href} key={item.id}>
-              <div className="commerce-classic-category-media">
-                {item.imageUrl ? (
-                  <StorefrontImage
-                    alt={localized(item.title, locale)}
-                    height={220}
-                    src={item.imageUrl}
-                    width={260}
-                  />
-                ) : (
-                  <span aria-hidden="true" className="commerce-classic-category-placeholder" />
-                )}
-              </div>
-              <div className="commerce-classic-category-copy">
-                <h3>{localized(item.title, locale)}</h3>
-                {!isCatalog && localized(item.description, locale) ? <p>{localized(item.description, locale)}</p> : null}
-              </div>
-            </Link>
-          ))}
+          {items.map((item) => {
+            const selected = isCatalog && item.id === selectedItemId;
+            return (
+              <Link
+                aria-current={selected ? "page" : undefined}
+                className={`commerce-classic-category-item${selected ? " is-selected" : ""}`}
+                href={item.href}
+                key={item.id}
+              >
+                <div className="commerce-classic-category-media">
+                  {item.imageUrl ? (
+                    <StorefrontImage
+                      alt={localized(item.title, locale)}
+                      height={220}
+                      src={item.imageUrl}
+                      width={260}
+                    />
+                  ) : (
+                    <span aria-hidden="true" className="commerce-classic-category-placeholder" />
+                  )}
+                </div>
+                <div className="commerce-classic-category-copy">
+                  <h3>{localized(item.title, locale)}</h3>
+                  {!isCatalog && localized(item.description, locale) ? <p>{localized(item.description, locale)}</p> : null}
+                </div>
+              </Link>
+            );
+          })}
         </div>
         {!compact ? (
           <button

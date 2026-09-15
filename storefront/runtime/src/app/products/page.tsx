@@ -40,6 +40,7 @@ export default async function ProductsPage({
               <EcommerceClassicCategoryStrip
                 items={site.categories.items}
                 locale={locale}
+                selectedItemId={selectedCategory?.id}
                 title={site.categories.title}
                 viewAllHref={site.categories.viewAllHref}
                 variant="catalog"
