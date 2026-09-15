@@ -81,6 +81,15 @@ type ProductPerformance = {
   month: string;
 };
 
+type AvailableFamily = {
+  key: string;
+  familyId: string | null;
+  name: string;
+  brand: string;
+  products: Product[];
+  totalQuantity: number;
+};
+
 function topProductSince(sales: PerformanceSale[], since: Date) {
   const totals = new Map<string, { name: string; quantity: number }>();
 
@@ -112,6 +121,44 @@ function topProductSince(sales: PerformanceSale[], since: Date) {
   return top?.name ?? "";
 }
 
+function groupAvailableFamilies(products: Product[]): AvailableFamily[] {
+  const grouped = new Map<string, AvailableFamily>();
+
+  for (const product of products) {
+    const key = product.family ? `family:${product.family}` : `product:${product.id}`;
+    const existing = grouped.get(key);
+    if (existing) {
+      existing.products.push(product);
+      existing.totalQuantity += Number(product.current_quantity) || 0;
+      if (!existing.brand && product.brand) existing.brand = product.brand;
+      continue;
+    }
+
+    grouped.set(key, {
+      key,
+      familyId: product.family,
+      name: product.family_name || product.name,
+      brand: product.brand,
+      products: [product],
+      totalQuantity: Number(product.current_quantity) || 0,
+    });
+  }
+
+  return [...grouped.values()]
+    .filter((family) => family.totalQuantity > 0)
+    .sort((a, b) => a.name.localeCompare(b.name) || a.brand.localeCompare(b.brand));
+}
+
+function familyUnit(family: AvailableFamily) {
+  const units = [...new Set(family.products.map((product) => product.unit).filter(Boolean))];
+  return units.length === 1 ? units[0] : null;
+}
+
+function familyTrackingMode(family: AvailableFamily) {
+  const modes = [...new Set(family.products.map((product) => product.tracking_mode))];
+  return modes.length === 1 ? modes[0] : null;
+}
+
 function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
   const t = useTranslations("Commerce");
   const locale = useLocale();
@@ -128,10 +175,7 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
   const [busy, setBusy] = useState(false);
   const [showEmpty, setShowEmpty] = useState(false);
 
-  const availableProducts = useMemo(
-    () => products.filter((product) => Number(product.current_quantity) > 0),
-    [products],
-  );
+  const availableFamilies = useMemo(() => groupAvailableFamilies(products), [products]);
   const emptyProducts = useMemo(
     () => products.filter((product) => Number(product.current_quantity) === 0),
     [products],
@@ -251,18 +295,17 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
   const headers = {
     product: locale === "sw" ? "Bidhaa" : "Product",
     brand: locale === "sw" ? "Chapa" : "Brand",
-    variant: locale === "sw" ? "Aina" : "Variant / type",
+    skus: "SKUs",
     unit: locale === "sw" ? "Kipimo" : "Unit",
-    id: locale === "sw" ? "Namba ya bidhaa" : "Item ID",
     quantity: locale === "sw" ? "Kiasi" : "Quantity",
     tracking: locale === "sw" ? "Ufuatiliaji" : "Tracking",
-    action: locale === "sw" ? "Hatua" : "Action",
   };
   const intro =
     locale === "sw"
-      ? "Bidhaa zinazopatikana kwa sasa katika biashara hii."
-      : "Currently available products for this business.";
-  const editLabel = locale === "sw" ? "Hariri" : "Edit";
+      ? "Familia za bidhaa zinazopatikana kwa sasa katika biashara hii."
+      : "Currently available product families for this business.";
+  const editLabel = locale === "sw" ? "Hariri SKU" : "Edit SKU";
+  const mixedLabel = locale === "sw" ? "Mchanganyiko" : "Mixed";
   const noPerformance = locale === "sw" ? "Hakuna mauzo bado" : "No sales yet";
   const performancePeriods = [
     { key: "today" as const, label: locale === "sw" ? "Leo" : "Today" },
@@ -270,7 +313,7 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
     { key: "month" as const, label: locale === "sw" ? "Mwezi huu" : "This month" },
   ];
   const emptyAvailable =
-    locale === "sw" ? "Hakuna bidhaa zinazopatikana sasa." : "No products are currently available.";
+    locale === "sw" ? "Hakuna familia za bidhaa zinazopatikana sasa." : "No product families are currently available.";
 
   return (
     <section className="w-full space-y-3 !px-0 py-4 sm:space-y-4">
@@ -330,70 +373,93 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
 
         <div className="p-3 sm:p-4">
           <div className="hidden overflow-x-auto rounded-md md:block">
-            <table className="mx-auto w-full min-w-[900px] border-collapse text-left text-xs">
+            <table className="mx-auto w-full min-w-[860px] border-collapse text-left text-xs">
               <thead className="bg-[#DDE3E9] text-sm font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-100">
                 <tr>
                   <th className="px-4 py-3">{headers.product}</th>
                   <th className="px-3 py-3">{headers.brand}</th>
-                  <th className="px-3 py-3">{headers.variant}</th>
+                  <th className="px-3 py-3">{headers.skus}</th>
                   <th className="px-3 py-3">{headers.unit}</th>
-                  <th className="px-3 py-3">{headers.id}</th>
                   <th className="px-3 py-3 text-center">{headers.quantity}</th>
                   <th className="px-3 py-3">{headers.tracking}</th>
-                  <th className="px-4 py-3 text-center">{headers.action}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
-                {availableProducts.map((product, index) => (
-                  <tr
-                    className={
-                      index % 2 === 0
-                        ? "bg-white transition-colors hover:bg-slate-50 dark:bg-slate-950 dark:hover:bg-slate-900/60"
-                        : "bg-[#F4F7FA] transition-colors hover:bg-slate-100 dark:bg-slate-900/35 dark:hover:bg-slate-900/70"
-                    }
-                    key={product.id}
-                  >
-                    <td className="px-4 py-3">
-                      <div className="min-w-40">
-                        <strong className="block text-sm font-bold text-slate-950 dark:text-white">
-                          {product.name}
+                {availableFamilies.map((family, index) => {
+                  const unit = familyUnit(family);
+                  const trackingMode = familyTrackingMode(family);
+                  return (
+                    <tr
+                      className={
+                        index % 2 === 0
+                          ? "bg-white transition-colors hover:bg-slate-50 dark:bg-slate-950 dark:hover:bg-slate-900/60"
+                          : "bg-[#F4F7FA] transition-colors hover:bg-slate-100 dark:bg-slate-900/35 dark:hover:bg-slate-900/70"
+                      }
+                      key={family.key}
+                    >
+                      <td className="px-4 py-3">
+                        <div className="min-w-40">
+                          <strong className="block text-sm font-bold text-slate-950 dark:text-white">
+                            {family.name}
+                          </strong>
+                          <span className="mt-0.5 block text-[11px] text-slate-400">
+                            {locale === "sw"
+                              ? `${family.products.length} SKU`
+                              : `${family.products.length} ${family.products.length === 1 ? "SKU" : "SKUs"}`}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-3 py-3 text-slate-600 dark:text-slate-300">{family.brand || "—"}</td>
+                      <td className="px-3 py-2.5">
+                        <div className="space-y-1">
+                          {family.products.map((product) => (
+                            <div className="flex min-w-56 items-center justify-between gap-2" key={product.id}>
+                              <div className="min-w-0">
+                                <p className="truncate font-mono text-[11px] font-semibold text-[var(--workspace-secondary,var(--brand-orange))] dark:text-slate-200">
+                                  {product.sku || "—"}
+                                </p>
+                                <p className="truncate text-[10px] text-slate-500 dark:text-slate-400">
+                                  {product.variant || product.group || product.name}
+                                  {` · ${formatQuantityNumber(product.current_quantity, locale)}`}
+                                </p>
+                              </div>
+                              <Tooltip content={editLabel}>
+                                <button
+                                  aria-label={`${editLabel}: ${product.sku || product.name}`}
+                                  className="inline-flex size-7 shrink-0 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-950 dark:hover:bg-slate-800 dark:hover:text-white"
+                                  onClick={() => openEdit(product)}
+                                  type="button"
+                                >
+                                  <Pencil className="size-3.5" />
+                                </button>
+                              </Tooltip>
+                            </div>
+                          ))}
+                        </div>
+                      </td>
+                      <td className="px-3 py-3 text-slate-600 dark:text-slate-300">
+                        {unit ? formatUnitName(unit, 2, locale) : mixedLabel}
+                      </td>
+                      <td className="px-3 py-3 text-center">
+                        <strong className={`text-sm font-bold ${primaryAccentClassName}`}>
+                          {unit
+                            ? formatQuantityWithUnit(String(family.totalQuantity), unit, locale)
+                            : formatQuantityNumber(String(family.totalQuantity), locale)}
                         </strong>
-                        {product.barcode ? (
-                          <span className="mt-0.5 block text-[11px] text-slate-400">{product.barcode}</span>
-                        ) : null}
-                      </div>
-                    </td>
-                    <td className="px-3 py-3 text-slate-600 dark:text-slate-300">{product.brand || "—"}</td>
-                    <td className="px-3 py-3 text-slate-600 dark:text-slate-300">
-                      {product.variant || product.group || "—"}
-                    </td>
-                    <td className="px-3 py-3 text-slate-600 dark:text-slate-300">
-                      {formatUnitName(product.unit, 2, locale)}
-                    </td>
-                    <td className="px-3 py-3 font-mono text-[11px] font-semibold text-[var(--workspace-secondary,var(--brand-orange))] dark:text-slate-200">
-                      {product.sku}
-                    </td>
-                    <td className="px-3 py-3 text-center">
-                      <strong className={`text-sm font-bold ${primaryAccentClassName}`}>
-                        {formatQuantityNumber(product.current_quantity, locale)}
-                      </strong>
-                    </td>
-                    <td className="px-3 py-3 text-slate-500 dark:text-slate-400">
-                      {product.tracking_mode === "individual" ? t("values.individual") : t("values.quantity")}
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <Tooltip content={editLabel}>
-                        <Button onClick={() => openEdit(product)} size="small" type="button" variant="outline">
-                          <Pencil className="size-3.5" />
-                          {editLabel}
-                        </Button>
-                      </Tooltip>
-                    </td>
-                  </tr>
-                ))}
-                {!availableProducts.length ? (
+                      </td>
+                      <td className="px-3 py-3 text-slate-500 dark:text-slate-400">
+                        {trackingMode
+                          ? trackingMode === "individual"
+                            ? t("values.individual")
+                            : t("values.quantity")
+                          : mixedLabel}
+                      </td>
+                    </tr>
+                  );
+                })}
+                {!availableFamilies.length ? (
                   <tr>
-                    <td className="px-4 py-7 text-sm text-slate-500" colSpan={8}>{emptyAvailable}</td>
+                    <td className="px-4 py-7 text-sm text-slate-500" colSpan={6}>{emptyAvailable}</td>
                   </tr>
                 ) : null}
               </tbody>
@@ -401,45 +467,63 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
           </div>
 
           <div className="overflow-hidden rounded-md md:hidden">
-            {availableProducts.length ? (
+            {availableFamilies.length ? (
               <div className="divide-y divide-slate-200 dark:divide-slate-800">
-                {availableProducts.map((product, index) => (
-                  <div
-                    className={index % 2 === 0 ? "bg-white p-3.5 dark:bg-slate-950" : "bg-[#F4F7FA] p-3.5 dark:bg-slate-900/35"}
-                    key={product.id}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-bold text-slate-950 dark:text-white">{product.name}</p>
-                        <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">
-                          {[product.brand, product.variant || product.group].filter(Boolean).join(" · ") || "—"}
-                        </p>
+                {availableFamilies.map((family, index) => {
+                  const unit = familyUnit(family);
+                  const trackingMode = familyTrackingMode(family);
+                  return (
+                    <div
+                      className={index % 2 === 0 ? "bg-white p-3.5 dark:bg-slate-950" : "bg-[#F4F7FA] p-3.5 dark:bg-slate-900/35"}
+                      key={family.key}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-bold text-slate-950 dark:text-white">{family.name}</p>
+                          <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">{family.brand || "—"}</p>
+                        </div>
+                        <div className="shrink-0 text-right">
+                          <strong className={`text-sm font-bold ${primaryAccentClassName}`}>
+                            {unit
+                              ? formatQuantityWithUnit(String(family.totalQuantity), unit, locale)
+                              : formatQuantityNumber(String(family.totalQuantity), locale)}
+                          </strong>
+                          <p className="mt-0.5 text-[10px] text-slate-400">
+                            {trackingMode
+                              ? trackingMode === "individual"
+                                ? t("values.individual")
+                                : t("values.quantity")
+                              : mixedLabel}
+                          </p>
+                        </div>
                       </div>
-                      <div className="shrink-0 text-right">
-                        <strong className={`text-sm font-bold ${primaryAccentClassName}`}>
-                          {formatQuantityWithUnit(
-                            product.current_quantity,
-                            product.unit,
-                            locale,
-                          )}
-                        </strong>
+
+                      <div className="mt-2.5 rounded-md bg-slate-50 px-2.5 py-1.5 dark:bg-slate-900/60">
+                        {family.products.map((product) => (
+                          <div className="flex items-center justify-between gap-2 py-1" key={product.id}>
+                            <div className="min-w-0 text-[11px] leading-4">
+                              <p className="truncate font-mono font-semibold text-[var(--workspace-secondary,var(--brand-orange))] dark:text-slate-200">
+                                {product.sku || "—"}
+                              </p>
+                              <p className="truncate text-slate-500 dark:text-slate-400">
+                                {product.variant || product.group || product.name}
+                                {` · ${formatQuantityNumber(product.current_quantity, locale)}`}
+                              </p>
+                            </div>
+                            <button
+                              aria-label={`${editLabel}: ${product.sku || product.name}`}
+                              className="inline-flex size-7 shrink-0 items-center justify-center rounded-md text-slate-500 hover:bg-slate-200 hover:text-slate-950 dark:hover:bg-slate-800 dark:hover:text-white"
+                              onClick={() => openEdit(product)}
+                              type="button"
+                            >
+                              <Pencil className="size-3.5" />
+                            </button>
+                          </div>
+                        ))}
                       </div>
                     </div>
-                    <div className="mt-2 flex items-end justify-between gap-3">
-                      <div className="min-w-0 text-[11px] leading-4 text-slate-500 dark:text-slate-400">
-                        <p className="truncate font-mono font-semibold text-[var(--workspace-secondary,var(--brand-orange))] dark:text-slate-200">{product.sku}</p>
-                        <p>
-                          {product.tracking_mode === "individual" ? t("values.individual") : t("values.quantity")}
-                          {product.barcode ? ` · ${product.barcode}` : ""}
-                        </p>
-                      </div>
-                      <Button onClick={() => openEdit(product)} size="small" type="button" variant="outline">
-                        <Pencil className="size-3.5" />
-                        {editLabel}
-                      </Button>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <p className="p-4 text-sm text-slate-500">{emptyAvailable}</p>
@@ -454,7 +538,7 @@ function AvailableItemsWorkspace({ businessId }: { businessId: string }) {
               {emptyProducts.map((product) => (
                 <div className="flex flex-wrap items-center justify-between gap-3 bg-white px-3 py-3 text-sm dark:bg-slate-950" key={product.id}>
                   <div>
-                    <strong>{product.name}</strong>
+                    <strong>{product.family_name || product.name}</strong>
                     <p className="mt-1 font-mono text-[11px] text-slate-500 dark:text-slate-400">{product.sku}</p>
                   </div>
                   <Tooltip content={t("tooltips.archiveEmptyItem")}>
