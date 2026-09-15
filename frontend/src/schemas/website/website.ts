@@ -54,6 +54,7 @@ const websiteVariantSchema = z.object({
   currency: z.string(),
   website_availability: z.enum(["in_stock", "low_stock", "out_of_stock"]),
   media_id: z.string().uuid().nullable(),
+  gallery_media_ids: z.array(z.string().uuid()),
   commerce_product_id: z.string().uuid().nullable(),
   price_source: z.enum(["website", "commerce"]),
   availability_source: z.enum(["website", "commerce"]),
@@ -104,27 +105,15 @@ const websiteCommerceImportResultSchema = z.object({
 });
 
 const websiteSiteEnvelopeSchema = createApiEnvelopeSchema(websiteSiteSchema);
-const websiteSiteListEnvelopeSchema = createApiEnvelopeSchema(
-  z.object({ sites: z.array(websiteSiteSchema) }),
-);
+const websiteSiteListEnvelopeSchema = createApiEnvelopeSchema(z.object({ sites: z.array(websiteSiteSchema) }));
 const websiteMediaEnvelopeSchema = createApiEnvelopeSchema(websiteMediaSchema);
-const websiteMediaListEnvelopeSchema = createApiEnvelopeSchema(
-  z.object({ media: z.array(websiteMediaSchema) }),
-);
+const websiteMediaListEnvelopeSchema = createApiEnvelopeSchema(z.object({ media: z.array(websiteMediaSchema) }));
 const websiteListingEnvelopeSchema = createApiEnvelopeSchema(websiteListingSchema);
-const websiteListingListEnvelopeSchema = createApiEnvelopeSchema(
-  z.object({ listings: z.array(websiteListingSchema) }),
-);
+const websiteListingListEnvelopeSchema = createApiEnvelopeSchema(z.object({ listings: z.array(websiteListingSchema) }));
 const websiteVariantEnvelopeSchema = createApiEnvelopeSchema(websiteVariantSchema);
-const websiteVariantListEnvelopeSchema = createApiEnvelopeSchema(
-  z.object({ variants: z.array(websiteVariantSchema) }),
-);
-const websiteCommerceCatalogEnvelopeSchema = createApiEnvelopeSchema(
-  z.object({ products: z.array(websiteCommerceProductSchema) }),
-);
-const websiteCommerceImportEnvelopeSchema = createApiEnvelopeSchema(
-  websiteCommerceImportResultSchema,
-);
+const websiteVariantListEnvelopeSchema = createApiEnvelopeSchema(z.object({ variants: z.array(websiteVariantSchema) }));
+const websiteCommerceCatalogEnvelopeSchema = createApiEnvelopeSchema(z.object({ products: z.array(websiteCommerceProductSchema) }));
+const websiteCommerceImportEnvelopeSchema = createApiEnvelopeSchema(websiteCommerceImportResultSchema);
 const websiteDeleteEnvelopeSchema = createApiEnvelopeSchema(z.null());
 
 export {

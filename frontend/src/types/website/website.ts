@@ -50,6 +50,7 @@ type WebsiteVariant = {
   currency: string;
   website_availability: WebsiteVariantAvailability;
   media_id: string | null;
+  gallery_media_ids: string[];
   commerce_product_id: string | null;
   price_source: "website" | "commerce";
   availability_source: "website" | "commerce";
@@ -77,7 +78,6 @@ type WebsiteListing = {
 };
 
 type WebsiteNavigationSection = "hero" | "popular" | "services" | "footer";
-
 type WebsiteNavigationTarget =
   | { type: "home" }
   | { type: "shop" }
@@ -106,6 +106,7 @@ type WebsiteVariantInput = {
   currency?: string;
   website_availability?: WebsiteVariantAvailability;
   media_id?: string | null;
+  gallery_media_ids?: string[];
   is_published?: boolean;
   sort_order?: number;
 };

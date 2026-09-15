@@ -290,6 +290,17 @@ class WebsiteVariant(BaseModel):
 
         return sku_inventory_state(product)["availability"]
 
+    def resolved_image_urls(self):
+        gallery_urls = [
+            item.media.public_url
+            for item in self.gallery_items.all()
+            if item.media.public_url
+        ]
+        if gallery_urls:
+            return gallery_urls
+        fallback = self.resolved_image_url()
+        return [fallback] if fallback else []
+
     def resolved_image_url(self):
         media = self.media
         return (media.public_url if media is not None else "") or self.image_url
@@ -300,3 +311,37 @@ class WebsiteVariant(BaseModel):
 
     def __str__(self):
         return self.resolved_sku()
+
+
+class WebsiteVariantMedia(BaseModel):
+    variant = models.ForeignKey(
+        WebsiteVariant,
+        on_delete=models.CASCADE,
+        related_name="gallery_items",
+    )
+    media = models.ForeignKey(
+        WebsiteMedia,
+        on_delete=models.CASCADE,
+        related_name="variant_gallery_items",
+    )
+    sort_order = models.PositiveIntegerField(default=0, db_index=True)
+
+    class Meta:
+        db_table = "website_variant_media"
+        ordering = ["sort_order", "created_at", "id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["variant", "media"],
+                name="website_variant_media_unique",
+            )
+        ]
+
+    def clean(self):
+        super().clean()
+        if self.media_id and self.variant_id and self.media.site_id != self.variant.listing.site_id:
+            raise ValidationError(
+                {"media": "Variant gallery media must belong to the same website site."}
+            )
+
+    def __str__(self):
+        return f"{self.variant_id}:{self.media_id}"
