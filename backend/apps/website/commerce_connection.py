@@ -36,13 +36,16 @@ def list_commerce_catalog(*, user, business_id, site_id):
         .select_related("family")
         .order_by("family__name", "name", "variant", "sku", "id")
     )
+    variants = WebsiteVariant.objects.filter(
+        listing__site=site,
+        commerce_product_id__in=[product.id for product in products],
+    ).select_related("listing")
     linked = {
         variant.commerce_product_id: variant
-        for variant in WebsiteVariant.objects.filter(
-            listing__site=site,
-            commerce_product_id__in=[product.id for product in products],
-        ).select_related("listing")
+        for variant in variants
+        if variant.commerce_connected
     }
+    known = {variant.commerce_product_id: variant for variant in variants}
     return [
         {
             "id": product.id,
@@ -55,8 +58,8 @@ def list_commerce_catalog(*, user, business_id, site_id):
             "variant_options": product.variant_options,
             "tracking_mode": product.tracking_mode,
             "linked": product.id in linked,
-            "website_listing_id": linked[product.id].listing_id if product.id in linked else None,
-            "website_variant_id": linked[product.id].id if product.id in linked else None,
+            "website_listing_id": known[product.id].listing_id if product.id in known else None,
+            "website_variant_id": known[product.id].id if product.id in known else None,
         }
         for product in products
     ]
@@ -77,12 +80,15 @@ def _expand_selected_products(*, business, product_ids):
         )
     family_ids = {product.family_id for product in requested if product.family_id is not None}
     familyless_ids = {product.id for product in requested if product.family_id is None}
-    query = Product.objects.filter(business=business, is_active=True)
-    products = list(
-        query.filter(family_id__in=family_ids).select_related("family")
-        if family_ids
-        else []
-    )
+    products = []
+    if family_ids:
+        products.extend(
+            Product.objects.filter(
+                business=business,
+                is_active=True,
+                family_id__in=family_ids,
+            ).select_related("family")
+        )
     if familyless_ids:
         products.extend(
             Product.objects.filter(
@@ -105,12 +111,7 @@ def _expand_selected_products(*, business, product_ids):
 
 @transaction.atomic
 def import_commerce_products(*, actor, business_id, site_id, product_ids):
-    site = get_site_for_user(
-        user=actor,
-        business_id=business_id,
-        site_id=site_id,
-        manage=True,
-    )
+    site = get_site_for_user(user=actor, business_id=business_id, site_id=site_id, manage=True)
     _require_commerce_view(user=actor, business_id=business_id)
     products = _expand_selected_products(business=site.business, product_ids=product_ids)
 
@@ -131,16 +132,9 @@ def import_commerce_products(*, actor, business_id, site_id, product_ids):
         structured_options = _structured_family_options(group_products)
         structured_mode = structured_options is not None
         family_options = structured_options if structured_mode else _legacy_family_options(group_products)
-        managed_option_ids = {
-            "variant",
-            *(option["id"] for option in (structured_options or [])),
-        }
+        managed_option_ids = {"variant", *(option["id"] for option in (structured_options or []))}
 
-        listing, _linked_listings = _canonical_listing(
-            site=site,
-            products=group_products,
-            display_name=display_name,
-        )
+        listing, _linked_listings = _canonical_listing(site=site, products=group_products, display_name=display_name)
         if listing is None:
             listing = WebsiteListing.objects.create(
                 site=site,
@@ -152,11 +146,7 @@ def import_commerce_products(*, actor, business_id, site_id, product_ids):
             )
             created_listings += 1
         elif structured_mode:
-            next_options = _replace_managed_listing_options(
-                listing.options,
-                managed_option_ids,
-                family_options,
-            )
+            next_options = _replace_managed_listing_options(listing.options, managed_option_ids, family_options)
             if next_options != listing.options:
                 listing.options = next_options
                 listing.save(update_fields=["options", "updated_at"])
@@ -165,18 +155,11 @@ def import_commerce_products(*, actor, business_id, site_id, product_ids):
             listing.save(update_fields=["options", "updated_at"])
 
         for product in group_products:
-            existing = WebsiteVariant.objects.filter(
-                listing__site=site,
-                commerce_product=product,
-            ).first()
+            existing = WebsiteVariant.objects.filter(listing__site=site, commerce_product=product).first()
             product_options = (
                 variant_option_values(product.variant_options)
                 if structured_mode
-                else (
-                    {}
-                    if product.tracking_mode == Product.TrackingMode.INDIVIDUAL
-                    else ({"variant": product.variant} if product.variant else {})
-                )
+                else ({} if product.tracking_mode == Product.TrackingMode.INDIVIDUAL else ({"variant": product.variant} if product.variant else {}))
             )
             if existing is not None:
                 linked_existing_variants += 1
@@ -184,13 +167,12 @@ def import_commerce_products(*, actor, business_id, site_id, product_ids):
                 if existing.listing_id != listing.id:
                     existing.listing = listing
                     changed.append("listing")
+                if not existing.commerce_connected:
+                    existing.commerce_connected = True
+                    changed.append("commerce_connected")
                 if structured_mode:
                     current_options = existing.options if isinstance(existing.options, dict) else {}
-                    preserved = {
-                        key: value
-                        for key, value in current_options.items()
-                        if key not in managed_option_ids
-                    }
+                    preserved = {key: value for key, value in current_options.items() if key not in managed_option_ids}
                     next_options = {**preserved, **product_options}
                     if next_options != current_options:
                         existing.options = next_options
@@ -207,6 +189,7 @@ def import_commerce_products(*, actor, business_id, site_id, product_ids):
                 price_source=WebsiteVariant.Source.WEBSITE,
                 availability_source=WebsiteVariant.Source.COMMERCE,
                 commerce_product=product,
+                commerce_connected=True,
                 is_published=False,
             )
             created_variants += 1
@@ -221,10 +204,8 @@ def import_commerce_products(*, actor, business_id, site_id, product_ids):
 
 
 @transaction.atomic
-def disconnect_commerce_variant(
-    *, actor, business_id, site_id, listing_id, variant_id
-):
-    variant = get_variant_for_user(
+def disconnect_commerce_variant(*, actor, business_id, site_id, listing_id, variant_id):
+    anchor = get_variant_for_user(
         user=actor,
         business_id=business_id,
         site_id=site_id,
@@ -232,24 +213,29 @@ def disconnect_commerce_variant(
         variant_id=variant_id,
         manage=True,
     )
-    if variant.commerce_product_id is None:
+    product = anchor.commerce_product
+    if product is None:
         raise ValidationError(
             {"variant_id": "This Website variant is not connected to Commerce."},
             code="website_variant_not_connected",
         )
-    current_availability = variant.resolved_availability()
-    variant.website_availability = current_availability
-    variant.availability_source = WebsiteVariant.Source.WEBSITE
-    variant.commerce_product = None
-    variant.price_source = WebsiteVariant.Source.WEBSITE
-    variant.full_clean()
-    variant.save(
-        update_fields=[
-            "website_availability",
-            "availability_source",
-            "commerce_product",
-            "price_source",
-            "updated_at",
-        ]
+
+    group = WebsiteVariant.objects.filter(
+        listing__site_id=site_id,
+        commerce_product__business_id=business_id,
     )
-    return variant
+    if product.family_id:
+        group = group.filter(commerce_product__family_id=product.family_id)
+    else:
+        group = group.filter(commerce_product_id=product.id)
+
+    listing_ids = list(group.values_list("listing_id", flat=True).distinct())
+    updated = group.update(commerce_connected=False, is_published=False)
+    if not updated:
+        raise ValidationError(
+            {"variant_id": "No connected Website variants were found for this Commerce item."},
+            code="website_variant_not_connected",
+        )
+    WebsiteListing.objects.filter(id__in=listing_ids).update(is_published=False)
+    anchor.refresh_from_db()
+    return anchor
