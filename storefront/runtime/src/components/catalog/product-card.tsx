@@ -40,7 +40,6 @@ export function ProductCard({
       <Link href={`/products/${product.slug}`} className="product-card-link">
         <div className="product-card-media">
           {product.badge ? <span className="product-badge">{localized(product.badge, locale)}</span> : null}
-          <span className="product-save-toggle" aria-hidden="true">♡</span>
           {imageUrl ? (
             <StorefrontImage
               src={imageUrl}
@@ -65,9 +64,22 @@ export function ProductCard({
             </span>
           </div>
           <p className="product-trade-note">{locale === "sw" ? "Pata punguzo kupitia trade-in" : "Get trade-in at a discount"}</p>
-          <span className="product-buy-button">{locale === "sw" ? "Nunua sasa" : "Buy now"}</span>
         </div>
       </Link>
+
+      <div className="product-card-actions">
+        <button
+          className="product-save-button"
+          type="button"
+          disabled
+          title={locale === "sw" ? "Kuhifadhi kutaunganishwa baadaye" : "Saving will be connected later"}
+        >
+          {locale === "sw" ? "Hifadhi" : "Save"}
+        </button>
+        <Link href={`/products/${product.slug}`} className="product-buy-button">
+          {locale === "sw" ? "Nunua sasa" : "Buy now"}
+        </Link>
+      </div>
     </article>
   );
 }
