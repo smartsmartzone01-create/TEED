@@ -181,7 +181,7 @@ function WebsiteProductPageContentManager({ businessId, locale }: WebsiteProduct
       {listings.map((listing) => (
         <article
           className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950 sm:p-5"
-          key={listing.id}
+          key={`${listing.id}:${listing.updated_at}`}
         >
           <div>
             <h3 className="text-lg font-semibold text-slate-950 dark:text-white">
