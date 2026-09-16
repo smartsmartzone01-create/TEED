@@ -14,7 +14,7 @@ export function EcommerceClassicFooter({ site }: { site: StorefrontSiteConfig })
     : undefined;
 
   return (
-    <footer className="commerce-template-footer">
+    <footer id="footer" className="commerce-template-footer">
       {site.newsletter.enabled ? (
         <section className="commerce-template-newsletter page-shell">
           <div>

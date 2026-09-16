@@ -5,6 +5,24 @@ from .public_api import (
     PublicStorefrontProductsAPIView,
     PublicStorefrontSiteAPIView,
 )
+from .public_auth_api import (
+    PublicStorefrontCurrentCustomerAPIView,
+    PublicStorefrontEmailLoginAPIView,
+    PublicStorefrontEmailRegistrationAPIView,
+    PublicStorefrontEmailVerificationAPIView,
+    PublicStorefrontGoogleAuthenticationAPIView,
+    PublicStorefrontGoogleConfigAPIView,
+    PublicStorefrontPhoneLoginAPIView,
+    PublicStorefrontPhoneRegistrationAPIView,
+    PublicStorefrontPhoneVerificationAPIView,
+    PublicStorefrontSessionLogoutAPIView,
+    PublicStorefrontSessionRefreshAPIView,
+)
+from .public_password_reset_api import (
+    PublicStorefrontPasswordResetConfirmAPIView,
+    PublicStorefrontPasswordResetRequestAPIView,
+    PublicStorefrontPasswordResetVerifyAPIView,
+)
 
 app_name = "website-public"
 
@@ -23,5 +41,75 @@ urlpatterns = [
         "sites/<uuid:site_key>/products/<slug:slug>/",
         PublicStorefrontProductDetailAPIView.as_view(),
         name="product-detail",
+    ),
+    path(
+        "sites/<uuid:site_key>/auth/register/email/",
+        PublicStorefrontEmailRegistrationAPIView.as_view(),
+        name="auth-register-email",
+    ),
+    path(
+        "sites/<uuid:site_key>/auth/register/phone/",
+        PublicStorefrontPhoneRegistrationAPIView.as_view(),
+        name="auth-register-phone",
+    ),
+    path(
+        "sites/<uuid:site_key>/auth/verify/email/",
+        PublicStorefrontEmailVerificationAPIView.as_view(),
+        name="auth-verify-email",
+    ),
+    path(
+        "sites/<uuid:site_key>/auth/verify/phone/",
+        PublicStorefrontPhoneVerificationAPIView.as_view(),
+        name="auth-verify-phone",
+    ),
+    path(
+        "sites/<uuid:site_key>/auth/login/email/",
+        PublicStorefrontEmailLoginAPIView.as_view(),
+        name="auth-login-email",
+    ),
+    path(
+        "sites/<uuid:site_key>/auth/login/phone/",
+        PublicStorefrontPhoneLoginAPIView.as_view(),
+        name="auth-login-phone",
+    ),
+    path(
+        "sites/<uuid:site_key>/auth/google/config/",
+        PublicStorefrontGoogleConfigAPIView.as_view(),
+        name="auth-google-config",
+    ),
+    path(
+        "sites/<uuid:site_key>/auth/login/google/",
+        PublicStorefrontGoogleAuthenticationAPIView.as_view(),
+        name="auth-login-google",
+    ),
+    path(
+        "sites/<uuid:site_key>/auth/password-reset/request/",
+        PublicStorefrontPasswordResetRequestAPIView.as_view(),
+        name="auth-password-reset-request",
+    ),
+    path(
+        "sites/<uuid:site_key>/auth/password-reset/verify/",
+        PublicStorefrontPasswordResetVerifyAPIView.as_view(),
+        name="auth-password-reset-verify",
+    ),
+    path(
+        "sites/<uuid:site_key>/auth/password-reset/confirm/",
+        PublicStorefrontPasswordResetConfirmAPIView.as_view(),
+        name="auth-password-reset-confirm",
+    ),
+    path(
+        "sites/<uuid:site_key>/auth/session/refresh/",
+        PublicStorefrontSessionRefreshAPIView.as_view(),
+        name="auth-session-refresh",
+    ),
+    path(
+        "sites/<uuid:site_key>/auth/session/logout/",
+        PublicStorefrontSessionLogoutAPIView.as_view(),
+        name="auth-session-logout",
+    ),
+    path(
+        "sites/<uuid:site_key>/auth/me/",
+        PublicStorefrontCurrentCustomerAPIView.as_view(),
+        name="auth-me",
     ),
 ]

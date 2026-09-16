@@ -20,12 +20,18 @@ import type {
 
 const WEBSITE_BASE_PATH = "/api/v1/website";
 
+type WebsiteCommerceConnectionScope = "group" | "product";
+
 function getWebsiteSites(businessId: string, accessToken: string, signal?: AbortSignal) {
   return requestApi({ accessToken, path: `${WEBSITE_BASE_PATH}/businesses/${businessId}/sites/`, schema: websiteSiteListEnvelopeSchema, signal });
 }
 
 function createWebsiteSite(businessId: string, accessToken: string) {
   return withCsrfRetry((csrfToken) => requestApi({ accessToken, body: {}, csrfToken, method: "POST", path: `${WEBSITE_BASE_PATH}/businesses/${businessId}/sites/`, schema: websiteSiteEnvelopeSchema }));
+}
+
+function updateWebsiteSite(businessId: string, siteId: string, values: { featured_products?: unknown; categories?: unknown; header?: unknown; hero?: unknown; navigation?: unknown }, accessToken: string) {
+  return withCsrfRetry((csrfToken) => requestApi({ accessToken, body: values, csrfToken, method: "PATCH", path: `${WEBSITE_BASE_PATH}/businesses/${businessId}/sites/${siteId}/`, schema: websiteSiteEnvelopeSchema }));
 }
 
 function getWebsiteMedia(businessId: string, siteId: string, accessToken: string, signal?: AbortSignal) {
@@ -79,12 +85,25 @@ function getWebsiteCommerceCatalog(businessId: string, siteId: string, accessTok
   return requestApi({ accessToken, path: `${WEBSITE_BASE_PATH}/businesses/${businessId}/sites/${siteId}/commerce/catalog/`, schema: websiteCommerceCatalogEnvelopeSchema, signal });
 }
 
-function importWebsiteCommerceProducts(businessId: string, siteId: string, productIds: string[], accessToken: string) {
-  return withCsrfRetry((csrfToken) => requestApi({ accessToken, body: { product_ids: productIds }, csrfToken, method: "POST", path: `${WEBSITE_BASE_PATH}/businesses/${businessId}/sites/${siteId}/commerce/import/`, schema: websiteCommerceImportEnvelopeSchema }));
+function importWebsiteCommerceProducts(
+  businessId: string,
+  siteId: string,
+  productIds: string[],
+  accessToken: string,
+  scope: WebsiteCommerceConnectionScope = "group",
+) {
+  return withCsrfRetry((csrfToken) => requestApi({ accessToken, body: { product_ids: productIds, scope }, csrfToken, method: "POST", path: `${WEBSITE_BASE_PATH}/businesses/${businessId}/sites/${siteId}/commerce/import/`, schema: websiteCommerceImportEnvelopeSchema }));
 }
 
-function disconnectWebsiteCommerceVariant(businessId: string, siteId: string, listingId: string, variantId: string, accessToken: string) {
-  return withCsrfRetry((csrfToken) => requestApi({ accessToken, body: {}, csrfToken, method: "POST", path: `${WEBSITE_BASE_PATH}/businesses/${businessId}/sites/${siteId}/listings/${listingId}/variants/${variantId}/commerce/disconnect/`, schema: websiteVariantEnvelopeSchema }));
+function disconnectWebsiteCommerceVariant(
+  businessId: string,
+  siteId: string,
+  listingId: string,
+  variantId: string,
+  accessToken: string,
+  scope: WebsiteCommerceConnectionScope = "group",
+) {
+  return withCsrfRetry((csrfToken) => requestApi({ accessToken, body: { scope }, csrfToken, method: "POST", path: `${WEBSITE_BASE_PATH}/businesses/${businessId}/sites/${siteId}/listings/${listingId}/variants/${variantId}/commerce/disconnect/`, schema: websiteVariantEnvelopeSchema }));
 }
 
 export {
@@ -102,6 +121,7 @@ export {
   getWebsiteVariants,
   importWebsiteCommerceProducts,
   updateWebsiteListing,
+  updateWebsiteSite,
   updateWebsiteVariant,
   uploadWebsiteMedia,
 };

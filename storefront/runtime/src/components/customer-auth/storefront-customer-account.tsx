@@ -1,0 +1,557 @@
+"use client";
+
+import Link from "next/link";
+import { FormEvent, useEffect, useState } from "react";
+
+import { StorefrontGoogleSignIn } from "@/components/customer-auth/storefront-google-sign-in";
+import {
+  getCurrentStorefrontCustomer,
+  loginStorefrontCustomer,
+  logoutStorefrontCustomer,
+  registerStorefrontCustomer,
+  StorefrontCustomerRequestError,
+  verifyStorefrontCustomer,
+  type StorefrontCustomerChannel,
+} from "@/services/storefront-customer-auth-client";
+import type { StorefrontLocale } from "@/types/storefront";
+import type { StorefrontCustomerProfile } from "@/types/storefront-customer-auth";
+
+type AuthMode = "signin" | "register";
+
+type PendingVerification = {
+  channel: StorefrontCustomerChannel;
+  email?: string;
+  countryCode?: string;
+  phoneNumber?: string;
+};
+
+const COUNTRIES = [
+  { code: "TZ", en: "Tanzania", sw: "Tanzania" },
+  { code: "KE", en: "Kenya", sw: "Kenya" },
+  { code: "UG", en: "Uganda", sw: "Uganda" },
+] as const;
+
+function customerDisplayName(customer: StorefrontCustomerProfile): string {
+  const name = [customer.first_name, customer.last_name].filter(Boolean).join(" ").trim();
+  return name || customer.email || customer.phone_number || "Customer";
+}
+
+function redirectAfterAuthentication() {
+  window.location.replace("/");
+}
+
+export function StorefrontCustomerAccount({
+  locale,
+  siteName,
+}: {
+  locale: StorefrontLocale;
+  siteName: string;
+}) {
+  const isSwahili = locale === "sw";
+  const [customer, setCustomer] = useState<StorefrontCustomerProfile | null>(null);
+  const [loadingSession, setLoadingSession] = useState(true);
+  const [mode, setMode] = useState<AuthMode>("signin");
+  const [channel, setChannel] = useState<StorefrontCustomerChannel>("email");
+  const [pendingVerification, setPendingVerification] = useState<PendingVerification | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+
+    void getCurrentStorefrontCustomer()
+      .then((currentCustomer) => {
+        if (active) {
+          setCustomer(currentCustomer);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setErrorMessage(
+            isSwahili
+              ? "Hatukuweza kuangalia hali ya akaunti yako. Tafadhali jaribu tena."
+              : "We could not check your account status. Please try again.",
+          );
+        }
+      })
+      .finally(() => {
+        if (active) {
+          setLoadingSession(false);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [isSwahili]);
+
+  function clearFeedback() {
+    setMessage(null);
+    setErrorMessage(null);
+  }
+
+  function changeMode(nextMode: AuthMode) {
+    setMode(nextMode);
+    clearFeedback();
+  }
+
+  function showError(error: unknown) {
+    if (error instanceof StorefrontCustomerRequestError) {
+      setErrorMessage(error.message);
+      return;
+    }
+    setErrorMessage(
+      isSwahili
+        ? "Ombi halikukamilika. Tafadhali jaribu tena."
+        : "The request could not be completed. Please try again.",
+    );
+  }
+
+  async function handleAuthSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    clearFeedback();
+
+    const form = new FormData(event.currentTarget);
+    const password = String(form.get("password") || "");
+    const email = String(form.get("email") || "").trim();
+    const countryCode = String(form.get("country_code") || "TZ");
+    const phoneNumber = String(form.get("phone_number") || "").trim();
+
+    if (mode === "register") {
+      const passwordConfirm = String(form.get("password_confirm") || "");
+      if (password !== passwordConfirm) {
+        setErrorMessage(
+          isSwahili
+            ? "Manenosiri hayafanani. Tafadhali jaribu tena."
+            : "Passwords do not match. Please try again.",
+        );
+        return;
+      }
+    }
+
+    setSubmitting(true);
+
+    try {
+      if (mode === "signin") {
+        await loginStorefrontCustomer(
+          channel,
+          channel === "email"
+            ? { email, password }
+            : {
+                country_code: countryCode,
+                phone_number: phoneNumber,
+                password,
+              },
+        );
+        redirectAfterAuthentication();
+        return;
+      }
+
+      const firstName = String(form.get("first_name") || "").trim();
+      const lastName = String(form.get("last_name") || "").trim();
+      await registerStorefrontCustomer(
+        channel,
+        channel === "email"
+          ? {
+              email,
+              password,
+              first_name: firstName,
+              last_name: lastName,
+            }
+          : {
+              country_code: countryCode,
+              phone_number: phoneNumber,
+              password,
+              first_name: firstName,
+              last_name: lastName,
+            },
+      );
+      setPendingVerification(
+        channel === "email"
+          ? { channel, email }
+          : { channel, countryCode, phoneNumber },
+      );
+      setMessage(
+        channel === "email"
+          ? isSwahili
+            ? "Tumetuma nambari ya uthibitisho kwenye barua pepe yako."
+            : "We sent a verification code to your email."
+          : isSwahili
+            ? "Tumetuma nambari ya uthibitisho kwenye simu yako."
+            : "We sent a verification code to your phone.",
+      );
+    } catch (error) {
+      showError(error);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handleVerificationSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!pendingVerification) {
+      return;
+    }
+
+    clearFeedback();
+    setSubmitting(true);
+    const form = new FormData(event.currentTarget);
+    const code = String(form.get("code") || "").trim();
+
+    try {
+      await verifyStorefrontCustomer(
+        pendingVerification.channel,
+        pendingVerification.channel === "email"
+          ? { email: pendingVerification.email || "", code }
+          : {
+              country_code: pendingVerification.countryCode || "TZ",
+              phone_number: pendingVerification.phoneNumber || "",
+              code,
+            },
+      );
+      redirectAfterAuthentication();
+    } catch (error) {
+      showError(error);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handleLogout() {
+    clearFeedback();
+    setSubmitting(true);
+    try {
+      await logoutStorefrontCustomer();
+      setCustomer(null);
+      setMode("signin");
+      setPendingVerification(null);
+      setMessage(isSwahili ? "Umetoka kwenye akaunti yako." : "You are signed out.");
+    } catch (error) {
+      showError(error);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  if (loadingSession) {
+    return (
+      <section className="storefront-customer-auth-card" aria-busy="true">
+        <p className="storefront-customer-auth-muted">
+          {isSwahili ? "Inaangalia akaunti yako..." : "Checking your account..."}
+        </p>
+      </section>
+    );
+  }
+
+  if (customer) {
+    return (
+      <section className="storefront-customer-auth-card storefront-customer-account-card">
+        <div className="storefront-customer-auth-card-intro">
+          <p className="storefront-customer-auth-eyebrow">
+            {isSwahili ? "Akaunti yako" : "Your account"}
+          </p>
+          <h1>{customerDisplayName(customer)}</h1>
+          <p>
+            {isSwahili
+              ? `Umeingia kwenye ${siteName}.`
+              : `You are signed in to ${siteName}.`}
+          </p>
+        </div>
+
+        <div className="storefront-customer-account-details">
+          {customer.email ? (
+            <div>
+              <span>{isSwahili ? "Barua pepe" : "Email"}</span>
+              <strong>{customer.email}</strong>
+              <small>
+                {customer.is_email_verified
+                  ? isSwahili
+                    ? "Imethibitishwa"
+                    : "Verified"
+                  : isSwahili
+                    ? "Haijathibitishwa"
+                    : "Not verified"}
+              </small>
+            </div>
+          ) : null}
+          {customer.phone_number ? (
+            <div>
+              <span>{isSwahili ? "Simu" : "Phone"}</span>
+              <strong>{customer.phone_number}</strong>
+              <small>
+                {customer.is_phone_verified
+                  ? isSwahili
+                    ? "Imethibitishwa"
+                    : "Verified"
+                  : isSwahili
+                    ? "Haijathibitishwa"
+                    : "Not verified"}
+              </small>
+            </div>
+          ) : null}
+        </div>
+
+        {message ? <p className="storefront-customer-auth-success">{message}</p> : null}
+        {errorMessage ? (
+          <p className="storefront-customer-auth-error" role="alert">
+            {errorMessage}
+          </p>
+        ) : null}
+
+        <button
+          className="storefront-customer-auth-secondary-button"
+          disabled={submitting}
+          onClick={() => void handleLogout()}
+          type="button"
+        >
+          {submitting
+            ? isSwahili
+              ? "Inatoka..."
+              : "Signing out..."
+            : isSwahili
+              ? "Toka"
+              : "Sign out"}
+        </button>
+      </section>
+    );
+  }
+
+  if (pendingVerification) {
+    return (
+      <section className="storefront-customer-auth-card">
+        <div className="storefront-customer-auth-card-intro">
+          <h1>
+            {isSwahili ? "Weka nambari ya uthibitisho" : "Enter your verification code"}
+          </h1>
+          <p>
+            {pendingVerification.channel === "email"
+              ? isSwahili
+                ? `Nambari imetumwa kwa ${pendingVerification.email}.`
+                : `The code was sent to ${pendingVerification.email}.`
+              : isSwahili
+                ? `Nambari imetumwa kwa ${pendingVerification.phoneNumber}.`
+                : `The code was sent to ${pendingVerification.phoneNumber}.`}
+          </p>
+        </div>
+
+        <form className="storefront-customer-auth-form" onSubmit={handleVerificationSubmit}>
+          <label>
+            <span>{isSwahili ? "Nambari ya uthibitisho" : "Verification code"}</span>
+            <input
+              autoComplete="one-time-code"
+              inputMode="numeric"
+              maxLength={16}
+              name="code"
+              placeholder="123456"
+              required
+            />
+          </label>
+          {message ? <p className="storefront-customer-auth-success">{message}</p> : null}
+          {errorMessage ? (
+            <p className="storefront-customer-auth-error" role="alert">
+              {errorMessage}
+            </p>
+          ) : null}
+          <button className="storefront-customer-auth-primary-button" disabled={submitting} type="submit">
+            {submitting
+              ? isSwahili
+                ? "Inathibitisha..."
+                : "Verifying..."
+              : isSwahili
+                ? "Thibitisha na uendelee"
+                : "Verify and continue"}
+          </button>
+          <button
+            className="storefront-customer-auth-text-button"
+            disabled={submitting}
+            onClick={() => {
+              setPendingVerification(null);
+              clearFeedback();
+            }}
+            type="button"
+          >
+            {isSwahili ? "Rudi" : "Back"}
+          </button>
+        </form>
+      </section>
+    );
+  }
+
+  const isSignIn = mode === "signin";
+
+  return (
+    <section className="storefront-customer-auth-card">
+      <div className="storefront-customer-auth-card-intro">
+        <h1>
+          {isSignIn
+            ? isSwahili
+              ? "Ingia"
+              : "Sign in"
+            : isSwahili
+              ? "Fungua akaunti"
+              : "Create account"}
+        </h1>
+        <p>
+          {isSignIn
+            ? isSwahili
+              ? `Ingia ili uendelee kwenye ${siteName}.`
+              : `Sign in to continue with ${siteName}.`
+            : isSwahili
+              ? `Fungua akaunti yako ya mteja kwenye ${siteName}.`
+              : `Create your customer account for ${siteName}.`}
+        </p>
+      </div>
+
+      <StorefrontGoogleSignIn locale={locale} />
+
+      <div
+        className="storefront-customer-auth-methods"
+        role="group"
+        aria-label={isSwahili ? "Njia ya kuingia" : "Authentication method"}
+      >
+        <button
+          aria-pressed={channel === "email"}
+          className="storefront-customer-auth-method-button"
+          onClick={() => {
+            setChannel("email");
+            clearFeedback();
+          }}
+          type="button"
+        >
+          {isSwahili ? "Barua pepe" : "Email"}
+        </button>
+        <button
+          aria-pressed={channel === "phone"}
+          className="storefront-customer-auth-method-button"
+          onClick={() => {
+            setChannel("phone");
+            clearFeedback();
+          }}
+          type="button"
+        >
+          {isSwahili ? "Simu" : "Phone"}
+        </button>
+      </div>
+
+      <form className="storefront-customer-auth-form" onSubmit={handleAuthSubmit}>
+        {!isSignIn ? (
+          <div className="storefront-customer-name-grid">
+            <label>
+              <span>{isSwahili ? "Jina la kwanza" : "First name"}</span>
+              <input autoComplete="given-name" maxLength={150} name="first_name" />
+            </label>
+            <label>
+              <span>{isSwahili ? "Jina la mwisho" : "Last name"}</span>
+              <input autoComplete="family-name" maxLength={150} name="last_name" />
+            </label>
+          </div>
+        ) : null}
+
+        {channel === "email" ? (
+          <label>
+            <span>{isSwahili ? "Barua pepe" : "Email"}</span>
+            <input autoComplete="email" name="email" required type="email" />
+          </label>
+        ) : (
+          <div className="storefront-customer-phone-grid">
+            <label>
+              <span>{isSwahili ? "Nchi" : "Country"}</span>
+              <select defaultValue="TZ" name="country_code">
+                {COUNTRIES.map((country) => (
+                  <option key={country.code} value={country.code}>
+                    {isSwahili ? country.sw : country.en}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span>{isSwahili ? "Namba ya simu" : "Phone number"}</span>
+              <input autoComplete="tel" name="phone_number" placeholder="0712345678" required type="tel" />
+            </label>
+          </div>
+        )}
+
+        <label>
+          <span>{isSwahili ? "Nenosiri" : "Password"}</span>
+          <input
+            autoComplete={isSignIn ? "current-password" : "new-password"}
+            minLength={8}
+            name="password"
+            required
+            type="password"
+          />
+          {!isSignIn ? (
+            <small className="storefront-customer-auth-field-hint">
+              {isSwahili ? "Tumia angalau herufi 8." : "Use at least 8 characters."}
+            </small>
+          ) : null}
+        </label>
+
+        {!isSignIn ? (
+          <label>
+            <span>{isSwahili ? "Thibitisha nenosiri" : "Confirm password"}</span>
+            <input
+              autoComplete="new-password"
+              minLength={8}
+              name="password_confirm"
+              required
+              type="password"
+            />
+          </label>
+        ) : null}
+
+        {isSignIn ? (
+          <div className="storefront-customer-auth-forgot-row">
+            <Link href="/account/forgot-password">
+              {isSwahili ? "Umesahau nenosiri?" : "Forgot password?"}
+            </Link>
+          </div>
+        ) : null}
+
+        {message ? <p className="storefront-customer-auth-success">{message}</p> : null}
+        {errorMessage ? (
+          <p className="storefront-customer-auth-error" role="alert">
+            {errorMessage}
+          </p>
+        ) : null}
+
+        <button className="storefront-customer-auth-primary-button" disabled={submitting} type="submit">
+          {submitting
+            ? isSwahili
+              ? "Tafadhali subiri..."
+              : "Please wait..."
+            : isSignIn
+              ? isSwahili
+                ? "Ingia"
+                : "Sign in"
+              : isSwahili
+                ? "Fungua akaunti"
+                : "Create account"}
+        </button>
+      </form>
+
+      <p className="storefront-customer-auth-switch">
+        {isSignIn
+          ? isSwahili
+            ? "Huna akaunti?"
+            : "No account yet?"
+          : isSwahili
+            ? "Tayari una akaunti?"
+            : "Already have an account?"}{" "}
+        <button
+          onClick={() => changeMode(isSignIn ? "register" : "signin")}
+          type="button"
+        >
+          {isSignIn
+            ? isSwahili
+              ? "Fungua akaunti"
+              : "Create account"
+            : isSwahili
+              ? "Ingia"
+              : "Sign in"}
+        </button>
+      </p>
+    </section>
+  );
+}

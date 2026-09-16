@@ -30,15 +30,6 @@ def _normalized_options(value):
 
 
 def _active_unit_fields(variant, commerce_offers):
-    """Expose every consistently populated customer-facing tracked attribute.
-
-    A single value is still useful storefront information. For example, a SKU whose
-    available units are all Cosmic Orange should still expose Color=Cosmic Orange,
-    while Capacity may expose several values. Fields are omitted only when at least one
-    projected offer is missing the attribute, because that would create incomplete
-    option combinations.
-    """
-
     active = []
     for option_id, attribute, labels in PUBLIC_UNIT_OPTION_FIELDS:
         values = [
@@ -58,27 +49,15 @@ def _option_payload(option_id, labels, values):
         if not cleaned or cleaned in seen:
             continue
         seen.add(cleaned)
-        payload_values.append(
-            {
-                "value": cleaned,
-                "label": {"en": cleaned, "sw": cleaned},
-            }
-        )
-    return {
-        "id": option_id,
-        "name": labels,
-        "values": payload_values,
-    }
+        payload_values.append({"value": cleaned, "label": {"en": cleaned, "sw": cleaned}})
+    return {"id": option_id, "name": labels, "values": payload_values}
 
 
 def _offer_id(variant, options, tracking_mode=None):
     if not options and tracking_mode is None:
         return str(variant.id)
     signature = json.dumps(
-        {
-            "options": options,
-            "trackingMode": tracking_mode or "",
-        },
+        {"options": options, "trackingMode": tracking_mode or ""},
         sort_keys=True,
         separators=(",", ":"),
     )
@@ -86,19 +65,9 @@ def _offer_id(variant, options, tracking_mode=None):
     return f"{variant.id}:{digest}"
 
 
-def _offer_payload(
-    *,
-    variant,
-    commerce,
-    options,
-    commerce_availability=None,
-):
+def _offer_payload(*, variant, commerce, options, commerce_availability=None):
     price = variant.resolved_price()
-
-    if (
-        commerce is not None
-        and variant.availability_source == WebsiteVariant.Source.COMMERCE
-    ):
+    if commerce is not None and variant.availability_source == WebsiteVariant.Source.COMMERCE:
         availability = commerce_availability or commerce["availability"]
     else:
         availability = variant.website_availability
@@ -112,26 +81,20 @@ def _offer_payload(
 
     payload = {
         "id": _offer_id(variant, options, tracking_mode),
+        "websiteVariantId": str(variant.id),
         "sku": sku,
         "options": options,
-        "price": (
-            {
-                "amount": format(price, "f"),
-                "currency": variant.currency.upper(),
-            }
-            if price is not None
-            else None
-        ),
+        "price": ({"amount": format(price, "f"), "currency": variant.currency.upper()} if price is not None else None),
         "availability": availability,
     }
-
     if commerce is not None:
         payload["commerceProductId"] = commerce["product_id"]
         payload["trackingMode"] = tracking_mode
 
-    if variant.image_url:
-        payload["imageUrl"] = variant.image_url
-
+    image_urls = variant.resolved_image_urls()
+    if image_urls:
+        payload["imageUrl"] = image_urls[0]
+        payload["imageUrls"] = image_urls
     return payload
 
 
@@ -140,58 +103,36 @@ def _deduplicate_offers(offers):
     for offer in offers:
         signature = json.dumps(offer["options"], sort_keys=True, separators=(",", ":"))
         current = merged.get(signature)
-        if current is None or AVAILABILITY_PRIORITY[offer["availability"]] > (
-            AVAILABILITY_PRIORITY[current["availability"]]
-        ):
+        if current is None or AVAILABILITY_PRIORITY[offer["availability"]] > AVAILABILITY_PRIORITY[current["availability"]]:
             merged[signature] = offer
     return list(merged.values())
 
 
 def resolve_storefront_variant(variant: WebsiteVariant):
-    """Resolve one Website variant through the Commerce public-safe projection.
-
-    Website does not interpret stock receipts, batches, tracked identifiers, or tracking
-    modes itself. Commerce owns those rules and returns only the product state and safe
-    customer-facing individual attributes needed by the storefront. SKU-level Website
-    options stay authoritative when an old tracked-unit field uses the same option id.
-    """
-
+    """Resolve one Website variant through the Commerce public-safe projection."""
     product = variant.valid_commerce_product()
     base_options = _normalized_options(variant.options)
-
     if product is None:
-        offer = _offer_payload(
-            variant=variant,
-            commerce=None,
-            options=base_options,
-        )
-        return [], [offer]
+        return [], [_offer_payload(variant=variant, commerce=None, options=base_options)]
 
     commerce = project_product_for_website(product)
     commerce_offers = commerce.get("offers") or []
-
     if commerce["tracking_mode"] != "individual" or not commerce_offers:
-        offer = _offer_payload(
-            variant=variant,
-            commerce=commerce,
-            options=base_options,
-            commerce_availability=commerce["availability"],
-        )
-        return [], [offer]
+        return [], [
+            _offer_payload(
+                variant=variant,
+                commerce=commerce,
+                options=base_options,
+                commerce_availability=commerce["availability"],
+            )
+        ]
 
-    active_fields = [
-        field
-        for field in _active_unit_fields(variant, commerce_offers)
-        if field[0] not in base_options
-    ]
+    active_fields = [field for field in _active_unit_fields(variant, commerce_offers) if field[0] not in base_options]
     derived_options = [
         _option_payload(
             option_id,
             labels,
-            [
-                (offer.get("attributes") or {}).get(attribute, "")
-                for offer in commerce_offers
-            ],
+            [(offer.get("attributes") or {}).get(attribute, "") for offer in commerce_offers],
         )
         for option_id, attribute, labels in active_fields
     ]
@@ -202,13 +143,12 @@ def resolve_storefront_variant(variant: WebsiteVariant):
         options = dict(base_options)
         for option_id, attribute, _labels in active_fields:
             options[option_id] = str(attributes[attribute]).strip()
-
-        offer = _offer_payload(
-            variant=variant,
-            commerce=commerce,
-            options=options,
-            commerce_availability=commerce_offer["availability"],
+        offers.append(
+            _offer_payload(
+                variant=variant,
+                commerce=commerce,
+                options=options,
+                commerce_availability=commerce_offer["availability"],
+            )
         )
-        offers.append(offer)
-
     return derived_options, _deduplicate_offers(offers)

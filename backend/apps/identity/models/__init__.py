@@ -5,6 +5,13 @@ from .password_reset import PasswordResetGrant
 from .phone_verification import PhoneVerificationChallenge
 from .security_event import IdentitySecurityEvent
 from .session import UserSession
+from .storefront_customer import (
+    StorefrontCustomer,
+    StorefrontCustomerExternalIdentity,
+    StorefrontCustomerPasswordResetGrant,
+    StorefrontCustomerSession,
+    StorefrontCustomerVerificationChallenge,
+)
 from .user import User
 
 __all__ = [
@@ -14,6 +21,11 @@ __all__ = [
     "EmailDelivery",
     "IdentitySecurityEvent",
     "PasswordResetGrant",
+    "StorefrontCustomer",
+    "StorefrontCustomerExternalIdentity",
+    "StorefrontCustomerPasswordResetGrant",
+    "StorefrontCustomerSession",
+    "StorefrontCustomerVerificationChallenge",
     "User",
     "UserSession",
 ]

@@ -12,8 +12,11 @@ type WebsiteSite = {
   contact_email: string;
   contact_whatsapp: string;
   contact_instagram: string;
+  header: unknown;
   navigation: unknown;
   hero: unknown;
+  featured_products: unknown;
+  categories: unknown;
   services: unknown;
   newsletter: unknown;
   is_published: boolean;
@@ -47,7 +50,9 @@ type WebsiteVariant = {
   currency: string;
   website_availability: WebsiteVariantAvailability;
   media_id: string | null;
+  gallery_media_ids: string[];
   commerce_product_id: string | null;
+  commerce_connected: boolean;
   price_source: "website" | "commerce";
   availability_source: "website" | "commerce";
   is_published: boolean;
@@ -73,6 +78,15 @@ type WebsiteListing = {
   updated_at: string;
 };
 
+type WebsiteNavigationSection = "hero" | "popular" | "services" | "footer";
+type WebsiteNavigationTarget =
+  | { type: "home" }
+  | { type: "shop" }
+  | { type: "product"; id: string }
+  | { type: "section"; section: WebsiteNavigationSection }
+  | { type: "external"; url: string }
+  | { type: "legacy"; href: string };
+
 type WebsiteListingInput = {
   slug: string;
   title: Record<string, string>;
@@ -93,6 +107,7 @@ type WebsiteVariantInput = {
   currency?: string;
   website_availability?: WebsiteVariantAvailability;
   media_id?: string | null;
+  gallery_media_ids?: string[];
   is_published?: boolean;
   sort_order?: number;
 };
@@ -126,6 +141,8 @@ export type {
   WebsiteListing,
   WebsiteListingInput,
   WebsiteMedia,
+  WebsiteNavigationSection,
+  WebsiteNavigationTarget,
   WebsiteSite,
   WebsiteVariant,
   WebsiteVariantAvailability,

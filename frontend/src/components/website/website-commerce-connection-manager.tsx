@@ -21,7 +21,9 @@ import type {
 
 type CommerceGroup = {
   key: string;
+  kind: "family" | "standalone";
   label: string;
+  brand: string;
   products: WebsiteCommerceProduct[];
 };
 
@@ -44,14 +46,17 @@ function WebsiteCommerceConnectionManager({ businessId }: { businessId: string }
   const groups = useMemo<CommerceGroup[]>(() => {
     const byKey = new Map<string, CommerceGroup>();
     for (const product of products) {
-      const key = product.family_id ? `family:${product.family_id}` : `product:${product.id}`;
+      const family = Boolean(product.family_id);
+      const key = family ? `family:${product.family_id}` : `product:${product.id}`;
       const existing = byKey.get(key);
       if (existing) {
         existing.products.push(product);
       } else {
         byKey.set(key, {
           key,
+          kind: family ? "family" : "standalone",
           label: product.family_name || product.name,
+          brand: product.brand,
           products: [product],
         });
       }
@@ -103,20 +108,30 @@ function WebsiteCommerceConnectionManager({ businessId }: { businessId: string }
     };
   }, [load]);
 
-  async function importGroup(group: CommerceGroup) {
+  async function connectGroup(group: CommerceGroup) {
     if (!site || !canManage) return;
     const candidate = group.products.find((product) => !product.linked);
     if (!candidate) return;
     setBusyKey(group.key);
     try {
       const response = await request((token) =>
-        importWebsiteCommerceProducts(businessId, site.id, [candidate.id], token),
+        importWebsiteCommerceProducts(
+          businessId,
+          site.id,
+          [candidate.id],
+          token,
+          "group",
+        ),
       );
       const created = response.data?.created_variants ?? 0;
       notify({
         message: sw
-          ? `Commerce imeunganishwa. Aina ${created} zimeongezwa.`
-          : `Commerce connected. ${created} variant(s) added.`,
+          ? created
+            ? `Imeunganishwa kwenye Website. SKU ${created} zimeongezwa kama rasimu.`
+            : "Imeunganishwa tena kwenye Website. Uchapishaji unasimamiwa kwenye Products."
+          : created
+            ? `Connected to Website. ${created} SKU(s) were added as drafts.`
+            : "Reconnected to Website. Publishing is managed from Products.",
         tone: "success",
       });
       await load();
@@ -126,8 +141,8 @@ function WebsiteCommerceConnectionManager({ businessId }: { businessId: string }
           importError instanceof Error
             ? importError.message
             : sw
-              ? "Imeshindikana kuunganisha Commerce."
-              : "Commerce could not be connected.",
+              ? "Imeshindikana kuunganisha kwenye Website."
+              : "The item could not be connected to Website.",
         tone: "error",
       });
     } finally {
@@ -135,31 +150,77 @@ function WebsiteCommerceConnectionManager({ businessId }: { businessId: string }
     }
   }
 
-  async function disconnect(product: WebsiteCommerceProduct) {
-    if (
-      !site ||
-      !canManage ||
-      !product.website_listing_id ||
-      !product.website_variant_id
-    ) {
-      return;
+  async function connectProduct(product: WebsiteCommerceProduct) {
+    if (!site || !canManage || product.linked) return;
+    const key = `sku:${product.id}`;
+    setBusyKey(key);
+    try {
+      const response = await request((token) =>
+        importWebsiteCommerceProducts(
+          businessId,
+          site.id,
+          [product.id],
+          token,
+          "product",
+        ),
+      );
+      const created = response.data?.created_variants ?? 0;
+      notify({
+        message: sw
+          ? created
+            ? "SKU imeongezwa kwenye Website kama rasimu."
+            : "SKU imeunganishwa tena kwenye Website kama rasimu."
+          : created
+            ? "SKU added to Website as a draft."
+            : "SKU reconnected to Website as a draft.",
+        tone: "success",
+      });
+      await load();
+    } catch (importError) {
+      notify({
+        message:
+          importError instanceof Error
+            ? importError.message
+            : sw
+              ? "Imeshindikana kuongeza SKU kwenye Website."
+              : "The SKU could not be added to Website.",
+        tone: "error",
+      });
+    } finally {
+      setBusyKey(null);
     }
-    if (!window.confirm(sw ? "Tenganisha aina hii na Commerce?" : "Disconnect this variant from Commerce?")) {
-      return;
-    }
-    setBusyKey(product.id);
+  }
+
+  async function removeGroup(group: CommerceGroup) {
+    if (!site || !canManage) return;
+    const anchor = group.products.find(
+      (product) => product.linked && product.website_listing_id && product.website_variant_id,
+    );
+    if (!anchor?.website_listing_id || !anchor.website_variant_id) return;
+
+    const confirmed = window.confirm(
+      sw
+        ? `Ondoa ${group.label} kwenye katalogi ya Website? Maudhui ya Website yataifadhiwa, lakini bidhaa haitakuwa ya umma mpaka iunganishwe na kuchapishwa tena.`
+        : `Remove ${group.label} from the Website catalog? Website presentation will be preserved, but the item will not be public until it is reconnected and published again.`,
+    );
+    if (!confirmed) return;
+
+    setBusyKey(group.key);
     try {
       await request((token) =>
         disconnectWebsiteCommerceVariant(
           businessId,
           site.id,
-          product.website_listing_id!,
-          product.website_variant_id!,
+          anchor.website_listing_id!,
+          anchor.website_variant_id!,
           token,
+          "group",
         ),
       );
       notify({
-        message: sw ? "Aina imetenganishwa na Commerce." : "Variant disconnected from Commerce.",
+        message: sw
+          ? "Imeondolewa kwenye katalogi ya Website. Maudhui yake yamehifadhiwa."
+          : "Removed from the Website catalog. Its Website presentation was preserved.",
         tone: "success",
       });
       await load();
@@ -169,8 +230,60 @@ function WebsiteCommerceConnectionManager({ businessId }: { businessId: string }
           disconnectError instanceof Error
             ? disconnectError.message
             : sw
-              ? "Imeshindikana kutenganisha Commerce."
-              : "Commerce could not be disconnected.",
+              ? "Imeshindikana kuondoa kwenye Website."
+              : "The item could not be removed from Website.",
+        tone: "error",
+      });
+    } finally {
+      setBusyKey(null);
+    }
+  }
+
+  async function removeProduct(product: WebsiteCommerceProduct) {
+    if (
+      !site ||
+      !canManage ||
+      !product.linked ||
+      !product.website_listing_id ||
+      !product.website_variant_id
+    ) {
+      return;
+    }
+    const confirmed = window.confirm(
+      sw
+        ? `Ondoa SKU ${product.sku} pekee kwenye Website? SKU nyingine za familia zitaendelea kuunganishwa.`
+        : `Remove only SKU ${product.sku} from Website? Other SKUs in this family will remain connected.`,
+    );
+    if (!confirmed) return;
+
+    const key = `sku:${product.id}`;
+    setBusyKey(key);
+    try {
+      await request((token) =>
+        disconnectWebsiteCommerceVariant(
+          businessId,
+          site.id,
+          product.website_listing_id!,
+          product.website_variant_id!,
+          token,
+          "product",
+        ),
+      );
+      notify({
+        message: sw
+          ? "SKU imeondolewa kwenye Website. Uwasilishaji wake umehifadhiwa."
+          : "SKU removed from Website. Its presentation was preserved.",
+        tone: "success",
+      });
+      await load();
+    } catch (disconnectError) {
+      notify({
+        message:
+          disconnectError instanceof Error
+            ? disconnectError.message
+            : sw
+              ? "Imeshindikana kuondoa SKU kwenye Website."
+              : "The SKU could not be removed from Website.",
         tone: "error",
       });
     } finally {
@@ -203,9 +316,7 @@ function WebsiteCommerceConnectionManager({ businessId }: { businessId: string }
     return (
       <section className="rounded-lg border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
         <h1 className="text-lg font-semibold">{sw ? "Unganisha Commerce" : "Connect Commerce"}</h1>
-        <p className="mt-2 text-sm text-slate-500">
-          {sw ? "Tovuti haijaundwa bado." : "No Website site exists yet."}
-        </p>
+        <p className="mt-2 text-sm text-slate-500">{sw ? "Tovuti haijaundwa bado." : "No Website site exists yet."}</p>
       </section>
     );
   }
@@ -215,9 +326,7 @@ function WebsiteCommerceConnectionManager({ businessId }: { businessId: string }
       <section className="rounded-lg border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
         <h1 className="text-lg font-semibold">{sw ? "Unganisha Commerce" : "Connect Commerce"}</h1>
         <p className="mt-2 text-sm text-slate-500">
-          {sw
-            ? "Huna ruhusa ya kuona katalogi ya Commerce."
-            : "You do not have permission to view the Commerce catalog."}
+          {sw ? "Huna ruhusa ya kuona katalogi ya Commerce." : "You do not have permission to view the Commerce catalog."}
         </p>
       </section>
     );
@@ -228,12 +337,12 @@ function WebsiteCommerceConnectionManager({ businessId }: { businessId: string }
       <header>
         <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Website</p>
         <h1 className="mt-1 text-2xl font-semibold text-slate-950 dark:text-white">
-          {sw ? "Unganisha Commerce" : "Connect Commerce"}
+          {sw ? "Unganisha Commerce" : "Commerce Connection"}
         </h1>
         <p className="mt-1 max-w-3xl text-sm text-slate-500">
           {sw
-            ? "Chagua familia za bidhaa kutoka Commerce. Website inaendelea kumiliki bei, picha na maudhui yake."
-            : "Choose product families from Commerce. Website continues to own its prices, images, and presentation."}
+            ? "Chagua familia, SKU maalum, au bidhaa binafsi zitakazokuwa sehemu ya katalogi ya Website. Uchapishaji, bei, picha na maudhui yanasimamiwa kwenye Products."
+            : "Choose which product families, individual SKUs, or standalone products belong to the Website catalog. Publishing, prices, images, and presentation are managed from Products."}
         </p>
       </header>
 
@@ -242,74 +351,106 @@ function WebsiteCommerceConnectionManager({ businessId }: { businessId: string }
           {sw ? "Hakuna bidhaa hai za Commerce." : "No active Commerce products found."}
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {groups.map((group) => {
-            const connected = group.products.filter((product) => product.linked).length;
-            const allConnected = connected === group.products.length;
+            const connectedCount = group.products.filter((product) => product.linked).length;
+            const connected = connectedCount === group.products.length;
+            const partiallyConnected = connectedCount > 0 && !connected;
             return (
               <section
                 className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950 sm:p-5"
                 key={group.key}
               >
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                  <div>
-                    <h2 className="font-semibold">{group.label}</h2>
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h2 className="font-semibold text-slate-950 dark:text-white">{group.label}</h2>
+                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold uppercase text-slate-600 dark:bg-slate-900 dark:text-slate-300">
+                        {group.kind === "family" ? (sw ? "Familia" : "Family") : (sw ? "Bidhaa binafsi" : "Standalone")}
+                      </span>
+                      {connected ? (
+                        <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold uppercase text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">
+                          {sw ? "Kwenye Website" : "Connected"}
+                        </span>
+                      ) : partiallyConnected ? (
+                        <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold uppercase text-amber-700 dark:bg-amber-950/30 dark:text-amber-300">
+                          {sw ? `${connectedCount}/${group.products.length} SKU` : `${connectedCount}/${group.products.length} SKUs connected`}
+                        </span>
+                      ) : null}
+                    </div>
                     <p className="mt-1 text-xs text-slate-500">
-                      {connected}/{group.products.length} {sw ? "zimeunganishwa" : "connected"}
+                      {[group.brand, `${group.products.length} SKU`].filter(Boolean).join(" · ")}
                     </p>
                   </div>
-                  {canManage && !allConnected ? (
-                    <Button
-                      disabled={busyKey === group.key}
-                      onClick={() => void importGroup(group)}
-                      size="small"
-                    >
-                      {busyKey === group.key ? (
-                        <Loader2 className="size-4 animate-spin" />
-                      ) : (
-                        <Plug className="size-4" />
-                      )}
-                      {sw ? "Unganisha familia" : "Connect family"}
-                    </Button>
+
+                  {canManage ? (
+                    connected ? (
+                      <Button
+                        disabled={busyKey === group.key}
+                        onClick={() => void removeGroup(group)}
+                        size="small"
+                        variant="outline"
+                      >
+                        {busyKey === group.key ? <Loader2 className="size-4 animate-spin" /> : <Unplug className="size-4" />}
+                        {sw ? "Ondoa zote" : "Remove all"}
+                      </Button>
+                    ) : (
+                      <Button
+                        disabled={busyKey === group.key}
+                        onClick={() => void connectGroup(group)}
+                        size="small"
+                      >
+                        {busyKey === group.key ? <Loader2 className="size-4 animate-spin" /> : <Plug className="size-4" />}
+                        {partiallyConnected
+                          ? sw ? "Ongeza SKU zote" : "Add all SKUs"
+                          : sw ? "Ongeza kwenye Website" : "Add to Website"}
+                      </Button>
+                    )
                   ) : null}
                 </div>
 
-                <div className="mt-4 divide-y divide-slate-100 dark:divide-slate-800">
-                  {group.products.map((product) => (
-                    <div
-                      className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between"
-                      key={product.id}
-                    >
-                      <div className="min-w-0">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="text-sm font-medium">{product.name}</span>
-                          {product.linked ? (
-                            <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold uppercase text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">
-                              {sw ? "Imeunganishwa" : "Connected"}
-                            </span>
+                <div className="mt-4 divide-y divide-slate-100 rounded-md border border-slate-100 px-3 dark:divide-slate-800 dark:border-slate-800">
+                  {group.products.map((product) => {
+                    const productBusy = busyKey === `sku:${product.id}`;
+                    return (
+                      <div className="flex items-center justify-between gap-3 py-2.5" key={product.id}>
+                        <div className="min-w-0">
+                          <p className="truncate font-mono text-xs font-semibold text-slate-800 dark:text-slate-200">{product.sku}</p>
+                          <p className="mt-0.5 truncate text-xs text-slate-500">
+                            {[product.variant || product.name, product.tracking_mode].filter(Boolean).join(" · ")}
+                          </p>
+                        </div>
+                        <div className="flex shrink-0 items-center gap-2">
+                          <span className={`text-[11px] font-semibold ${product.linked ? "text-emerald-600 dark:text-emerald-400" : "text-slate-400"}`}>
+                            {product.linked ? (sw ? "Imeunganishwa" : "Connected") : (sw ? "Haijaunganishwa" : "Not connected")}
+                          </span>
+                          {canManage && group.kind === "family" ? (
+                            product.linked ? (
+                              <Button
+                                disabled={productBusy}
+                                onClick={() => void removeProduct(product)}
+                                size="small"
+                                variant="outline"
+                              >
+                                {productBusy ? <Loader2 className="size-4 animate-spin" /> : <Unplug className="size-4" />}
+                                {sw ? "Ondoa SKU" : "Remove SKU"}
+                              </Button>
+                            ) : (
+                              <Button
+                                disabled={productBusy}
+                                onClick={() => void connectProduct(product)}
+                                size="small"
+                                variant="outline"
+                              >
+                                {productBusy ? <Loader2 className="size-4 animate-spin" /> : <Plug className="size-4" />}
+                                {sw ? "Ongeza SKU" : "Add SKU"}
+                              </Button>
+                            )
                           ) : null}
                         </div>
-                        <p className="mt-1 text-xs text-slate-500">
-                          {[product.sku, product.variant, product.brand].filter(Boolean).join(" · ")}
-                        </p>
                       </div>
-                      {canManage && product.linked ? (
-                        <Button
-                          disabled={busyKey === product.id}
-                          onClick={() => void disconnect(product)}
-                          size="small"
-                          variant="outline"
-                        >
-                          {busyKey === product.id ? (
-                            <Loader2 className="size-4 animate-spin" />
-                          ) : (
-                            <Unplug className="size-4" />
-                          )}
-                          {sw ? "Tenganisha" : "Disconnect"}
-                        </Button>
-                      ) : null}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </section>
             );
