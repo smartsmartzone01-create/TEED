@@ -4,6 +4,7 @@ import { Grid2X2, Package2 } from "lucide-react";
 import { useState } from "react";
 
 import { WebsiteHomepageCategoriesManager } from "@/components/website/website-homepage-categories-manager";
+import { WebsiteProductCategoryAssignment } from "@/components/website/website-product-category-assignment";
 import { WebsiteProductManager } from "@/components/website/website-product-manager";
 
 type WebsiteProductManagementProps = {
@@ -83,7 +84,10 @@ function WebsiteProductManagement({ businessId, locale }: WebsiteProductManageme
         role="tabpanel"
       >
         {activeSection === "products" ? (
-          <WebsiteProductManager businessId={businessId} />
+          <div className="space-y-5">
+            <WebsiteProductCategoryAssignment businessId={businessId} locale={locale} />
+            <WebsiteProductManager businessId={businessId} />
+          </div>
         ) : (
           <div className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950">
             <WebsiteHomepageCategoriesManager businessId={businessId} locale={locale} />
