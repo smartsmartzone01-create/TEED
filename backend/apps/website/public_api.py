@@ -28,8 +28,11 @@ def public_variants():
 def public_listings(site):
     return (
         WebsiteListing.objects.filter(site=site, is_published=True)
-        .select_related("primary_media")
-        .prefetch_related(Prefetch("variants", queryset=public_variants()))
+        .select_related("primary_media", "discover_media")
+        .prefetch_related(
+            "story_blocks__media",
+            Prefetch("variants", queryset=public_variants()),
+        )
     )
 
 

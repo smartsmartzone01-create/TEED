@@ -11,6 +11,7 @@ export type StorefrontMoney = { amount: string; currency: string };
 export type StorefrontSkuAvailability = "in_stock" | "low_stock" | "out_of_stock";
 export type StorefrontProductOptionValue = { value: string; label: LocalizedText; colorHex?: string };
 export type StorefrontProductOption = { id: string; name: LocalizedText; values: StorefrontProductOptionValue[] };
+export type StorefrontProductStoryBlock = { id: string; heading: LocalizedText; body: LocalizedText; imageUrl?: string };
 
 export type StorefrontSku = {
   id: string;
@@ -34,6 +35,8 @@ export type StorefrontProductListing = {
   brand?: string;
   badge?: LocalizedText;
   primaryImageUrl: string;
+  discoverImageUrl?: string;
+  storyBlocks?: StorefrontProductStoryBlock[];
   familyIds?: string[];
   options: StorefrontProductOption[];
   skus: StorefrontSku[];

@@ -435,6 +435,17 @@ def serialize_listing(listing: WebsiteListing):
             _merge_option(options, derived_option)
         variants.extend(resolved_variants)
 
+    story_blocks = []
+    for block in listing.story_blocks.all():
+        story = {
+            "id": str(block.id),
+            "heading": localized(block.heading),
+            "body": localized(block.body),
+        }
+        if block.media is not None and block.media.public_url:
+            story["imageUrl"] = block.media.public_url
+        story_blocks.append(story)
+
     payload = {
         "id": str(listing.id),
         "slug": listing.slug,
@@ -442,6 +453,8 @@ def serialize_listing(listing: WebsiteListing):
         "shortDescription": localized(listing.short_description),
         "description": localized(listing.description),
         "primaryImageUrl": listing.resolved_primary_image_url(),
+        "discoverImageUrl": listing.resolved_discover_image_url(),
+        "storyBlocks": story_blocks,
         "familyIds": family_ids,
         "options": options,
         "skus": variants,

@@ -74,6 +74,8 @@ export function ProductDetail({ product, locale }: { product: StorefrontProductL
   const productTitle = localized(product.title, locale);
   const description = localized(product.description, locale).trim();
   const showcaseImage = product.primaryImageUrl?.trim() ?? "";
+  const discoverImage = product.discoverImageUrl?.trim() || showcaseImage;
+  const storyBlocks = product.storyBlocks ?? [];
   const skuGallery = useMemo(() => skuImages(selectedSku), [selectedSku]);
   const thumbnailImages = useMemo(() => {
     const images = uniqueImages(product.skus.flatMap((sku) => skuImages(sku)));
@@ -116,7 +118,6 @@ export function ProductDetail({ product, locale }: { product: StorefrontProductL
   )
     ? selectedGalleryImage
     : defaultDisplayImage;
-  const storyImage = showcaseImage || selectedImage;
   const hasThumbnails = thumbnailImages.length > 0;
 
   function optionValueExists(optionId: string, value: string): boolean {
@@ -259,29 +260,43 @@ export function ProductDetail({ product, locale }: { product: StorefrontProductL
           <h2>{productTitle}</h2>
           {description ? <p>{description}</p> : null}
         </div>
-        {storyImage ? <div className="product-story-media"><StorefrontImage src={storyImage} alt={productTitle} width={1600} height={1100} /></div> : null}
-        {configurationOptions.length > 0 ? (
-          <div className="product-story-configurations">
-            <div className="product-story-config-heading">
-              <p className="product-story-eyebrow">{locale === "sw" ? "Chaguo" : "Configurations"}</p>
-              <h3>{locale === "sw" ? "Chagua inayokufaa" : "Choose what fits you"}</h3>
-            </div>
-            <div className="product-story-config-list">
-              {configurationOptions.map((option) => (
-                <div className="product-story-config-row" key={option.id}>
-                  <strong>{localized(option.name, locale)}</strong>
-                  <div className="product-story-config-values">
-                    {option.values.map((value) => value.colorHex ? (
-                      <span className="product-story-color" key={value.value} style={{ backgroundColor: value.colorHex }} title={localized(value.label, locale)} aria-label={localized(value.label, locale)} />
-                    ) : <span key={value.value}>{localized(value.label, locale)}</span>)}
-                  </div>
-                </div>
-              ))}
-            </div>
+        {discoverImage ? <div className="product-story-media"><StorefrontImage src={discoverImage} alt={productTitle} width={1600} height={1100} /></div> : null}
+
+        {storyBlocks.length > 0 ? (
+          <div className="product-story-features" aria-label={locale === "sw" ? "Vipengele vya bidhaa" : "Product features"}>
+            {storyBlocks.map((block, index) => {
+              const heading = localized(block.heading, locale).trim();
+              const body = localized(block.body, locale).trim();
+              const imageUrl = block.imageUrl?.trim() ?? "";
+              const hasCopy = Boolean(heading || body);
+              const featureClassName = [
+                "product-story-feature",
+                imageUrl ? "has-image" : "text-only",
+                imageUrl && !hasCopy ? "image-only" : "",
+                imageUrl && hasCopy && index % 2 === 1 ? "image-right" : "",
+              ].filter(Boolean).join(" ");
+
+              return (
+                <article className={featureClassName} key={block.id}>
+                  {imageUrl ? (
+                    <div className="product-story-feature-media">
+                      <StorefrontImage src={imageUrl} alt={heading || productTitle} width={1200} height={900} />
+                    </div>
+                  ) : null}
+                  {hasCopy ? (
+                    <div className="product-story-feature-copy">
+                      {heading ? <h3>{heading}</h3> : null}
+                      {body ? <p>{body}</p> : null}
+                    </div>
+                  ) : null}
+                </article>
+              );
+            })}
           </div>
         ) : null}
+
         {staticDetails.length > 0 ? (
-          <div className="product-story-configurations">
+          <div className="product-story-configurations product-story-details">
             <div className="product-story-config-heading">
               <p className="product-story-eyebrow">{locale === "sw" ? "Maelezo" : "Details"}</p>
               <h3>{locale === "sw" ? "Maelezo ya bidhaa" : "Product details"}</h3>

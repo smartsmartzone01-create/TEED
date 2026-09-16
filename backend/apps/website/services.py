@@ -11,6 +11,7 @@ from apps.workspaces.services import require_membership
 
 from .models import (
     WebsiteListing,
+    WebsiteListingStoryBlock,
     WebsiteMedia,
     WebsiteSite,
     WebsiteVariant,
@@ -151,6 +152,8 @@ def delete_media(*, actor, business_id, site_id, media_id):
     storage_key = media.storage_key
     managed_storage = bool(storage_key and storage_key.startswith(_managed_media_prefix(site)))
     WebsiteListing.objects.filter(site=site, primary_media=media).update(primary_media=None)
+    WebsiteListing.objects.filter(site=site, discover_media=media).update(discover_media=None)
+    WebsiteListingStoryBlock.objects.filter(listing__site=site, media=media).update(media=None)
     WebsiteVariant.objects.filter(listing__site=site, media=media).update(media=None)
     media.delete()
     if managed_storage:
@@ -205,18 +208,43 @@ def _sync_variant_gallery(*, variant, media_ids):
     variant.save(update_fields=["media", "updated_at"])
 
 
+def _sync_listing_story_blocks(*, listing, blocks):
+    next_blocks = []
+    for index, block in enumerate(blocks):
+        media = _media_for_site(site=listing.site, media_id=block.get("media_id"))
+        story = WebsiteListingStoryBlock(
+            listing=listing,
+            heading=block.get("heading") or {},
+            body=block.get("body") or {},
+            media=media,
+            sort_order=index,
+        )
+        story.full_clean()
+        next_blocks.append(story)
+    WebsiteListingStoryBlock.objects.filter(listing=listing).delete()
+    WebsiteListingStoryBlock.objects.bulk_create(next_blocks)
+
+
 def _variant_prefetch(query):
     return query.select_related("media").prefetch_related("gallery_items__media")
 
 
+def _listing_prefetch(query):
+    return query.select_related("primary_media", "discover_media").prefetch_related(
+        "story_blocks__media",
+        "variants__media",
+        "variants__gallery_items__media",
+    )
+
+
 def list_listings_for_user(*, user, business_id, site_id):
     site = get_site_for_user(user=user, business_id=business_id, site_id=site_id)
-    return WebsiteListing.objects.filter(site=site).select_related("primary_media").prefetch_related("variants__media", "variants__gallery_items__media")
+    return _listing_prefetch(WebsiteListing.objects.filter(site=site))
 
 
 def get_listing_for_user(*, user, business_id, site_id, listing_id, manage=False):
     site = get_site_for_user(user=user, business_id=business_id, site_id=site_id, manage=manage)
-    listing = WebsiteListing.objects.filter(id=listing_id, site=site).select_related("primary_media").prefetch_related("variants__media", "variants__gallery_items__media").first()
+    listing = _listing_prefetch(WebsiteListing.objects.filter(id=listing_id, site=site)).first()
     if listing is None:
         raise NotFound("Website listing not found.", code="website_listing_not_found")
     return listing
@@ -247,10 +275,25 @@ def create_listing(*, actor, business_id, site_id, **values):
     if _listing_slug_conflicts(site=site, slug=slug):
         raise ValidationError({"slug": "A Website listing with this slug already exists."}, code="website_listing_slug_conflict")
     media_id = values.pop("primary_media_id", None)
-    listing = WebsiteListing(site=site, primary_media=_media_for_site(site=site, media_id=media_id), **values)
+    discover_media_id = values.pop("discover_media_id", None)
+    story_blocks = values.pop("story_blocks", None)
+    listing = WebsiteListing(
+        site=site,
+        primary_media=_media_for_site(site=site, media_id=media_id),
+        discover_media=_media_for_site(site=site, media_id=discover_media_id),
+        **values,
+    )
     listing.full_clean()
     listing.save()
-    return listing
+    if story_blocks is not None:
+        _sync_listing_story_blocks(listing=listing, blocks=story_blocks)
+    return get_listing_for_user(
+        user=actor,
+        business_id=business_id,
+        site_id=site_id,
+        listing_id=listing.id,
+        manage=True,
+    )
 
 
 @transaction.atomic
@@ -260,20 +303,33 @@ def update_listing(*, actor, business_id, site_id, listing_id, **changes):
     if requested_slug and requested_slug != listing.slug and _listing_slug_conflicts(site=listing.site, slug=requested_slug, exclude_listing_id=listing.id):
         raise ValidationError({"slug": "A Website listing with this slug already exists."}, code="website_listing_slug_conflict")
     requested_publication = changes.get("is_published") if "is_published" in changes else None
+    story_blocks = changes.pop("story_blocks", None) if "story_blocks" in changes else None
+    story_blocks_were_supplied = story_blocks is not None
     if "primary_media_id" in changes:
         media_id = changes.pop("primary_media_id")
         listing.primary_media = _media_for_site(site=listing.site, media_id=media_id)
+    if "discover_media_id" in changes:
+        discover_media_id = changes.pop("discover_media_id")
+        listing.discover_media = _media_for_site(site=listing.site, media_id=discover_media_id)
     for field, value in changes.items():
         setattr(listing, field, value)
     listing.full_clean()
     listing.save()
+    if story_blocks_were_supplied:
+        _sync_listing_story_blocks(listing=listing, blocks=story_blocks)
     if requested_publication is not None:
         standalone_variant = _standalone_website_variant(listing)
         if standalone_variant is not None and standalone_variant.is_published != requested_publication:
             standalone_variant.is_published = requested_publication
             standalone_variant.full_clean()
             standalone_variant.save(update_fields=["is_published", "updated_at"])
-    return listing
+    return get_listing_for_user(
+        user=actor,
+        business_id=business_id,
+        site_id=site_id,
+        listing_id=listing.id,
+        manage=True,
+    )
 
 
 @transaction.atomic

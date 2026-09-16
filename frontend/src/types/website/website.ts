@@ -61,6 +61,14 @@ type WebsiteVariant = {
   updated_at: string;
 };
 
+type WebsiteListingStoryBlock = {
+  id: string;
+  heading: Record<string, string>;
+  body: Record<string, string>;
+  media_id: string | null;
+  sort_order: number;
+};
+
 type WebsiteListing = {
   id: string;
   slug: string;
@@ -70,6 +78,8 @@ type WebsiteListing = {
   brand: string;
   badge: Record<string, string>;
   primary_media_id: string | null;
+  discover_media_id: string | null;
+  story_blocks: WebsiteListingStoryBlock[];
   options: unknown[];
   is_published: boolean;
   sort_order: number;
@@ -87,6 +97,12 @@ type WebsiteNavigationTarget =
   | { type: "external"; url: string }
   | { type: "legacy"; href: string };
 
+type WebsiteListingStoryBlockInput = {
+  heading?: Record<string, string>;
+  body?: Record<string, string>;
+  media_id?: string | null;
+};
+
 type WebsiteListingInput = {
   slug: string;
   title: Record<string, string>;
@@ -95,6 +111,8 @@ type WebsiteListingInput = {
   brand?: string;
   badge?: Record<string, string>;
   primary_media_id?: string | null;
+  discover_media_id?: string | null;
+  story_blocks?: WebsiteListingStoryBlockInput[];
   options?: unknown[];
   is_published?: boolean;
   sort_order?: number;
@@ -140,6 +158,8 @@ export type {
   WebsiteCommerceProduct,
   WebsiteListing,
   WebsiteListingInput,
+  WebsiteListingStoryBlock,
+  WebsiteListingStoryBlockInput,
   WebsiteMedia,
   WebsiteNavigationSection,
   WebsiteNavigationTarget,

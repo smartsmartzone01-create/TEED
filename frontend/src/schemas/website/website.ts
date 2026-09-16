@@ -65,6 +65,14 @@ const websiteVariantSchema = z.object({
   updated_at: z.string(),
 });
 
+const websiteListingStoryBlockSchema = z.object({
+  id: z.string().uuid(),
+  heading: localeMapSchema,
+  body: localeMapSchema,
+  media_id: z.string().uuid().nullable(),
+  sort_order: z.number().int().nonnegative(),
+});
+
 const websiteListingSchema = z.object({
   id: z.string().uuid(),
   slug: z.string(),
@@ -74,6 +82,8 @@ const websiteListingSchema = z.object({
   brand: z.string(),
   badge: localeMapSchema,
   primary_media_id: z.string().uuid().nullable(),
+  discover_media_id: z.string().uuid().nullable(),
+  story_blocks: z.array(websiteListingStoryBlockSchema),
   options: z.array(z.unknown()),
   is_published: z.boolean(),
   sort_order: z.number().int().nonnegative(),
@@ -126,6 +136,7 @@ export {
   websiteListingEnvelopeSchema,
   websiteListingListEnvelopeSchema,
   websiteListingSchema,
+  websiteListingStoryBlockSchema,
   websiteMediaEnvelopeSchema,
   websiteMediaListEnvelopeSchema,
   websiteMediaSchema,

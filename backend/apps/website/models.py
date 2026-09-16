@@ -101,6 +101,7 @@ class WebsiteListing(BaseModel):
     badge = models.JSONField(default=dict, blank=True)
     primary_image_url = models.URLField(max_length=500, blank=True, default="")
     primary_media = models.ForeignKey(WebsiteMedia, on_delete=models.SET_NULL, null=True, blank=True, related_name="primary_for_listings")
+    discover_media = models.ForeignKey(WebsiteMedia, on_delete=models.SET_NULL, null=True, blank=True, related_name="discover_for_listings")
     options = models.JSONField(default=list, blank=True)
     is_published = models.BooleanField(default=False, db_index=True)
     published_at = models.DateTimeField(null=True, blank=True, db_index=True)
@@ -116,6 +117,8 @@ class WebsiteListing(BaseModel):
         super().clean()
         if self.primary_media is not None and self.primary_media.site_id != self.site_id:
             raise ValidationError({"primary_media": "Primary media must belong to the same website site."})
+        if self.discover_media is not None and self.discover_media.site_id != self.site_id:
+            raise ValidationError({"discover_media": "Discover media must belong to the same website site."})
 
     def save(self, *args, **kwargs):
         if self.is_published and self.published_at is None:
@@ -128,9 +131,37 @@ class WebsiteListing(BaseModel):
     def resolved_primary_image_url(self):
         return (self.primary_media.public_url if self.primary_media is not None else "") or self.primary_image_url
 
+    def resolved_discover_image_url(self):
+        return (self.discover_media.public_url if self.discover_media is not None else "") or self.resolved_primary_image_url()
+
     def __str__(self):
         title = self.title if isinstance(self.title, dict) else {}
         return title.get("en") or title.get("sw") or self.slug
+
+
+class WebsiteListingStoryBlock(BaseModel):
+    listing = models.ForeignKey(WebsiteListing, on_delete=models.CASCADE, related_name="story_blocks")
+    heading = models.JSONField(default=dict, blank=True)
+    body = models.JSONField(default=dict, blank=True)
+    media = models.ForeignKey(WebsiteMedia, on_delete=models.SET_NULL, null=True, blank=True, related_name="listing_story_blocks")
+    sort_order = models.PositiveIntegerField(default=0, db_index=True)
+
+    class Meta:
+        db_table = "website_listing_story_blocks"
+        ordering = ["sort_order", "created_at", "id"]
+
+    def clean(self):
+        super().clean()
+        if not isinstance(self.heading, dict):
+            raise ValidationError({"heading": "Story heading must be a locale map."})
+        if not isinstance(self.body, dict):
+            raise ValidationError({"body": "Story body must be a locale map."})
+        if self.media is not None and self.media.site_id != self.listing.site_id:
+            raise ValidationError({"media": "Story media must belong to the same website site."})
+
+    def __str__(self):
+        heading = self.heading if isinstance(self.heading, dict) else {}
+        return heading.get("en") or heading.get("sw") or f"Story block {self.id}"
 
 
 class WebsiteVariant(BaseModel):

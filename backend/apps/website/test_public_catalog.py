@@ -6,7 +6,7 @@ from apps.commerce.catalog.models import Product
 from apps.workspaces.services import create_business
 from apps.workspaces.tests.factories import create_user
 
-from .models import WebsiteListing, WebsiteMedia, WebsiteSite, WebsiteVariant
+from .models import WebsiteListing, WebsiteListingStoryBlock, WebsiteMedia, WebsiteSite, WebsiteVariant
 
 
 class PublicWebsiteCatalogTests(APITestCase):
@@ -74,6 +74,57 @@ class PublicWebsiteCatalogTests(APITestCase):
         self.assertEqual(sku["price"]["amount"], "1250000.00")
         self.assertEqual(sku["availability"], WebsiteVariant.Availability.LOW_STOCK)
         self.assertNotIn("commerceProductId", sku)
+
+    def test_public_detail_exposes_discover_fallback_and_ordered_story_blocks(self):
+        showcase = WebsiteMedia.objects.create(
+            site=self.site,
+            public_url="https://cdn.example.com/showcase.webp",
+            original_name="showcase.webp",
+        )
+        feature = WebsiteMedia.objects.create(
+            site=self.site,
+            public_url="https://cdn.example.com/feature.webp",
+            original_name="feature.webp",
+        )
+        listing = WebsiteListing.objects.create(
+            site=self.site,
+            slug="rich-product",
+            title={"en": "Rich product", "sw": "Bidhaa kamili"},
+            description={"en": "Discover copy", "sw": "Maelezo ya Gundua"},
+            primary_media=showcase,
+            is_published=True,
+        )
+        WebsiteVariant.objects.create(
+            listing=listing,
+            sku="RICH-1",
+            website_price="1000.00",
+            is_published=True,
+        )
+        text_only = WebsiteListingStoryBlock.objects.create(
+            listing=listing,
+            heading={"en": "Battery", "sw": "Betri"},
+            body={"en": "Long lasting.", "sw": "Hudumu muda mrefu."},
+            sort_order=0,
+        )
+        image_block = WebsiteListingStoryBlock.objects.create(
+            listing=listing,
+            heading={"en": "Camera", "sw": "Kamera"},
+            body={"en": "Detailed camera.", "sw": "Kamera yenye maelezo."},
+            media=feature,
+            sort_order=1,
+        )
+
+        response = self.client.get(self.detail_url(listing.slug))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        product = response.data["data"]
+        self.assertEqual(product["discoverImageUrl"], showcase.public_url)
+        self.assertEqual(
+            [block["id"] for block in product["storyBlocks"]],
+            [str(text_only.id), str(image_block.id)],
+        )
+        self.assertNotIn("imageUrl", product["storyBlocks"][0])
+        self.assertEqual(product["storyBlocks"][1]["imageUrl"], feature.public_url)
 
     def test_connected_variant_uses_commerce_availability_but_website_price(self):
         product = Product.objects.create(

@@ -1,18 +1,19 @@
 "use client";
 
-import { Grid2X2, Package2 } from "lucide-react";
+import { FileText, Grid2X2, Package2 } from "lucide-react";
 import { useState } from "react";
 
 import { WebsiteHomepageCategoriesManager } from "@/components/website/website-homepage-categories-manager";
 import { WebsiteProductCategoryAssignment } from "@/components/website/website-product-category-assignment";
 import { WebsiteProductManager } from "@/components/website/website-product-manager";
+import { WebsiteProductPageContentManager } from "@/components/website/website-product-page-content-manager";
 
 type WebsiteProductManagementProps = {
   businessId: string;
   locale: string;
 };
 
-type ProductManagementSection = "products" | "categories";
+type ProductManagementSection = "products" | "content" | "categories";
 
 function WebsiteProductManagement({ businessId, locale }: WebsiteProductManagementProps) {
   const sw = locale === "sw";
@@ -22,6 +23,11 @@ function WebsiteProductManagement({ businessId, locale }: WebsiteProductManageme
       id: "products" as const,
       icon: Package2,
       label: sw ? "Bidhaa" : "Products",
+    },
+    {
+      id: "content" as const,
+      icon: FileText,
+      label: sw ? "Kurasa za bidhaa" : "Product pages",
     },
     {
       id: "categories" as const,
@@ -41,8 +47,8 @@ function WebsiteProductManagement({ businessId, locale }: WebsiteProductManageme
             </h1>
             <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
               {sw
-                ? "Simamia bidhaa za Website na makundi ya storefront mahali pamoja. Makundi yanabaki hiari na bidhaa zinaweza kuwekwa kwenye kundi moja au zaidi."
-                : "Manage Website products and storefront categories in one place. Categories remain optional, and products can be organized into one or more categories."}
+                ? "Simamia bidhaa, maudhui ya kurasa za bidhaa na makundi ya storefront mahali pamoja. Makundi yanabaki hiari na bidhaa zinaweza kuwekwa kwenye kundi moja au zaidi."
+                : "Manage Website products, rich product-page content, and storefront categories in one place. Categories remain optional, and products can be organized into one or more categories."}
             </p>
           </div>
 
@@ -88,6 +94,8 @@ function WebsiteProductManagement({ businessId, locale }: WebsiteProductManageme
             <WebsiteProductCategoryAssignment businessId={businessId} locale={locale} />
             <WebsiteProductManager businessId={businessId} />
           </div>
+        ) : activeSection === "content" ? (
+          <WebsiteProductPageContentManager businessId={businessId} locale={locale} />
         ) : (
           <div className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950">
             <WebsiteHomepageCategoriesManager businessId={businessId} locale={locale} />
