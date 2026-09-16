@@ -29,8 +29,8 @@
 
 .catalog-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 22px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 18px;
 }
 
 .catalog-grid-store {
@@ -39,9 +39,12 @@
 
 .product-card {
   min-width: 0;
+  display: flex;
+  height: 100%;
   overflow: hidden;
+  flex-direction: column;
   border: 1px solid #e7e7e7;
-  border-radius: 20px;
+  border-radius: 18px;
   background: #ffffff;
   box-shadow: 0 8px 24px rgb(0 0 0 / 4%);
   transition: transform 180ms ease, box-shadow 180ms ease;
@@ -59,19 +62,20 @@
 }
 
 .product-card-media {
-  min-height: 250px;
   position: relative;
   display: grid;
+  min-height: 0;
+  aspect-ratio: 4 / 3;
   place-items: center;
-  padding: 24px;
+  padding: 16px;
   background: #ffffff;
 }
 
 .product-card-media img {
   width: 100%;
   height: 100%;
-  max-width: 220px;
-  max-height: 220px;
+  max-width: 92%;
+  max-height: 92%;
   object-fit: contain;
   object-position: center;
   transition: transform 180ms ease;
@@ -83,15 +87,15 @@
 
 .product-badge {
   position: absolute;
-  top: 14px;
-  left: 14px;
+  top: 12px;
+  right: 14px;
   z-index: 2;
-  padding: 6px 10px;
-  border-radius: 999px;
-  background: var(--storefront-accent);
-  color: white;
-  font-size: 0.7rem;
+  padding: 0;
+  background: transparent;
+  color: var(--storefront-accent);
+  font-size: 0.72rem;
   font-weight: 800;
+  line-height: 1.2;
 }
 
 .product-save-toggle {
@@ -114,34 +118,22 @@
 .product-card-copy {
   display: flex;
   flex: 1;
-  min-height: 250px;
+  min-height: 0;
   flex-direction: column;
-  padding: 20px;
+  padding: 14px 16px 16px;
 }
 
-.product-brand {
-  margin: 0 0 6px;
-  color: #777777;
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
+.product-card-title-link {
+  display: block;
 }
 
 .product-card-copy h3 {
-  margin: 0;
-  color: #111111;
-  font-size: 1.12rem;
-  line-height: 1.3;
-}
-
-.product-card-description {
   display: -webkit-box;
   overflow: hidden;
-  margin: 9px 0 18px;
-  color: var(--storefront-muted);
-  font-size: 0.84rem;
-  line-height: 1.5;
+  margin: 0;
+  color: #111111;
+  font-size: 1rem;
+  line-height: 1.25;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }
@@ -149,32 +141,49 @@
 .product-card-price-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-top: auto;
+  justify-content: center;
+  flex-direction: column;
+  gap: 5px;
+  margin: 12px 0 14px;
+  text-align: center;
 }
 
 .product-card-price-row strong {
   color: #111111;
-  font-size: 0.92rem;
+  font-size: 0.9rem;
+  line-height: 1.3;
 }
 
-.product-trade-note {
-  margin: 12px 0 14px;
-  color: #777777;
-  font-size: 0.76rem;
+.product-card-actions {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 1fr;
+  margin-top: auto;
 }
 
-.product-buy-button {
-  min-height: 40px;
+.product-buy-button,
+.product-save-button {
+  min-height: 38px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border-radius: 999px;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.product-buy-button {
   background: #111111;
   color: #ffffff;
-  font-size: 0.82rem;
-  font-weight: 800;
+}
+
+.product-save-button {
+  width: 100%;
+  border: 1px solid #111111;
+  background: #ffffff;
+  color: #111111;
+  opacity: 0.72;
 }
 
 .product-card-meta {
@@ -192,6 +201,7 @@
 .availability-dot {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   color: #707070;
   font-size: 0.72rem;
@@ -536,7 +546,7 @@
 
 @media (max-width: 1180px) {
   .catalog-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
@@ -569,6 +579,13 @@
   }
 }
 
+@media (max-width: 700px) {
+  .catalog-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+}
+
 @media (max-width: 620px) {
   .section-heading-row {
     align-items: flex-start;
@@ -598,11 +615,60 @@
   }
 
   .catalog-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .product-card {
+    border-radius: 14px;
   }
 
   .product-card-media {
-    min-height: 280px;
+    min-height: 0;
+    padding: 10px;
+  }
+
+  .product-badge {
+    top: 9px;
+    right: 10px;
+    font-size: 0.64rem;
+  }
+
+  .product-card-copy {
+    padding: 10px;
+  }
+
+  .product-card-copy h3 {
+    font-size: 0.9rem;
+  }
+
+  .product-card-price-row {
+    gap: 4px;
+    margin: 9px 0 11px;
+  }
+
+  .product-card-price-row strong {
+    font-size: 0.8rem;
+  }
+
+  .availability-dot {
+    gap: 4px;
+    font-size: 0.65rem;
+  }
+
+  .availability-dot::before {
+    width: 6px;
+    height: 6px;
+  }
+
+  .product-card-actions {
+    gap: 6px;
+  }
+
+  .product-buy-button,
+  .product-save-button {
+    min-height: 34px;
+    font-size: 0.7rem;
   }
 
   .product-detail-media {
