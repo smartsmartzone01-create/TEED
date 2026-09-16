@@ -108,6 +108,22 @@ function listingLabel(listing: WebsiteListing, sw: boolean) {
   return listing.brand ? `${listing.brand} · ${title}` : title;
 }
 
+function listingKind(listing: WebsiteListing, sw: boolean) {
+  if (listing.variants.some((variant) => Boolean(variant.commerce_product_id))) {
+    return sw ? "Kutoka Commerce" : "Commerce-linked";
+  }
+  const standalone = listing.variants.length <= 1 && Object.keys(listing.variants[0]?.options ?? {}).length === 0;
+  return standalone
+    ? (sw ? "Bidhaa binafsi" : "Website standalone")
+    : (sw ? "Familia ya Website" : "Website family");
+}
+
+function categoryCountLabel(count: number, sw: boolean) {
+  if (count === 0) return sw ? "Bila kundi" : "Uncategorized";
+  if (count === 1) return sw ? "Kundi 1" : "1 category";
+  return sw ? `Makundi ${count}` : `${count} categories`;
+}
+
 export function WebsiteHomepageCategoriesManager({ businessId, locale }: Props) {
   const sw = locale === "sw";
   const request = useWebsiteRequest();
@@ -124,6 +140,15 @@ export function WebsiteHomepageCategoriesManager({ businessId, locale }: Props) 
   const [uploadingId, setUploadingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const dirty = useMemo(() => Boolean(draft && JSON.stringify(draft) !== saved), [draft, saved]);
+  const membershipCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const category of draft?.items ?? []) {
+      for (const listingId of category.listingIds) {
+        counts.set(listingId, (counts.get(listingId) ?? 0) + 1);
+      }
+    }
+    return counts;
+  }, [draft]);
 
   const load = useCallback(async (signal?: AbortSignal) => {
     if (status !== "ready") return;
@@ -171,9 +196,18 @@ export function WebsiteHomepageCategoriesManager({ businessId, locale }: Props) 
     });
   }
 
+  function replaceListings(itemId: string, listingIds: string[]) {
+    updateItem(itemId, (current) => ({
+      ...current,
+      familyIds: [],
+      listingIds: [...new Set(listingIds)],
+    }));
+  }
+
   function toggleListing(itemId: string, listingId: string) {
     updateItem(itemId, (current) => ({
       ...current,
+      familyIds: [],
       listingIds: current.listingIds.includes(listingId)
         ? current.listingIds.filter((value) => value !== listingId)
         : [...current.listingIds, listingId],
@@ -241,7 +275,7 @@ export function WebsiteHomepageCategoriesManager({ businessId, locale }: Props) 
               <h3 className="text-sm font-semibold text-slate-950 dark:text-white">{sw ? "Makundi ya bidhaa" : "Product categories"}</h3>
               <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500 dark:bg-slate-900 dark:text-slate-400">{draft.items.length}/{MAX_CATEGORIES}</span>
             </div>
-            <p className="mt-1.5 max-w-3xl text-sm leading-6 text-slate-500 dark:text-slate-400">{sw ? "Unda hadi makundi 10, chagua bidhaa za Website kwa kila kundi, na panga mpangilio wake kwenye storefront." : "Create up to 10 categories, choose the Website products in each category, and control their storefront order."}</p>
+            <p className="mt-1.5 max-w-3xl text-sm leading-6 text-slate-500 dark:text-slate-400">{sw ? "Unda hadi makundi 10 na uchague bidhaa za Website kwa kila kundi. Bidhaa inaweza kubaki bila kundi au kuwa kwenye makundi mengi." : "Create up to 10 categories and choose Website products for each one. A product can stay uncategorized or belong to multiple categories."}</p>
           </div>
           <div className="flex gap-2"><Button disabled={!canManage || draft.items.length >= MAX_CATEGORIES} onClick={() => setDraft((current) => current ? { ...current, items: [...current.items, blankCategory(current.items.length)] } : current)} size="small" variant="outline"><Plus className="size-4" />{sw ? "Ongeza" : "Add"}</Button><Button disabled={!dirty || saving || !canManage} onClick={() => void save()} size="small"><Save className="size-4" />{saving ? (sw ? "Inahifadhi..." : "Saving...") : sw ? "Hifadhi" : "Save"}</Button></div>
         </div>
@@ -254,9 +288,37 @@ export function WebsiteHomepageCategoriesManager({ businessId, locale }: Props) 
             <div className="grid gap-3 sm:grid-cols-2"><input className={inputClassName} disabled={!canManage} placeholder="Category title (English)" value={item.title.en} onChange={(event) => updateItem(item.id, (current) => ({ ...current, title: { ...current.title, en: event.target.value } }))} /><input className={inputClassName} disabled={!canManage} placeholder="Kichwa (Kiswahili)" value={item.title.sw} onChange={(event) => updateItem(item.id, (current) => ({ ...current, title: { ...current.title, sw: event.target.value } }))} /></div>
             <div className="grid gap-3 sm:grid-cols-2"><input className={inputClassName} disabled={!canManage} placeholder="Short text (English)" value={item.description.en} onChange={(event) => updateItem(item.id, (current) => ({ ...current, description: { ...current.description, en: event.target.value } }))} /><input className={inputClassName} disabled={!canManage} placeholder="Maelezo mafupi" value={item.description.sw} onChange={(event) => updateItem(item.id, (current) => ({ ...current, description: { ...current.description, sw: event.target.value } }))} /></div>
             <div>
-              <div className="mb-2 flex items-center justify-between gap-2"><p className="text-xs font-medium text-slate-500">{sw ? "Bidhaa kwenye kundi" : "Products in this category"}</p><span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500 dark:bg-slate-900 dark:text-slate-400">{item.listingIds.length}/{listings.length} {sw ? "bidhaa" : "products"}</span></div>
-              <div className="max-h-52 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-2 dark:border-slate-800 dark:bg-slate-900/40">{listings.length ? <div className="grid gap-1 sm:grid-cols-2">{listings.map((listing) => <label className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-sm text-slate-700 hover:bg-white dark:text-slate-300 dark:hover:bg-slate-950" key={listing.id}><input checked={item.listingIds.includes(listing.id)} disabled={!canManage} onChange={() => toggleListing(item.id, listing.id)} type="checkbox" /><span className="min-w-0 truncate">{listingLabel(listing, sw)}</span></label>)}</div> : <p className="px-2 py-3 text-sm text-slate-500">{sw ? "Hakuna bidhaa za Website bado." : "No Website products are available yet."}</p>}</div>
-              {item.familyIds.length ? <p className="mt-2 text-[11px] text-amber-600">{sw ? "Kundi hili lina uteuzi wa zamani wa Commerce family. Utaendelea kufanya kazi hadi uchague bidhaa za Website na kuhifadhi." : "This category still has legacy Commerce-family membership. It will keep working until you select Website products and save."}</p> : null}
+              <div className="mb-2 flex flex-wrap items-end justify-between gap-2">
+                <div>
+                  <p className="text-xs font-medium text-slate-600 dark:text-slate-300">{sw ? "Bidhaa kwenye kundi" : "Products in this category"}</p>
+                  <p className="mt-1 text-[11px] leading-5 text-slate-400">{sw ? "Chagua bidhaa yoyote ya Website. Bidhaa hiyo inaweza pia kuwa kwenye kundi jingine." : "Choose any Website product. The same product may also belong to another category."}</p>
+                </div>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500 dark:bg-slate-900 dark:text-slate-400">{item.listingIds.length}/{listings.length} {sw ? "zimechaguliwa" : "selected"}</span>
+                  {canManage && listings.length ? <>
+                    <button className="rounded-md px-2 py-1 text-[11px] font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-900 dark:hover:text-white" onClick={() => replaceListings(item.id, listings.map((listing) => listing.id))} type="button">{sw ? "Chagua zote" : "Select all"}</button>
+                    <button className="rounded-md px-2 py-1 text-[11px] font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-900 dark:hover:text-white" onClick={() => replaceListings(item.id, [])} type="button">{sw ? "Ondoa zote" : "Clear"}</button>
+                  </> : null}
+                </div>
+              </div>
+              <div className="max-h-64 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-2 dark:border-slate-800 dark:bg-slate-900/40">{listings.length ? <div className="grid gap-1 sm:grid-cols-2">{listings.map((listing) => {
+                const selected = item.listingIds.includes(listing.id);
+                const categoryCount = membershipCounts.get(listing.id) ?? 0;
+                return <label className={`flex cursor-pointer items-start gap-2 rounded-md border px-2.5 py-2 text-slate-700 transition dark:text-slate-300 ${selected ? "border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-950" : "border-transparent hover:bg-white dark:hover:bg-slate-950"}`} key={listing.id}>
+                  <input checked={selected} className="mt-0.5" disabled={!canManage} onChange={() => toggleListing(item.id, listing.id)} type="checkbox" />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-xs font-medium" title={listingLabel(listing, sw)}>{listingLabel(listing, sw)}</span>
+                    <span className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[10px] text-slate-400">
+                      <span>{listing.is_published ? (sw ? "Imechapishwa" : "Published") : (sw ? "Rasimu" : "Draft")}</span>
+                      <span aria-hidden="true">·</span>
+                      <span>{listingKind(listing, sw)}</span>
+                      <span aria-hidden="true">·</span>
+                      <span>{categoryCountLabel(categoryCount, sw)}</span>
+                    </span>
+                  </span>
+                </label>;
+              })}</div> : <p className="px-2 py-3 text-sm text-slate-500">{sw ? "Hakuna bidhaa za Website bado." : "No Website products are available yet."}</p>}</div>
+              {item.familyIds.length ? <p className="mt-2 text-[11px] leading-5 text-amber-600 dark:text-amber-400">{sw ? "Kundi hili bado lina uteuzi wa zamani wa Commerce family. Ukibadilisha uteuzi wa bidhaa hapa, uteuzi huo wa zamani utaondolewa na bidhaa za Website zitatumika badala yake." : "This category still has legacy Commerce-family membership. Changing product membership here will replace that legacy selection with Website products."}</p> : null}
             </div>
           </div>
           <div className="flex items-start gap-1 lg:flex-col">
