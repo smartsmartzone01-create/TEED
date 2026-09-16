@@ -248,17 +248,19 @@ export default async function ProductsPage({
             </div>
           )}
 
-          <details style={{ borderTop: "1px solid #e5e5e5", marginTop: "34px", paddingTop: "18px" }}>
-            <summary style={{ alignItems: "center", color: "#111111", cursor: "pointer", display: "flex", fontSize: "0.86rem", fontWeight: 400, gap: "8px", listStyle: "none", width: "fit-content" }}>
-              <span>{locale === "sw" ? "Tazama maelezo zaidi" : "View more information"}</span>
-              <svg aria-hidden="true" fill="none" height="18" viewBox="0 0 24 24" width="18">
-                <path d="m7 10 5 5 5-5" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" />
-              </svg>
-            </summary>
-            <div style={{ color: "#666666", fontSize: "0.76rem", lineHeight: 1.6, padding: "16px 0 2px" }}>
-              {notes.map((note) => <p key={note} style={{ margin: "0 0 10px" }}>* {note}</p>)}
-            </div>
-          </details>
+          <div
+            aria-label={locale === "sw" ? "Maelezo ya bidhaa" : "Product information"}
+            style={{
+              borderTop: "1px solid #e5e5e5",
+              color: "#666666",
+              fontSize: "0.76rem",
+              lineHeight: 1.6,
+              marginTop: "34px",
+              padding: "18px 0 2px",
+            }}
+          >
+            {notes.map((note) => <p key={note} style={{ margin: "0 0 10px" }}>* {note}</p>)}
+          </div>
         </section>
 
         {whatsapp ? (
