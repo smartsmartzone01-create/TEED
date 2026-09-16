@@ -1,7 +1,7 @@
 "use client";
 
 import { ArrowDown, ArrowUp, Loader2, Plus, Save, Trash2, Upload } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useState } from "react";
 
 import { Button } from "@/components/global/primitives/button";
 import { useWebsiteRequest } from "@/hooks/website/use-website-request";
@@ -117,19 +117,11 @@ function ProductPageContentEditor({ businessId, canManage, listing, media, onCha
 }) {
   const request = useWebsiteRequest();
   const { notify } = useNotification();
-  const initialStories = useMemo(() => storyDrafts(listing), [listing]);
   const [descriptionEn, setDescriptionEn] = useState(listing.description.en ?? "");
   const [descriptionSw, setDescriptionSw] = useState(listing.description.sw ?? "");
   const [discoverMediaId, setDiscoverMediaId] = useState<string | null>(listing.discover_media_id);
-  const [stories, setStories] = useState<StoryDraft[]>(initialStories);
+  const [stories, setStories] = useState<StoryDraft[]>(() => storyDrafts(listing));
   const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    setDescriptionEn(listing.description.en ?? "");
-    setDescriptionSw(listing.description.sw ?? "");
-    setDiscoverMediaId(listing.discover_media_id);
-    setStories(storyDrafts(listing));
-  }, [listing]);
 
   const payloadStories = stories.map((story) => ({
     heading: {
@@ -149,7 +141,7 @@ function ProductPageContentEditor({ businessId, canManage, listing, media, onCha
       sw: listing.description.sw ?? "",
     },
     discover_media_id: listing.discover_media_id,
-    story_blocks: storyDrafts(listing).map(({ key: _key, ...story }) => ({
+    story_blocks: listing.story_blocks.map((story) => ({
       heading: { en: story.heading?.en ?? "", sw: story.heading?.sw ?? "" },
       body: { en: story.body?.en ?? "", sw: story.body?.sw ?? "" },
       media_id: story.media_id || null,

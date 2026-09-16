@@ -27,6 +27,12 @@ type NavigationCategory = {
   };
 };
 
+type NavigationCategoryState = {
+  businessId: string;
+  categories: NavigationCategory[];
+  failed: boolean;
+};
+
 const SECTIONS: Array<{
   value: WebsiteNavigationSection;
   en: string;
@@ -113,9 +119,18 @@ function WebsiteNavigationDestinationField({
   const businessId = Array.isArray(routeBusinessId)
     ? routeBusinessId[0] ?? ""
     : routeBusinessId ?? "";
-  const [categories, setCategories] = useState<NavigationCategory[]>([]);
-  const [categoriesLoading, setCategoriesLoading] = useState(Boolean(businessId));
-  const [categoriesFailed, setCategoriesFailed] = useState(false);
+  const [categoryState, setCategoryState] = useState<NavigationCategoryState>({
+    businessId: "",
+    categories: [],
+    failed: false,
+  });
+  const categories = categoryState.businessId === businessId
+    ? categoryState.categories
+    : [];
+  const categoriesFailed = categoryState.businessId === businessId
+    ? categoryState.failed
+    : false;
+  const categoriesLoading = Boolean(businessId) && categoryState.businessId !== businessId;
   const selectedCategoryId = value.type === "legacy"
     ? categoryIdFromHref(value.href)
     : null;
@@ -125,15 +140,9 @@ function WebsiteNavigationDestinationField({
   const destinationType = selectedCategoryId ? "category" : value.type;
 
   useEffect(() => {
-    if (!businessId) {
-      setCategories([]);
-      setCategoriesLoading(false);
-      return;
-    }
+    if (!businessId) return;
 
     let cancelled = false;
-    setCategoriesLoading(true);
-    setCategoriesFailed(false);
 
     let pending = categoryRequestCache.get(businessId);
     if (!pending) {
@@ -145,16 +154,22 @@ function WebsiteNavigationDestinationField({
 
     void pending
       .then((nextCategories) => {
-        if (!cancelled) setCategories(nextCategories);
+        if (!cancelled) {
+          setCategoryState({
+            businessId,
+            categories: nextCategories,
+            failed: false,
+          });
+        }
       })
       .catch(() => {
         if (!cancelled) {
-          setCategories([]);
-          setCategoriesFailed(true);
+          setCategoryState({
+            businessId,
+            categories: [],
+            failed: true,
+          });
         }
-      })
-      .finally(() => {
-        if (!cancelled) setCategoriesLoading(false);
       });
 
     return () => {
