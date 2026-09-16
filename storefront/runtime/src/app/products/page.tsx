@@ -118,6 +118,7 @@ export default async function ProductsPage({
       ];
   const filterQuery = activeFilter === "all" ? "" : `&filter=${encodeURIComponent(activeFilter)}`;
   const categoryTabStyle = {
+    background: "#F1F2F4",
     borderRadius: "999px",
     color: "#333333",
     flex: "0 0 auto",
@@ -164,7 +165,6 @@ export default async function ProductsPage({
                           style={{
                             ...categoryTabStyle,
                             border: `1px solid ${active ? "#777777" : "#e1e1e1"}`,
-                            background: active ? "#f7f7f7" : "transparent",
                           }}
                         >
                           {localized(item.title, locale)}
