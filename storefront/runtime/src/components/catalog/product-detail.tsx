@@ -24,10 +24,15 @@ function availabilityLabel(status: StorefrontSkuAvailability, locale: Storefront
   return locale === "sw" ? "Imeisha" : "Out of stock";
 }
 
+function uniqueImages(images: Array<string | undefined>) {
+  return [...new Set(images.map((image) => image?.trim() ?? "").filter(Boolean))];
+}
+
 export function ProductDetail({ product, locale }: { product: StorefrontProductListing; locale: StorefrontLocale }) {
   const initialSku = product.skus.find(isPurchasable) ?? product.skus[0];
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>(initialSku?.options ?? {});
   const [selectedGalleryImage, setSelectedGalleryImage] = useState<string | null>(null);
+  const [hasChosenOption, setHasChosenOption] = useState(false);
   const visibleOptions = useMemo(
     () => product.options.filter((option) => !hiddenOptionIds.has(option.id)),
     [product.options],
@@ -41,20 +46,26 @@ export function ProductDetail({ product, locale }: { product: StorefrontProductL
 
   const productTitle = localized(product.title, locale);
   const description = localized(product.description, locale).trim();
+  const showcaseImage = product.primaryImageUrl?.trim() ?? "";
+  const skuGallery = useMemo(() => {
+    if (!selectedSku) return [];
+    return uniqueImages([
+      ...(selectedSku.imageUrls ?? []),
+      selectedSku.imageUrl,
+    ]);
+  }, [selectedSku]);
   const selectedGallery = useMemo(() => {
-    const candidates = selectedSku?.imageUrls?.length
-      ? selectedSku.imageUrls
-      : selectedSku?.imageUrl
-        ? [selectedSku.imageUrl]
-        : product.primaryImageUrl
-          ? [product.primaryImageUrl]
-          : [];
-    return [...new Set(candidates.map((image) => image.trim()).filter(Boolean))];
-  }, [product.primaryImageUrl, selectedSku]);
+    const canShowSkuGallery = visibleOptions.length === 0 || hasChosenOption;
+    if (canShowSkuGallery) {
+      return uniqueImages([showcaseImage, ...skuGallery]);
+    }
+    return uniqueImages([showcaseImage || skuGallery[0]]);
+  }, [hasChosenOption, showcaseImage, skuGallery, visibleOptions.length]);
   const selectedImage = selectedGalleryImage && selectedGallery.includes(selectedGalleryImage)
     ? selectedGalleryImage
     : selectedGallery[0] ?? "";
-  const storyImage = product.primaryImageUrl?.trim() || selectedImage;
+  const storyImage = showcaseImage || selectedImage;
+  const hasThumbnails = selectedGallery.length > 1;
 
   function optionValueHasStock(optionId: string, value: string): boolean {
     return product.skus.some((sku) => isPurchasable(sku) && sku.options[optionId] === value);
@@ -67,13 +78,15 @@ export function ProductDetail({ product, locale }: { product: StorefrontProductL
     );
     if (exactMatch) {
       setSelectedOptions(exactMatch.options);
-      setSelectedGalleryImage(null);
+      setHasChosenOption(true);
+      setSelectedGalleryImage(showcaseImage || null);
       return;
     }
     const compatibleSku = product.skus.find((sku) => isPurchasable(sku) && sku.options[optionId] === value);
     if (compatibleSku) {
       setSelectedOptions(compatibleSku.options);
-      setSelectedGalleryImage(null);
+      setHasChosenOption(true);
+      setSelectedGalleryImage(showcaseImage || null);
     }
   }
 
@@ -85,27 +98,43 @@ export function ProductDetail({ product, locale }: { product: StorefrontProductL
     <>
       <section className="product-detail product-detail-reference">
         <div className="product-detail-gallery">
-          {selectedGallery.length > 1 ? (
+          {hasThumbnails ? (
             <div className="product-detail-thumbnails" aria-label={locale === "sw" ? "Picha za bidhaa" : "Product images"}>
-              {selectedGallery.map((imageUrl) => {
+              {selectedGallery.map((imageUrl, index) => {
                 const active = imageUrl === selectedImage;
+                const imageLabel = locale === "sw" ? `Picha ${index + 1} ya ${productTitle}` : `${productTitle} image ${index + 1}`;
                 return (
                   <button
+                    aria-label={imageLabel}
+                    aria-pressed={active}
                     className={`product-detail-thumbnail${active ? " is-active" : ""}`}
                     key={imageUrl}
                     onClick={() => setSelectedGalleryImage(imageUrl)}
+                    style={{ flex: "0 0 auto" }}
                     type="button"
                   >
-                    <StorefrontImage src={imageUrl} alt={productTitle} width={120} height={120} />
+                    <StorefrontImage src={imageUrl} alt={imageLabel} width={140} height={140} />
                   </button>
                 );
               })}
             </div>
           ) : null}
 
-          <div className="product-detail-media">
+          <div
+            className="product-detail-media"
+            style={{
+              background: "#f8f8f8",
+              border: "1px solid #eeeeee",
+              borderRadius: "18px",
+              gridColumn: hasThumbnails ? undefined : "1 / -1",
+              height: "clamp(340px, 52vw, 620px)",
+              minHeight: 0,
+              overflow: "hidden",
+              padding: "clamp(16px, 3vw, 28px)",
+            }}
+          >
             {selectedImage ? (
-              <StorefrontImage src={selectedImage} alt={productTitle} width={960} height={960} className="product-detail-image" />
+              <StorefrontImage src={selectedImage} alt={productTitle} width={1100} height={1100} className="product-detail-image" />
             ) : (
               <div className="product-image-placeholder product-detail-image-placeholder" role="img" aria-label={productTitle}>
                 <span>{locale === "sw" ? "Picha inakuja hivi karibuni" : "Image coming soon"}</span>
