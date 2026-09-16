@@ -24,8 +24,21 @@ export function ProductCard({ product, locale }: { product: StorefrontProductLis
 
   return (
     <article className="product-card product-card-store">
-      <Link href={`/products/${product.slug}`} prefetch={false}>
-        <div className="product-card-media">
+      <Link
+        href={`/products/${product.slug}`}
+        prefetch={false}
+        style={{ display: "block", flex: "0 0 auto", overflow: "hidden" }}
+      >
+        <div
+          className="product-card-media"
+          style={{
+            height: "clamp(140px, 22vw, 210px)",
+            minHeight: "clamp(140px, 22vw, 210px)",
+            maxHeight: "clamp(140px, 22vw, 210px)",
+            aspectRatio: "auto",
+            overflow: "hidden",
+          }}
+        >
           {product.badge ? <span className="product-badge">{localized(product.badge, locale)}</span> : null}
           {imageUrl ? <StorefrontImage src={imageUrl} alt={productTitle} width={640} height={640} /> : (
             <div className="product-image-placeholder" role="img" aria-label={productTitle}>
@@ -36,7 +49,12 @@ export function ProductCard({ product, locale }: { product: StorefrontProductLis
       </Link>
 
       <div className="product-card-copy">
-        <Link href={`/products/${product.slug}`} prefetch={false} className="product-card-title-link">
+        <Link
+          href={`/products/${product.slug}`}
+          prefetch={false}
+          className="product-card-title-link"
+          style={{ minHeight: "2.5rem", maxHeight: "2.5rem", overflow: "hidden" }}
+        >
           <h3>{productTitle}</h3>
         </Link>
 
