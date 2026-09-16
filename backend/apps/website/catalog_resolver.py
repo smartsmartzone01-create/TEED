@@ -12,6 +12,17 @@ PUBLIC_UNIT_OPTION_FIELDS = (
     ("capacity", "capacity", {"en": "Capacity", "sw": "Uwezo"}),
     ("condition", "condition", {"en": "Condition", "sw": "Hali"}),
 )
+OPTION_LABEL_ACRONYMS = {
+    "cpu": "CPU",
+    "gpu": "GPU",
+    "hdd": "HDD",
+    "ram": "RAM",
+    "rom": "ROM",
+    "sku": "SKU",
+    "ssd": "SSD",
+    "usb": "USB",
+    "vin": "VIN",
+}
 AVAILABILITY_PRIORITY = {
     WebsiteVariant.Availability.OUT_OF_STOCK: 0,
     WebsiteVariant.Availability.LOW_STOCK: 1,
@@ -23,10 +34,27 @@ def _normalized_options(value):
     if not isinstance(value, dict):
         return {}
     return {
-        str(key): str(option_value).strip()
+        str(key).strip(): str(option_value).strip()
         for key, option_value in value.items()
         if str(key).strip() and str(option_value).strip()
     }
+
+
+def _option_labels(option_id):
+    words = str(option_id or "").replace("-", "_").split("_")
+    label = " ".join(
+        OPTION_LABEL_ACRONYMS.get(word.lower(), word.capitalize())
+        for word in words
+        if word
+    ).strip() or str(option_id)
+    return {"en": label, "sw": label}
+
+
+def _base_option_payloads(options):
+    return [
+        _option_payload(option_id, _option_labels(option_id), [value])
+        for option_id, value in options.items()
+    ]
 
 
 def _active_unit_fields(variant, commerce_offers):
@@ -112,13 +140,16 @@ def resolve_storefront_variant(variant: WebsiteVariant):
     """Resolve one Website variant through the Commerce public-safe projection."""
     product = variant.valid_commerce_product()
     base_options = _normalized_options(variant.options)
+    base_option_payloads = _base_option_payloads(base_options)
     if product is None:
-        return [], [_offer_payload(variant=variant, commerce=None, options=base_options)]
+        return base_option_payloads, [
+            _offer_payload(variant=variant, commerce=None, options=base_options)
+        ]
 
     commerce = project_product_for_website(product)
     commerce_offers = commerce.get("offers") or []
     if commerce["tracking_mode"] != "individual" or not commerce_offers:
-        return [], [
+        return base_option_payloads, [
             _offer_payload(
                 variant=variant,
                 commerce=commerce,
@@ -129,12 +160,15 @@ def resolve_storefront_variant(variant: WebsiteVariant):
 
     active_fields = [field for field in _active_unit_fields(variant, commerce_offers) if field[0] not in base_options]
     derived_options = [
-        _option_payload(
-            option_id,
-            labels,
-            [(offer.get("attributes") or {}).get(attribute, "") for offer in commerce_offers],
-        )
-        for option_id, attribute, labels in active_fields
+        *base_option_payloads,
+        *[
+            _option_payload(
+                option_id,
+                labels,
+                [(offer.get("attributes") or {}).get(attribute, "") for offer in commerce_offers],
+            )
+            for option_id, attribute, labels in active_fields
+        ],
     ]
 
     offers = []
