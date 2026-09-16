@@ -1,12 +1,21 @@
 import Link from "next/link";
 
-import { ProductCard } from "@/components/catalog/product-card";
 import { StorefrontImage } from "@/components/storefront-image";
 import { localized } from "@/lib/localized";
-import type { StorefrontProductListing, StorefrontSiteConfig } from "@/types/storefront";
+import type {
+  StorefrontCategory,
+  StorefrontProductListing,
+  StorefrontSiteConfig,
+} from "@/types/storefront";
 
 import { EcommerceClassicCategoryStrip } from "./ecommerce-classic-category-strip";
 import { EcommerceClassicProductShowcase } from "./ecommerce-classic-product-showcase";
+
+function publishedTime(product: StorefrontProductListing) {
+  if (!product.publishedAt) return 0;
+  const value = Date.parse(product.publishedAt);
+  return Number.isFinite(value) ? value : 0;
+}
 
 export function EcommerceClassicHome({
   site,
@@ -17,15 +26,27 @@ export function EcommerceClassicHome({
 }) {
   const locale = site.defaultLocale;
   const showHeroImage = site.hero.layout === "split" && Boolean(site.hero.imageUrl);
-  const hasCategories = Boolean(site.categories?.enabled && site.categories.items.length);
-  const latestProducts = [...products]
-    .sort((left, right) => {
-      const leftPublishedAt = left.publishedAt ? Date.parse(left.publishedAt) : 0;
-      const rightPublishedAt = right.publishedAt ? Date.parse(right.publishedAt) : 0;
-      return rightPublishedAt - leftPublishedAt;
-    })
-    .slice(0, 10);
-  const homepageProducts = hasCategories ? products.slice(0, 6) : latestProducts;
+  const hasCategories = Boolean(
+    site.categories?.enabled && site.categories.items.length > 0,
+  );
+  const latestProductItems: StorefrontCategory[] = hasCategories
+    ? []
+    : [...products]
+        .sort(
+          (left, right) =>
+            publishedTime(right) - publishedTime(left) ||
+            left.id.localeCompare(right.id),
+        )
+        .slice(0, 10)
+        .map((product) => ({
+          id: `latest-${product.id}`,
+          source: "catalog",
+          listingIds: [product.id],
+          title: product.title,
+          description: product.shortDescription,
+          href: `/products/${product.slug}`,
+          imageUrl: product.primaryImageUrl || undefined,
+        }));
   const featuredSlides = site.featuredProducts.items.map((slide) => ({
     ...slide,
     product: slide.listingId
@@ -52,7 +73,21 @@ export function EcommerceClassicHome({
 
       {site.featuredProducts.enabled && featuredSlides.length ? <EcommerceClassicProductShowcase locale={locale} slides={featuredSlides} rotationMs={site.featuredProducts.rotationMs} /> : null}
 
-      {hasCategories && site.categories ? <EcommerceClassicCategoryStrip items={site.categories.items} locale={locale} title={site.categories.title} viewAllHref={site.categories.viewAllHref} /> : null}
+      {hasCategories && site.categories ? (
+        <EcommerceClassicCategoryStrip
+          items={site.categories.items}
+          locale={locale}
+          title={site.categories.title}
+          viewAllHref={site.categories.viewAllHref}
+        />
+      ) : latestProductItems.length ? (
+        <EcommerceClassicCategoryStrip
+          items={latestProductItems}
+          locale={locale}
+          title={{ en: "All products", sw: "Bidhaa zote" }}
+          viewAllHref="/products"
+        />
+      ) : null}
 
       {site.services.length > 0 ? (
         <section id="services" className="page-shell commerce-classic-services">
@@ -62,25 +97,6 @@ export function EcommerceClassicHome({
               {service.imageUrl ? <div className="commerce-classic-service-media"><StorefrontImage src={service.imageUrl} alt={localized(service.title, locale)} width={1200} height={800} /></div> : null}
             </article>
           ))}
-        </section>
-      ) : null}
-
-      {homepageProducts.length > 0 ? (
-        <section className="page-shell commerce-classic-popular">
-          <div className="commerce-classic-section-heading">
-            <div>
-              <p className="eyebrow">{locale === "sw" ? "Gundua zaidi" : "Discover more"}</p>
-              <h2>
-                {hasCategories
-                  ? (locale === "sw" ? "Bidhaa zaidi dukani" : "More from the store")
-                  : (locale === "sw" ? "Bidhaa zote" : "All products")}
-              </h2>
-            </div>
-            <Link href="/products" className="text-link">{locale === "sw" ? "Tazama bidhaa zote" : "View all products"} →</Link>
-          </div>
-          <div className="commerce-classic-product-row">
-            {homepageProducts.map((product) => <ProductCard key={product.id} product={product} locale={locale} />)}
-          </div>
         </section>
       ) : null}
     </main>
