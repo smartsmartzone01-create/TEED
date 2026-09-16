@@ -17,6 +17,12 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { Button } from "@/components/global/primitives/button";
 import { useWebsiteRequest } from "@/hooks/website/use-website-request";
+import {
+  customProductOptionKey,
+  isKnownProductOptionType,
+  productOptionTypeKeys,
+  productOptionTypeLabel,
+} from "@/lib/global/catalog/product-option-types";
 import { useNotification } from "@/providers/global/notification-provider";
 import { useWorkspace } from "@/providers/workspace/workspace-provider";
 import {
@@ -41,11 +47,14 @@ import type {
 
 const fieldClassName =
   "h-10 w-full rounded-lg border border-slate-300 bg-transparent px-3 text-sm outline-none focus:border-slate-500 dark:border-slate-700";
+const MAX_OPTIONS = 12;
 
 type OptionDraft = {
   id: string;
   name: string;
+  customLabel: string;
   value: string;
+  locked?: boolean;
 };
 
 type VariantDraft = {
@@ -57,33 +66,43 @@ type VariantDraft = {
 
 type CreationKind = "standalone" | "family";
 
+type ListingOptionDefinition = {
+  key: string;
+  label: string;
+};
+
 function optionId() {
   return Math.random().toString(36).slice(2, 10);
 }
 
-function emptyOption(): OptionDraft {
-  return { id: optionId(), name: "", value: "" };
+function emptyOption(name = "", customLabel = "", locked = false): OptionDraft {
+  return { id: optionId(), name, customLabel, value: "", locked };
 }
 
-function emptyVariantDraft(withOption = false): VariantDraft {
+function optionDraftForKey(key: string, label: string, locked = false): OptionDraft {
+  if (isKnownProductOptionType(key)) {
+    return emptyOption(key, "", locked);
+  }
+  return emptyOption("custom", label || key, locked);
+}
+
+function emptyVariantDraft(withOption = false, optionRows?: OptionDraft[]): VariantDraft {
   return {
     availability: "in_stock",
     galleryMediaIds: [],
-    optionRows: withOption ? [emptyOption()] : [],
+    optionRows: optionRows ?? (withOption ? [emptyOption()] : []),
     price: "",
   };
 }
 
-function optionKey(value: string) {
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "_")
-    .replace(/^_+|_+$/g, "");
+function optionKeyFromDraft(row: OptionDraft) {
+  return row.name === "custom"
+    ? customProductOptionKey(row.customLabel)
+    : row.name.trim();
 }
 
 function optionsFromRows(rows: OptionDraft[], requireOption: boolean, sw: boolean) {
-  const nonEmpty = rows.filter((row) => row.name.trim() || row.value.trim());
+  const nonEmpty = rows.filter((row) => row.name.trim() || row.customLabel.trim() || row.value.trim());
   if (requireOption && nonEmpty.length === 0) {
     return {
       error: sw
@@ -92,31 +111,109 @@ function optionsFromRows(rows: OptionDraft[], requireOption: boolean, sw: boolea
       options: null,
     };
   }
-  if (nonEmpty.some((row) => !row.name.trim() || !row.value.trim())) {
+  if (
+    nonEmpty.some(
+      (row) =>
+        !row.name.trim() ||
+        !row.value.trim() ||
+        (row.name === "custom" && !row.customLabel.trim()),
+    )
+  ) {
     return {
       error: sw
-        ? "Jaza jina na thamani ya kila chaguo."
-        : "Complete both the option name and option value.",
+        ? "Chagua aina na ujaze thamani ya kila chaguo."
+        : "Choose a detail type and complete the value for every option.",
       options: null,
     };
   }
 
-  const entries = nonEmpty.map((row) => [optionKey(row.name), row.value.trim()] as const);
+  const entries = nonEmpty.map((row) => [optionKeyFromDraft(row), row.value.trim()] as const);
   if (entries.some(([key]) => !key)) {
     return {
-      error: sw ? "Weka jina sahihi la chaguo." : "Enter a valid option name.",
+      error: sw ? "Weka jina sahihi la chaguo maalum." : "Enter a valid custom detail name.",
       options: null,
     };
   }
   if (new Set(entries.map(([key]) => key)).size !== entries.length) {
     return {
       error: sw
-        ? "Jina la chaguo lisitumike zaidi ya mara moja kwenye SKU moja."
-        : "Use each option name only once on a SKU.",
+        ? "Aina moja ya chaguo isitumiwe zaidi ya mara moja kwenye SKU moja."
+        : "Use each detail type only once on a SKU.",
       options: null,
     };
   }
   return { error: null, options: Object.fromEntries(entries) as Record<string, string> };
+}
+
+function listingOptionDefinitions(listing: WebsiteListing, sw: boolean): ListingOptionDefinition[] {
+  if (!Array.isArray(listing.options)) return [];
+  const locale = sw ? "sw" : "en";
+  const definitions: ListingOptionDefinition[] = [];
+  const seen = new Set<string>();
+
+  for (const rawOption of listing.options) {
+    if (!rawOption || typeof rawOption !== "object") continue;
+    const option = rawOption as { id?: unknown; name?: unknown };
+    const key = String(option.id ?? "").trim();
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+
+    let label = "";
+    if (option.name && typeof option.name === "object") {
+      const names = option.name as Record<string, unknown>;
+      label = String(names[locale] ?? names.en ?? names.sw ?? "").trim();
+    }
+    if (!label) {
+      label = isKnownProductOptionType(key)
+        ? productOptionTypeLabel(key, locale)
+        : key.replace(/[_-]+/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+    }
+    definitions.push({ key, label });
+  }
+
+  return definitions;
+}
+
+function inheritedOptionRows(listing: WebsiteListing, sw: boolean): OptionDraft[] {
+  const listingDefinitions = listingOptionDefinitions(listing, sw);
+  const labelsByKey = new Map(listingDefinitions.map((option) => [option.key, option.label]));
+  const commerceKeys: string[] = [];
+  const seenCommerceKeys = new Set<string>();
+
+  for (const variant of listing.variants) {
+    if (!variant.commerce_product_id || !variant.commerce_connected) continue;
+    for (const key of Object.keys(variant.options ?? {})) {
+      const normalized = key.trim();
+      if (!normalized || seenCommerceKeys.has(normalized)) continue;
+      seenCommerceKeys.add(normalized);
+      commerceKeys.push(normalized);
+    }
+  }
+
+  const keys = commerceKeys.length
+    ? commerceKeys
+    : listingDefinitions.map((option) => option.key);
+  const locale = sw ? "sw" : "en";
+  return keys.map((key) =>
+    optionDraftForKey(
+      key,
+      labelsByKey.get(key) ?? (isKnownProductOptionType(key) ? productOptionTypeLabel(key, locale) : key),
+      true,
+    ),
+  );
+}
+
+function siblingVariantDraft(source: VariantDraft | undefined): VariantDraft {
+  if (!source?.optionRows.length) return emptyVariantDraft(true);
+  return emptyVariantDraft(
+    false,
+    source.optionRows.map((row) => ({
+      ...row,
+      id: optionId(),
+      value: "",
+      locked: Boolean(row.name && (row.name !== "custom" || row.customLabel.trim())),
+    })),
+  );
 }
 
 function automaticSlug(title: string, listings: WebsiteListing[]) {
@@ -319,6 +416,8 @@ function MediaPicker({ canManage, label, media, onUpload, selectedIds, setSelect
 }
 
 function OptionRows({ rows, onChange, sw }: { rows: OptionDraft[]; onChange: (rows: OptionDraft[]) => void; sw: boolean }) {
+  const locale = sw ? "sw" : "en";
+
   function update(id: string, changes: Partial<OptionDraft>) {
     onChange(rows.map((row) => (row.id === id ? { ...row, ...changes } : row)));
   }
@@ -328,12 +427,14 @@ function OptionRows({ rows, onChange, sw }: { rows: OptionDraft[]; onChange: (ro
       <div className="flex items-center justify-between gap-2">
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{sw ? "Chaguo za SKU" : "SKU options"}</p>
-          <p className="mt-0.5 text-[11px] text-slate-400">{sw ? "Mfano: Rangi — Nyeupe, Hifadhi — 256 GB." : "For example: Color — White, Storage — 256 GB."}</p>
+          <p className="mt-0.5 text-[11px] text-slate-400">{sw ? "Tumia aina zilezile za maelezo zinazotumika kwenye Stock, kisha weka thamani ya SKU." : "Use the same detail types as Stock, then enter the value for this SKU."}</p>
         </div>
-        <Button onClick={() => onChange([...rows, emptyOption()])} size="small" type="button" variant="outline">
-          <Plus className="size-3.5" />
-          {sw ? "Ongeza chaguo" : "Add option"}
-        </Button>
+        {rows.length < MAX_OPTIONS ? (
+          <Button onClick={() => onChange([...rows, emptyOption()])} size="small" type="button" variant="outline">
+            <Plus className="size-3.5" />
+            {sw ? "Ongeza chaguo" : "Add option"}
+          </Button>
+        ) : null}
       </div>
       {rows.length === 0 ? (
         <p className="rounded-md border border-dashed border-slate-300 p-3 text-xs text-slate-500 dark:border-slate-700">
@@ -342,26 +443,53 @@ function OptionRows({ rows, onChange, sw }: { rows: OptionDraft[]; onChange: (ro
       ) : (
         rows.map((row) => (
           <div className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]" key={row.id}>
-            <input
-              className={fieldClassName}
-              onChange={(event) => update(row.id, { name: event.target.value })}
-              placeholder={sw ? "Jina, mfano Rangi" : "Name, e.g. Color"}
-              value={row.name}
-            />
+            <div className="grid gap-2">
+              <select
+                aria-label={sw ? "Aina ya chaguo" : "Option type"}
+                className={fieldClassName}
+                disabled={row.locked}
+                onChange={(event) => {
+                  const name = event.target.value;
+                  update(row.id, {
+                    name,
+                    customLabel: name === "custom" ? row.customLabel : "",
+                  });
+                }}
+                value={row.name}
+              >
+                <option value="">{sw ? "Chagua maelezo" : "Choose detail"}</option>
+                {productOptionTypeKeys.map((key) => (
+                  <option key={key} value={key}>{productOptionTypeLabel(key, locale)}</option>
+                ))}
+                <option value="custom">{sw ? "Maelezo maalum" : "Custom detail"}</option>
+              </select>
+              {row.name === "custom" ? (
+                <input
+                  aria-label={sw ? "Jina la maelezo maalum" : "Custom detail name"}
+                  className={fieldClassName}
+                  disabled={row.locked}
+                  onChange={(event) => update(row.id, { customLabel: event.target.value })}
+                  placeholder={sw ? "Mfano: Mfumo wa uendeshaji" : "e.g. Operating system"}
+                  value={row.customLabel}
+                />
+              ) : null}
+            </div>
             <input
               className={fieldClassName}
               onChange={(event) => update(row.id, { value: event.target.value })}
-              placeholder={sw ? "Thamani, mfano Nyeupe" : "Value, e.g. White"}
+              placeholder={sw ? "Thamani, mfano 256 GB" : "Value, e.g. 256 GB"}
               value={row.value}
             />
-            <button
-              aria-label={sw ? "Ondoa chaguo" : "Remove option"}
-              className="inline-flex size-10 items-center justify-center rounded-md text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30"
-              onClick={() => onChange(rows.filter((item) => item.id !== row.id))}
-              type="button"
-            >
-              <Trash2 className="size-4" />
-            </button>
+            {!row.locked ? (
+              <button
+                aria-label={sw ? "Ondoa chaguo" : "Remove option"}
+                className="inline-flex size-10 items-center justify-center rounded-md text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30"
+                onClick={() => onChange(rows.filter((item) => item.id !== row.id))}
+                type="button"
+              >
+                <Trash2 className="size-4" />
+              </button>
+            ) : <span className="size-10" aria-hidden="true" />}
           </div>
         ))
       )}
@@ -749,17 +877,19 @@ function WebsiteProductManager({ businessId }: { businessId: string }) {
     await load();
   }
 
-  function draftFor(listingId: string): VariantDraft {
-    return variantDrafts[listingId] ?? emptyVariantDraft(true);
+  function draftFor(listing: WebsiteListing): VariantDraft {
+    if (variantDrafts[listing.id]) return variantDrafts[listing.id];
+    const inheritedRows = inheritedOptionRows(listing, sw);
+    return emptyVariantDraft(false, inheritedRows.length ? inheritedRows : [emptyOption()]);
   }
 
-  function updateDraft(listingId: string, changes: Partial<VariantDraft>) {
-    setVariantDrafts((current) => ({ ...current, [listingId]: { ...draftFor(listingId), ...changes } }));
+  function updateDraft(listing: WebsiteListing, changes: Partial<VariantDraft>) {
+    setVariantDrafts((current) => ({ ...current, [listing.id]: { ...draftFor(listing), ...changes } }));
   }
 
   async function addWebsiteSku(listing: WebsiteListing) {
     if (!site || !canManage) return;
-    const draft = draftFor(listing.id);
+    const draft = draftFor(listing);
     const result = optionsFromRows(draft.optionRows, true, sw);
     if (result.error || !result.options) {
       notify({ message: result.error ?? (sw ? "Kagua chaguo za SKU." : "Check the SKU options."), tone: "error" });
@@ -871,7 +1001,7 @@ function WebsiteProductManager({ businessId }: { businessId: string }) {
               </div>
 
               {creationKind === "family" ? (
-                <Button onClick={() => setCreationSkus((current) => [...current, emptyVariantDraft(true)])} size="small" type="button" variant="outline">
+                <Button onClick={() => setCreationSkus((current) => [...current, siblingVariantDraft(current[0])])} size="small" type="button" variant="outline">
                   <Plus className="size-4" />
                   {sw ? "Ongeza SKU nyingine" : "Add another SKU"}
                 </Button>
@@ -894,7 +1024,7 @@ function WebsiteProductManager({ businessId }: { businessId: string }) {
 
       <section className="space-y-4">
         {listings.length === 0 ? <div className="rounded-lg border border-dashed border-slate-300 bg-white p-10 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-950">{sw ? "Hakuna bidhaa za tovuti bado." : "No Website products yet."}</div> : listings.map((listing) => {
-          const draft = draftFor(listing.id);
+          const draft = draftFor(listing);
           const skuFormOpen = Boolean(openWebsiteSkuForms[listing.id]);
           const commerceOrigin = listing.variants.some((variant) => Boolean(variant.commerce_product_id));
           const websiteStandalone =
@@ -941,15 +1071,15 @@ function WebsiteProductManager({ businessId }: { businessId: string }) {
                   {skuFormOpen ? (
                     <div className="mt-3 rounded-lg bg-slate-50 p-3 dark:bg-slate-900/50">
                       <div className="flex flex-wrap items-start justify-between gap-3">
-                        <div><p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{sw ? "SKU mpya ya Website" : "New Website SKU"}</p><p className="mt-1 text-[11px] text-slate-400">{sw ? "Website itatengeneza nambari ya SKU kiotomatiki. Tumia chaguo kueleza tofauti kama rangi au ukubwa." : "The Website generates the SKU number automatically. Use options to describe differences such as color or size."}</p></div>
+                        <div><p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{sw ? "SKU mpya ya Website" : "New Website SKU"}</p><p className="mt-1 text-[11px] text-slate-400">{sw ? "Website itatumia aina za maelezo za familia hii ili SKU mpya iendane na Commerce na SKU nyingine." : "Website inherits this family's detail types so the new SKU stays aligned with Commerce and the other SKUs."}</p></div>
                         <button aria-label={sw ? "Funga" : "Close"} className="inline-flex size-8 items-center justify-center rounded-md text-slate-500 hover:bg-slate-200/60 dark:hover:bg-slate-800" onClick={() => setOpenWebsiteSkuForms((current) => ({ ...current, [listing.id]: false }))} type="button"><X className="size-4" /></button>
                       </div>
                       <div className="mt-3 grid gap-2 md:grid-cols-2">
-                        <input className={fieldClassName} inputMode="decimal" onChange={(event) => updateDraft(listing.id, { price: event.target.value })} placeholder={sw ? "Bei TZS" : "Price TZS"} value={draft.price} />
-                        <select className={fieldClassName} onChange={(event) => updateDraft(listing.id, { availability: event.target.value as WebsiteVariantAvailability })} value={draft.availability}><option value="in_stock">{sw ? "Ipo" : "In stock"}</option><option value="low_stock">{sw ? "Imebaki chache" : "Low stock"}</option><option value="out_of_stock">{sw ? "Imeisha" : "Out of stock"}</option></select>
+                        <input className={fieldClassName} inputMode="decimal" onChange={(event) => updateDraft(listing, { price: event.target.value })} placeholder={sw ? "Bei TZS" : "Price TZS"} value={draft.price} />
+                        <select className={fieldClassName} onChange={(event) => updateDraft(listing, { availability: event.target.value as WebsiteVariantAvailability })} value={draft.availability}><option value="in_stock">{sw ? "Ipo" : "In stock"}</option><option value="low_stock">{sw ? "Imebaki chache" : "Low stock"}</option><option value="out_of_stock">{sw ? "Imeisha" : "Out of stock"}</option></select>
                       </div>
-                      <div className="mt-3"><OptionRows rows={draft.optionRows} onChange={(optionRows) => updateDraft(listing.id, { optionRows })} sw={sw} /></div>
-                      <div className="mt-3"><MediaPicker canManage label={sw ? "Picha za SKU" : "SKU images"} media={media} onUpload={uploadMedia} selectedIds={draft.galleryMediaIds} setSelectedIds={(galleryMediaIds) => updateDraft(listing.id, { galleryMediaIds })} sw={sw} /></div>
+                      <div className="mt-3"><OptionRows rows={draft.optionRows} onChange={(optionRows) => updateDraft(listing, { optionRows })} sw={sw} /></div>
+                      <div className="mt-3"><MediaPicker canManage label={sw ? "Picha za SKU" : "SKU images"} media={media} onUpload={uploadMedia} selectedIds={draft.galleryMediaIds} setSelectedIds={(galleryMediaIds) => updateDraft(listing, { galleryMediaIds })} sw={sw} /></div>
                       <Button className="mt-3" onClick={() => void addWebsiteSku(listing)} size="small"><Plus className="size-4" />{sw ? "Unda SKU ya Website" : "Create Website SKU"}</Button>
                     </div>
                   ) : null}

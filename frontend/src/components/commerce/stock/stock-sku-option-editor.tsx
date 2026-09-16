@@ -6,26 +6,13 @@ import { useTranslations } from "next-intl";
 import { Button } from "@/components/global/primitives/button";
 import { Input } from "@/components/global/primitives/input";
 import { Select } from "@/components/global/primitives/select";
+import {
+  customProductOptionKey,
+  isKnownProductOptionType,
+  productOptionTypeKeys,
+} from "@/lib/global/catalog/product-option-types";
 import type { ProductVariantOption } from "@/types/commerce/catalog";
 
-const knownOptionTypes = [
-  "color",
-  "storage",
-  "capacity",
-  "size",
-  "ram",
-  "screen_size",
-  "pack_size",
-  "material",
-  "style",
-  "model",
-  "weight",
-  "length",
-  "volume",
-  "voltage",
-  "flavor",
-] as const;
-const knownOptionKeys = new Set<string>(knownOptionTypes);
 const MAX_OPTIONS = 12;
 
 type StockSkuOptionDraft = {
@@ -40,16 +27,6 @@ const emptyStockSkuOptionDraft = (): StockSkuOptionDraft => ({
   value: "",
 });
 
-function customOptionKey(label: string) {
-  return label
-    .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "_")
-    .replace(/^_+|_+$/g, "")
-    .slice(0, 48);
-}
-
 function stockSkuOptionsFromDrafts(
   drafts: StockSkuOptionDraft[],
 ): ProductVariantOption[] | null {
@@ -60,7 +37,7 @@ function stockSkuOptionsFromDrafts(
   for (const draft of drafts) {
     const value = draft.value.trim();
     const label = draft.label.trim();
-    const key = draft.type === "custom" ? customOptionKey(label) : draft.type.trim();
+    const key = draft.type === "custom" ? customProductOptionKey(label) : draft.type.trim();
     if (!key || !label || !value || keys.has(key)) return null;
     keys.add(key);
     options.push({ key, label, value });
@@ -73,7 +50,7 @@ function stockSkuOptionDraftsFromOptions(
 ): StockSkuOptionDraft[] {
   if (!options.length) return [emptyStockSkuOptionDraft()];
   return options.map((option) => ({
-    type: knownOptionKeys.has(option.key) ? option.key : "custom",
+    type: isKnownProductOptionType(option.key) ? option.key : "custom",
     label: option.label,
     value: "",
   }));
@@ -136,7 +113,7 @@ function StockSkuOptionEditor({
                   }}
                 >
                   <option value="">{t("values.chooseDetail")}</option>
-                  {knownOptionTypes.map((type) => (
+                  {productOptionTypeKeys.map((type) => (
                     <option key={type} value={type}>
                       {t(`optionTypes.${type}`)}
                     </option>
