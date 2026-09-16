@@ -5,3 +5,6 @@ class WebsiteConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
     name = "apps.website"
     verbose_name = "Website"
+
+    def ready(self):
+        from . import signals  # noqa: F401
