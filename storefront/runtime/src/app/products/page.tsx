@@ -88,22 +88,24 @@ export default async function ProductsPage({
     ? (requestedFilter as StorefrontProductFilter)
     : "all";
   const categories = site.categories?.enabled ? site.categories.items : [];
-  const requestedCategory = category
+  const selectedCategory = category
     ? categories.find((item) => item.id === category)
     : undefined;
-  const selectedCategory = requestedCategory ?? categories[0];
   const selectedListingIds = selectedCategory?.listingIds ?? [];
   const selectedFamilyIds = selectedCategory?.familyIds ?? [];
-  const categoryProducts = selectedCategory
+  const scopedProducts = selectedCategory
     ? products.filter((product) => productMatchesCategory(product, selectedListingIds, selectedFamilyIds))
     : family
       ? products.filter((product) => product.familyIds?.includes(family))
-      : [];
-  const visibleProducts = applySystemFilter(categoryProducts, activeFilter);
-  const stripItems = productStripItems(categoryProducts);
+      : products;
+  const visibleProducts = applySystemFilter(scopedProducts, activeFilter);
+  const stripItems = productStripItems(scopedProducts);
+  const allProductsActive = !selectedCategory && !family;
   const heading = selectedCategory
     ? localized(selectedCategory.title, locale)
-    : locale === "sw" ? "Bidhaa" : "Products";
+    : allProductsActive
+      ? locale === "sw" ? "Bidhaa zote" : "All products"
+      : locale === "sw" ? "Bidhaa" : "Products";
   const whatsapp = site.contact.whatsapp?.replace(/\D/g, "");
   const notes = locale === "sw"
     ? [
@@ -117,6 +119,9 @@ export default async function ProductsPage({
         "Product details may vary by the selected option, version, or SKU configuration.",
       ];
   const filterQuery = activeFilter === "all" ? "" : `&filter=${encodeURIComponent(activeFilter)}`;
+  const allProductsHref = activeFilter === "all"
+    ? "/products"
+    : `/products?filter=${encodeURIComponent(activeFilter)}`;
   const categoryTabStyle = {
     background: "#F1F2F4",
     borderRadius: "999px",
@@ -156,6 +161,15 @@ export default async function ProductsPage({
                       width: "max-content",
                     }}
                   >
+                    <Link
+                      href={allProductsHref}
+                      style={{
+                        ...categoryTabStyle,
+                        border: `1px solid ${allProductsActive ? "#777777" : "#e1e1e1"}`,
+                      }}
+                    >
+                      {locale === "sw" ? "Bidhaa zote" : "All Products"}
+                    </Link>
                     {categories.map((item) => {
                       const active = selectedCategory?.id === item.id;
                       return (
@@ -184,7 +198,7 @@ export default async function ProductsPage({
               items={stripItems}
               locale={locale}
               title={{ en: "Newest products", sw: "Bidhaa mpya" }}
-              viewAllHref={selectedCategory ? `/products?category=${encodeURIComponent(selectedCategory.id)}&filter=newest` : family ? `/products?family=${encodeURIComponent(family)}&filter=newest` : "/products"}
+              viewAllHref={selectedCategory ? `/products?category=${encodeURIComponent(selectedCategory.id)}&filter=newest` : family ? `/products?family=${encodeURIComponent(family)}&filter=newest` : "/products?filter=newest"}
               variant="catalog"
             />
           </div>
@@ -217,14 +231,20 @@ export default async function ProductsPage({
         <section className="product-list-section page-shell" aria-label={heading}>
           {visibleProducts.length > 0 ? (
             <ProductCatalogGrid
-              key={`${activeFilter}-${selectedCategory?.id ?? family ?? "none"}`}
+              key={`${activeFilter}-${selectedCategory?.id ?? family ?? "all"}`}
               locale={locale}
               paginate={activeFilter !== "newest"}
               products={visibleProducts}
             />
           ) : (
             <div className="empty-state">
-              {locale === "sw" ? "Hakuna bidhaa zilizochapishwa kwenye kundi hili bado." : "No published products are available in this category yet."}
+              {selectedCategory
+                ? locale === "sw"
+                  ? "Hakuna bidhaa zilizochapishwa kwenye kundi hili bado."
+                  : "No published products are available in this category yet."
+                : locale === "sw"
+                  ? "Hakuna bidhaa zilizochapishwa bado."
+                  : "No published products are available yet."}
             </div>
           )}
 
