@@ -27,7 +27,7 @@ export default async function ProductDetailPage({
           <Link href="/products" className="back-link product-detail-back-link">
             ← {locale === "sw" ? "Rudi kwenye bidhaa" : "Back to products"}
           </Link>
-          <ProductDetail product={product} locale={locale} />
+          <ProductDetail product={product} locale={locale} siteId={site.id} />
         </div>
       </main>
     </StorefrontShell>

@@ -1,8 +1,10 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
 import { StorefrontImage } from "@/components/storefront-image";
+import { addBagItem } from "@/lib/bag";
 import { localized } from "@/lib/localized";
 import { formatMoney } from "@/lib/money";
 import type {
@@ -48,11 +50,21 @@ function optionValuesAcrossSkus(skus: StorefrontSku[], optionId: string): string
   )];
 }
 
-export function ProductDetail({ product, locale }: { product: StorefrontProductListing; locale: StorefrontLocale }) {
+export function ProductDetail({
+  product,
+  locale,
+  siteId,
+}: {
+  product: StorefrontProductListing;
+  locale: StorefrontLocale;
+  siteId: string;
+}) {
+  const router = useRouter();
   const initialSku = product.skus.find(isPurchasable) ?? product.skus[0];
   const [selectedSkuId, setSelectedSkuId] = useState<string | null>(initialSku?.id ?? null);
   const [selectedGalleryImage, setSelectedGalleryImage] = useState<string | null>(null);
   const [hasChosenOption, setHasChosenOption] = useState(false);
+  const [addedOfferId, setAddedOfferId] = useState<string | null>(null);
   const visibleOptions = useMemo(
     () => product.options.filter((option) => option.values.length > 0),
     [product.options],
@@ -151,13 +163,47 @@ export function ProductDetail({ product, locale }: { product: StorefrontProductL
 
     setSelectedSkuId(nextSku.id);
     setHasChosenOption(true);
+    setAddedOfferId(null);
     const nextImages = skuImages(nextSku);
     setSelectedGalleryImage(nextImages[0] || showcaseImage || null);
+  }
+
+  function addSelectedSkuToBag(openBag = false) {
+    if (!selectedSku || !isPurchasable(selectedSku)) return;
+
+    const selections = configurationOptions.flatMap((option) => {
+      const rawValue = selectedSku.options[option.id];
+      if (!rawValue) return [];
+      const optionValue = option.values.find((value) => value.value === rawValue);
+      return [{
+        id: option.id,
+        name: option.name,
+        value: optionValue?.label ?? { en: rawValue, sw: rawValue },
+      }];
+    });
+
+    addBagItem(siteId, {
+      offerId: selectedSku.id,
+      listingId: product.id,
+      productSlug: product.slug,
+      title: product.title,
+      websiteVariantId: selectedSku.websiteVariantId,
+      sku: selectedSku.sku,
+      options: { ...selectedSku.options },
+      selections,
+      price: selectedSku.price,
+      imageUrl: skuImages(selectedSku)[0] || showcaseImage || undefined,
+    });
+    setAddedOfferId(selectedSku.id);
+
+    if (openBag) router.push("/bag");
   }
 
   const selectedPrice = selectedSku?.price
     ? formatMoney(selectedSku.price, locale)
     : locale === "sw" ? "Wasiliana kwa bei" : "Price on request";
+  const selectedSkuPurchasable = Boolean(selectedSku && isPurchasable(selectedSku));
+  const selectedSkuAdded = selectedSku?.id === addedOfferId;
 
   return (
     <>
@@ -247,10 +293,30 @@ export function ProductDetail({ product, locale }: { product: StorefrontProductL
           ) : null}
 
           <div className="product-detail-actions">
-            <button type="button" className="product-detail-buy-now" disabled>{locale === "sw" ? "Nunua sasa" : "Buy now"}</button>
-            <button type="button" className="product-detail-add-cart" disabled>{locale === "sw" ? "Ongeza kwenye kikapu" : "Add to bag"}</button>
+            <button
+              type="button"
+              className="product-detail-buy-now"
+              disabled={!selectedSkuPurchasable}
+              onClick={() => addSelectedSkuToBag(true)}
+            >
+              {locale === "sw" ? "Nunua sasa" : "Buy now"}
+            </button>
+            <button
+              type="button"
+              className="product-detail-add-cart"
+              disabled={!selectedSkuPurchasable}
+              onClick={() => addSelectedSkuToBag()}
+            >
+              {selectedSkuAdded
+                ? locale === "sw" ? "Imeongezwa" : "Added to bag"
+                : locale === "sw" ? "Ongeza kwenye kikapu" : "Add to bag"}
+            </button>
           </div>
-          <p className="product-purchase-note">{locale === "sw" ? "Ununuzi utaunganishwa kwenye hatua inayofuata." : "Purchase actions will be wired in the next phase."}</p>
+          {selectedSkuAdded ? (
+            <p className="product-purchase-note">
+              {locale === "sw" ? "Chaguo hili limehifadhiwa kwenye kikapu chako." : "This selection is saved in your bag."}
+            </p>
+          ) : null}
         </div>
       </section>
 

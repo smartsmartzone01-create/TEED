@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState, type MouseEventHandler } from "react";
 
+import { bagItemCount, useBagItems } from "@/lib/bag";
 import { localized } from "@/lib/localized";
 import type { StorefrontNavigationItem, StorefrontSiteConfig } from "@/types/storefront";
 
@@ -49,6 +50,8 @@ function NavigationLink({
 
 export function EcommerceClassicHeader({ site }: { site: StorefrontSiteConfig }) {
   const locale = site.defaultLocale;
+  const bagItems = useBagItems(site.id);
+  const bagCount = bagItemCount(bagItems);
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const whatsappHref = site.contact.whatsapp
@@ -144,9 +147,14 @@ export function EcommerceClassicHeader({ site }: { site: StorefrontSiteConfig })
           >
             <Icon name="user" />
           </Link>
-          <button type="button" className="commerce-template-icon-button commerce-template-desktop-action" aria-label={locale === "sw" ? "Kikapu" : "Bag"} disabled>
+          <Link
+            href="/bag"
+            className="commerce-template-icon-button commerce-template-bag-button"
+            aria-label={locale === "sw" ? `Kikapu, bidhaa ${bagCount}` : `Bag, ${bagCount} items`}
+          >
             <Icon name="bag" />
-          </button>
+            {bagCount > 0 ? <span className="commerce-template-bag-count">{bagCount}</span> : null}
+          </Link>
           <button type="button" className="commerce-template-icon-button commerce-template-mobile-menu-button" aria-label={menuOpen ? "Close menu" : "Open menu"} aria-expanded={menuOpen} onClick={() => setMenuOpen((value) => !value)}>
             <Icon name={menuOpen ? "x" : "menu"} />
           </button>
