@@ -54,7 +54,10 @@
 .product-detail-thumbnail img {
   width: 100%;
   height: 100%;
+  max-width: 86%;
+  max-height: 86%;
   object-fit: contain;
+  object-position: center;
 }
 
 .product-detail-page .product-detail-media {
