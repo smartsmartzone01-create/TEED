@@ -116,59 +116,70 @@ export default async function ProductsPage({
         "Product details may vary by the selected option, version, or SKU configuration.",
       ];
   const filterQuery = activeFilter === "all" ? "" : `&filter=${encodeURIComponent(activeFilter)}`;
+  const categoryTabStyle = {
+    borderRadius: "999px",
+    color: "#333333",
+    flex: "0 0 auto",
+    fontSize: "0.74rem",
+    fontWeight: 400,
+    lineHeight: 1.2,
+    padding: "10px 18px",
+    textDecoration: "none",
+  } as const;
 
   return (
     <StorefrontShell site={site}>
       <main className="catalog-page product-catalog-page">
         <div className="product-catalog-sticky-controls">
           <div className="product-catalog-toolbar">
-            <div className="page-shell" style={{ minWidth: 0 }}>
+            <div className="page-shell" style={{ minWidth: 0, paddingBlock: "7px" }}>
               <nav
                 aria-label={locale === "sw" ? "Makundi ya bidhaa" : "Product categories"}
                 style={{
-                  display: "flex",
-                  gap: "8px",
                   minWidth: 0,
                   overflowX: "auto",
-                  padding: "4px 0",
+                  padding: "3px 0",
                   scrollbarWidth: "thin",
-                  whiteSpace: "nowrap",
                 }}
               >
-                <Link
-                  href={activeFilter === "all" ? "/products" : `/products?filter=${encodeURIComponent(activeFilter)}`}
+                <div
                   style={{
-                    border: `1px solid ${!selectedCategory && !family ? "#111111" : "#dedede"}`,
-                    borderRadius: "999px",
-                    color: "#111111",
-                    flex: "0 0 auto",
-                    fontSize: "0.78rem",
-                    fontWeight: 800,
-                    padding: "9px 14px",
+                    alignItems: "center",
+                    display: "flex",
+                    gap: "12px",
+                    justifyContent: "space-evenly",
+                    minWidth: "100%",
+                    paddingInline: "12px",
+                    width: "max-content",
                   }}
                 >
-                  {locale === "sw" ? "Zote" : "All"}
-                </Link>
-                {categories.map((item) => {
-                  const active = selectedCategory?.id === item.id;
-                  return (
-                    <Link
-                      href={`/products?category=${encodeURIComponent(item.id)}${filterQuery}`}
-                      key={item.id}
-                      style={{
-                        border: `1px solid ${active ? "#111111" : "#dedede"}`,
-                        borderRadius: "999px",
-                        color: "#111111",
-                        flex: "0 0 auto",
-                        fontSize: "0.78rem",
-                        fontWeight: 800,
-                        padding: "9px 14px",
-                      }}
-                    >
-                      {localized(item.title, locale)}
-                    </Link>
-                  );
-                })}
+                  <Link
+                    href={activeFilter === "all" ? "/products" : `/products?filter=${encodeURIComponent(activeFilter)}`}
+                    style={{
+                      ...categoryTabStyle,
+                      border: `1px solid ${!selectedCategory && !family ? "#777777" : "#e1e1e1"}`,
+                      background: !selectedCategory && !family ? "#f7f7f7" : "transparent",
+                    }}
+                  >
+                    {locale === "sw" ? "Zote" : "All"}
+                  </Link>
+                  {categories.map((item) => {
+                    const active = selectedCategory?.id === item.id;
+                    return (
+                      <Link
+                        href={`/products?category=${encodeURIComponent(item.id)}${filterQuery}`}
+                        key={item.id}
+                        style={{
+                          ...categoryTabStyle,
+                          border: `1px solid ${active ? "#777777" : "#e1e1e1"}`,
+                          background: active ? "#f7f7f7" : "transparent",
+                        }}
+                      >
+                        {localized(item.title, locale)}
+                      </Link>
+                    );
+                  })}
+                </div>
               </nav>
             </div>
           </div>
@@ -187,10 +198,22 @@ export default async function ProductsPage({
         ) : null}
 
         <div className="product-catalog-toolbar">
-          <div className="page-shell product-catalog-toolbar-inner">
-            <div className="product-filter-summary">
-              <span>{heading}</span>
-              <small>{visibleProducts.length} {locale === "sw" ? "bidhaa" : "products"}</small>
+          <div className="page-shell product-catalog-toolbar-inner" style={{ paddingBlock: "7px" }}>
+            <div className="product-filter-summary" style={{ gap: "7px" }}>
+              <span
+                style={{
+                  color: "#555555",
+                  fontSize: "0.66rem",
+                  fontWeight: 400,
+                  letterSpacing: "0.02em",
+                  textTransform: "none",
+                }}
+              >
+                {heading}
+              </span>
+              <small style={{ color: "#9a9a9a", fontSize: "0.64rem", fontWeight: 400 }}>
+                {visibleProducts.length} {locale === "sw" ? "bidhaa" : "products"}
+              </small>
             </div>
             <div className="product-toolbar-actions">
               <ProductFilterSelect locale={locale} value={activeFilter} />
@@ -213,7 +236,7 @@ export default async function ProductsPage({
           )}
 
           <details style={{ borderTop: "1px solid #e5e5e5", marginTop: "34px", paddingTop: "18px" }}>
-            <summary style={{ alignItems: "center", color: "#111111", cursor: "pointer", display: "flex", fontSize: "0.86rem", fontWeight: 800, gap: "8px", listStyle: "none", width: "fit-content" }}>
+            <summary style={{ alignItems: "center", color: "#111111", cursor: "pointer", display: "flex", fontSize: "0.86rem", fontWeight: 400, gap: "8px", listStyle: "none", width: "fit-content" }}>
               <span>{locale === "sw" ? "Tazama maelezo zaidi" : "View more information"}</span>
               <svg aria-hidden="true" fill="none" height="18" viewBox="0 0 24 24" width="18">
                 <path d="m7 10 5 5 5-5" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" />
