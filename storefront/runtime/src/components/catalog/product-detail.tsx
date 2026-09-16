@@ -59,20 +59,22 @@ export function ProductDetail({ product, locale }: { product: StorefrontProductL
   const description = localized(product.description, locale).trim();
   const showcaseImage = product.primaryImageUrl?.trim() ?? "";
   const skuGallery = useMemo(() => skuImages(selectedSku), [selectedSku]);
-  const selectedGallery = useMemo(() => {
-    if (!hasChosenOption && visibleOptions.length > 0) {
-      return uniqueImages([showcaseImage || skuGallery[0]]);
-    }
-    if (!hasChosenOption) {
-      return uniqueImages([showcaseImage, ...skuGallery]);
-    }
-    return uniqueImages([...skuGallery, showcaseImage]);
-  }, [hasChosenOption, showcaseImage, skuGallery, visibleOptions.length]);
-  const selectedImage = selectedGalleryImage && selectedGallery.includes(selectedGalleryImage)
+  const thumbnailImages = useMemo(() => {
+    const images = uniqueImages(product.skus.flatMap((sku) => skuImages(sku)));
+    return images.filter((imageUrl) => imageUrl !== showcaseImage);
+  }, [product.skus, showcaseImage]);
+  const defaultDisplayImage = hasChosenOption
+    ? skuGallery[0] || showcaseImage || thumbnailImages[0] || ""
+    : showcaseImage || skuGallery[0] || thumbnailImages[0] || "";
+  const selectedImage = selectedGalleryImage && (
+    selectedGalleryImage === showcaseImage ||
+    thumbnailImages.includes(selectedGalleryImage) ||
+    skuGallery.includes(selectedGalleryImage)
+  )
     ? selectedGalleryImage
-    : selectedGallery[0] ?? "";
+    : defaultDisplayImage;
   const storyImage = showcaseImage || selectedImage;
-  const hasThumbnails = selectedGallery.length > 1;
+  const hasThumbnails = thumbnailImages.length > 0;
 
   function optionValueExists(optionId: string, value: string): boolean {
     return product.skus.some((sku) => sku.options[optionId] === value);
@@ -119,7 +121,7 @@ export function ProductDetail({ product, locale }: { product: StorefrontProductL
         <div className="product-detail-gallery">
           {hasThumbnails ? (
             <div className="product-detail-thumbnails" aria-label={locale === "sw" ? "Picha za bidhaa" : "Product images"}>
-              {selectedGallery.map((imageUrl, index) => {
+              {thumbnailImages.map((imageUrl, index) => {
                 const active = imageUrl === selectedImage;
                 const imageLabel = locale === "sw" ? `Picha ${index + 1} ya ${productTitle}` : `${productTitle} image ${index + 1}`;
                 return (
