@@ -6,7 +6,13 @@ from apps.commerce.catalog.models import Product
 from apps.workspaces.services import create_business
 from apps.workspaces.tests.factories import create_user
 
-from .models import WebsiteListing, WebsiteListingStoryBlock, WebsiteMedia, WebsiteSite, WebsiteVariant
+from .models import (
+    WebsiteListing,
+    WebsiteListingStoryBlock,
+    WebsiteMedia,
+    WebsiteSite,
+    WebsiteVariant,
+)
 
 
 class PublicWebsiteCatalogTests(APITestCase):

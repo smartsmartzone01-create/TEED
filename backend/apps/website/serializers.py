@@ -3,7 +3,13 @@ from io import BytesIO
 from PIL import Image, UnidentifiedImageError
 from rest_framework import serializers
 
-from .models import WebsiteListing, WebsiteListingStoryBlock, WebsiteMedia, WebsiteSite, WebsiteVariant
+from .models import (
+    WebsiteListing,
+    WebsiteListingStoryBlock,
+    WebsiteMedia,
+    WebsiteSite,
+    WebsiteVariant,
+)
 
 WEBSITE_MEDIA_MAX_UPLOAD_BYTES = 10 * 1024 * 1024
 WEBSITE_MEDIA_ALLOWED_FORMATS = {"JPEG", "PNG", "WEBP"}
