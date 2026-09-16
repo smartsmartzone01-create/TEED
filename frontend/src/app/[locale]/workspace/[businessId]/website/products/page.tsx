@@ -1,6 +1,6 @@
 import { setRequestLocale } from "next-intl/server";
 
-import { WebsiteProductManager } from "@/components/website/website-product-manager";
+import { WebsiteProductManagement } from "@/components/website/website-product-management";
 
 type WebsiteProductsPageProps = {
   params: Promise<{ businessId: string; locale: string }>;
@@ -9,5 +9,5 @@ type WebsiteProductsPageProps = {
 export default async function WebsiteProductsPage({ params }: WebsiteProductsPageProps) {
   const { businessId, locale } = await params;
   setRequestLocale(locale);
-  return <WebsiteProductManager businessId={businessId} />;
+  return <WebsiteProductManagement businessId={businessId} locale={locale} />;
 }
