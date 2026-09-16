@@ -63,19 +63,19 @@
 
 .product-card-media {
   position: relative;
-  display: grid;
+  display: block;
+  box-sizing: border-box;
   min-height: 0;
   aspect-ratio: 4 / 3;
-  place-items: center;
   padding: 16px;
   background: #ffffff;
+  overflow: hidden;
 }
 
 .product-card-media img {
+  display: block;
   width: 100%;
   height: 100%;
-  max-width: 92%;
-  max-height: 92%;
   object-fit: contain;
   object-position: center;
   transition: transform 180ms ease;
@@ -87,14 +87,17 @@
 
 .product-badge {
   position: absolute;
-  top: 12px;
-  right: 14px;
+  top: 14px;
+  left: 16px;
+  right: auto;
   z-index: 2;
   padding: 0;
+  border: 0;
+  border-radius: 0;
   background: transparent;
   color: var(--storefront-accent);
-  font-size: 0.72rem;
-  font-weight: 800;
+  font-size: 0.78rem;
+  font-weight: 700;
   line-height: 1.2;
 }
 
@@ -120,7 +123,7 @@
   flex: 1;
   min-height: 0;
   flex-direction: column;
-  padding: 14px 16px 16px;
+  padding: 18px 18px 20px;
 }
 
 .product-card-title-link {
@@ -132,7 +135,8 @@
   overflow: hidden;
   margin: 0;
   color: #111111;
-  font-size: 1rem;
+  font-size: 1.1rem;
+  font-weight: 700;
   line-height: 1.25;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
@@ -141,11 +145,12 @@
 .product-card-price-row {
   display: flex;
   align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  gap: 5px;
-  margin: 12px 0 14px;
-  text-align: center;
+  justify-content: flex-start;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 6px 0 20px;
+  text-align: left;
 }
 
 .product-card-price-row strong {
@@ -629,22 +634,23 @@
   }
 
   .product-badge {
-    top: 9px;
-    right: 10px;
-    font-size: 0.64rem;
+    top: 10px;
+    left: 10px;
+    right: auto;
+    font-size: 0.68rem;
   }
 
   .product-card-copy {
-    padding: 10px;
+    padding: 12px;
   }
 
   .product-card-copy h3 {
-    font-size: 0.9rem;
+    font-size: 0.95rem;
   }
 
   .product-card-price-row {
-    gap: 4px;
-    margin: 9px 0 11px;
+    gap: 6px;
+    margin: 5px 0 14px;
   }
 
   .product-card-price-row strong {
