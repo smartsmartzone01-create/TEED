@@ -40,6 +40,14 @@ function skuImages(sku: StorefrontSku | undefined) {
   ]);
 }
 
+function optionValuesAcrossSkus(skus: StorefrontSku[], optionId: string): string[] {
+  return [...new Set(
+    skus
+      .map((sku) => sku.options[optionId]?.trim() ?? "")
+      .filter(Boolean),
+  )];
+}
+
 export function ProductDetail({ product, locale }: { product: StorefrontProductListing; locale: StorefrontLocale }) {
   const initialSku = product.skus.find(isPurchasable) ?? product.skus[0];
   const [selectedSkuId, setSelectedSkuId] = useState<string | null>(initialSku?.id ?? null);
@@ -48,6 +56,14 @@ export function ProductDetail({ product, locale }: { product: StorefrontProductL
   const visibleOptions = useMemo(
     () => product.options.filter((option) => option.values.length > 0),
     [product.options],
+  );
+  const configurationOptions = useMemo(
+    () => visibleOptions.filter((option) => optionValuesAcrossSkus(product.skus, option.id).length > 1),
+    [product.skus, visibleOptions],
+  );
+  const staticOptions = useMemo(
+    () => visibleOptions.filter((option) => optionValuesAcrossSkus(product.skus, option.id).length <= 1),
+    [product.skus, visibleOptions],
   );
   const selectedSku = useMemo(
     () => product.skus.find((sku) => sku.id === selectedSkuId) ?? initialSku,
@@ -63,6 +79,33 @@ export function ProductDetail({ product, locale }: { product: StorefrontProductL
     const images = uniqueImages(product.skus.flatMap((sku) => skuImages(sku)));
     return images.filter((imageUrl) => imageUrl !== showcaseImage);
   }, [product.skus, showcaseImage]);
+  const staticDetails = useMemo(() => {
+    const details: Array<{ id: string; label: string; value: string }> = [];
+    const hasBrandOption = staticOptions.some((option) => option.id.trim().toLowerCase() === "brand");
+    const brand = product.brand?.trim() ?? "";
+
+    if (brand && !hasBrandOption) {
+      details.push({
+        id: "brand",
+        label: locale === "sw" ? "Chapa" : "Brand",
+        value: brand,
+      });
+    }
+
+    for (const option of staticOptions) {
+      const skuValue = optionValuesAcrossSkus(product.skus, option.id)[0];
+      const rawValue = skuValue || option.values[0]?.value || "";
+      if (!rawValue) continue;
+      const matchingValue = option.values.find((value) => value.value === rawValue);
+      details.push({
+        id: `option-${option.id}`,
+        label: localized(option.name, locale),
+        value: matchingValue ? localized(matchingValue.label, locale) : rawValue,
+      });
+    }
+
+    return details;
+  }, [locale, product.brand, product.skus, staticOptions]);
   const defaultDisplayImage = hasChosenOption
     ? skuGallery[0] || showcaseImage || thumbnailImages[0] || ""
     : showcaseImage || skuGallery[0] || thumbnailImages[0] || "";
@@ -88,7 +131,7 @@ export function ProductDetail({ product, locale }: { product: StorefrontProductL
     let bestMatchScore = -1;
     let bestAvailability = -1;
     for (const candidate of candidates) {
-      const matchScore = visibleOptions.reduce((score, option) => {
+      const matchScore = configurationOptions.reduce((score, option) => {
         if (option.id === optionId) return score;
         const currentValue = selectedOptions[option.id];
         if (!currentValue) return score;
@@ -166,50 +209,34 @@ export function ProductDetail({ product, locale }: { product: StorefrontProductL
 
         <div className="product-detail-copy">
           <div className="product-detail-pricing">
-            {product.brand ? <p className="product-detail-brand">{product.brand}</p> : null}
             <h1>{productTitle}</h1>
             <strong className="product-detail-price">{selectedPrice}</strong>
           </div>
 
-          {visibleOptions.map((option) => {
-            const selectedValue = option.values.find((value) => value.value === selectedOptions[option.id]);
-            return (
-              <fieldset className="option-group" key={option.id}>
-                <legend>
-                  {localized(option.name, locale)}
-                  {selectedValue ? (
-                    <span style={{ color: "#777777", fontWeight: 500, letterSpacing: 0, marginLeft: "8px", textTransform: "none" }}>
-                      · {localized(selectedValue.label, locale)}
-                    </span>
-                  ) : null}
-                </legend>
-                <div className="option-values">
-                  {option.values.map((value) => {
-                    const selected = selectedOptions[option.id] === value.value;
-                    const exists = optionValueExists(option.id, value.value);
-                    const label = localized(value.label, locale);
-                    if (value.colorHex) {
-                      return (
-                        <button key={value.value} type="button" disabled={!exists} className={`option-chip option-chip-color${selected ? " option-chip-active" : ""}`} onClick={() => chooseOption(option.id, value.value)} title={label} aria-label={label}>
-                          <span className="color-swatch" style={{ backgroundColor: value.colorHex }} aria-hidden="true" />
-                        </button>
-                      );
-                    }
+          {configurationOptions.map((option) => (
+            <fieldset className="option-group" key={option.id}>
+              <legend>{localized(option.name, locale)}</legend>
+              <div className="option-values">
+                {option.values.map((value) => {
+                  const selected = selectedOptions[option.id] === value.value;
+                  const exists = optionValueExists(option.id, value.value);
+                  const label = localized(value.label, locale);
+                  if (value.colorHex) {
                     return (
-                      <button key={value.value} type="button" disabled={!exists} className={`option-chip${selected ? " option-chip-active" : ""}`} onClick={() => chooseOption(option.id, value.value)}>
-                        {label}
+                      <button key={value.value} type="button" disabled={!exists} className={`option-chip option-chip-color${selected ? " option-chip-active" : ""}`} onClick={() => chooseOption(option.id, value.value)} title={label} aria-label={label}>
+                        <span className="color-swatch" style={{ backgroundColor: value.colorHex }} aria-hidden="true" />
                       </button>
                     );
-                  })}
-                </div>
-              </fieldset>
-            );
-          })}
-
-          <div className="product-detail-save-row">
-            <button className="product-detail-save" type="button" aria-label={locale === "sw" ? "Hifadhi bidhaa" : "Save product"}>♡</button>
-            <span>{locale === "sw" ? "Hifadhi bidhaa" : "Save product"}</span>
-          </div>
+                  }
+                  return (
+                    <button key={value.value} type="button" disabled={!exists} className={`option-chip${selected ? " option-chip-active" : ""}`} onClick={() => chooseOption(option.id, value.value)}>
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+            </fieldset>
+          ))}
 
           {selectedSku ? (
             <div className="product-detail-availability-row">
@@ -233,20 +260,38 @@ export function ProductDetail({ product, locale }: { product: StorefrontProductL
           {description ? <p>{description}</p> : null}
         </div>
         {storyImage ? <div className="product-story-media"><StorefrontImage src={storyImage} alt={productTitle} width={1600} height={1100} /></div> : null}
-        {visibleOptions.length > 0 ? (
+        {configurationOptions.length > 0 ? (
           <div className="product-story-configurations">
             <div className="product-story-config-heading">
               <p className="product-story-eyebrow">{locale === "sw" ? "Chaguo" : "Configurations"}</p>
               <h3>{locale === "sw" ? "Chagua inayokufaa" : "Choose what fits you"}</h3>
             </div>
             <div className="product-story-config-list">
-              {visibleOptions.map((option) => (
+              {configurationOptions.map((option) => (
                 <div className="product-story-config-row" key={option.id}>
                   <strong>{localized(option.name, locale)}</strong>
                   <div className="product-story-config-values">
                     {option.values.map((value) => value.colorHex ? (
                       <span className="product-story-color" key={value.value} style={{ backgroundColor: value.colorHex }} title={localized(value.label, locale)} aria-label={localized(value.label, locale)} />
                     ) : <span key={value.value}>{localized(value.label, locale)}</span>)}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
+        {staticDetails.length > 0 ? (
+          <div className="product-story-configurations">
+            <div className="product-story-config-heading">
+              <p className="product-story-eyebrow">{locale === "sw" ? "Maelezo" : "Details"}</p>
+              <h3>{locale === "sw" ? "Maelezo ya bidhaa" : "Product details"}</h3>
+            </div>
+            <div className="product-story-config-list">
+              {staticDetails.map((detail) => (
+                <div className="product-story-config-row" key={detail.id}>
+                  <strong>{detail.label}</strong>
+                  <div className="product-story-config-values">
+                    <span>{detail.value}</span>
                   </div>
                 </div>
               ))}
