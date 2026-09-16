@@ -88,21 +88,22 @@ export default async function ProductsPage({
     ? (requestedFilter as StorefrontProductFilter)
     : "all";
   const categories = site.categories?.enabled ? site.categories.items : [];
-  const selectedCategory = category
+  const requestedCategory = category
     ? categories.find((item) => item.id === category)
     : undefined;
+  const selectedCategory = requestedCategory ?? categories[0];
   const selectedListingIds = selectedCategory?.listingIds ?? [];
   const selectedFamilyIds = selectedCategory?.familyIds ?? [];
   const categoryProducts = selectedCategory
     ? products.filter((product) => productMatchesCategory(product, selectedListingIds, selectedFamilyIds))
     : family
       ? products.filter((product) => product.familyIds?.includes(family))
-      : products;
+      : [];
   const visibleProducts = applySystemFilter(categoryProducts, activeFilter);
   const stripItems = productStripItems(categoryProducts);
   const heading = selectedCategory
     ? localized(selectedCategory.title, locale)
-    : locale === "sw" ? "Bidhaa zote" : "All products";
+    : locale === "sw" ? "Bidhaa" : "Products";
   const whatsapp = site.contact.whatsapp?.replace(/\D/g, "");
   const notes = locale === "sw"
     ? [
@@ -130,60 +131,52 @@ export default async function ProductsPage({
   return (
     <StorefrontShell site={site}>
       <main className="catalog-page product-catalog-page">
-        <div className="product-catalog-sticky-controls">
-          <div className="product-catalog-toolbar">
-            <div className="page-shell" style={{ minWidth: 0, paddingBlock: "7px" }}>
-              <nav
-                aria-label={locale === "sw" ? "Makundi ya bidhaa" : "Product categories"}
-                style={{
-                  minWidth: 0,
-                  overflowX: "auto",
-                  padding: "3px 0",
-                  scrollbarWidth: "thin",
-                }}
-              >
-                <div
+        {categories.length ? (
+          <div className="product-catalog-sticky-controls">
+            <div className="product-catalog-toolbar">
+              <div className="page-shell" style={{ minWidth: 0, paddingBlock: "7px" }}>
+                <nav
+                  aria-label={locale === "sw" ? "Makundi ya bidhaa" : "Product categories"}
                   style={{
-                    alignItems: "center",
-                    display: "flex",
-                    gap: "12px",
-                    justifyContent: "space-evenly",
-                    minWidth: "100%",
-                    paddingInline: "12px",
-                    width: "max-content",
+                    minWidth: 0,
+                    overflowX: "auto",
+                    padding: "3px 0",
+                    scrollbarWidth: "thin",
                   }}
                 >
-                  <Link
-                    href={activeFilter === "all" ? "/products" : `/products?filter=${encodeURIComponent(activeFilter)}`}
+                  <div
                     style={{
-                      ...categoryTabStyle,
-                      border: `1px solid ${!selectedCategory && !family ? "#777777" : "#e1e1e1"}`,
-                      background: !selectedCategory && !family ? "#f7f7f7" : "transparent",
+                      alignItems: "center",
+                      display: "flex",
+                      gap: "12px",
+                      justifyContent: "space-evenly",
+                      minWidth: "100%",
+                      paddingInline: "12px",
+                      width: "max-content",
                     }}
                   >
-                    {locale === "sw" ? "Zote" : "All"}
-                  </Link>
-                  {categories.map((item) => {
-                    const active = selectedCategory?.id === item.id;
-                    return (
-                      <Link
-                        href={`/products?category=${encodeURIComponent(item.id)}${filterQuery}`}
-                        key={item.id}
-                        style={{
-                          ...categoryTabStyle,
-                          border: `1px solid ${active ? "#777777" : "#e1e1e1"}`,
-                          background: active ? "#f7f7f7" : "transparent",
-                        }}
-                      >
-                        {localized(item.title, locale)}
-                      </Link>
-                    );
-                  })}
-                </div>
-              </nav>
+                    {categories.map((item) => {
+                      const active = selectedCategory?.id === item.id;
+                      return (
+                        <Link
+                          href={`/products?category=${encodeURIComponent(item.id)}${filterQuery}`}
+                          key={item.id}
+                          style={{
+                            ...categoryTabStyle,
+                            border: `1px solid ${active ? "#777777" : "#e1e1e1"}`,
+                            background: active ? "#f7f7f7" : "transparent",
+                          }}
+                        >
+                          {localized(item.title, locale)}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </nav>
+              </div>
             </div>
           </div>
-        </div>
+        ) : null}
 
         {stripItems.length ? (
           <div className="product-category-showcase">
@@ -191,7 +184,7 @@ export default async function ProductsPage({
               items={stripItems}
               locale={locale}
               title={{ en: "Newest products", sw: "Bidhaa mpya" }}
-              viewAllHref={selectedCategory ? `/products?category=${encodeURIComponent(selectedCategory.id)}&filter=newest` : "/products?filter=newest"}
+              viewAllHref={selectedCategory ? `/products?category=${encodeURIComponent(selectedCategory.id)}&filter=newest` : family ? `/products?family=${encodeURIComponent(family)}&filter=newest` : "/products"}
               variant="catalog"
             />
           </div>
@@ -204,7 +197,7 @@ export default async function ProductsPage({
                 style={{
                   color: "#555555",
                   fontSize: "0.66rem",
-                  fontWeight: 400,
+                  fontWeight: 600,
                   letterSpacing: "0.02em",
                   textTransform: "none",
                 }}
@@ -224,7 +217,7 @@ export default async function ProductsPage({
         <section className="product-list-section page-shell" aria-label={heading}>
           {visibleProducts.length > 0 ? (
             <ProductCatalogGrid
-              key={`${activeFilter}-${category ?? "all"}-${family ?? "all"}`}
+              key={`${activeFilter}-${selectedCategory?.id ?? family ?? "none"}`}
               locale={locale}
               paginate={activeFilter !== "newest"}
               products={visibleProducts}

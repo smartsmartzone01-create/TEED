@@ -29,7 +29,7 @@ export function ProductFilterSelect({
       <select
         aria-label={locale === "sw" ? "Chuja bidhaa" : "Filter products"}
         onChange={(event) => change(event.target.value as StorefrontProductFilter)}
-        style={{ fontSize: "0.7rem", fontWeight: 400 }}
+        style={{ fontSize: "0.7rem", fontWeight: 600 }}
         value={value}
       >
         <option value="all">{locale === "sw" ? "Bidhaa zote" : "All products"}</option>
