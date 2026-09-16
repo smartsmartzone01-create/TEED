@@ -70,9 +70,11 @@
 
 .product-detail-page .product-detail-image {
   width: 100%;
-  max-width: 540px;
-  max-height: 540px;
+  height: 100%;
+  max-width: 94%;
+  max-height: 94%;
   object-fit: contain;
+  object-position: center;
   filter: none;
 }
 
