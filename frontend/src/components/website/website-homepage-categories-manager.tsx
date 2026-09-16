@@ -1,6 +1,6 @@
 "use client";
 
-import { Grid2X2, ImagePlus, Loader2, Plus, Save, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Grid2X2, ImagePlus, Loader2, Plus, Save, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { Button } from "@/components/global/primitives/button";
@@ -29,6 +29,7 @@ type CategoryDraft = {
 };
 type Draft = { enabled: boolean; title: LocalizedValue; items: CategoryDraft[] };
 
+const MAX_CATEGORIES = 10;
 const inputClassName = "h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white";
 
 function objectValue(value: unknown): Record<string, unknown> {
@@ -159,6 +160,17 @@ export function WebsiteHomepageCategoriesManager({ businessId, locale }: Props) 
     setDraft((current) => current ? { ...current, items: current.items.map((item) => item.id === id ? change(item) : item) } : current);
   }
 
+  function moveItem(index: number, direction: -1 | 1) {
+    setDraft((current) => {
+      if (!current) return current;
+      const target = index + direction;
+      if (target < 0 || target >= current.items.length) return current;
+      const items = [...current.items];
+      [items[index], items[target]] = [items[target], items[index]];
+      return { ...current, items };
+    });
+  }
+
   function toggleListing(itemId: string, listingId: string) {
     updateItem(itemId, (current) => ({
       ...current,
@@ -223,9 +235,17 @@ export function WebsiteHomepageCategoriesManager({ businessId, locale }: Props) 
       <div className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300"><Grid2X2 className="size-4" /></div>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-start justify-between gap-3">
-          <div><div className="flex items-center gap-2"><span className="font-mono text-xs font-medium text-slate-400">04</span><h3 className="text-sm font-semibold text-slate-950 dark:text-white">{sw ? "Makundi ya bidhaa" : "Product categories"}</h3></div><p className="mt-1.5 max-w-3xl text-sm leading-6 text-slate-500 dark:text-slate-400">{sw ? "Unda makundi yoyote unayotaka, kisha chagua bidhaa za Website zinazoingia kwenye kila kundi. Makundi haya yanaonekana homepage na juu ya ukurasa wa Products." : "Create any categories you want, then choose which Website products belong to each one. The same categories appear on the homepage and in the Products header."}</p></div>
-          <div className="flex gap-2"><Button disabled={!canManage || draft.items.length >= 30} onClick={() => setDraft((current) => current ? { ...current, items: [...current.items, blankCategory(current.items.length)] } : current)} size="small" variant="outline"><Plus className="size-4" />{sw ? "Ongeza" : "Add"}</Button><Button disabled={!dirty || saving || !canManage} onClick={() => void save()} size="small"><Save className="size-4" />{saving ? (sw ? "Inahifadhi..." : "Saving...") : sw ? "Hifadhi" : "Save"}</Button></div>
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="font-mono text-xs font-medium text-slate-400">04</span>
+              <h3 className="text-sm font-semibold text-slate-950 dark:text-white">{sw ? "Makundi ya bidhaa" : "Product categories"}</h3>
+              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500 dark:bg-slate-900 dark:text-slate-400">{draft.items.length}/{MAX_CATEGORIES}</span>
+            </div>
+            <p className="mt-1.5 max-w-3xl text-sm leading-6 text-slate-500 dark:text-slate-400">{sw ? "Unda hadi makundi 10, chagua bidhaa za Website kwa kila kundi, na panga mpangilio wake kwenye storefront." : "Create up to 10 categories, choose the Website products in each category, and control their storefront order."}</p>
+          </div>
+          <div className="flex gap-2"><Button disabled={!canManage || draft.items.length >= MAX_CATEGORIES} onClick={() => setDraft((current) => current ? { ...current, items: [...current.items, blankCategory(current.items.length)] } : current)} size="small" variant="outline"><Plus className="size-4" />{sw ? "Ongeza" : "Add"}</Button><Button disabled={!dirty || saving || !canManage} onClick={() => void save()} size="small"><Save className="size-4" />{saving ? (sw ? "Inahifadhi..." : "Saving...") : sw ? "Hifadhi" : "Save"}</Button></div>
         </div>
+        {draft.items.length > MAX_CATEGORIES ? <p className="mt-3 text-xs text-amber-600 dark:text-amber-400">{sw ? `Kuna makundi ${draft.items.length}. Punguza hadi ${MAX_CATEGORIES} kabla ya kuongeza mapya.` : `There are ${draft.items.length} categories. Reduce them to ${MAX_CATEGORIES} before adding more.`}</p> : null}
         <label className="mt-4 flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-300"><input checked={draft.enabled} disabled={!canManage} onChange={(event) => setDraft((current) => current ? { ...current, enabled: event.target.checked } : current)} type="checkbox" />{sw ? "Onyesha makundi kwenye storefront" : "Show categories on the storefront"}</label>
         <div className="mt-4 grid gap-3 sm:grid-cols-2"><input className={inputClassName} disabled={!canManage} placeholder="Section title (English)" value={draft.title.en} onChange={(event) => setDraft((current) => current ? { ...current, title: { ...current.title, en: event.target.value } } : current)} /><input className={inputClassName} disabled={!canManage} placeholder="Kichwa (Kiswahili)" value={draft.title.sw} onChange={(event) => setDraft((current) => current ? { ...current, title: { ...current.title, sw: event.target.value } } : current)} /></div>
         <div className="mt-5 space-y-3">{draft.items.map((item, index) => <section className="grid gap-3 rounded-xl border border-slate-200 p-4 dark:border-slate-800 lg:grid-cols-[9rem_minmax(0,1fr)_auto]" key={item.id}>
@@ -234,12 +254,17 @@ export function WebsiteHomepageCategoriesManager({ businessId, locale }: Props) 
             <div className="grid gap-3 sm:grid-cols-2"><input className={inputClassName} disabled={!canManage} placeholder="Category title (English)" value={item.title.en} onChange={(event) => updateItem(item.id, (current) => ({ ...current, title: { ...current.title, en: event.target.value } }))} /><input className={inputClassName} disabled={!canManage} placeholder="Kichwa (Kiswahili)" value={item.title.sw} onChange={(event) => updateItem(item.id, (current) => ({ ...current, title: { ...current.title, sw: event.target.value } }))} /></div>
             <div className="grid gap-3 sm:grid-cols-2"><input className={inputClassName} disabled={!canManage} placeholder="Short text (English)" value={item.description.en} onChange={(event) => updateItem(item.id, (current) => ({ ...current, description: { ...current.description, en: event.target.value } }))} /><input className={inputClassName} disabled={!canManage} placeholder="Maelezo mafupi" value={item.description.sw} onChange={(event) => updateItem(item.id, (current) => ({ ...current, description: { ...current.description, sw: event.target.value } }))} /></div>
             <div>
-              <div className="mb-2 flex items-center justify-between gap-2"><p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{sw ? "Bidhaa kwenye kundi" : "Products in this category"}</p><span className="text-xs text-slate-400">{item.listingIds.length} {sw ? "zimechaguliwa" : "selected"}</span></div>
+              <div className="mb-2 flex items-center justify-between gap-2"><p className="text-xs font-medium text-slate-500">{sw ? "Bidhaa kwenye kundi" : "Products in this category"}</p><span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500 dark:bg-slate-900 dark:text-slate-400">{item.listingIds.length}/{listings.length} {sw ? "bidhaa" : "products"}</span></div>
               <div className="max-h-52 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-2 dark:border-slate-800 dark:bg-slate-900/40">{listings.length ? <div className="grid gap-1 sm:grid-cols-2">{listings.map((listing) => <label className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-sm text-slate-700 hover:bg-white dark:text-slate-300 dark:hover:bg-slate-950" key={listing.id}><input checked={item.listingIds.includes(listing.id)} disabled={!canManage} onChange={() => toggleListing(item.id, listing.id)} type="checkbox" /><span className="min-w-0 truncate">{listingLabel(listing, sw)}</span></label>)}</div> : <p className="px-2 py-3 text-sm text-slate-500">{sw ? "Hakuna bidhaa za Website bado." : "No Website products are available yet."}</p>}</div>
               {item.familyIds.length ? <p className="mt-2 text-[11px] text-amber-600">{sw ? "Kundi hili lina uteuzi wa zamani wa Commerce family. Utaendelea kufanya kazi hadi uchague bidhaa za Website na kuhifadhi." : "This category still has legacy Commerce-family membership. It will keep working until you select Website products and save."}</p> : null}
             </div>
           </div>
-          <Button disabled={!canManage} onClick={() => setDraft((current) => current ? { ...current, items: current.items.filter((candidate) => candidate.id !== item.id) } : current)} size="small" variant="outline"><Trash2 className="size-4" /><span className="sr-only">{sw ? `Ondoa ${index + 1}` : `Remove ${index + 1}`}</span></Button>
+          <div className="flex items-start gap-1 lg:flex-col">
+            <span className="mr-1 whitespace-nowrap pt-1 text-xs font-medium text-slate-400 lg:mb-1 lg:mr-0 lg:pt-0">#{index + 1}</span>
+            <Button disabled={!canManage || index === 0} onClick={() => moveItem(index, -1)} size="small" variant="outline"><ArrowUp className="size-4" /><span className="sr-only">{sw ? "Panda juu" : "Move up"}</span></Button>
+            <Button disabled={!canManage || index === draft.items.length - 1} onClick={() => moveItem(index, 1)} size="small" variant="outline"><ArrowDown className="size-4" /><span className="sr-only">{sw ? "Shusha chini" : "Move down"}</span></Button>
+            <Button disabled={!canManage} onClick={() => setDraft((current) => current ? { ...current, items: current.items.filter((candidate) => candidate.id !== item.id) } : current)} size="small" variant="outline"><Trash2 className="size-4" /><span className="sr-only">{sw ? `Ondoa ${index + 1}` : `Remove ${index + 1}`}</span></Button>
+          </div>
         </section>)}</div>
       </div>
     </div>
