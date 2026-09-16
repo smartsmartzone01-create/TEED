@@ -12,10 +12,14 @@ import type {
   StorefrontSkuAvailability,
 } from "@/types/storefront";
 
-const hiddenOptionIds = new Set(["model", "brand"]);
-
 function isPurchasable(sku: StorefrontSku): boolean {
   return sku.availability !== "out_of_stock";
+}
+
+function availabilityRank(status: StorefrontSkuAvailability): number {
+  if (status === "in_stock") return 2;
+  if (status === "low_stock") return 1;
+  return 0;
 }
 
 function availabilityLabel(status: StorefrontSkuAvailability, locale: StorefrontLocale): string {
@@ -28,38 +32,41 @@ function uniqueImages(images: Array<string | undefined>) {
   return [...new Set(images.map((image) => image?.trim() ?? "").filter(Boolean))];
 }
 
+function skuImages(sku: StorefrontSku | undefined) {
+  if (!sku) return [];
+  return uniqueImages([
+    ...(sku.imageUrls ?? []),
+    sku.imageUrl,
+  ]);
+}
+
 export function ProductDetail({ product, locale }: { product: StorefrontProductListing; locale: StorefrontLocale }) {
   const initialSku = product.skus.find(isPurchasable) ?? product.skus[0];
-  const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>(initialSku?.options ?? {});
+  const [selectedSkuId, setSelectedSkuId] = useState<string | null>(initialSku?.id ?? null);
   const [selectedGalleryImage, setSelectedGalleryImage] = useState<string | null>(null);
   const [hasChosenOption, setHasChosenOption] = useState(false);
   const visibleOptions = useMemo(
-    () => product.options.filter((option) => !hiddenOptionIds.has(option.id)),
+    () => product.options.filter((option) => option.values.length > 0),
     [product.options],
   );
-
-  const selectedSku = useMemo(() => {
-    return product.skus.find((sku) =>
-      visibleOptions.every((option) => sku.options[option.id] === selectedOptions[option.id]),
-    );
-  }, [product.skus, selectedOptions, visibleOptions]);
+  const selectedSku = useMemo(
+    () => product.skus.find((sku) => sku.id === selectedSkuId) ?? initialSku,
+    [initialSku, product.skus, selectedSkuId],
+  );
+  const selectedOptions = selectedSku?.options ?? {};
 
   const productTitle = localized(product.title, locale);
   const description = localized(product.description, locale).trim();
   const showcaseImage = product.primaryImageUrl?.trim() ?? "";
-  const skuGallery = useMemo(() => {
-    if (!selectedSku) return [];
-    return uniqueImages([
-      ...(selectedSku.imageUrls ?? []),
-      selectedSku.imageUrl,
-    ]);
-  }, [selectedSku]);
+  const skuGallery = useMemo(() => skuImages(selectedSku), [selectedSku]);
   const selectedGallery = useMemo(() => {
-    const canShowSkuGallery = visibleOptions.length === 0 || hasChosenOption;
-    if (canShowSkuGallery) {
+    if (!hasChosenOption && visibleOptions.length > 0) {
+      return uniqueImages([showcaseImage || skuGallery[0]]);
+    }
+    if (!hasChosenOption) {
       return uniqueImages([showcaseImage, ...skuGallery]);
     }
-    return uniqueImages([showcaseImage || skuGallery[0]]);
+    return uniqueImages([...skuGallery, showcaseImage]);
   }, [hasChosenOption, showcaseImage, skuGallery, visibleOptions.length]);
   const selectedImage = selectedGalleryImage && selectedGallery.includes(selectedGalleryImage)
     ? selectedGalleryImage
@@ -67,27 +74,39 @@ export function ProductDetail({ product, locale }: { product: StorefrontProductL
   const storyImage = showcaseImage || selectedImage;
   const hasThumbnails = selectedGallery.length > 1;
 
-  function optionValueHasStock(optionId: string, value: string): boolean {
-    return product.skus.some((sku) => isPurchasable(sku) && sku.options[optionId] === value);
+  function optionValueExists(optionId: string, value: string): boolean {
+    return product.skus.some((sku) => sku.options[optionId] === value);
   }
 
   function chooseOption(optionId: string, value: string) {
-    const proposed = { ...selectedOptions, [optionId]: value };
-    const exactMatch = product.skus.find(
-      (sku) => isPurchasable(sku) && visibleOptions.every((option) => sku.options[option.id] === proposed[option.id]),
-    );
-    if (exactMatch) {
-      setSelectedOptions(exactMatch.options);
-      setHasChosenOption(true);
-      setSelectedGalleryImage(showcaseImage || null);
-      return;
+    const candidates = product.skus.filter((sku) => sku.options[optionId] === value);
+    if (!candidates.length) return;
+
+    let nextSku = candidates[0];
+    let bestMatchScore = -1;
+    let bestAvailability = -1;
+    for (const candidate of candidates) {
+      const matchScore = visibleOptions.reduce((score, option) => {
+        if (option.id === optionId) return score;
+        const currentValue = selectedOptions[option.id];
+        if (!currentValue) return score;
+        return score + (candidate.options[option.id] === currentValue ? 1 : 0);
+      }, 0);
+      const candidateAvailability = availabilityRank(candidate.availability);
+      if (
+        matchScore > bestMatchScore ||
+        (matchScore === bestMatchScore && candidateAvailability > bestAvailability)
+      ) {
+        nextSku = candidate;
+        bestMatchScore = matchScore;
+        bestAvailability = candidateAvailability;
+      }
     }
-    const compatibleSku = product.skus.find((sku) => isPurchasable(sku) && sku.options[optionId] === value);
-    if (compatibleSku) {
-      setSelectedOptions(compatibleSku.options);
-      setHasChosenOption(true);
-      setSelectedGalleryImage(showcaseImage || null);
-    }
+
+    setSelectedSkuId(nextSku.id);
+    setHasChosenOption(true);
+    const nextImages = skuImages(nextSku);
+    setSelectedGalleryImage(nextImages[0] || showcaseImage || null);
   }
 
   const selectedPrice = selectedSku?.price
@@ -150,30 +169,40 @@ export function ProductDetail({ product, locale }: { product: StorefrontProductL
             <strong className="product-detail-price">{selectedPrice}</strong>
           </div>
 
-          {visibleOptions.map((option) => (
-            <fieldset className="option-group" key={option.id}>
-              <legend>{localized(option.name, locale)}</legend>
-              <div className="option-values">
-                {option.values.map((value) => {
-                  const selected = selectedOptions[option.id] === value.value;
-                  const available = optionValueHasStock(option.id, value.value);
-                  const label = localized(value.label, locale);
-                  if (value.colorHex) {
+          {visibleOptions.map((option) => {
+            const selectedValue = option.values.find((value) => value.value === selectedOptions[option.id]);
+            return (
+              <fieldset className="option-group" key={option.id}>
+                <legend>
+                  {localized(option.name, locale)}
+                  {selectedValue ? (
+                    <span style={{ color: "#777777", fontWeight: 500, letterSpacing: 0, marginLeft: "8px", textTransform: "none" }}>
+                      · {localized(selectedValue.label, locale)}
+                    </span>
+                  ) : null}
+                </legend>
+                <div className="option-values">
+                  {option.values.map((value) => {
+                    const selected = selectedOptions[option.id] === value.value;
+                    const exists = optionValueExists(option.id, value.value);
+                    const label = localized(value.label, locale);
+                    if (value.colorHex) {
+                      return (
+                        <button key={value.value} type="button" disabled={!exists} className={`option-chip option-chip-color${selected ? " option-chip-active" : ""}`} onClick={() => chooseOption(option.id, value.value)} title={label} aria-label={label}>
+                          <span className="color-swatch" style={{ backgroundColor: value.colorHex }} aria-hidden="true" />
+                        </button>
+                      );
+                    }
                     return (
-                      <button key={value.value} type="button" disabled={!available} className={`option-chip option-chip-color${selected ? " option-chip-active" : ""}`} onClick={() => chooseOption(option.id, value.value)} title={label} aria-label={label}>
-                        <span className="color-swatch" style={{ backgroundColor: value.colorHex }} aria-hidden="true" />
+                      <button key={value.value} type="button" disabled={!exists} className={`option-chip${selected ? " option-chip-active" : ""}`} onClick={() => chooseOption(option.id, value.value)}>
+                        {label}
                       </button>
                     );
-                  }
-                  return (
-                    <button key={value.value} type="button" disabled={!available} className={`option-chip${selected ? " option-chip-active" : ""}`} onClick={() => chooseOption(option.id, value.value)}>
-                      {label}
-                    </button>
-                  );
-                })}
-              </div>
-            </fieldset>
-          ))}
+                  })}
+                </div>
+              </fieldset>
+            );
+          })}
 
           <div className="product-detail-save-row">
             <button className="product-detail-save" type="button" aria-label={locale === "sw" ? "Hifadhi bidhaa" : "Save product"}>♡</button>
