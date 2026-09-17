@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import "@/styles/catalog.css";
+import "@/styles/products-catalog-shell.css";
+import "@/styles/product-detail-page.css";
+import "@/styles/bag.css";
+import "@/styles/customer-auth.css";
 import "@/styles/templates/ecommerce-classic.css";
 import "@/styles/templates/ecommerce-classic-home.css";
 

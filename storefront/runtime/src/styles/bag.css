@@ -1,0 +1,366 @@
+.commerce-template-bag-button {
+  position: relative;
+}
+
+.commerce-template-bag-count {
+  position: absolute;
+  top: 1px;
+  right: 0;
+  min-width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  padding-inline: 5px;
+  border: 2px solid var(--storefront-surface);
+  border-radius: 999px;
+  background: var(--storefront-accent);
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.bag-page {
+  min-height: 62vh;
+  padding: clamp(32px, 6vw, 72px) 0 48px;
+}
+
+.bag-page-shell {
+  max-width: 1120px;
+}
+
+.bag-page-content {
+  display: grid;
+  gap: 28px;
+}
+
+.bag-heading-row {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #ebe7e2;
+}
+
+.bag-eyebrow {
+  margin: 0 0 7px;
+  color: var(--storefront-accent);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.bag-heading-row h1,
+.bag-empty h1 {
+  margin: 0;
+  color: #25211e;
+  font-size: clamp(2rem, 4vw, 3.2rem);
+  letter-spacing: -0.04em;
+}
+
+.bag-clear-button,
+.bag-remove-button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #756c65;
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.bag-clear-button:hover,
+.bag-remove-button:hover {
+  color: var(--storefront-accent);
+  text-decoration: underline;
+}
+
+.bag-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(290px, 340px);
+  gap: 34px;
+  align-items: start;
+}
+
+.bag-items {
+  display: grid;
+  gap: 16px;
+}
+
+.bag-item {
+  display: grid;
+  grid-template-columns: 148px minmax(0, 1fr);
+  gap: 22px;
+  padding: 20px;
+  border: 1px solid #ebe7e2;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgb(43 33 25 / 4%);
+}
+
+.bag-item-media {
+  width: 148px;
+  height: 148px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  padding: 10px;
+  border-radius: 15px;
+  background: #f7f6f5;
+}
+
+.bag-item-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.bag-item-image-placeholder {
+  color: #9b948d;
+  font-size: 0.75rem;
+}
+
+.bag-item-copy {
+  min-width: 0;
+  display: grid;
+  gap: 22px;
+}
+
+.bag-item-main {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.bag-item-title {
+  color: #28231f;
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.bag-item-title:hover {
+  color: var(--storefront-accent);
+}
+
+.bag-item-options {
+  margin: 7px 0 0;
+  color: #655d57;
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.bag-item-sku {
+  margin: 6px 0 0;
+  color: #9a938c;
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+}
+
+.bag-item-unit-price {
+  flex: 0 0 auto;
+  color: #28231f;
+  font-size: 0.95rem;
+  white-space: nowrap;
+}
+
+.bag-item-controls {
+  display: grid;
+  grid-template-columns: auto minmax(130px, 1fr) auto;
+  align-items: end;
+  gap: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #f0ece8;
+}
+
+.bag-quantity-field {
+  display: grid;
+  gap: 6px;
+  color: #77706a;
+  font-size: 0.7rem;
+  font-weight: 750;
+}
+
+.bag-quantity-field input {
+  width: 76px;
+  min-height: 38px;
+  padding: 6px 9px;
+  border: 1px solid #d9d3cd;
+  border-radius: 9px;
+  background: #fff;
+  color: #28231f;
+  text-align: center;
+}
+
+.bag-quantity-field input:focus {
+  border-color: var(--storefront-accent);
+  outline: 2px solid color-mix(in srgb, var(--storefront-accent) 18%, transparent);
+  outline-offset: 1px;
+}
+
+.bag-item-subtotal {
+  display: grid;
+  gap: 5px;
+  justify-self: end;
+  text-align: right;
+}
+
+.bag-item-subtotal span {
+  color: #8a827b;
+  font-size: 0.7rem;
+}
+
+.bag-item-subtotal strong {
+  color: #28231f;
+  font-size: 0.9rem;
+}
+
+.bag-remove-button {
+  align-self: center;
+}
+
+.bag-summary {
+  position: sticky;
+  top: 132px;
+  display: grid;
+  gap: 16px;
+  padding: 24px;
+  border: 1px solid #e8e3de;
+  border-radius: 20px;
+  background: #faf9f8;
+}
+
+.bag-summary-total {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid #e4dfda;
+  color: #2b2723;
+}
+
+.bag-summary-total span {
+  font-weight: 750;
+}
+
+.bag-summary-total strong {
+  text-align: right;
+}
+
+.bag-checkout-button,
+.bag-primary-link {
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 12px;
+  background: #181614;
+  color: #fff;
+  font-weight: 800;
+}
+
+.bag-checkout-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.bag-checkout-note {
+  margin: -4px 0 0;
+  color: #8c847d;
+  font-size: 0.74rem;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.bag-continue-link {
+  color: #5f5750;
+  font-size: 0.82rem;
+  font-weight: 750;
+  text-align: center;
+}
+
+.bag-continue-link:hover {
+  color: var(--storefront-accent);
+}
+
+.bag-empty {
+  max-width: 620px;
+  margin: 48px auto;
+  display: grid;
+  justify-items: center;
+  gap: 18px;
+  padding: 48px 24px;
+  text-align: center;
+}
+
+.bag-empty p {
+  margin: 0;
+  color: #77706a;
+  line-height: 1.6;
+}
+
+.bag-primary-link {
+  margin-top: 6px;
+  background: var(--storefront-accent);
+}
+
+@media (max-width: 820px) {
+  .bag-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .bag-summary {
+    position: static;
+  }
+}
+
+@media (max-width: 620px) {
+  .bag-page {
+    padding-top: 26px;
+  }
+
+  .bag-heading-row {
+    align-items: start;
+  }
+
+  .bag-item {
+    grid-template-columns: 96px minmax(0, 1fr);
+    gap: 14px;
+    padding: 14px;
+    border-radius: 16px;
+  }
+
+  .bag-item-media {
+    width: 96px;
+    height: 112px;
+    padding: 7px;
+  }
+
+  .bag-item-main {
+    display: grid;
+    gap: 10px;
+  }
+
+  .bag-item-unit-price {
+    white-space: normal;
+  }
+
+  .bag-item-controls {
+    grid-column: 1 / -1;
+    grid-template-columns: auto 1fr;
+    gap: 14px;
+  }
+
+  .bag-item-subtotal {
+    justify-self: end;
+  }
+
+  .bag-remove-button {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+}

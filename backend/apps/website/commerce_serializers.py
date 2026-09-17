@@ -21,8 +21,21 @@ class WebsiteCommerceImportSerializer(serializers.Serializer):
         child=serializers.UUIDField(),
         allow_empty=False,
     )
+    scope = serializers.ChoiceField(
+        choices=("group", "product"),
+        default="group",
+        required=False,
+    )
 
     def validate_product_ids(self, value):
         if len(value) != len(set(value)):
             raise serializers.ValidationError("Commerce product ids must be unique.")
         return value
+
+
+class WebsiteCommerceDisconnectSerializer(serializers.Serializer):
+    scope = serializers.ChoiceField(
+        choices=("group", "product"),
+        default="group",
+        required=False,
+    )

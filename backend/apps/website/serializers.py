@@ -3,10 +3,17 @@ from io import BytesIO
 from PIL import Image, UnidentifiedImageError
 from rest_framework import serializers
 
-from .models import WebsiteListing, WebsiteMedia, WebsiteSite, WebsiteVariant
+from .models import (
+    WebsiteListing,
+    WebsiteListingStoryBlock,
+    WebsiteMedia,
+    WebsiteSite,
+    WebsiteVariant,
+)
 
 WEBSITE_MEDIA_MAX_UPLOAD_BYTES = 10 * 1024 * 1024
 WEBSITE_MEDIA_ALLOWED_FORMATS = {"JPEG", "PNG", "WEBP"}
+WEBSITE_LISTING_MAX_STORY_BLOCKS = 5
 
 
 def _validate_locale_map(value, *, field_name, require_value=False):
@@ -23,26 +30,11 @@ class WebsiteSiteSerializer(serializers.ModelSerializer):
     class Meta:
         model = WebsiteSite
         fields = (
-            "id",
-            "public_key",
-            "slug",
-            "display_name",
-            "default_locale",
-            "supported_locales",
-            "primary_color",
-            "surface_color",
-            "text_color",
-            "contact_phone",
-            "contact_email",
-            "contact_whatsapp",
-            "contact_instagram",
-            "navigation",
-            "hero",
-            "services",
-            "newsletter",
-            "is_published",
-            "created_at",
-            "updated_at",
+            "id", "public_key", "slug", "display_name", "default_locale",
+            "supported_locales", "primary_color", "surface_color", "text_color",
+            "contact_phone", "contact_email", "contact_whatsapp", "contact_instagram",
+            "header", "navigation", "hero", "featured_products", "categories",
+            "services", "newsletter", "is_published", "created_at", "updated_at",
         )
         read_only_fields = ("id", "public_key", "created_at", "updated_at")
 
@@ -51,55 +43,28 @@ class WebsiteSiteWriteSerializer(serializers.ModelSerializer):
     class Meta:
         model = WebsiteSite
         fields = (
-            "slug",
-            "display_name",
-            "default_locale",
-            "supported_locales",
-            "primary_color",
-            "surface_color",
-            "text_color",
-            "contact_phone",
-            "contact_email",
-            "contact_whatsapp",
-            "contact_instagram",
-            "navigation",
-            "hero",
-            "services",
-            "newsletter",
-            "is_published",
+            "slug", "display_name", "default_locale", "supported_locales",
+            "primary_color", "surface_color", "text_color", "contact_phone",
+            "contact_email", "contact_whatsapp", "contact_instagram", "header",
+            "navigation", "hero", "featured_products", "categories", "services",
+            "newsletter", "is_published",
         )
-        extra_kwargs = {
-            "slug": {"required": False},
-            "display_name": {"required": False},
-        }
+        extra_kwargs = {"slug": {"required": False}, "display_name": {"required": False}}
 
 
 class WebsiteMediaSerializer(serializers.ModelSerializer):
     class Meta:
         model = WebsiteMedia
         fields = (
-            "id",
-            "kind",
-            "public_url",
-            "storage_key",
-            "original_name",
-            "mime_type",
-            "alt_text",
-            "width",
-            "height",
-            "size_bytes",
-            "sort_order",
-            "created_at",
+            "id", "kind", "public_url", "storage_key", "original_name", "mime_type",
+            "alt_text", "width", "height", "size_bytes", "sort_order", "created_at",
             "updated_at",
         )
         read_only_fields = ("id", "created_at", "updated_at")
 
 
 class WebsiteMediaRegisterSerializer(serializers.Serializer):
-    kind = serializers.ChoiceField(
-        choices=WebsiteMedia.Kind.choices,
-        default=WebsiteMedia.Kind.IMAGE,
-    )
+    kind = serializers.ChoiceField(choices=WebsiteMedia.Kind.choices, default=WebsiteMedia.Kind.IMAGE)
     public_url = serializers.URLField(max_length=500)
     storage_key = serializers.CharField(max_length=500, allow_blank=True, required=False)
     original_name = serializers.CharField(max_length=255, allow_blank=True, required=False)
@@ -125,7 +90,6 @@ class WebsiteMediaUploadSerializer(serializers.Serializer):
     def validate_file(self, value):
         if value.size > WEBSITE_MEDIA_MAX_UPLOAD_BYTES:
             raise serializers.ValidationError("Image must be 10 MB or smaller.")
-
         payload = value.read()
         value.seek(0)
         try:
@@ -136,10 +100,8 @@ class WebsiteMediaUploadSerializer(serializers.Serializer):
                 width, height = image.size
         except (UnidentifiedImageError, OSError, ValueError):
             raise serializers.ValidationError("Upload a valid image file.") from None
-
         if image_format not in WEBSITE_MEDIA_ALLOWED_FORMATS:
             raise serializers.ValidationError("Only JPEG, PNG, and WEBP images are allowed.")
-
         value.website_image_format = image_format
         value.website_image_width = width
         value.website_image_height = height
@@ -152,10 +114,7 @@ class WebsiteMediaUpdateSerializer(WebsiteMediaRegisterSerializer):
 
 
 class WebsiteMediaReorderSerializer(serializers.Serializer):
-    media_ids = serializers.ListField(
-        child=serializers.UUIDField(),
-        allow_empty=False,
-    )
+    media_ids = serializers.ListField(child=serializers.UUIDField(), allow_empty=False)
 
     def validate_media_ids(self, value):
         if len(value) != len(set(value)):
@@ -165,29 +124,24 @@ class WebsiteMediaReorderSerializer(serializers.Serializer):
 
 class WebsiteVariantSerializer(serializers.ModelSerializer):
     media_id = serializers.SerializerMethodField()
+    gallery_media_ids = serializers.SerializerMethodField()
     commerce_product_id = serializers.SerializerMethodField()
 
     class Meta:
         model = WebsiteVariant
         fields = (
-            "id",
-            "sku",
-            "options",
-            "website_price",
-            "currency",
-            "website_availability",
-            "media_id",
-            "commerce_product_id",
-            "price_source",
-            "availability_source",
-            "is_published",
-            "sort_order",
-            "created_at",
+            "id", "sku", "options", "website_price", "currency",
+            "website_availability", "media_id", "gallery_media_ids",
+            "commerce_product_id", "commerce_connected", "price_source",
+            "availability_source", "is_published", "sort_order", "created_at",
             "updated_at",
         )
 
     def get_media_id(self, obj):
         return obj.media_id
+
+    def get_gallery_media_ids(self, obj):
+        return [item.media_id for item in obj.gallery_items.all()]
 
     def get_commerce_product_id(self, obj):
         return obj.commerce_product_id
@@ -196,19 +150,11 @@ class WebsiteVariantSerializer(serializers.ModelSerializer):
 class WebsiteVariantWriteSerializer(serializers.Serializer):
     sku = serializers.CharField(max_length=64, allow_blank=True, required=False)
     options = serializers.JSONField(required=False)
-    website_price = serializers.DecimalField(
-        max_digits=14,
-        decimal_places=2,
-        min_value=0,
-        allow_null=True,
-        required=False,
-    )
+    website_price = serializers.DecimalField(max_digits=14, decimal_places=2, min_value=0, allow_null=True, required=False)
     currency = serializers.CharField(max_length=3, min_length=3, required=False)
-    website_availability = serializers.ChoiceField(
-        choices=WebsiteVariant.Availability.choices,
-        required=False,
-    )
+    website_availability = serializers.ChoiceField(choices=WebsiteVariant.Availability.choices, required=False)
     media_id = serializers.UUIDField(allow_null=True, required=False)
+    gallery_media_ids = serializers.ListField(child=serializers.UUIDField(), required=False)
     is_published = serializers.BooleanField(required=False)
     sort_order = serializers.IntegerField(min_value=0, required=False)
 
@@ -219,35 +165,65 @@ class WebsiteVariantWriteSerializer(serializers.Serializer):
             raise serializers.ValidationError("Variant option keys and values must be strings.")
         return value
 
+    def validate_gallery_media_ids(self, value):
+        if len(value) != len(set(value)):
+            raise serializers.ValidationError("Variant gallery media ids must be unique.")
+        return value
+
     def validate_currency(self, value):
         return value.upper()
 
 
+class WebsiteListingStoryBlockSerializer(serializers.ModelSerializer):
+    media_id = serializers.SerializerMethodField()
+
+    class Meta:
+        model = WebsiteListingStoryBlock
+        fields = ("id", "heading", "body", "media_id", "sort_order")
+
+    def get_media_id(self, obj):
+        return obj.media_id
+
+
+class WebsiteListingStoryBlockWriteSerializer(serializers.Serializer):
+    heading = serializers.JSONField(required=False, default=dict)
+    body = serializers.JSONField(required=False, default=dict)
+    media_id = serializers.UUIDField(allow_null=True, required=False)
+
+    def validate_heading(self, value):
+        return _validate_locale_map(value, field_name="Story heading")
+
+    def validate_body(self, value):
+        return _validate_locale_map(value, field_name="Story body")
+
+    def validate(self, attrs):
+        heading = attrs.get("heading") or {}
+        body = attrs.get("body") or {}
+        media_id = attrs.get("media_id")
+        if not any(str(value).strip() for value in heading.values()) and not any(str(value).strip() for value in body.values()) and media_id is None:
+            raise serializers.ValidationError("Each story block needs a heading, body, or image.")
+        return attrs
+
+
 class WebsiteListingSerializer(serializers.ModelSerializer):
     primary_media_id = serializers.SerializerMethodField()
+    discover_media_id = serializers.SerializerMethodField()
+    story_blocks = WebsiteListingStoryBlockSerializer(many=True, read_only=True)
     variants = WebsiteVariantSerializer(many=True, read_only=True)
 
     class Meta:
         model = WebsiteListing
         fields = (
-            "id",
-            "slug",
-            "title",
-            "short_description",
-            "description",
-            "brand",
-            "badge",
-            "primary_media_id",
-            "options",
-            "is_published",
-            "sort_order",
-            "variants",
-            "created_at",
-            "updated_at",
+            "id", "slug", "title", "short_description", "description", "brand",
+            "badge", "primary_media_id", "discover_media_id", "story_blocks", "options",
+            "is_published", "sort_order", "variants", "created_at", "updated_at",
         )
 
     def get_primary_media_id(self, obj):
         return obj.primary_media_id
+
+    def get_discover_media_id(self, obj):
+        return obj.discover_media_id
 
 
 class WebsiteListingWriteSerializer(serializers.Serializer):
@@ -258,6 +234,12 @@ class WebsiteListingWriteSerializer(serializers.Serializer):
     brand = serializers.CharField(max_length=80, allow_blank=True, required=False)
     badge = serializers.JSONField(required=False)
     primary_media_id = serializers.UUIDField(allow_null=True, required=False)
+    discover_media_id = serializers.UUIDField(allow_null=True, required=False)
+    story_blocks = serializers.ListField(
+        child=WebsiteListingStoryBlockWriteSerializer(),
+        max_length=WEBSITE_LISTING_MAX_STORY_BLOCKS,
+        required=False,
+    )
     options = serializers.JSONField(required=False)
     is_published = serializers.BooleanField(required=False)
     sort_order = serializers.IntegerField(min_value=0, required=False)

@@ -6,49 +6,28 @@ import { useTranslations } from "next-intl";
 import { Button } from "@/components/global/primitives/button";
 import { Input } from "@/components/global/primitives/input";
 import { Select } from "@/components/global/primitives/select";
+import {
+  customProductOptionKey,
+  isKnownProductOptionType,
+  productOptionTypeKeys,
+} from "@/lib/global/catalog/product-option-types";
 import type { ProductVariantOption } from "@/types/commerce/catalog";
 
-const knownOptionTypes = [
-  "color",
-  "storage",
-  "capacity",
-  "size",
-  "ram",
-  "screen_size",
-  "pack_size",
-  "material",
-  "style",
-  "model",
-  "weight",
-  "length",
-  "volume",
-  "voltage",
-  "flavor",
-] as const;
-const knownOptionKeys = new Set<string>(knownOptionTypes);
 const MAX_OPTIONS = 12;
 
 type StockSkuOptionDraft = {
   type: string;
   label: string;
   value: string;
+  locked?: boolean;
 };
 
 const emptyStockSkuOptionDraft = (): StockSkuOptionDraft => ({
   type: "",
   label: "",
   value: "",
+  locked: false,
 });
-
-function customOptionKey(label: string) {
-  return label
-    .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "_")
-    .replace(/^_+|_+$/g, "")
-    .slice(0, 48);
-}
 
 function stockSkuOptionsFromDrafts(
   drafts: StockSkuOptionDraft[],
@@ -60,7 +39,7 @@ function stockSkuOptionsFromDrafts(
   for (const draft of drafts) {
     const value = draft.value.trim();
     const label = draft.label.trim();
-    const key = draft.type === "custom" ? customOptionKey(label) : draft.type.trim();
+    const key = draft.type === "custom" ? customProductOptionKey(label) : draft.type.trim();
     if (!key || !label || !value || keys.has(key)) return null;
     keys.add(key);
     options.push({ key, label, value });
@@ -73,9 +52,10 @@ function stockSkuOptionDraftsFromOptions(
 ): StockSkuOptionDraft[] {
   if (!options.length) return [emptyStockSkuOptionDraft()];
   return options.map((option) => ({
-    type: knownOptionKeys.has(option.key) ? option.key : "custom",
+    type: isKnownProductOptionType(option.key) ? option.key : "custom",
     label: option.label,
     value: "",
+    locked: true,
   }));
 }
 
@@ -87,6 +67,7 @@ function StockSkuOptionEditor({
   onChange: (value: StockSkuOptionDraft[]) => void;
 }) {
   const t = useTranslations("CommerceStockV2");
+  const schemaLocked = value.length > 0 && value.every((option) => option.locked);
 
   const update = (index: number, patch: Partial<StockSkuOptionDraft>) => {
     onChange(
@@ -115,6 +96,7 @@ function StockSkuOptionEditor({
       <div className="grid gap-3">
         {value.map((option, index) => {
           const custom = option.type === "custom";
+          const locked = Boolean(option.locked);
           return (
             <div
               className="grid gap-2 rounded-xl border border-slate-200 p-3 dark:border-slate-800 sm:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)_auto]"
@@ -123,6 +105,7 @@ function StockSkuOptionEditor({
               <label className="grid min-w-0 gap-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300">
                 {t("fields.detailType")}
                 <Select
+                  disabled={locked}
                   value={option.type}
                   onChange={(event) => {
                     const type = event.target.value;
@@ -136,7 +119,7 @@ function StockSkuOptionEditor({
                   }}
                 >
                   <option value="">{t("values.chooseDetail")}</option>
-                  {knownOptionTypes.map((type) => (
+                  {productOptionTypeKeys.map((type) => (
                     <option key={type} value={type}>
                       {t(`optionTypes.${type}`)}
                     </option>
@@ -150,6 +133,7 @@ function StockSkuOptionEditor({
                   <label className="grid min-w-0 gap-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300">
                     {t("fields.customDetail")}
                     <Input
+                      disabled={locked}
                       placeholder={t("placeholders.customDetail")}
                       value={option.label}
                       onChange={(event) => update(index, { label: event.target.value })}
@@ -166,20 +150,24 @@ function StockSkuOptionEditor({
                 </label>
               </div>
 
-              <button
-                aria-label={t("actions.removeDetail")}
-                className="inline-flex size-9 shrink-0 items-center justify-center self-end rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-900 dark:hover:text-slate-200"
-                onClick={() => remove(index)}
-                type="button"
-              >
-                <Trash2 className="size-4" />
-              </button>
+              {!locked ? (
+                <button
+                  aria-label={t("actions.removeDetail")}
+                  className="inline-flex size-9 shrink-0 items-center justify-center self-end rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-900 dark:hover:text-slate-200"
+                  onClick={() => remove(index)}
+                  type="button"
+                >
+                  <Trash2 className="size-4" />
+                </button>
+              ) : (
+                <span aria-hidden="true" className="size-9" />
+              )}
             </div>
           );
         })}
       </div>
 
-      {value.length < MAX_OPTIONS ? (
+      {!schemaLocked && value.length < MAX_OPTIONS ? (
         <Button
           className="w-fit"
           onClick={() => onChange([...value, emptyStockSkuOptionDraft()])}

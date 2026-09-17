@@ -38,6 +38,13 @@ from .session import (
     revoke_session,
     update_session_refresh,
 )
+from .storefront_customer_session import (
+    create_storefront_customer_session,
+    get_active_storefront_customer_sessions_for_update,
+    get_storefront_customer_session_for_update,
+    revoke_storefront_customer_session,
+    update_storefront_customer_session_refresh,
+)
 from .user import (
     complete_user_onboarding,
     create_user,
@@ -80,4 +87,9 @@ __all__ = [
     "get_user_session_for_update",
     "revoke_session",
     "update_session_refresh",
+    "create_storefront_customer_session",
+    "get_active_storefront_customer_sessions_for_update",
+    "get_storefront_customer_session_for_update",
+    "revoke_storefront_customer_session",
+    "update_storefront_customer_session_refresh",
 ]

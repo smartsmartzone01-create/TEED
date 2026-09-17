@@ -1,8 +1,10 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
 import { StorefrontImage } from "@/components/storefront-image";
+import { addBagItem } from "@/lib/bag";
 import { localized } from "@/lib/localized";
 import { formatMoney } from "@/lib/money";
 import type {
@@ -12,170 +14,372 @@ import type {
   StorefrontSkuAvailability,
 } from "@/types/storefront";
 
-const hiddenOptionIds = new Set(["model", "brand"]);
-
 function isPurchasable(sku: StorefrontSku): boolean {
   return sku.availability !== "out_of_stock";
 }
 
+function availabilityRank(status: StorefrontSkuAvailability): number {
+  if (status === "in_stock") return 2;
+  if (status === "low_stock") return 1;
+  return 0;
+}
+
 function availabilityLabel(status: StorefrontSkuAvailability, locale: StorefrontLocale): string {
-  if (status === "in_stock") {
-    return locale === "sw" ? "Ipo dukani" : "In stock";
-  }
-  if (status === "low_stock") {
-    return locale === "sw" ? "Imebaki chache" : "Low stock";
-  }
+  if (status === "in_stock") return locale === "sw" ? "Ipo dukani" : "In stock";
+  if (status === "low_stock") return locale === "sw" ? "Imebaki chache" : "Low stock";
   return locale === "sw" ? "Imeisha" : "Out of stock";
+}
+
+function uniqueImages(images: Array<string | undefined>) {
+  return [...new Set(images.map((image) => image?.trim() ?? "").filter(Boolean))];
+}
+
+function skuImages(sku: StorefrontSku | undefined) {
+  if (!sku) return [];
+  return uniqueImages([
+    ...(sku.imageUrls ?? []),
+    sku.imageUrl,
+  ]);
+}
+
+function optionValuesAcrossSkus(skus: StorefrontSku[], optionId: string): string[] {
+  return [...new Set(
+    skus
+      .map((sku) => sku.options[optionId]?.trim() ?? "")
+      .filter(Boolean),
+  )];
 }
 
 export function ProductDetail({
   product,
   locale,
+  siteId,
 }: {
   product: StorefrontProductListing;
   locale: StorefrontLocale;
+  siteId: string;
 }) {
+  const router = useRouter();
   const initialSku = product.skus.find(isPurchasable) ?? product.skus[0];
-  const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>(
-    initialSku?.options ?? {},
-  );
+  const [selectedSkuId, setSelectedSkuId] = useState<string | null>(initialSku?.id ?? null);
+  const [selectedGalleryImage, setSelectedGalleryImage] = useState<string | null>(null);
+  const [hasChosenOption, setHasChosenOption] = useState(false);
+  const [addedOfferId, setAddedOfferId] = useState<string | null>(null);
   const visibleOptions = useMemo(
-    () => product.options.filter((option) => !hiddenOptionIds.has(option.id)),
+    () => product.options.filter((option) => option.values.length > 0),
     [product.options],
   );
+  const configurationOptions = useMemo(
+    () => visibleOptions.filter((option) => optionValuesAcrossSkus(product.skus, option.id).length > 1),
+    [product.skus, visibleOptions],
+  );
+  const staticOptions = useMemo(
+    () => visibleOptions.filter((option) => optionValuesAcrossSkus(product.skus, option.id).length <= 1),
+    [product.skus, visibleOptions],
+  );
+  const selectedSku = useMemo(
+    () => product.skus.find((sku) => sku.id === selectedSkuId) ?? initialSku,
+    [initialSku, product.skus, selectedSkuId],
+  );
+  const selectedOptions = selectedSku?.options ?? {};
 
-  const selectedSku = useMemo(() => {
-    return product.skus.find((sku) =>
-      visibleOptions.every((option) => sku.options[option.id] === selectedOptions[option.id]),
-    );
-  }, [product.skus, selectedOptions, visibleOptions]);
-
-  const selectedImage = selectedSku?.imageUrl?.trim() || product.primaryImageUrl?.trim() || "";
   const productTitle = localized(product.title, locale);
+  const description = localized(product.description, locale).trim();
+  const showcaseImage = product.primaryImageUrl?.trim() ?? "";
+  const discoverImage = product.discoverImageUrl?.trim() || showcaseImage;
+  const storyBlocks = product.storyBlocks ?? [];
+  const skuGallery = useMemo(() => skuImages(selectedSku), [selectedSku]);
+  const thumbnailImages = useMemo(() => {
+    const images = uniqueImages(product.skus.flatMap((sku) => skuImages(sku)));
+    return images.filter((imageUrl) => imageUrl !== showcaseImage);
+  }, [product.skus, showcaseImage]);
+  const staticDetails = useMemo(() => {
+    const details: Array<{ id: string; label: string; value: string }> = [];
+    const hasBrandOption = staticOptions.some((option) => option.id.trim().toLowerCase() === "brand");
+    const brand = product.brand?.trim() ?? "";
 
-  function optionValueHasStock(optionId: string, value: string): boolean {
-    return product.skus.some(
-      (sku) => isPurchasable(sku) && sku.options[optionId] === value,
-    );
+    if (brand && !hasBrandOption) {
+      details.push({
+        id: "brand",
+        label: locale === "sw" ? "Chapa" : "Brand",
+        value: brand,
+      });
+    }
+
+    for (const option of staticOptions) {
+      const skuValue = optionValuesAcrossSkus(product.skus, option.id)[0];
+      const rawValue = skuValue || option.values[0]?.value || "";
+      if (!rawValue) continue;
+      const matchingValue = option.values.find((value) => value.value === rawValue);
+      details.push({
+        id: `option-${option.id}`,
+        label: localized(option.name, locale),
+        value: matchingValue ? localized(matchingValue.label, locale) : rawValue,
+      });
+    }
+
+    return details;
+  }, [locale, product.brand, product.skus, staticOptions]);
+  const defaultDisplayImage = hasChosenOption
+    ? skuGallery[0] || showcaseImage || thumbnailImages[0] || ""
+    : showcaseImage || skuGallery[0] || thumbnailImages[0] || "";
+  const selectedImage = selectedGalleryImage && (
+    selectedGalleryImage === showcaseImage ||
+    thumbnailImages.includes(selectedGalleryImage) ||
+    skuGallery.includes(selectedGalleryImage)
+  )
+    ? selectedGalleryImage
+    : defaultDisplayImage;
+  const hasThumbnails = thumbnailImages.length > 0;
+
+  function optionValueExists(optionId: string, value: string): boolean {
+    return product.skus.some((sku) => sku.options[optionId] === value);
   }
 
   function chooseOption(optionId: string, value: string) {
-    const proposed = { ...selectedOptions, [optionId]: value };
-    const exactMatch = product.skus.find(
-      (sku) =>
-        isPurchasable(sku) &&
-        visibleOptions.every((option) => sku.options[option.id] === proposed[option.id]),
-    );
+    const candidates = product.skus.filter((sku) => sku.options[optionId] === value);
+    if (!candidates.length) return;
 
-    if (exactMatch) {
-      setSelectedOptions(exactMatch.options);
-      return;
+    let nextSku = candidates[0];
+    let bestMatchScore = -1;
+    let bestAvailability = -1;
+    for (const candidate of candidates) {
+      const matchScore = configurationOptions.reduce((score, option) => {
+        if (option.id === optionId) return score;
+        const currentValue = selectedOptions[option.id];
+        if (!currentValue) return score;
+        return score + (candidate.options[option.id] === currentValue ? 1 : 0);
+      }, 0);
+      const candidateAvailability = availabilityRank(candidate.availability);
+      if (
+        matchScore > bestMatchScore ||
+        (matchScore === bestMatchScore && candidateAvailability > bestAvailability)
+      ) {
+        nextSku = candidate;
+        bestMatchScore = matchScore;
+        bestAvailability = candidateAvailability;
+      }
     }
 
-    const compatibleSku = product.skus.find(
-      (sku) => isPurchasable(sku) && sku.options[optionId] === value,
-    );
-
-    if (compatibleSku) {
-      setSelectedOptions(compatibleSku.options);
-    }
+    setSelectedSkuId(nextSku.id);
+    setHasChosenOption(true);
+    setAddedOfferId(null);
+    const nextImages = skuImages(nextSku);
+    setSelectedGalleryImage(nextImages[0] || showcaseImage || null);
   }
 
+  function addSelectedSkuToBag(openBag = false) {
+    if (!selectedSku || !isPurchasable(selectedSku)) return;
+
+    const selections = configurationOptions.flatMap((option) => {
+      const rawValue = selectedSku.options[option.id];
+      if (!rawValue) return [];
+      const optionValue = option.values.find((value) => value.value === rawValue);
+      return [{
+        id: option.id,
+        name: option.name,
+        value: optionValue?.label ?? { en: rawValue, sw: rawValue },
+      }];
+    });
+
+    addBagItem(siteId, {
+      offerId: selectedSku.id,
+      listingId: product.id,
+      productSlug: product.slug,
+      title: product.title,
+      websiteVariantId: selectedSku.websiteVariantId,
+      sku: selectedSku.sku,
+      options: { ...selectedSku.options },
+      selections,
+      price: selectedSku.price,
+      imageUrl: skuImages(selectedSku)[0] || showcaseImage || undefined,
+    });
+    setAddedOfferId(selectedSku.id);
+
+    if (openBag) router.push("/bag");
+  }
+
+  const selectedPrice = selectedSku?.price
+    ? formatMoney(selectedSku.price, locale)
+    : locale === "sw" ? "Wasiliana kwa bei" : "Price on request";
+  const selectedSkuPurchasable = Boolean(selectedSku && isPurchasable(selectedSku));
+  const selectedSkuAdded = selectedSku?.id === addedOfferId;
+
   return (
-    <div className="product-detail">
-      <div className="product-detail-media">
-        {selectedImage ? (
-          <StorefrontImage
-            src={selectedImage}
-            alt={productTitle}
-            width={960}
-            height={960}
-            className="product-detail-image"
-          />
-        ) : (
-          <div
-            className="product-image-placeholder product-detail-image-placeholder"
-            role="img"
-            aria-label={productTitle}
-          >
-            <span>{locale === "sw" ? "Picha inakuja hivi karibuni" : "Image coming soon"}</span>
-          </div>
-        )}
-      </div>
-
-      <div className="product-detail-copy">
-        <h1>{productTitle}</h1>
-        <p className="product-detail-description">{localized(product.description, locale)}</p>
-
-        {visibleOptions.map((option) => (
-          <fieldset className="option-group" key={option.id}>
-            <legend>{localized(option.name, locale)}</legend>
-            <div className="option-values">
-              {option.values.map((value) => {
-                const selected = selectedOptions[option.id] === value.value;
-                const available = optionValueHasStock(option.id, value.value);
-
+    <>
+      <section className="product-detail product-detail-reference">
+        <div className="product-detail-gallery">
+          {hasThumbnails ? (
+            <div className="product-detail-thumbnails" aria-label={locale === "sw" ? "Picha za bidhaa" : "Product images"}>
+              {thumbnailImages.map((imageUrl, index) => {
+                const active = imageUrl === selectedImage;
+                const imageLabel = locale === "sw" ? `Picha ${index + 1} ya ${productTitle}` : `${productTitle} image ${index + 1}`;
                 return (
                   <button
-                    key={value.value}
+                    aria-label={imageLabel}
+                    aria-pressed={active}
+                    className={`product-detail-thumbnail${active ? " is-active" : ""}`}
+                    key={imageUrl}
+                    onClick={() => setSelectedGalleryImage(imageUrl)}
+                    style={{ flex: "0 0 auto" }}
                     type="button"
-                    disabled={!available}
-                    className={`option-chip${selected ? " option-chip-active" : ""}`}
-                    onClick={() => chooseOption(option.id, value.value)}
                   >
-                    {value.colorHex ? (
-                      <span className="color-swatch" style={{ backgroundColor: value.colorHex }} aria-hidden="true" />
-                    ) : null}
-                    {localized(value.label, locale)}
+                    <StorefrontImage src={imageUrl} alt={imageLabel} width={140} height={140} />
                   </button>
                 );
               })}
             </div>
-          </fieldset>
-        ))}
+          ) : null}
 
-        {selectedSku ? (
-          <div className="sku-summary">
-            <div>
-              <span className="sku-label">SKU</span>
-              <strong>{selectedSku.sku}</strong>
-            </div>
-            <div>
-              <span className="sku-label">{locale === "sw" ? "Bei" : "Price"}</span>
-              <strong className="selected-price">
-                {selectedSku.price
-                  ? formatMoney(selectedSku.price, locale)
-                  : locale === "sw"
-                    ? "Wasiliana kwa bei"
-                    : "Price on request"}
-              </strong>
-            </div>
-            <span className={`availability-pill availability-${selectedSku.availability}`}>
-              {availabilityLabel(selectedSku.availability, locale)}
-            </span>
+          <div
+            className="product-detail-media"
+            style={{
+              background: "#f8f8f8",
+              border: "1px solid #eeeeee",
+              borderRadius: "18px",
+              gridColumn: hasThumbnails ? undefined : "1 / -1",
+              height: "clamp(340px, 52vw, 620px)",
+              minHeight: 0,
+              overflow: "hidden",
+              padding: "clamp(16px, 3vw, 28px)",
+            }}
+          >
+            {selectedImage ? (
+              <StorefrontImage src={selectedImage} alt={productTitle} width={1100} height={1100} className="product-detail-image" />
+            ) : (
+              <div className="product-image-placeholder product-detail-image-placeholder" role="img" aria-label={productTitle}>
+                <span>{locale === "sw" ? "Picha inakuja hivi karibuni" : "Image coming soon"}</span>
+              </div>
+            )}
           </div>
-        ) : (
-          <div className="sku-summary sku-missing">
-            {locale === "sw"
-              ? "Mchanganyiko huu haujaunganishwa na SKU ya dukani."
-              : "This combination is not backed by a storefront SKU."}
-          </div>
-        )}
+        </div>
 
-        <button
-          type="button"
-          className="button button-primary product-add-button"
-          disabled
-          aria-describedby="cart-roadmap"
-        >
-          {locale === "sw" ? "Ongeza kwenye kikapu" : "Add to bag"}
-        </button>
-        <p className="product-purchase-note" id="cart-roadmap">
-          {locale === "sw"
-            ? "Kikapu kitaunganishwa kwenye hatua inayofuata; kwa sasa hakuna oda inayotengenezwa."
-            : "Cart wiring comes next; no order is created from this preview yet."}
-        </p>
-      </div>
-    </div>
+        <div className="product-detail-copy">
+          <div className="product-detail-pricing">
+            <h1>{productTitle}</h1>
+            <strong className="product-detail-price">{selectedPrice}</strong>
+          </div>
+
+          {configurationOptions.map((option) => (
+            <fieldset className="option-group" key={option.id}>
+              <legend>{localized(option.name, locale)}</legend>
+              <div className="option-values">
+                {option.values.map((value) => {
+                  const selected = selectedOptions[option.id] === value.value;
+                  const exists = optionValueExists(option.id, value.value);
+                  const label = localized(value.label, locale);
+                  if (value.colorHex) {
+                    return (
+                      <button key={value.value} type="button" disabled={!exists} className={`option-chip option-chip-color${selected ? " option-chip-active" : ""}`} onClick={() => chooseOption(option.id, value.value)} title={label} aria-label={label}>
+                        <span className="color-swatch" style={{ backgroundColor: value.colorHex }} aria-hidden="true" />
+                      </button>
+                    );
+                  }
+                  return (
+                    <button key={value.value} type="button" disabled={!exists} className={`option-chip${selected ? " option-chip-active" : ""}`} onClick={() => chooseOption(option.id, value.value)}>
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+            </fieldset>
+          ))}
+
+          {selectedSku ? (
+            <div className="product-detail-availability-row">
+              <span>{locale === "sw" ? "Hali" : "Status"}</span>
+              <strong className={`availability-pill availability-${selectedSku.availability}`}>{availabilityLabel(selectedSku.availability, locale)}</strong>
+            </div>
+          ) : null}
+
+          <div className="product-detail-actions">
+            <button
+              type="button"
+              className="product-detail-buy-now"
+              disabled={!selectedSkuPurchasable}
+              onClick={() => addSelectedSkuToBag(true)}
+            >
+              {locale === "sw" ? "Nunua sasa" : "Buy now"}
+            </button>
+            <button
+              type="button"
+              className="product-detail-add-cart"
+              disabled={!selectedSkuPurchasable}
+              onClick={() => addSelectedSkuToBag()}
+            >
+              {selectedSkuAdded
+                ? locale === "sw" ? "Imeongezwa" : "Added to bag"
+                : locale === "sw" ? "Ongeza kwenye kikapu" : "Add to bag"}
+            </button>
+          </div>
+          {selectedSkuAdded ? (
+            <p className="product-purchase-note">
+              {locale === "sw" ? "Chaguo hili limehifadhiwa kwenye kikapu chako." : "This selection is saved in your bag."}
+            </p>
+          ) : null}
+        </div>
+      </section>
+
+      <section className="product-story" aria-label={locale === "sw" ? `Kuhusu ${productTitle}` : `About ${productTitle}`}>
+        <div className="product-story-intro">
+          <p className="product-story-eyebrow">{locale === "sw" ? "Gundua" : "Discover"}</p>
+          <h2>{productTitle}</h2>
+          {description ? <p>{description}</p> : null}
+        </div>
+        {discoverImage ? <div className="product-story-media"><StorefrontImage src={discoverImage} alt={productTitle} width={1600} height={1100} /></div> : null}
+
+        {storyBlocks.length > 0 ? (
+          <div className="product-story-features" aria-label={locale === "sw" ? "Vipengele vya bidhaa" : "Product features"}>
+            {storyBlocks.map((block, index) => {
+              const heading = localized(block.heading, locale).trim();
+              const body = localized(block.body, locale).trim();
+              const imageUrl = block.imageUrl?.trim() ?? "";
+              const hasCopy = Boolean(heading || body);
+              const featureClassName = [
+                "product-story-feature",
+                imageUrl ? "has-image" : "text-only",
+                imageUrl && !hasCopy ? "image-only" : "",
+                imageUrl && hasCopy && index % 2 === 1 ? "image-right" : "",
+              ].filter(Boolean).join(" ");
+
+              return (
+                <article className={featureClassName} key={block.id}>
+                  {imageUrl ? (
+                    <div className="product-story-feature-media">
+                      <StorefrontImage src={imageUrl} alt={heading || productTitle} width={1200} height={900} />
+                    </div>
+                  ) : null}
+                  {hasCopy ? (
+                    <div className="product-story-feature-copy">
+                      {heading ? <h3>{heading}</h3> : null}
+                      {body ? <p>{body}</p> : null}
+                    </div>
+                  ) : null}
+                </article>
+              );
+            })}
+          </div>
+        ) : null}
+
+        {staticDetails.length > 0 ? (
+          <div className="product-story-configurations product-story-details">
+            <div className="product-story-config-heading">
+              <p className="product-story-eyebrow">{locale === "sw" ? "Maelezo" : "Details"}</p>
+              <h3>{locale === "sw" ? "Maelezo ya bidhaa" : "Product details"}</h3>
+            </div>
+            <div className="product-story-config-list">
+              {staticDetails.map((detail) => (
+                <div className="product-story-config-row" key={detail.id}>
+                  <strong>{detail.label}</strong>
+                  <div className="product-story-config-values">
+                    <span>{detail.value}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
+      </section>
+    </>
   );
 }

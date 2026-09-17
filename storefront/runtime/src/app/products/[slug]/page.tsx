@@ -11,21 +11,24 @@ export default async function ProductDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const [site, product] = await Promise.all([getStorefrontSite(), getStorefrontProduct(slug)]);
+  const [site, product] = await Promise.all([
+    getStorefrontSite(),
+    getStorefrontProduct(slug),
+  ]);
 
-  if (!product) {
-    notFound();
-  }
+  if (!product) notFound();
 
   const locale = site.defaultLocale;
 
   return (
     <StorefrontShell site={site}>
-      <main className="product-page page-shell">
-        <Link href="/products" className="back-link">
-          ← {locale === "sw" ? "Rudi kwenye bidhaa" : "Back to products"}
-        </Link>
-        <ProductDetail product={product} locale={locale} />
+      <main className="product-page product-detail-page">
+        <div className="page-shell product-detail-shell">
+          <Link href="/products" className="back-link product-detail-back-link">
+            ← {locale === "sw" ? "Rudi kwenye bidhaa" : "Back to products"}
+          </Link>
+          <ProductDetail product={product} locale={locale} siteId={site.id} />
+        </div>
       </main>
     </StorefrontShell>
   );

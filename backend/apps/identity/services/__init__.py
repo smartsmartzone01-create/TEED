@@ -20,7 +20,7 @@ from .email_verification import (
     issue_email_verification_challenge,
     verify_email_verification_code,
 )
-from .google_authentication import authenticate_google_user
+from .google_authentication import authenticate_google_user, get_google_client_id
 from .onboarding import complete_onboarding
 from .password_reset import (
     confirm_password_reset,
@@ -43,6 +43,30 @@ from .session import (
     revoke_refresh_session,
     rotate_refresh_token,
 )
+from .storefront_customer_google_authentication import (
+    authenticate_storefront_google_customer,
+)
+from .storefront_customer_password_reset import (
+    confirm_storefront_customer_password_reset,
+    request_storefront_customer_password_reset,
+    verify_storefront_customer_password_reset_code,
+)
+from .storefront_customer_registration import (
+    issue_storefront_customer_verification_challenge,
+    register_storefront_customer_with_email,
+    register_storefront_customer_with_phone,
+    verify_storefront_customer_verification_code,
+)
+from .storefront_customer_session import (
+    STOREFRONT_CUSTOMER_AUDIENCE,
+    decode_storefront_customer_refresh_token,
+    issue_storefront_customer_token_pair,
+    login_storefront_customer_with_email,
+    login_storefront_customer_with_phone,
+    revoke_all_storefront_customer_sessions,
+    revoke_storefront_customer_refresh_session,
+    rotate_storefront_customer_refresh_token,
+)
 
 __all__ = [
     "get_account_protection_recommendation",
@@ -52,6 +76,7 @@ __all__ = [
     "verify_phone_account_protection",
     "issue_email_verification_challenge",
     "issue_phone_verification_challenge",
+    "issue_storefront_customer_verification_challenge",
     "enqueue_email_delivery",
     "process_email_delivery",
     "process_email_deliveries",
@@ -59,14 +84,22 @@ __all__ = [
     "issue_token_pair",
     "register_email_user",
     "register_phone_user",
+    "register_storefront_customer_with_email",
+    "register_storefront_customer_with_phone",
     "verify_email_verification_code",
     "verify_phone_verification_code",
+    "verify_storefront_customer_verification_code",
     "complete_onboarding",
     "confirm_password_reset",
     "request_password_reset",
     "verify_password_reset_code",
+    "confirm_storefront_customer_password_reset",
+    "request_storefront_customer_password_reset",
+    "verify_storefront_customer_password_reset_code",
     "authenticated_login_result",
     "authenticate_google_user",
+    "authenticate_storefront_google_customer",
+    "get_google_client_id",
     "login_email_user",
     "login_phone_user",
     "revoke_all_user_sessions",
@@ -75,4 +108,12 @@ __all__ = [
     "hash_identity_identifier",
     "record_identity_security_event",
     "rotate_refresh_token",
+    "STOREFRONT_CUSTOMER_AUDIENCE",
+    "decode_storefront_customer_refresh_token",
+    "issue_storefront_customer_token_pair",
+    "login_storefront_customer_with_email",
+    "login_storefront_customer_with_phone",
+    "revoke_all_storefront_customer_sessions",
+    "revoke_storefront_customer_refresh_session",
+    "rotate_storefront_customer_refresh_token",
 ]

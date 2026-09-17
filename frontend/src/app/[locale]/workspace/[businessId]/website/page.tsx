@@ -1,6 +1,6 @@
 import { setRequestLocale } from "next-intl/server";
 
-import { WebsiteMediaManager } from "@/components/website/website-media-manager";
+import { WebsiteHomepageManager } from "@/components/website/website-homepage-manager";
 
 type WebsitePageProps = {
   params: Promise<{ businessId: string; locale: string }>;
@@ -9,5 +9,5 @@ type WebsitePageProps = {
 export default async function WebsitePage({ params }: WebsitePageProps) {
   const { businessId, locale } = await params;
   setRequestLocale(locale);
-  return <WebsiteMediaManager businessId={businessId} />;
+  return <WebsiteHomepageManager businessId={businessId} locale={locale} />;
 }

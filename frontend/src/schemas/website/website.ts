@@ -18,8 +18,11 @@ const websiteSiteSchema = z.object({
   contact_email: z.string(),
   contact_whatsapp: z.string(),
   contact_instagram: z.string(),
+  header: z.unknown(),
   navigation: z.unknown(),
   hero: z.unknown(),
+  featured_products: z.unknown(),
+  categories: z.unknown(),
   services: z.unknown(),
   newsletter: z.unknown(),
   is_published: z.boolean(),
@@ -51,13 +54,23 @@ const websiteVariantSchema = z.object({
   currency: z.string(),
   website_availability: z.enum(["in_stock", "low_stock", "out_of_stock"]),
   media_id: z.string().uuid().nullable(),
+  gallery_media_ids: z.array(z.string().uuid()),
   commerce_product_id: z.string().uuid().nullable(),
+  commerce_connected: z.boolean(),
   price_source: z.enum(["website", "commerce"]),
   availability_source: z.enum(["website", "commerce"]),
   is_published: z.boolean(),
   sort_order: z.number().int().nonnegative(),
   created_at: z.string(),
   updated_at: z.string(),
+});
+
+const websiteListingStoryBlockSchema = z.object({
+  id: z.string().uuid(),
+  heading: localeMapSchema,
+  body: localeMapSchema,
+  media_id: z.string().uuid().nullable(),
+  sort_order: z.number().int().nonnegative(),
 });
 
 const websiteListingSchema = z.object({
@@ -69,6 +82,8 @@ const websiteListingSchema = z.object({
   brand: z.string(),
   badge: localeMapSchema,
   primary_media_id: z.string().uuid().nullable(),
+  discover_media_id: z.string().uuid().nullable(),
+  story_blocks: z.array(websiteListingStoryBlockSchema),
   options: z.array(z.unknown()),
   is_published: z.boolean(),
   sort_order: z.number().int().nonnegative(),
@@ -101,27 +116,15 @@ const websiteCommerceImportResultSchema = z.object({
 });
 
 const websiteSiteEnvelopeSchema = createApiEnvelopeSchema(websiteSiteSchema);
-const websiteSiteListEnvelopeSchema = createApiEnvelopeSchema(
-  z.object({ sites: z.array(websiteSiteSchema) }),
-);
+const websiteSiteListEnvelopeSchema = createApiEnvelopeSchema(z.object({ sites: z.array(websiteSiteSchema) }));
 const websiteMediaEnvelopeSchema = createApiEnvelopeSchema(websiteMediaSchema);
-const websiteMediaListEnvelopeSchema = createApiEnvelopeSchema(
-  z.object({ media: z.array(websiteMediaSchema) }),
-);
+const websiteMediaListEnvelopeSchema = createApiEnvelopeSchema(z.object({ media: z.array(websiteMediaSchema) }));
 const websiteListingEnvelopeSchema = createApiEnvelopeSchema(websiteListingSchema);
-const websiteListingListEnvelopeSchema = createApiEnvelopeSchema(
-  z.object({ listings: z.array(websiteListingSchema) }),
-);
+const websiteListingListEnvelopeSchema = createApiEnvelopeSchema(z.object({ listings: z.array(websiteListingSchema) }));
 const websiteVariantEnvelopeSchema = createApiEnvelopeSchema(websiteVariantSchema);
-const websiteVariantListEnvelopeSchema = createApiEnvelopeSchema(
-  z.object({ variants: z.array(websiteVariantSchema) }),
-);
-const websiteCommerceCatalogEnvelopeSchema = createApiEnvelopeSchema(
-  z.object({ products: z.array(websiteCommerceProductSchema) }),
-);
-const websiteCommerceImportEnvelopeSchema = createApiEnvelopeSchema(
-  websiteCommerceImportResultSchema,
-);
+const websiteVariantListEnvelopeSchema = createApiEnvelopeSchema(z.object({ variants: z.array(websiteVariantSchema) }));
+const websiteCommerceCatalogEnvelopeSchema = createApiEnvelopeSchema(z.object({ products: z.array(websiteCommerceProductSchema) }));
+const websiteCommerceImportEnvelopeSchema = createApiEnvelopeSchema(websiteCommerceImportResultSchema);
 const websiteDeleteEnvelopeSchema = createApiEnvelopeSchema(z.null());
 
 export {
@@ -133,6 +136,7 @@ export {
   websiteListingEnvelopeSchema,
   websiteListingListEnvelopeSchema,
   websiteListingSchema,
+  websiteListingStoryBlockSchema,
   websiteMediaEnvelopeSchema,
   websiteMediaListEnvelopeSchema,
   websiteMediaSchema,
