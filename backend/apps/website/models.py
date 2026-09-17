@@ -4,6 +4,8 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
 
+from . import order_models as _order_models
+
 
 def default_supported_locales():
     return ["en", "sw"]

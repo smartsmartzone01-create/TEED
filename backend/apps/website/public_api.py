@@ -1,12 +1,15 @@
 from common.responses import SuccessResponse
 from django.db.models import F, Prefetch
 from django.shortcuts import get_object_or_404
+from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
 from .contracts import serialize_listing, serialize_site
 from .models import WebsiteListing, WebsiteSite, WebsiteVariant
+from .order_services import create_public_order, serialize_public_order
+from .public_order_serializers import PublicStorefrontOrderCreateSerializer
 
 
 def public_site(site_key):
@@ -96,4 +99,17 @@ class PublicStorefrontProductDetailAPIView(PublicStorefrontBaseAPIView):
         return SuccessResponse(
             message="Storefront product retrieved successfully.",
             data=serialize_public_listing(listing, newest_ids=newest_listing_ids(site)),
+        )
+
+
+class PublicStorefrontOrdersAPIView(PublicStorefrontBaseAPIView):
+    def post(self, request, site_key):
+        site = public_site(site_key)
+        serializer = PublicStorefrontOrderCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        order = create_public_order(site=site, validated_data=serializer.validated_data)
+        return SuccessResponse(
+            message="Order received successfully.",
+            data=serialize_public_order(order),
+            status_code=status.HTTP_201_CREATED,
         )

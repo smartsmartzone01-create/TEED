@@ -1,6 +1,7 @@
 from django.urls import path
 
 from .public_api import (
+    PublicStorefrontOrdersAPIView,
     PublicStorefrontProductDetailAPIView,
     PublicStorefrontProductsAPIView,
     PublicStorefrontSiteAPIView,
@@ -41,6 +42,11 @@ urlpatterns = [
         "sites/<uuid:site_key>/products/<slug:slug>/",
         PublicStorefrontProductDetailAPIView.as_view(),
         name="product-detail",
+    ),
+    path(
+        "sites/<uuid:site_key>/orders/",
+        PublicStorefrontOrdersAPIView.as_view(),
+        name="orders",
     ),
     path(
         "sites/<uuid:site_key>/auth/register/email/",
